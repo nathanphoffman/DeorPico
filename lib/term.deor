@@ -1,0 +1,51 @@
+struct KeyEvent
+	string kind
+	string chr
+
+struct TermSize
+	int cols
+	int rows
+
+fn TermSize term_size()
+	rust
+		{
+			let (c, r) = crossterm::terminal::size().unwrap_or((80, 24));
+			TermSize { cols: c as i64, rows: r as i64 }
+		}
+
+fn void term_raw_on()
+	rust
+		{
+			crossterm::terminal::enable_raw_mode().unwrap();
+			crossterm::execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen).unwrap();
+		}
+
+fn void term_raw_off()
+	rust
+		{
+			crossterm::execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen).unwrap();
+			crossterm::terminal::disable_raw_mode().unwrap();
+		}
+
+fn KeyEvent term_read_key()
+	rust
+		loop {
+			if let crossterm::event::Event::Key(evt) = crossterm::event::read().unwrap() {
+				if evt.kind != crossterm::event::KeyEventKind::Press {
+					continue;
+				}
+				let ctrl = evt.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+				match evt.code {
+					crossterm::event::KeyCode::Char('q') if ctrl => break KeyEvent { kind: "quit".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Char('s') if ctrl => break KeyEvent { kind: "save".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string() },
+					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Left => break KeyEvent { kind: "left".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Up => break KeyEvent { kind: "up".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Down => break KeyEvent { kind: "down".to_string(), chr: String::new() },
+					_ => continue,
+				}
+			}
+		}

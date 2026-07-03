@@ -1,0 +1,11 @@
+[package]
+name = "DeorPico"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "DeorPico"
+path = "build/main.rs"
+
+[dependencies]
+crossterm = "0.29.0"
