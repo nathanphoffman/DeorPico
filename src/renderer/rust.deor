@@ -115,13 +115,28 @@ fn void editor_render(EditorState state)
 			let selection = normalized_selection_range(&state);
 			let total_line_count = state.core.lines.len();
 
+			// Gutter is wide enough for the largest line number plus one trailing space.
+			let gutter_width = if state.core.show_line_numbers {
+				format!("{}", total_line_count).len() + 1
+			} else {
+				0
+			};
+			let text_visible_columns = max_visible_columns.saturating_sub(gutter_width);
+
 			for visible_row_offset in 0..visible_row_count {
 				let buffer_row_index = state.core.scroll_row as usize + visible_row_offset;
+				if gutter_width > 0 {
+					if buffer_row_index < total_line_count {
+						screen.push_str(&format!("{:>width$} ", buffer_row_index + 1, width = gutter_width - 1));
+					} else {
+						screen.push_str(&" ".repeat(gutter_width));
+					}
+				}
 				if buffer_row_index < total_line_count {
 					let line = &state.core.lines[buffer_row_index];
 					let (highlight_start_col, highlight_end_col) =
 						selection_columns_for_row(&selection, buffer_row_index as i64);
-					let rendered_line = render_line(line, max_visible_columns, highlight_start_col, highlight_end_col);
+					let rendered_line = render_line(line, text_visible_columns, highlight_start_col, highlight_end_col);
 					screen.push_str(&rendered_line);
 				}
 				screen.push_str("\r\n");
@@ -129,15 +144,26 @@ fn void editor_render(EditorState state)
 
 			let modified_marker = if state.core.dirty { " [modified]" } else { "" };
 			let status_line = format!(
-				"-- {} ({} lines){} -- ^S save  ^Q quit  F1 files",
+				"-- {} ({} lines){} -- ^S save  ^Q quit  ^N line#  F1 files",
 				state.core.filename, total_line_count, modified_marker
 			);
-			screen.push_str(&status_line);
+
+			// Blue background sets the status/notice rows apart from the buffer above.
+			let status_bg = "\x1b[44m";
+			let status_reset = "\x1b[0m";
+			let status_line_padded = format!("{:<width$}", status_line, width = max_visible_columns);
+			let notice_padded = format!("{:<width$}", state.notice, width = max_visible_columns);
+
+			screen.push_str(status_bg);
+			screen.push_str(&status_line_padded);
+			screen.push_str(status_reset);
 			screen.push_str("\r\n");
-			screen.push_str(&state.notice);
+			screen.push_str(status_bg);
+			screen.push_str(&notice_padded);
+			screen.push_str(status_reset);
 
 			let cursor_screen_row = (state.core.cursor_row - state.core.scroll_row) as usize + 1;
-			let cursor_screen_col = state.core.cursor_col as usize + 1;
+			let cursor_screen_col = state.core.cursor_col as usize + gutter_width + 1;
 			screen.push_str(&format!("\x1b[{};{}H", cursor_screen_row, cursor_screen_col));
 
 			print!("{}", screen);

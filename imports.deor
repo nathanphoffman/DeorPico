@@ -33,6 +33,7 @@ import "src/key_press/tab.deor"
 import "src/key_press/page_up_down.deor"
 import "src/key_press/browse.deor"
 import "src/key_press/diff.deor"
+import "src/key_press/line_numbers.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor.deor"

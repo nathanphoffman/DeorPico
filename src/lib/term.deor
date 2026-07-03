@@ -48,6 +48,7 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Char('v') if ctrl => break KeyEvent { kind: "paste".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Char('z') if ctrl => break KeyEvent { kind: "undo".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Char('y') if ctrl => break KeyEvent { kind: "redo".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('n') if ctrl => break KeyEvent { kind: "toggle_line_numbers".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
 					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift },

@@ -18,7 +18,7 @@ macro back_stop
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, done, notice) in state
 
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row) in core
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
 	(diffing, diff_lines, diff_scroll_row) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
@@ -72,6 +72,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run key_quit
 		else if kind is "diff_toggle"
 			macro_run toggle_diff
+		else if kind is "toggle_line_numbers"
+			macro_run toggle_line_numbers
 		else if kind is "save"
 			macro_run key_save
 		else if kind is "cut"
@@ -125,7 +127,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 		macro_run back_stop
 
-	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row)
+	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)

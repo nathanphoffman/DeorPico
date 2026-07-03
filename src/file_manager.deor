@@ -7,6 +7,7 @@ fn EditorState editor_open(string filename)
 	cursor_col as 0
 	dirty as false
 	scroll_row as 0
+	show_line_numbers as false
 	done as false
 	notice as ""
 	browsing as false
@@ -23,7 +24,7 @@ fn EditorState editor_open(string filename)
 	undoList undo_stack = empty
 	undoList redo_stack = empty
 
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, dirty)
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, dirty, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)

@@ -10,6 +10,9 @@ struct BufferState
 	# Tracks whether there is unsaved changes
 	bool dirty
 
+	# Toggled with ctrl+n
+	bool show_line_numbers
+
 struct BrowserState
 	# File browser (F1) state
 	bool browsing
