@@ -16,7 +16,7 @@ macro back_stop
         cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(core, browser, diff, selection, undo, done, notice) in state
+	(core, browser, diff, selection, undo, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused) in browser
@@ -86,6 +86,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run key_quit
 		else if kind is "diff_toggle"
 			macro_run toggle_diff
+		else if kind is "history_back"
+			macro_run history_back
+		else if kind is "history_forward"
+			macro_run history_forward
 		else if kind is "toggle_line_numbers"
 			macro_run toggle_line_numbers
 		else if kind is "save"
@@ -100,6 +104,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run do_undo
 		else if kind is "redo"
 			macro_run do_redo
+		else if kind is "discard_changes"
+			macro_run discard_unsaved_changes
 		else if kind is "up"
 			if shift
 				macro_run start_or_extend_selection
@@ -146,6 +152,6 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
-	EditorState next_state = (core, browser, diff, selection, undo, done, notice)
+	EditorState next_state = (core, browser, diff, selection, undo, done, notice, error)
 	return next_state
 

@@ -148,8 +148,9 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 				state.core.filename, total_line_count, modified_marker
 			);
 
-			// Blue background sets the status/notice rows apart from the buffer above.
-			let status_bg = "\x1b[48;5;240m";
+			// Blue background sets the status/notice rows apart from the buffer above;
+			// dark red instead whenever the notice is blocking a destructive action.
+			let status_bg = if state.error { "\x1b[48;5;52m" } else { "\x1b[48;5;240m" };
 			let status_reset = "\x1b[0m";
 			let status_line_padded = format!("{:<width$}", status_line, width = max_visible_columns);
 			let notice_padded = format!("{:<width$}", state.notice, width = max_visible_columns);

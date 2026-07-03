@@ -10,6 +10,7 @@ fn EditorState editor_open(string filename)
 	show_line_numbers as false
 	done as false
 	notice as ""
+	error as false
 	browsing as false
 	entryList browse_entries = empty
 	browse_selected as 0
@@ -32,7 +33,7 @@ fn EditorState editor_open(string filename)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
-	EditorState state = (core, browser, diff, selection, undo, done, notice)
+	EditorState state = (core, browser, diff, selection, undo, done, notice, error)
 	return state
 
 fn EditorState editor_save(EditorState state)

@@ -65,6 +65,9 @@ struct EditorState
 	# Persists until replaced by another notice
 	string notice
 
+	# True while notice is blocking a destructive action (unsaved changes) -- tints the status bar dark red
+	bool error
+
 fn void main()
 
 	(first) in args()

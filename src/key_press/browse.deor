@@ -1,6 +1,8 @@
 macro toggle_browse
 	if browsing
 		browsing = false
+	else if dirty
+		macro_run notify_unsaved_changes
 	else
 		browsing = true
 		if len(browse_entries) is 0
@@ -113,23 +115,39 @@ macro toggle_history_focus
 		if history_selected < 0
 			history_selected = 0
 
+# Loads `path` (already declared by the caller) into the active buffer,
+# discarding any unsaved state. Callers decide whether this should also
+# update file_history, since history navigation itself must not.
+macro load_file_into_buffer
+	filename = path
+	stringList opened_lines = f_lines(filename)
+	if len(opened_lines) is 0
+		opened_lines at end = ""
+	lines = opened_lines
+	cursor_row = 0
+	cursor_col = 0
+	dirty = false
+	scroll_row = 0
+	notice = "Opened"
+	error = false
+	macro_run reset_undo_history
+
+# Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
+# so a navigation blocked by notify_unsaved_changes can proceed afterward.
+macro discard_unsaved_changes
+	if dirty
+		path as filename
+		macro_run load_file_into_buffer
+		notice = "Discarded unsaved changes"
+		error = false
+
 macro browse_history_enter
 	if len(file_history) > 0
 		FileEntry selected = file_history at history_selected
 		(path, is_dir) in selected
 		if not is_dir
 			browsing = false
-			filename = path
-			stringList opened_lines = f_lines(filename)
-			if len(opened_lines) is 0
-				opened_lines at end = ""
-			lines = opened_lines
-			cursor_row = 0
-			cursor_col = 0
-			dirty = false
-			scroll_row = 0
-			notice = "Opened"
-			macro_run reset_undo_history
+			macro_run load_file_into_buffer
 			macro_run track_file_history
 
 macro browse_enter
@@ -138,18 +156,34 @@ macro browse_enter
 		(path, is_dir) in selected
 		if not is_dir
 			browsing = false
-			filename = path
-			stringList opened_lines = f_lines(filename)
-			if len(opened_lines) is 0
-				opened_lines at end = ""
-			lines = opened_lines
-			cursor_row = 0
-			cursor_col = 0
-			dirty = false
-			scroll_row = 0
-			notice = "Opened"
-			macro_run reset_undo_history
+			macro_run load_file_into_buffer
 			macro_run track_file_history
+
+# F9 -- step back to the previously-visited file in file_history without
+# reshuffling it, so F12 can step forward again through the same order.
+macro history_back
+	if dirty
+		macro_run notify_unsaved_changes
+	else
+		int last_history_entry = len(file_history) - 1
+		if history_selected < last_history_entry
+			history_selected = history_selected + 1
+			FileEntry selected = file_history at history_selected
+			(path, is_dir) in selected
+			if not is_dir
+				macro_run load_file_into_buffer
+
+# F12 -- step forward toward the most-recently-visited file in file_history.
+macro history_forward
+	if dirty
+		macro_run notify_unsaved_changes
+	else
+		if history_selected > 0
+			history_selected = history_selected - 1
+			FileEntry selected = file_history at history_selected
+			(path, is_dir) in selected
+			if not is_dir
+				macro_run load_file_into_buffer
 
 # Opens the selected file, or toggles expand/collapse on the selected directory.
 # Must decide which single action to take from one fresh read up front --

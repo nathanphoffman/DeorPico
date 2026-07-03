@@ -35,6 +35,7 @@ macro do_undo
 		cursor_col = saved_cursor_col
 		dirty = true
 		notice = "Undo"
+		error = false
 
 macro do_redo
 	if len(redo_stack) > 0
@@ -55,6 +56,7 @@ macro do_redo
 		cursor_col = saved_cursor_col
 		dirty = true
 		notice = "Redo"
+		error = false
 
 # Called when switching to a different file (e.g. via the browser) so undo
 # history from the old file can't bleed into the new one.

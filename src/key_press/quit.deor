@@ -1,2 +1,11 @@
 macro key_quit
-	done = true
+	if dirty
+		macro_run notify_unsaved_changes
+	else
+		done = true
+
+# Shown when quitting/browsing/history-switching is blocked by unsaved changes --
+# ^Del (discard_unsaved_changes) clears dirty so the blocked action can proceed.
+macro notify_unsaved_changes
+	notice = "Unsaved changes -- ^S save or ^Del discard"
+	error = true

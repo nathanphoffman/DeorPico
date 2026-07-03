@@ -7,13 +7,43 @@ macro toggle_diff
 		if change_count > 0
 			diff_lines = raw_diff
 			diffing = true
-			diff_scroll_row = 0
+			macro_run align_diff_scroll
 			count_str as c_int_to_string(change_count)
 			suffix as " changes"
 			stringList notice_parts = [count_str, suffix]
 			notice = s_join(notice_parts)
+			error = false
 		else
 			notice = "No changes to diff"
+			error = false
+
+# Lines up the diff view so the row the cursor was on in the normal buffer
+# stays at the same screen position, instead of always jumping to the top
+# of the diff. Deleted ('-') lines don't exist in the current buffer, so they
+# are skipped while counting off buffer rows to find the matching diff row.
+macro align_diff_scroll
+	int diff_idx = 0
+	int file_row = 0
+	int last = len(diff_lines)
+	target_found as false
+	int target_idx = last
+	dash as "-"
+
+	for if diff_idx < last and not target_found
+		string line = diff_lines at diff_idx
+		if s_starts_with(line, dash)
+			diff_idx = diff_idx + 1
+		else
+			if file_row is cursor_row
+				target_idx = diff_idx
+				target_found = true
+			else
+				file_row = file_row + 1
+				diff_idx = diff_idx + 1
+
+	int cursor_offset = cursor_row - scroll_row
+	diff_scroll_row = target_idx - cursor_offset
+	macro_run clamp_diff_scroll
 
 macro clamp_diff_scroll
 	if diff_scroll_row < 0

@@ -4,3 +4,4 @@ macro key_save
 	bool did_save = f_write(filename, content)
 	dirty = false
 	notice = "Saved"
+	error = false

@@ -52,6 +52,7 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
 					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Delete if ctrl => break KeyEvent { kind: "discard_changes".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Delete => break KeyEvent { kind: "delete".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Left => break KeyEvent { kind: "left".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new(), shift },
@@ -61,6 +62,8 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::PageUp => break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::PageDown => break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::F(1) => break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), shift },
+						crossterm::event::KeyCode::F(9) => break KeyEvent { kind: "history_back".to_string(), chr: String::new(), shift },
+						crossterm::event::KeyCode::F(12) => break KeyEvent { kind: "history_forward".to_string(), chr: String::new(), shift },
 					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "escape".to_string(), chr: String::new(), shift },
 
 					_ => continue,

@@ -23,6 +23,7 @@ macro key_backspace
 
 		if white_space_before and cursor_is_on_tab
 			notice = "White space detected"
+			error = false
 			cursor_col = cursor_col - 3
 
 		macro_run look_behind_cursor
