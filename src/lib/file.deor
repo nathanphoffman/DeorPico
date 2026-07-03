@@ -4,6 +4,8 @@ struct FileEntry
 	string name
 	string path
 	bool is_dir
+	int depth
+	bool expanded
 
 shape entryList = list of FileEntry
 
@@ -16,7 +18,7 @@ fn entryList f_list_dir(string path)
 					let file_name = entry.file_name().to_string_lossy().to_string();
 					let full_path = entry.path().to_string_lossy().to_string();
 					let is_dir = entry.path().is_dir();
-					items.push(FileEntry { name: file_name, path: full_path, is_dir });
+					items.push(FileEntry { name: file_name, path: full_path, is_dir, depth: 0, expanded: false });
 				}
 			}
 			items.sort_by(|a, b| {
@@ -27,6 +29,28 @@ fn entryList f_list_dir(string path)
 				}
 			});
 			items
+		}
+
+fn entryList e_insert_children(entryList entries, int at_index, entryList children)
+	rust
+		{
+			let mut result = entries;
+			let idx = (at_index + 1) as usize;
+			for (i, child) in children.into_iter().enumerate() {
+				result.insert(idx + i, child);
+			}
+			result
+		}
+
+fn entryList e_remove_children(entryList entries, int at_index, int min_depth)
+	rust
+		{
+			let mut result = entries;
+			let idx = (at_index + 1) as usize;
+			while idx < result.len() && result[idx].depth > min_depth {
+				result.remove(idx);
+			}
+			result
 		}
 
 fn string f_read(string path)
@@ -52,3 +76,7 @@ fn stringList f_lines(string path)
 fn bool f_delete(string path)
 	rust
 		std::fs::remove_file(&path).is_ok()
+
+fn string f_extension(string path)
+	rust
+		std::path::Path::new(&path).extension().and_then(|e| e.to_str()).unwrap_or("").to_string()

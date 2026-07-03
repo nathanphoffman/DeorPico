@@ -29,13 +29,19 @@ fn void main()
 
 	xt_raw_on()
 
-	const string EXT = "deor"
-	Highlighter highlighter = initialize_highlighter(EXT)
+	string current_file = filename
+	string ext = f_extension(current_file)
+	Highlighter highlighter = initialize_highlighter(ext)
 
 	for if true
 		state = editor_scroll(state)
 
-		(lines, browsing) in state
+		(lines, browsing, filename) in state
+		if filename is not current_file
+			current_file = filename
+			ext = f_extension(current_file)
+			highlighter = initialize_highlighter(ext)
+
 		highlights as xs_run(highlighter, lines)
 		lines = get_highlighted_lines(lines, highlights)
 		EditorState render_state_with_colors = state with (lines)

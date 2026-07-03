@@ -26,9 +26,15 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run browse_up
 		else if kind is "down"
 			macro_run browse_down
+		else if kind is "left"
+			macro_run browse_left
+		else if kind is "right"
+			macro_run browse_right
 		else if kind is "enter"
 			macro_run browse_enter
 		else if kind is "browse_close"
+			macro_run browse_close
+		else if kind is "quit"
 			macro_run browse_close
 	else
 		if kind is "quit"

@@ -3,11 +3,12 @@ macro toggle_browse
 		browsing = false
 	else
 		browsing = true
-		cwd as "."
-		browse_dir = cwd
-		browse_entries = f_list_dir(browse_dir)
-		browse_selected = 0
-		browse_scroll_row = 0
+		if len(browse_entries) is 0
+			cwd as "."
+			browse_dir = cwd
+			browse_entries = f_list_dir(browse_dir)
+			browse_selected = 0
+			browse_scroll_row = 0
 
 macro browse_close
 	browsing = false
@@ -32,6 +33,38 @@ macro browse_down
 		view_rows = 1
 	if browse_selected >= browse_scroll_row + view_rows
 		browse_scroll_row = browse_selected - view_rows + 1
+
+macro browse_right
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, depth, expanded) in selected
+		if is_dir and not expanded
+			entryList raw_children = f_list_dir(path)
+			int next_depth = depth + 1
+			entryList adjusted_children = empty
+			for raw_child in raw_children
+				(name, path, is_dir) in raw_child
+				depth as next_depth
+				expanded as false
+				FileEntry adjusted = (name, path, is_dir, depth, expanded)
+				adjusted_children at end = adjusted
+
+			browse_entries = e_insert_children(browse_entries, browse_selected, adjusted_children)
+
+			expanded as true
+			FileEntry updated_selected = selected with (expanded)
+			browse_entries at browse_selected = updated_selected
+
+macro browse_left
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(is_dir, depth, expanded) in selected
+		if is_dir and expanded
+			browse_entries = e_remove_children(browse_entries, browse_selected, depth)
+
+			expanded as false
+			FileEntry updated_selected = selected with (expanded)
+			browse_entries at browse_selected = updated_selected
 
 macro browse_enter
 	if len(browse_entries) > 0

@@ -14,8 +14,14 @@ fn void editor_render_browser(EditorState state)
 				let idx = state.browse_scroll_row as usize + i;
 				if idx < total {
 					let entry = &state.browse_entries[idx];
-					let marker = if entry.is_dir { "/" } else { "" };
-					let mut line = format!("{}{}", entry.name, marker);
+					let indent = "  ".repeat(entry.depth as usize);
+					let marker = if entry.is_dir {
+						if entry.expanded { "v " } else { "> " }
+					} else {
+						"  "
+					};
+					let suffix = if entry.is_dir { "/" } else { "" };
+					let mut line = format!("{}{}{}{}", indent, marker, entry.name, suffix);
 					if line.len() > cols {
 						line.truncate(cols);
 					}

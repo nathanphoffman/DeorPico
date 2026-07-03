@@ -12,6 +12,7 @@ rust
 			"number" => "\x1b[36m",
 			"type" => "\x1b[35m",
 			"function" => "\x1b[34m",
+			"invalid" => "\x1b[31m",
 			_ => "",
 		}
 	}
