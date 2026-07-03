@@ -1,11 +1,11 @@
 run *args:
     mkdir -p build
-    DEOR_LIB=lib deor main.deor build/main.rs
+    DEOR_LIB=src/lib deor main.deor build/main.rs
     cargo run -- {{args}}
 
 build:
     mkdir -p build
-    DEOR_LIB=lib deor main.deor build/main.rs
+    DEOR_LIB=src/lib deor main.deor build/main.rs
     cargo build
 
 update-deor-with-latest:

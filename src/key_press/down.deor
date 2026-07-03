@@ -1,5 +1,3 @@
-import "lib/math.deor"
-
 macro key_down
 	int last_row = len(lines) - 1
 	if cursor_row < last_row

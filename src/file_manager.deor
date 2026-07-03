@@ -1,0 +1,21 @@
+
+fn EditorState editor_open(string filename)
+	stringList lines = f_lines(filename)
+	if len(lines) is 0
+		lines at end = ""
+	cursor_row as 0
+	cursor_col as 0
+	dirty as false
+	scroll_row as 0
+	done as false
+	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
+	return state
+
+fn EditorState editor_save(EditorState state)
+	(filename, lines) in state
+	nls as "\n"
+	string content = s_join_with(lines, nls)
+	bool did_save = f_write(filename, content)
+	dirty as false
+	new_state as state with (dirty)
+	return new_state

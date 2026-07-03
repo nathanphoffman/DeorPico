@@ -1,6 +1,3 @@
-import "lib/string.deor"
-import "lib/list.deor" where T = string
-
 macro key_enter
 	string cur_line = lines at cursor_row
 	start as 0

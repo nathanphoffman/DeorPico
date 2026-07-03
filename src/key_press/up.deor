@@ -1,5 +1,3 @@
-import "lib/math.deor"
-
 macro key_up
 	if cursor_row > 0
 		cursor_row = cursor_row - 1

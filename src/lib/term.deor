@@ -6,28 +6,28 @@ struct TermSize
 	int cols
 	int rows
 
-fn TermSize term_size()
+fn TermSize xt_size()
 	rust
 		{
 			let (c, r) = crossterm::terminal::size().unwrap_or((80, 24));
 			TermSize { cols: c as i64, rows: r as i64 }
 		}
 
-fn void term_raw_on()
+fn void xt_raw_on()
 	rust
 		{
 			crossterm::terminal::enable_raw_mode().unwrap();
 			crossterm::execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen).unwrap();
 		}
 
-fn void term_raw_off()
+fn void xt_raw_off()
 	rust
 		{
 			crossterm::execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen).unwrap();
 			crossterm::terminal::disable_raw_mode().unwrap();
 		}
 
-fn KeyEvent term_read_key()
+fn KeyEvent xt_read_key()
 	rust
 		loop {
 			if let crossterm::event::Event::Key(evt) = crossterm::event::read().unwrap() {

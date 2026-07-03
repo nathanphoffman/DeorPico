@@ -1,0 +1,28 @@
+# Everything depends on libs
+import "src/lib/file.deor"
+import "src/lib/string.deor"
+import "src/lib/math.deor"
+import "src/lib/list.deor" where T = string
+import "src/lib/term.deor"
+
+# Macros must be loaded first
+import "src/key_press/quit.deor"
+import "src/key_press/save.deor"
+import "src/key_press/up.deor"
+import "src/key_press/down.deor"
+import "src/key_press/left.deor"
+import "src/key_press/right.deor"
+import "src/key_press/backspace.deor"
+import "src/key_press/enter.deor"
+import "src/key_press/char.deor"
+
+# File open logic needed first, then renderer
+import "src/renderer/deor.deor"
+import "src/renderer/rust.deor"
+
+# Then optional functionality is loaded in not needed initially
+import "src/file_manager.deor"
+
+# Finally events are listened to
+import "src/events.deor"
+

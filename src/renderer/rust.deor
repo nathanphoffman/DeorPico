@@ -1,0 +1,31 @@
+
+fn void editor_render(EditorState state)
+	rust
+		{
+			use std::io::Write;
+			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
+			let cols = cols as usize;
+			let view_rows = if rows > 1 { (rows - 1) as usize } else { 1 };
+			let mut out = String::new();
+			out.push_str("\x1b[H\x1b[2J");
+			let total = state.lines.len();
+			for i in 0..view_rows {
+				let idx = state.scroll_row as usize + i;
+				if idx < total {
+					let mut line = state.lines[idx].clone();
+					if line.len() > cols {
+						line.truncate(cols);
+					}
+					out.push_str(&line);
+				}
+				out.push_str("\r\n");
+			}
+			let mark = if state.dirty { " [modified]" } else { "" };
+			let status = format!("-- {} ({} lines){} -- ^S save  ^Q quit", state.filename, total, mark);
+			out.push_str(&status);
+			let screen_row = (state.cursor_row - state.scroll_row) as usize + 1;
+			let screen_col = state.cursor_col as usize + 1;
+			out.push_str(&format!("\x1b[{};{}H", screen_row, screen_col));
+			print!("{}", out);
+			std::io::stdout().flush().unwrap();
+		}

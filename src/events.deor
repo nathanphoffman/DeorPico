@@ -1,0 +1,26 @@
+
+fn EditorState editor_handle_key(EditorState state, KeyEvent key)
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done) in state
+	(kind, chr) in key
+
+	if kind is "quit"
+		macro_run key_quit
+	else if kind is "save"
+		macro_run key_save
+	else if kind is "up"
+		macro_run key_up
+	else if kind is "down"
+		macro_run key_down
+	else if kind is "left"
+		macro_run key_left
+	else if kind is "right"
+		macro_run key_right
+	else if kind is "backspace"
+		macro_run key_backspace
+	else if kind is "enter"
+		macro_run key_enter
+	else if kind is "char"
+		macro_run key_char
+
+	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
+	return next_state

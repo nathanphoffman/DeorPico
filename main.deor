@@ -1,135 +1,30 @@
-import "lib/file.deor"
-import "lib/string.deor"
-import "lib/math.deor"
-import "lib/list.deor" where T = string
-import "lib/term.deor"
-import "key_press/quit.deor"
-import "key_press/save.deor"
-import "key_press/up.deor"
-import "key_press/down.deor"
-import "key_press/left.deor"
-import "key_press/right.deor"
-import "key_press/backspace.deor"
-import "key_press/enter.deor"
-import "key_press/char.deor"
+import "imports.deor"
 
 struct EditorState
 	string filename
 	stringList lines
 	int cursor_row
 	int cursor_col
-	bool dirty
 	int scroll_row
 	bool done
 
-fn EditorState editor_open(string filename)
-	stringList lines = f_lines(filename)
-	if len(lines) is 0
-		lines at end = ""
-	cursor_row as 0
-	cursor_col as 0
-	dirty as false
-	scroll_row as 0
-	done as false
-	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
-	return state
-
-fn EditorState editor_save(EditorState state)
-	(filename, lines) in state
-	nls as "\n"
-	string content = s_join_with(lines, nls)
-	bool did_save = f_write(filename, content)
-	dirty as false
-	new_state as state with (dirty)
-	return new_state
-
-fn EditorState editor_scroll(EditorState state)
-	(cursor_row, scroll_row) in state
-	TermSize size = term_size()
-	(rows) in size
-	int view_rows = rows - 1
-	if view_rows < 1
-		view_rows = 1
-
-	if cursor_row < scroll_row
-		scroll_row = cursor_row
-	else if cursor_row >= scroll_row + view_rows
-		scroll_row = cursor_row - view_rows + 1
-
-	new_state as state with (scroll_row)
-	return new_state
-
-fn void editor_render(EditorState state)
-	rust
-		{
-			use std::io::Write;
-			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
-			let cols = cols as usize;
-			let view_rows = if rows > 1 { (rows - 1) as usize } else { 1 };
-			let mut out = String::new();
-			out.push_str("\x1b[H\x1b[2J");
-			let total = state.lines.len();
-			for i in 0..view_rows {
-				let idx = state.scroll_row as usize + i;
-				if idx < total {
-					let mut line = state.lines[idx].clone();
-					if line.len() > cols {
-						line.truncate(cols);
-					}
-					out.push_str(&line);
-				}
-				out.push_str("\r\n");
-			}
-			let mark = if state.dirty { " [modified]" } else { "" };
-			let status = format!("-- {} ({} lines){} -- ^S save  ^Q quit", state.filename, total, mark);
-			out.push_str(&status);
-			let screen_row = (state.cursor_row - state.scroll_row) as usize + 1;
-			let screen_col = state.cursor_col as usize + 1;
-			out.push_str(&format!("\x1b[{};{}H", screen_row, screen_col));
-			print!("{}", out);
-			std::io::stdout().flush().unwrap();
-		}
-
-fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done) in state
-	(kind, chr) in key
-
-	if kind is "quit"
-		macro_run key_quit
-	else if kind is "save"
-		macro_run key_save
-	else if kind is "up"
-		macro_run key_up
-	else if kind is "down"
-		macro_run key_down
-	else if kind is "left"
-		macro_run key_left
-	else if kind is "right"
-		macro_run key_right
-	else if kind is "backspace"
-		macro_run key_backspace
-	else if kind is "enter"
-		macro_run key_enter
-	else if kind is "char"
-		macro_run key_char
-
-	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
-	return next_state
+	# Tracks whether there is unsaved changes
+	bool dirty
 
 fn void main()
 	(first) in args()
 	string filename = first
 	EditorState state = editor_open(filename)
 
-	term_raw_on()
+	xt_raw_on()
 
 	for if true
 		state = editor_scroll(state)
 		editor_render(state)
-		KeyEvent key = term_read_key()
+		KeyEvent key = xt_read_key()
 		state = editor_handle_key(state, key)
 		(done) in state
 		if done
 			break
 
-	term_raw_off()
+	xt_raw_off()
