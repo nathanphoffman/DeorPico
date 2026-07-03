@@ -1,0 +1,42 @@
+
+fn void editor_render_diff(EditorState state)
+	rust
+		{
+			use std::io::Write;
+			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
+			let cols = cols as usize;
+			let view_rows = if rows > 2 { (rows - 2) as usize } else { 1 };
+			let mut out = String::new();
+			out.push_str("\x1b[H\x1b[2J");
+
+			let total = state.diff_lines.len();
+			for i in 0..view_rows {
+				let idx = state.diff_scroll_row as usize + i;
+				if idx < total {
+					let raw = &state.diff_lines[idx];
+					let marker = raw.chars().next().unwrap_or(' ');
+					let mut line: String = if raw.len() > 0 {
+						raw[1..].to_string()
+					} else {
+						String::new()
+					};
+					if line.len() > cols {
+						line.truncate(cols);
+					}
+					line = match marker {
+						'+' => format!("\x1b[32m{}\x1b[39m", line),
+						'-' => format!("\x1b[31m{}\x1b[39m", line),
+						_ => line,
+					};
+					out.push_str(&line);
+				}
+				out.push_str("\r\n");
+			}
+			let status = format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.filename);
+			out.push_str(&status);
+			out.push_str("\r\n");
+			out.push_str(&state.notice);
+
+			print!("{}", out);
+			std::io::stdout().flush().unwrap();
+		}

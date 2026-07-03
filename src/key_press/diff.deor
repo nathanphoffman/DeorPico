@@ -1,0 +1,51 @@
+macro toggle_diff
+	if diffing
+		diffing = false
+	else
+		stringList raw_diff = g_diff(filename)
+		int change_count = g_diff_count(raw_diff)
+		if change_count > 0
+			diff_lines = raw_diff
+			diffing = true
+			diff_scroll_row = 0
+			count_str as c_int_to_string(change_count)
+			suffix as " changes"
+			stringList notice_parts = [count_str, suffix]
+			notice = s_join(notice_parts)
+		else
+			notice = "No changes to diff"
+
+macro clamp_diff_scroll
+	if diff_scroll_row < 0
+		diff_scroll_row = 0
+
+	int last_row = len(diff_lines) - 1
+	TermSize size = xt_size()
+	(rows) in size
+	int view_rows = rows - 2
+	if view_rows < 1
+		view_rows = 1
+	int max_scroll = last_row - view_rows + 1
+	if max_scroll < 0
+		max_scroll = 0
+
+	if diff_scroll_row > max_scroll
+		diff_scroll_row = max_scroll
+
+macro diff_scroll_up
+	diff_scroll_row = diff_scroll_row - 1
+	macro_run clamp_diff_scroll
+
+macro diff_scroll_down
+	diff_scroll_row = diff_scroll_row + 1
+	macro_run clamp_diff_scroll
+
+macro diff_page_up
+	macro_run use_consts
+	diff_scroll_row = diff_scroll_row - PAGE_DOWN_UP_AMOUNT
+	macro_run clamp_diff_scroll
+
+macro diff_page_down
+	macro_run use_consts
+	diff_scroll_row = diff_scroll_row + PAGE_DOWN_UP_AMOUNT
+	macro_run clamp_diff_scroll

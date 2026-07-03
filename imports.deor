@@ -2,6 +2,7 @@
 import "src/lib/file.deor"
 import "src/lib/string.deor"
 import "src/lib/math.deor"
+import "src/lib/convert.deor"
 import "src/lib/list.deor" where T = string
 
 # these are external (x) libs x*_ functions
@@ -28,11 +29,13 @@ import "src/key_press/char.deor"
 import "src/key_press/tab.deor"
 import "src/key_press/page_up_down.deor"
 import "src/key_press/browse.deor"
+import "src/key_press/diff.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor.deor"
 import "src/renderer/rust.deor"
 import "src/renderer/rust_browser.deor"
+import "src/renderer/rust_diff.deor"
 import "src/renderer/highlighting.deor"
 
 # Then optional functionality is loaded in not needed initially

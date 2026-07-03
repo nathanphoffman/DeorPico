@@ -8,7 +8,8 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: wasd work like arrow keys while in browser mode
 
 ## Next Up
-- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
+- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also 
+have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
 
 ### Git highlighting
 - Make it so the file explorer shows:
@@ -20,4 +21,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 At some point I want to do a diff view, no reason to do that code now, but worthy of thinking about as our git plan
 
 ### Git diff
-- On ctrl + d make it so it toggles the delta of git showing it inline in red text for deleted, green for added, normal system text for nothing.  When ctrl d is used, a message at the bottom should display the number of changes to the file which might be 0 in which case nothing should happen, if there are deltas then the file should be locked from editing until they press ctrl + d again
+- On ctrl + d make it so it toggles the delta of git showing it inline in red text for deleted, green for added, normal system text for nothing.  
+When ctrl d is used, a message at the bottom should display the number of changes to the file which might be 0 in which case nothing should happen, 
+if there are deltas then the file should be locked from editing until they press ctrl + d again 
+-- escape and ctrl + q should also be allowed as an escape hatch to get back to normal mode that way if a user ever panics they can hit escape a bunch to get back to normal

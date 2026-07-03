@@ -34,6 +34,40 @@ fn StringMap g_status(string repo_path)
 			map
 		}
 
+fn stringList g_diff(string path)
+	rust
+		{
+			let mut lines: Vec<String> = Vec::new();
+			if let Ok(output) = std::process::Command::new("git")
+				.args(["diff", "HEAD", "--no-color", "-U100000", "--"])
+				.arg(&path)
+				.output()
+			{
+				let text = String::from_utf8_lossy(&output.stdout);
+				let mut started = false;
+				for line in text.lines() {
+					if started {
+						lines.push(line.to_string());
+					} else if line.starts_with("@@") {
+						started = true;
+					}
+				}
+			}
+			lines
+		}
+
+fn int g_diff_count(stringList diff_lines)
+	rust
+		{
+			let mut count: i64 = 0;
+			for line in diff_lines.iter() {
+				if line.starts_with('+') || line.starts_with('-') {
+					count += 1;
+				}
+			}
+			count
+		}
+
 fn entryList g_apply_status(entryList entries, StringMap git_map)
 	rust
 		{

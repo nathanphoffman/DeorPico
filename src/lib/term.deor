@@ -40,6 +40,7 @@ fn KeyEvent xt_read_key()
 				match evt.code {
 					crossterm::event::KeyCode::Char('q') if ctrl => break KeyEvent { kind: "quit".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Char('s') if ctrl => break KeyEvent { kind: "save".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Char('d') if ctrl => break KeyEvent { kind: "diff_toggle".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string() },
 					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new() },
@@ -52,7 +53,7 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::PageUp => break KeyEvent { kind: "page_up".to_string(), chr: String::new(), },
 					crossterm::event::KeyCode::PageDown => break KeyEvent { kind: "page_down".to_string(), chr: String::new(), },
 					crossterm::event::KeyCode::F(1) => break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), },
-					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "browse_close".to_string(), chr: String::new(), },
+					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "escape".to_string(), chr: String::new(), },
 
 					_ => continue,
 				}
