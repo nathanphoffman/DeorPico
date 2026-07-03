@@ -1,3 +1,8 @@
 macro use_consts
     const int PAGE_DOWN_UP_AMOUNT = 10
 
+    # Must match the tab width synoptic expands tabs to when producing
+    # highlighted lines for display -- used to convert a raw cursor_col
+    # (one tab = one character) into the on-screen column (one tab = several).
+    const int TAB_WIDTH = 4
+

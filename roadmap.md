@@ -12,8 +12,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Added git diff refresh everytime F1 is hit
 - Done: Allowing undo and redo with ctrl y, ctrl z
 - Done: Footer Coloring
+- Done: File History Selection in File Browser "Most Recently Opened Deal"
 
-- Working: File History Selection in File Browser "Most Recently Opened Deal"
+- Working: cursor terminates at certain strings
+
+- Next: ctrl + d shifts screen QoL feature
 
 ## For Nate
 - If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning
@@ -24,11 +27,22 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 ## Next Up For AI
 
-- Big Bug for some reason the cursor fails when I hit certain strings like the color 
+- The user can use F9 to move back a file in history and F12 to move forward a file in history, I think this should be an easy add since we track file history in the file browser.  
 
-- Quick prompts:
+- Anytime someone tries to navigate away from a dirty file (unsaved changes) show text in the bottom and turn the bottom color to a dark red to remind them they have action they need to take.  This should be when trying to quit with something like ctrl + q, or when opening the file browser F1, or when moving to the next file.
+
+- Since we have a history it would be cool to be able to use 
+
+- When doing the git diff: ctrl + d it would be nice if the git delta did not shift the content around on the screen, for example I want to be able to use ctrl + d, find the delta, hit ctrl+d and have the viewport still look at that region of code (not have the whole file shift out from under me)
+
+- Quick Prompts (I would like these to open a small centered prompt if we could):
 -- ctrl + g should open a goto line # prompt allowing you to enter a line number and it should go there immediately
--- ctrl + f should allow searching for a word in the current code file
+-- there will also be a search but lets do the easy one for now
+
+- Add markdown highlighting for .md files if it is not provided by our highlighting library
+
+Search Quick Prompts
+-- ctrl + f should allow searching for a word in the current code file: when entered, the code should highlight each match on the page and stay highlighted until they hit escape.  Shift tab cycles the search from top to bottom and back again taking you to the line the next is on.  The search highlight should continuously apply as the text is updated so new instances should highlight as the person types adding them to the search list of shift-tabable items.
 
 
 ### v2:

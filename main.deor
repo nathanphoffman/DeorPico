@@ -81,13 +81,19 @@ fn void main()
 		state = editor_scroll(state)
 
 		(core, browser, diff) in state
-		(filename, lines) in core
+		(filename, lines, cursor_row, cursor_col) in core
 		(browsing) in browser
 		(diffing) in diff
 		if filename is not current_file
 			current_file = filename
 			ext = f_extension(current_file)
 			highlighter = initialize_highlighter(ext)
+
+		# Raw line, before tab-expansion, so the on-screen cursor column can
+		# be derived to match what synoptic does to the displayed text below.
+		string raw_cursor_line = lines at cursor_row
+		macro_run use_consts
+		int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
 
 		highlights as xs_run(highlighter, lines)
 		lines = get_highlighted_lines(lines, highlights)
@@ -99,7 +105,7 @@ fn void main()
 		else if diffing
 			editor_render_diff(render_state_with_colors)
 		else
-			editor_render(render_state_with_colors)
+			editor_render(render_state_with_colors, cursor_visual_col)
 		KeyEvent key = xt_read_key()
 		state = editor_handle_key(state, key)
 		(done) in state

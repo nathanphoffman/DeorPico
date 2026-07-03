@@ -1,5 +1,5 @@
 
-fn void editor_render(EditorState state)
+fn void editor_render(EditorState state, int cursor_visual_col)
 
 
 	rust
@@ -163,7 +163,7 @@ fn void editor_render(EditorState state)
 			screen.push_str(status_reset);
 
 			let cursor_screen_row = (state.core.cursor_row - state.core.scroll_row) as usize + 1;
-			let cursor_screen_col = state.core.cursor_col as usize + gutter_width + 1;
+			let cursor_screen_col = cursor_visual_col as usize + gutter_width + 1;
 			screen.push_str(&format!("\x1b[{};{}H", cursor_screen_row, cursor_screen_col));
 
 			print!("{}", screen);

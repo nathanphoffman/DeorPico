@@ -1,6 +1,6 @@
 
 fn Highlighter initialize_highlighter(string ext)
-    const int TAB_WIDTH = 4
+    macro_run use_consts
     const string DEOR = "deor"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
