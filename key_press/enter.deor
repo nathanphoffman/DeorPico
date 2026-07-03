@@ -1,0 +1,18 @@
+import "lib/string.deor"
+import "lib/list.deor" where T = string
+
+macro key_enter
+	string cur_line = lines at cursor_row
+	start as 0
+	string before = s_substring(cur_line, start, cursor_col)
+	int line_len = len(cur_line)
+	string after = s_substring(cur_line, cursor_col, line_len)
+	lines at cursor_row = before
+	int next_row = cursor_row + 1
+	stringList before_lines = l_string_take(lines, next_row)
+	before_lines = l_string_push(before_lines, after)
+	stringList rest_lines = l_string_drop(lines, next_row)
+	lines = l_string_concat(before_lines, rest_lines)
+	cursor_row = next_row
+	cursor_col = 0
+	dirty = true

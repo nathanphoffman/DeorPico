@@ -1,0 +1,2 @@
+macro key_quit
+	done = true

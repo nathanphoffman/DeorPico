@@ -1,0 +1,27 @@
+import "lib/string.deor"
+
+macro key_backspace
+	if cursor_col > 0
+		string cur_line = lines at cursor_row
+		start as 0
+		int before_end = cursor_col - 1
+		string before = s_substring(cur_line, start, before_end)
+		int line_len = len(cur_line)
+		string after = s_substring(cur_line, cursor_col, line_len)
+		stringList join_parts = [before, after]
+		string new_line = s_join(join_parts)
+		lines at cursor_row = new_line
+		cursor_col = cursor_col - 1
+		dirty = true
+	else if cursor_row > 0
+		string cur_line = lines at cursor_row
+		int prev_row = cursor_row - 1
+		string prev_line = lines at prev_row
+		int new_col = len(prev_line)
+		stringList merge_parts = [prev_line, cur_line]
+		string merged = s_join(merge_parts)
+		lines at prev_row = merged
+		lines remove at cursor_row
+		cursor_row = prev_row
+		cursor_col = new_col
+		dirty = true

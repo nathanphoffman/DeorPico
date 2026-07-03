@@ -3,6 +3,15 @@ import "lib/string.deor"
 import "lib/math.deor"
 import "lib/list.deor" where T = string
 import "lib/term.deor"
+import "key_press/quit.deor"
+import "key_press/save.deor"
+import "key_press/up.deor"
+import "key_press/down.deor"
+import "key_press/left.deor"
+import "key_press/right.deor"
+import "key_press/backspace.deor"
+import "key_press/enter.deor"
+import "key_press/char.deor"
 
 struct EditorState
 	string filename
@@ -86,92 +95,23 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(kind, chr) in key
 
 	if kind is "quit"
-		done = true
+		macro_run key_quit
 	else if kind is "save"
-		nls as "\n"
-		string content = s_join_with(lines, nls)
-		bool did_save = f_write(filename, content)
-		dirty = false
+		macro_run key_save
 	else if kind is "up"
-		if cursor_row > 0
-			cursor_row = cursor_row - 1
-			string new_line = lines at cursor_row
-			int new_len = len(new_line)
-			cursor_col = m_min(cursor_col, new_len)
+		macro_run key_up
 	else if kind is "down"
-		int last_row = len(lines) - 1
-		if cursor_row < last_row
-			cursor_row = cursor_row + 1
-			string new_line = lines at cursor_row
-			int new_len = len(new_line)
-			cursor_col = m_min(cursor_col, new_len)
+		macro_run key_down
 	else if kind is "left"
-		if cursor_col > 0
-			cursor_col = cursor_col - 1
-		else if cursor_row > 0
-			cursor_row = cursor_row - 1
-			string new_line = lines at cursor_row
-			cursor_col = len(new_line)
+		macro_run key_left
 	else if kind is "right"
-		string cur_line = lines at cursor_row
-		int cur_len = len(cur_line)
-		int last_row = len(lines) - 1
-		if cursor_col < cur_len
-			cursor_col = cursor_col + 1
-		else if cursor_row < last_row
-			cursor_row = cursor_row + 1
-			cursor_col = 0
+		macro_run key_right
 	else if kind is "backspace"
-		if cursor_col > 0
-			string cur_line = lines at cursor_row
-			start as 0
-			int before_end = cursor_col - 1
-			string before = s_substring(cur_line, start, before_end)
-			int line_len = len(cur_line)
-			string after = s_substring(cur_line, cursor_col, line_len)
-			stringList join_parts = [before, after]
-			string new_line = s_join(join_parts)
-			lines at cursor_row = new_line
-			cursor_col = cursor_col - 1
-			dirty = true
-		else if cursor_row > 0
-			string cur_line = lines at cursor_row
-			int prev_row = cursor_row - 1
-			string prev_line = lines at prev_row
-			int new_col = len(prev_line)
-			stringList merge_parts = [prev_line, cur_line]
-			string merged = s_join(merge_parts)
-			lines at prev_row = merged
-			lines remove at cursor_row
-			cursor_row = prev_row
-			cursor_col = new_col
-			dirty = true
+		macro_run key_backspace
 	else if kind is "enter"
-		string cur_line = lines at cursor_row
-		start as 0
-		string before = s_substring(cur_line, start, cursor_col)
-		int line_len = len(cur_line)
-		string after = s_substring(cur_line, cursor_col, line_len)
-		lines at cursor_row = before
-		int next_row = cursor_row + 1
-		stringList before_lines = l_string_take(lines, next_row)
-		before_lines = l_string_push(before_lines, after)
-		stringList rest_lines = l_string_drop(lines, next_row)
-		lines = l_string_concat(before_lines, rest_lines)
-		cursor_row = next_row
-		cursor_col = 0
-		dirty = true
+		macro_run key_enter
 	else if kind is "char"
-		string cur_line = lines at cursor_row
-		start as 0
-		string before = s_substring(cur_line, start, cursor_col)
-		int line_len = len(cur_line)
-		string after = s_substring(cur_line, cursor_col, line_len)
-		stringList insert_parts = [before, chr, after]
-		string new_line = s_join(insert_parts)
-		lines at cursor_row = new_line
-		cursor_col = cursor_col + 1
-		dirty = true
+		macro_run key_char
 
 	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
 	return next_state

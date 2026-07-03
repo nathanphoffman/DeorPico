@@ -1,0 +1,8 @@
+import "lib/file.deor"
+import "lib/string.deor"
+
+macro key_save
+	nls as "\n"
+	string content = s_join_with(lines, nls)
+	bool did_save = f_write(filename, content)
+	dirty = false

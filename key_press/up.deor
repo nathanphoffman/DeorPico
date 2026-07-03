@@ -1,0 +1,8 @@
+import "lib/math.deor"
+
+macro key_up
+	if cursor_row > 0
+		cursor_row = cursor_row - 1
+		string new_line = lines at cursor_row
+		int new_len = len(new_line)
+		cursor_col = m_min(cursor_col, new_len)
