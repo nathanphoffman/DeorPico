@@ -1,12 +1,19 @@
 
+# Prevents the cursor from going too far to the right, left, bottom, or top
+macro back_stop
 
-# macro back_stop
-#     if cursor_row < 0
-#         cursor_row = 0
-    
-#     if cursor_col < 0
-#         cursor_col = 0
+    if cursor_row < 0
+        cursor_row = 0
+    else if cursor_row > len(lines) - 1
+        cursor_row = len(lines) - 1
 
+    current_line as lines at cursor_row
+    current_line_length as len(current_line)  
+
+    if cursor_col < 0
+        cursor_col = 0
+    else if cursor_col > current_line_length - 1
+        cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice) in state
@@ -37,15 +44,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	else if kind is "page_down"
 		macro_run page_down
 
-    if cursor_row < 0
-        cursor_row = 0
-    else if cursor_row > len(lines) - 1
-        cursor_row = len(lines) - 1
-    
-    if cursor_col < 0
-        cursor_col = 0
-
-    #macro_run back_stop
+    macro_run back_stop
 
 	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice)
 	return next_state
