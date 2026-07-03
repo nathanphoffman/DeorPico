@@ -51,6 +51,8 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Tab => break KeyEvent { kind: "tab".to_string(), chr: FOUR_SPACES.to_string(), },
 					crossterm::event::KeyCode::PageUp => break KeyEvent { kind: "page_up".to_string(), chr: String::new(), },
 					crossterm::event::KeyCode::PageDown => break KeyEvent { kind: "page_down".to_string(), chr: String::new(), },
+					crossterm::event::KeyCode::F(1) => break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), },
+					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "browse_close".to_string(), chr: String::new(), },
 
 					_ => continue,
 				}

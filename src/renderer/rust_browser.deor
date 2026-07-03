@@ -1,7 +1,5 @@
 
-fn void editor_render(EditorState state)
-
-
+fn void editor_render_browser(EditorState state)
 	rust
 		{
 			use std::io::Write;
@@ -11,26 +9,27 @@ fn void editor_render(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
-			let total = state.lines.len();
+			let total = state.browse_entries.len();
 			for i in 0..view_rows {
-				let idx = state.scroll_row as usize + i;
+				let idx = state.browse_scroll_row as usize + i;
 				if idx < total {
-					let mut line = state.lines[idx].clone();
+					let entry = &state.browse_entries[idx];
+					let marker = if entry.is_dir { "/" } else { "" };
+					let mut line = format!("{}{}", entry.name, marker);
 					if line.len() > cols {
 						line.truncate(cols);
+					}
+					if idx == state.browse_selected as usize {
+						line = format!("\x1b[7m{}\x1b[0m", line);
 					}
 					out.push_str(&line);
 				}
 				out.push_str("\r\n");
 			}
-			let mark = if state.dirty { " [modified]" } else { "" };
-			let status = format!("-- {} ({} lines){} -- ^S save  ^Q quit  F1 files", state.filename, total, mark);
+			let status = format!("-- {} -- Enter open  F1/Esc close", state.browse_dir);
 			out.push_str(&status);
 			out.push_str("\r\n");
 			out.push_str(&state.notice);
-			let screen_row = (state.cursor_row - state.scroll_row) as usize + 1;
-			let screen_col = state.cursor_col as usize + 1;
-			out.push_str(&format!("\x1b[{};{}H", screen_row, screen_col));
 
 			print!("{}", out);
 			std::io::stdout().flush().unwrap();

@@ -1,9 +1,5 @@
 macro key_enter
-	string cur_line = lines at cursor_row
-	start as 0
-	string before = s_substring(cur_line, start, cursor_col)
-	int line_len = len(cur_line)
-	string after = s_substring(cur_line, cursor_col, line_len)
+	macro_run split_at_cursor
 	lines at cursor_row = before
 	int next_row = cursor_row + 1
 	stringList before_lines = l_string_take(lines, next_row)

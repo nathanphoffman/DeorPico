@@ -1,0 +1,6 @@
+macro split_at_cursor
+	string cur_line = lines at cursor_row
+	start as 0
+	string before = s_substring(cur_line, start, cursor_col)
+	int line_len = len(cur_line)
+	string after = s_substring(cur_line, cursor_col, line_len)

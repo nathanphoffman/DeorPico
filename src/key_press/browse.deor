@@ -1,0 +1,51 @@
+macro toggle_browse
+	if browsing
+		browsing = false
+	else
+		browsing = true
+		cwd as "."
+		browse_dir = cwd
+		browse_entries = f_list_dir(browse_dir)
+		browse_selected = 0
+		browse_scroll_row = 0
+
+macro browse_close
+	browsing = false
+
+macro browse_up
+	browse_selected = browse_selected - 1
+	if browse_selected < 0
+		browse_selected = 0
+	if browse_selected < browse_scroll_row
+		browse_scroll_row = browse_selected
+
+macro browse_down
+	int last_entry = len(browse_entries) - 1
+	browse_selected = browse_selected + 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+
+	TermSize size = xt_size()
+	(rows) in size
+	int view_rows = rows - 2
+	if view_rows < 1
+		view_rows = 1
+	if browse_selected >= browse_scroll_row + view_rows
+		browse_scroll_row = browse_selected - view_rows + 1
+
+macro browse_enter
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir) in selected
+		if not is_dir
+			browsing = false
+			filename = path
+			stringList opened_lines = f_lines(filename)
+			if len(opened_lines) is 0
+				opened_lines at end = ""
+			lines = opened_lines
+			cursor_row = 0
+			cursor_col = 0
+			dirty = false
+			scroll_row = 0
+			notice = "Opened"

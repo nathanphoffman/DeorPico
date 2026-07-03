@@ -16,38 +16,50 @@ macro back_stop
         cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice) in state
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice, browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir) in state
 	(kind, chr) in key
 
-	if kind is "quit"
-		macro_run key_quit
-	else if kind is "save"
-		macro_run key_save
-	else if kind is "up"
-		macro_run key_up
-	else if kind is "down"
-		macro_run key_down
-	else if kind is "left"
-		macro_run key_left
-	else if kind is "right"
-		macro_run key_right
-	else if kind is "backspace"
-		macro_run key_backspace
-	else if kind is "delete"
-		macro_run key_delete
-	else if kind is "enter"
-		macro_run key_enter
-	else if kind is "char"
-		macro_run key_char
-	else if kind is "tab"
-		macro_run key_tab
-	else if kind is "page_up"
-		macro_run page_up
-	else if kind is "page_down"
-		macro_run page_down
+	if kind is "browse_toggle"
+		macro_run toggle_browse
+	else if browsing
+		if kind is "up"
+			macro_run browse_up
+		else if kind is "down"
+			macro_run browse_down
+		else if kind is "enter"
+			macro_run browse_enter
+		else if kind is "browse_close"
+			macro_run browse_close
+	else
+		if kind is "quit"
+			macro_run key_quit
+		else if kind is "save"
+			macro_run key_save
+		else if kind is "up"
+			macro_run key_up
+		else if kind is "down"
+			macro_run key_down
+		else if kind is "left"
+			macro_run key_left
+		else if kind is "right"
+			macro_run key_right
+		else if kind is "backspace"
+			macro_run key_backspace
+		else if kind is "delete"
+			macro_run key_delete
+		else if kind is "enter"
+			macro_run key_enter
+		else if kind is "char"
+			macro_run key_char
+		else if kind is "tab"
+			macro_run key_tab
+		else if kind is "page_up"
+			macro_run page_up
+		else if kind is "page_down"
+			macro_run page_down
 
-    macro_run back_stop
+		macro_run back_stop
 
-	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice)
+	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice, browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	return next_state
 

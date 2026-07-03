@@ -9,7 +9,12 @@ fn EditorState editor_open(string filename)
 	scroll_row as 0
 	done as false
 	notice as ""
-	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice)
+	browsing as false
+	entryList browse_entries = empty
+	browse_selected as 0
+	browse_scroll_row as 0
+	browse_dir as ""
+	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice, browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	return state
 
 fn EditorState editor_save(EditorState state)

@@ -1,9 +1,5 @@
 macro input_key
-    string cur_line = lines at cursor_row
-	start as 0
-	string before = s_substring(cur_line, start, cursor_col)
-	int line_len = len(cur_line)
-	string after = s_substring(cur_line, cursor_col, line_len)
+	macro_run split_at_cursor
 	stringList insert_parts = [before, chr, after]
 	string new_line = s_join(insert_parts)
 	lines at cursor_row = new_line

@@ -10,6 +10,7 @@ import "src/lib/syntax.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"
+import "src/key_press/sub_macros/split_at_cursor.deor"
 import "src/key_press/sub_macros/input_key.deor"
 import "src/key_press/quit.deor"
 import "src/key_press/save.deor"
@@ -23,10 +24,12 @@ import "src/key_press/enter.deor"
 import "src/key_press/char.deor"
 import "src/key_press/tab.deor"
 import "src/key_press/page_up_down.deor"
+import "src/key_press/browse.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor.deor"
 import "src/renderer/rust.deor"
+import "src/renderer/rust_browser.deor"
 import "src/renderer/highlighting.deor"
 
 # Then optional functionality is loaded in not needed initially

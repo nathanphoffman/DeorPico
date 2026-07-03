@@ -14,6 +14,13 @@ struct EditorState
 	# Persists until replaced by another notice
 	string notice
 
+	# File browser (F1) state
+	bool browsing
+	entryList browse_entries
+	int browse_selected
+	int browse_scroll_row
+	string browse_dir
+
 fn void main()
 
 	(first) in args()
@@ -28,12 +35,15 @@ fn void main()
 	for if true
 		state = editor_scroll(state)
 
-		(lines) in state
+		(lines, browsing) in state
 		highlights as xs_run(highlighter, lines)
 		lines = get_highlighted_lines(lines, highlights)
 		EditorState render_state_with_colors = state with (lines)
 
-		editor_render(render_state_with_colors)
+		if browsing
+			editor_render_browser(render_state_with_colors)
+		else
+			editor_render(render_state_with_colors)
 		KeyEvent key = xt_read_key()
 		state = editor_handle_key(state, key)
 		(done) in state
