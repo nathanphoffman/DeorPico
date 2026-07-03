@@ -1,6 +1,7 @@
 struct KeyEvent
 	string kind
 	string chr
+	bool shift
 
 struct TermSize
 	int cols
@@ -37,23 +38,27 @@ fn KeyEvent xt_read_key()
 					continue;
 				}
 				let ctrl = evt.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+				let shift = evt.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
 				match evt.code {
-					crossterm::event::KeyCode::Char('q') if ctrl => break KeyEvent { kind: "quit".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Char('s') if ctrl => break KeyEvent { kind: "save".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Char('d') if ctrl => break KeyEvent { kind: "diff_toggle".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string() },
-					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Delete => break KeyEvent { kind: "delete".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Left => break KeyEvent { kind: "left".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Up => break KeyEvent { kind: "up".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Down => break KeyEvent { kind: "down".to_string(), chr: String::new() },
-					crossterm::event::KeyCode::Tab => break KeyEvent { kind: "tab".to_string(), chr: FOUR_SPACES.to_string(), },
-					crossterm::event::KeyCode::PageUp => break KeyEvent { kind: "page_up".to_string(), chr: String::new(), },
-					crossterm::event::KeyCode::PageDown => break KeyEvent { kind: "page_down".to_string(), chr: String::new(), },
-					crossterm::event::KeyCode::F(1) => break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), },
-					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "escape".to_string(), chr: String::new(), },
+					crossterm::event::KeyCode::Char('q') if ctrl => break KeyEvent { kind: "quit".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('s') if ctrl => break KeyEvent { kind: "save".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('d') if ctrl => break KeyEvent { kind: "diff_toggle".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('x') if ctrl => break KeyEvent { kind: "cut".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('c') if ctrl => break KeyEvent { kind: "copy".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char('v') if ctrl => break KeyEvent { kind: "paste".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
+					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Delete => break KeyEvent { kind: "delete".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Left => break KeyEvent { kind: "left".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Up => break KeyEvent { kind: "up".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Down => break KeyEvent { kind: "down".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Tab => break KeyEvent { kind: "tab".to_string(), chr: FOUR_SPACES.to_string(), shift },
+					crossterm::event::KeyCode::PageUp => break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::PageDown => break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::F(1) => break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), shift },
+					crossterm::event::KeyCode::Esc => break KeyEvent { kind: "escape".to_string(), chr: String::new(), shift },
 
 					_ => continue,
 				}

@@ -7,10 +7,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Make it so that enter and space also expand the file browser
 - Done: wasd work like arrow keys while in browser mode
 
-## Next Up
-- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also 
-have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
-
+- Done:
 ### Git highlighting
 - Make it so the file explorer shows:
     - Normally Standard Just As Today
@@ -19,6 +16,30 @@ have the same highlighting so the files listed should be say yellow if recently 
     - Red for a file that has errors (don't worry about detecting errors we will set that up)
 ^ I am thinking that we can probably use git commands to determine this with a git rust wrapper?  not sure the best way
 At some point I want to do a diff view, no reason to do that code now, but worthy of thinking about as our git plan
+
+
+## For Nate
+- If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning
+
+- If holding ctrl + right arrow, +4 shift, same thing with right arrow, same thing with up down
+
+- Allow selecting a block and tabbing it across the screen
+
+## Next Up For AI
+
+- Allowing undo and redo with ctrl y, ctrl z
+
+- we should allow toggling of line numbers with ctrl + n
+
+- Can we color the bottom status/notification area a background blue color to differentiate it from the top?
+
+- Quick prompts:
+-- ctrl + g should open a goto line # prompt allowing you to enter a line number and it should go there immediately
+-- ctrl + f should allow searching for a file name
+
+- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
+
+
 
 ### Git diff
 - On ctrl + d make it so it toggles the delta of git showing it inline in red text for deleted, green for added, normal system text for nothing.  

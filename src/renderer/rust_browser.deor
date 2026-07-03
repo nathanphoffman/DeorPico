@@ -9,11 +9,11 @@ fn void editor_render_browser(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
-			let total = state.browse_entries.len();
+			let total = state.browser.browse_entries.len();
 			for i in 0..view_rows {
-				let idx = state.browse_scroll_row as usize + i;
+				let idx = state.browser.browse_scroll_row as usize + i;
 				if idx < total {
-					let entry = &state.browse_entries[idx];
+					let entry = &state.browser.browse_entries[idx];
 					let indent = "  ".repeat(entry.depth as usize);
 					let marker = if entry.is_dir {
 						if entry.expanded { "v " } else { "> " }
@@ -30,14 +30,14 @@ fn void editor_render_browser(EditorState state)
 						"edited" => format!("\x1b[33m{}\x1b[39m", line),
 						_ => line,
 					};
-					if idx == state.browse_selected as usize {
+					if idx == state.browser.browse_selected as usize {
 						line = format!("\x1b[7m{}\x1b[0m", line);
 					}
 					out.push_str(&line);
 				}
 				out.push_str("\r\n");
 			}
-			let status = format!("-- {} -- Enter open  F1/Esc close", state.browse_dir);
+			let status = format!("-- {} -- Enter open  F1/Esc close", state.browser.browse_dir);
 			out.push_str(&status);
 			out.push_str("\r\n");
 			out.push_str(&state.notice);

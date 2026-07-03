@@ -1,4 +1,6 @@
 macro key_enter
+	if has_selection
+		macro_run delete_selection
 	macro_run split_at_cursor
 	lines at cursor_row = before
 	int next_row = cursor_row + 1

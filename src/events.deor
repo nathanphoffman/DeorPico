@@ -16,8 +16,13 @@ macro back_stop
         cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice, browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, diffing, diff_lines, diff_scroll_row) in state
-	(kind, chr) in key
+	(core, browser, diff, selection, done, notice) in state
+	
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row) in core
+	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
+	(diffing, diff_lines, diff_scroll_row) in diff
+	(has_selection, sel_anchor_row, sel_anchor_col) in selection
+	(kind, chr, shift) in key
 
 	if kind is "browse_toggle"
 		macro_run toggle_browse
@@ -68,13 +73,35 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run toggle_diff
 		else if kind is "save"
 			macro_run key_save
+		else if kind is "cut"
+			macro_run do_cut
+		else if kind is "copy"
+			macro_run do_copy
+		else if kind is "paste"
+			macro_run do_paste
 		else if kind is "up"
+			if shift
+				macro_run start_or_extend_selection
+			else
+				macro_run clear_selection
 			macro_run key_up
 		else if kind is "down"
+			if shift
+				macro_run start_or_extend_selection
+			else
+				macro_run clear_selection
 			macro_run key_down
 		else if kind is "left"
+			if shift
+				macro_run start_or_extend_selection
+			else
+				macro_run clear_selection
 			macro_run key_left
 		else if kind is "right"
+			if shift
+				macro_run start_or_extend_selection
+			else
+				macro_run clear_selection
 			macro_run key_right
 		else if kind is "backspace"
 			macro_run key_backspace
@@ -93,6 +120,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 		macro_run back_stop
 
-	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice, browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, diffing, diff_lines, diff_scroll_row)
+	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
+	DiffState diff = (diffing, diff_lines, diff_scroll_row)
+	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
+	EditorState next_state = (core, browser, diff, selection, done, notice)
 	return next_state
 

@@ -11,10 +11,12 @@ import "src/lib/syntax.deor"
 
 import "src/lib/map.deor"
 import "src/lib/git.deor"
+import "src/lib/clip.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"
 import "src/key_press/sub_macros/split_at_cursor.deor"
+import "src/key_press/selection.deor"
 import "src/key_press/sub_macros/input_key.deor"
 import "src/key_press/quit.deor"
 import "src/key_press/save.deor"

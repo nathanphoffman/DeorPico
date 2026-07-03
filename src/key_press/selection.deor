@@ -1,0 +1,159 @@
+# Normalizes sel_anchor vs cursor into start_row/start_col/end_row/end_col
+# so start is always at or before end. Shared by delete/copy/paste below.
+macro normalize_selection
+	start_row as sel_anchor_row
+	start_col as sel_anchor_col
+	end_row as cursor_row
+	end_col as cursor_col
+
+	needs_swap as false
+	if start_row > end_row
+		needs_swap = true
+	else if start_row is end_row and start_col > end_col
+		needs_swap = true
+
+	if needs_swap
+		int tmp_row = start_row
+		int tmp_col = start_col
+		start_row = end_row
+		start_col = end_col
+		end_row = tmp_row
+		end_col = tmp_col
+
+macro start_or_extend_selection
+	if not has_selection
+		sel_anchor_row = cursor_row
+		sel_anchor_col = cursor_col
+		has_selection = true
+
+macro clear_selection
+	has_selection = false
+
+macro delete_selection
+	macro_run normalize_selection
+	zero as 0
+
+	if start_row is end_row
+		string the_line = lines at start_row
+		string before = s_substring(the_line, zero, start_col)
+		int line_len = len(the_line)
+		string after = s_substring(the_line, end_col, line_len)
+		stringList join_parts = [before, after]
+		string new_line = s_join(join_parts)
+		lines at start_row = new_line
+	else
+		string first_line = lines at start_row
+		string first_before = s_substring(first_line, zero, start_col)
+		string last_line = lines at end_row
+		int last_len = len(last_line)
+		string last_after = s_substring(last_line, end_col, last_len)
+		stringList join_parts = [first_before, last_after]
+		string merged_line = s_join(join_parts)
+		lines at start_row = merged_line
+
+		int remove_row = end_row
+		for if remove_row > start_row
+			lines remove at remove_row
+			remove_row = remove_row - 1
+
+	cursor_row = start_row
+	cursor_col = start_col
+	dirty = true
+	has_selection = false
+
+# Caller must declare `string selection_text = ""` before calling this.
+macro copy_selection_text
+	macro_run normalize_selection
+	zero as 0
+
+	if start_row is end_row
+		string the_line = lines at start_row
+		selection_text = s_substring(the_line, start_col, end_col)
+	else
+		string first_line = lines at start_row
+		int first_len = len(first_line)
+		string first_part = s_substring(first_line, start_col, first_len)
+		stringList collected = empty
+		collected at end = first_part
+
+		int mid_row = start_row + 1
+		for if mid_row < end_row
+			string mid_line = lines at mid_row
+			collected at end = mid_line
+			mid_row = mid_row + 1
+
+		string last_line = lines at end_row
+		string last_part = s_substring(last_line, zero, end_col)
+		collected at end = last_part
+
+		nls as "\n"
+		selection_text = s_join_with(collected, nls)
+
+macro do_copy
+	if has_selection
+		string selection_text = ""
+		macro_run copy_selection_text
+		bool copied = cp_set(selection_text)
+
+macro do_cut
+	if has_selection
+		string selection_text = ""
+		macro_run copy_selection_text
+		bool copied = cp_set(selection_text)
+		macro_run delete_selection
+
+macro do_paste
+	if has_selection
+		macro_run delete_selection
+
+	string clip_text = cp_get()
+	int clip_len = len(clip_text)
+	if clip_len > 0
+		nls as "\n"
+		stringList clip_lines = s_split(clip_text, nls)
+		int clip_line_count = len(clip_lines)
+		int paste_row = cursor_row
+		string cur_line = lines at paste_row
+		zero as 0
+		string before = s_substring(cur_line, zero, cursor_col)
+		int line_len = len(cur_line)
+		string after = s_substring(cur_line, cursor_col, line_len)
+
+		if clip_line_count is 1
+			string only_clip = clip_lines at zero
+			stringList join_parts = [before, only_clip, after]
+			string new_line = s_join(join_parts)
+			lines at paste_row = new_line
+			int before_len = len(before)
+			int only_len = len(only_clip)
+			cursor_col = before_len + only_len
+		else
+			string first_clip = clip_lines at zero
+			stringList first_parts = [before, first_clip]
+			string first_new_line = s_join(first_parts)
+
+			int last_idx = clip_line_count - 1
+			string last_clip = clip_lines at last_idx
+			stringList last_parts = [last_clip, after]
+			string last_new_line = s_join(last_parts)
+
+			lines at paste_row = first_new_line
+			int next_row = paste_row + 1
+			stringList before_lines = l_string_take(lines, next_row)
+			stringList rest_lines = l_string_drop(lines, next_row)
+
+			stringList middle_block = empty
+			int mid_idx = 1
+			for if mid_idx < last_idx
+				string mid_clip = clip_lines at mid_idx
+				middle_block at end = mid_clip
+				mid_idx = mid_idx + 1
+			middle_block at end = last_new_line
+
+			stringList inserted_block = l_string_concat(before_lines, middle_block)
+			lines = l_string_concat(inserted_block, rest_lines)
+
+			cursor_row = paste_row + last_idx
+			cursor_col = len(last_clip)
+
+		dirty = true

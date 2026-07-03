@@ -1,4 +1,6 @@
 macro input_key
+	if has_selection
+		macro_run delete_selection
 	macro_run split_at_cursor
 	stringList insert_parts = [before, chr, after]
 	string new_line = s_join(insert_parts)

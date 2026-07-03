@@ -9,11 +9,11 @@ fn void editor_render_diff(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
-			let total = state.diff_lines.len();
+			let total = state.diff.diff_lines.len();
 			for i in 0..view_rows {
-				let idx = state.diff_scroll_row as usize + i;
+				let idx = state.diff.diff_scroll_row as usize + i;
 				if idx < total {
-					let raw = &state.diff_lines[idx];
+					let raw = &state.diff.diff_lines[idx];
 					let marker = raw.chars().next().unwrap_or(' ');
 					let mut line: String = if raw.len() > 0 {
 						raw[1..].to_string()
@@ -32,7 +32,7 @@ fn void editor_render_diff(EditorState state)
 				}
 				out.push_str("\r\n");
 			}
-			let status = format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.filename);
+			let status = format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename);
 			out.push_str(&status);
 			out.push_str("\r\n");
 			out.push_str(&state.notice);

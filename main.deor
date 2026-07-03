@@ -1,19 +1,16 @@
 import "imports.deor"
 
-struct EditorState
+struct BufferState
 	string filename
 	stringList lines
 	int cursor_row
 	int cursor_col
 	int scroll_row
-	bool done
 
 	# Tracks whether there is unsaved changes
 	bool dirty
 
-	# Persists until replaced by another notice
-	string notice
-
+struct BrowserState
 	# File browser (F1) state
 	bool browsing
 	entryList browse_entries
@@ -21,10 +18,27 @@ struct EditorState
 	int browse_scroll_row
 	string browse_dir
 
+struct DiffState
 	# Git diff view (ctrl+d) state -- locks editing while true
 	bool diffing
 	stringList diff_lines
 	int diff_scroll_row
+
+struct SelectionState
+	# Shift+arrow selection state
+	bool has_selection
+	int sel_anchor_row
+	int sel_anchor_col
+
+struct EditorState
+	BufferState core
+	BrowserState browser
+	DiffState diff
+	SelectionState selection
+	bool done
+
+	# Persists until replaced by another notice
+	string notice
 
 fn void main()
 
@@ -41,7 +55,10 @@ fn void main()
 	for if true
 		state = editor_scroll(state)
 
-		(lines, browsing, diffing, filename) in state
+		(core, browser, diff) in state
+		(filename, lines) in core
+		(browsing) in browser
+		(diffing) in diff
 		if filename is not current_file
 			current_file = filename
 			ext = f_extension(current_file)
@@ -49,7 +66,8 @@ fn void main()
 
 		highlights as xs_run(highlighter, lines)
 		lines = get_highlighted_lines(lines, highlights)
-		EditorState render_state_with_colors = state with (lines)
+		BufferState core = core with (lines)
+		EditorState render_state_with_colors = state with (core)
 
 		if browsing
 			editor_render_browser(render_state_with_colors)

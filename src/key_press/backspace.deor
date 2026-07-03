@@ -5,7 +5,9 @@ macro look_behind_cursor
 	string before = s_substring(cur_line, start, before_end)
 
 macro key_backspace
-	if cursor_col > 0
+	if has_selection
+		macro_run delete_selection
+	else if cursor_col > 0
 		string cur_line = lines at cursor_row
 		start as 0
 		int line_len = len(cur_line)
