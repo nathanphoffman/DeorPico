@@ -8,6 +8,9 @@ import "src/lib/list.deor" where T = string
 import "src/lib/term.deor"
 import "src/lib/syntax.deor"
 
+import "src/lib/map.deor"
+import "src/lib/git.deor"
+
 # Macros must be loaded first
 import "src/consts.deor"
 import "src/key_press/sub_macros/split_at_cursor.deor"

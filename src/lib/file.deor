@@ -7,6 +7,9 @@ struct FileEntry
 	int depth
 	bool expanded
 
+	# "staged", "edited", or "" (normal) -- set by g_apply_status
+	string git_status
+
 shape entryList = list of FileEntry
 
 fn entryList f_list_dir(string path)
@@ -18,7 +21,7 @@ fn entryList f_list_dir(string path)
 					let file_name = entry.file_name().to_string_lossy().to_string();
 					let full_path = entry.path().to_string_lossy().to_string();
 					let is_dir = entry.path().is_dir();
-					items.push(FileEntry { name: file_name, path: full_path, is_dir, depth: 0, expanded: false });
+					items.push(FileEntry { name: file_name, path: full_path, is_dir, depth: 0, expanded: false, git_status: String::new() });
 				}
 			}
 			items.sort_by(|a, b| {

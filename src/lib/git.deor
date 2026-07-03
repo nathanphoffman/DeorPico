@@ -1,0 +1,48 @@
+import "src/lib/file.deor"
+import "src/lib/map.deor"
+
+fn StringMap g_status(string repo_path)
+	rust
+		{
+			let map = h_make();
+			if let Ok(output) = std::process::Command::new("git")
+				.args(["status", "--porcelain=v1"])
+				.current_dir(&repo_path)
+				.output()
+			{
+				let text = String::from_utf8_lossy(&output.stdout);
+				for line in text.lines() {
+					if line.len() < 4 {
+						continue;
+					}
+					let chars: Vec<char> = line.chars().collect();
+					let index_status = chars[0];
+					let worktree_status = chars[1];
+					let path = line[3..].trim().to_string();
+					let status = if index_status != ' ' && index_status != '?' {
+						"staged"
+					} else if worktree_status != ' ' {
+						"edited"
+					} else {
+						""
+					};
+					if !status.is_empty() {
+						map.0.lock().unwrap().insert(path, status.to_string());
+					}
+				}
+			}
+			map
+		}
+
+fn entryList g_apply_status(entryList entries, StringMap git_map)
+	rust
+		{
+			let mut result: Vec<FileEntry> = Vec::new();
+			for mut entry in entries.into_iter() {
+				let clean = entry.path.strip_prefix("./").unwrap_or(entry.path.as_str()).to_string();
+				let status = git_map.0.lock().unwrap().get(&clean).cloned().unwrap_or_default();
+				entry.git_status = status;
+				result.push(entry);
+			}
+			result
+		}

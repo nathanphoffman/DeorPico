@@ -25,6 +25,11 @@ fn void editor_render_browser(EditorState state)
 					if line.len() > cols {
 						line.truncate(cols);
 					}
+					line = match entry.git_status.as_str() {
+						"staged" => format!("\x1b[32m{}\x1b[39m", line),
+						"edited" => format!("\x1b[33m{}\x1b[39m", line),
+						_ => line,
+					};
 					if idx == state.browse_selected as usize {
 						line = format!("\x1b[7m{}\x1b[0m", line);
 					}

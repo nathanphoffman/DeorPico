@@ -5,10 +5,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Implement syntax highlighting for deor
 - Done: Test syntax highlighting for other languages
 - Done: Make it so that enter and space also expand the file browser
-- Working: wasd work like arrow keys while in browser mode
+- Done: wasd work like arrow keys while in browser mode
 
 ## Next Up
-
+- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
 
 ### Git highlighting
 - Make it so the file explorer shows:
