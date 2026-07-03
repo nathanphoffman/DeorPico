@@ -17,10 +17,17 @@ fn void main()
 	EditorState state = editor_open(filename)
 
 	xt_raw_on()
+	Highlighter highlighter = xs_make(4)
 
 	for if true
 		state = editor_scroll(state)
-		editor_render(state)
+
+		(lines) in state
+		highlights as xs_run(highlighter, lines)
+		lines = get_highlighted_lines(lines, highlights)
+		EditorState render_state_with_colors = state with (lines)
+
+		editor_render(render_state_with_colors)
 		KeyEvent key = xt_read_key()
 		state = editor_handle_key(state, key)
 		(done) in state

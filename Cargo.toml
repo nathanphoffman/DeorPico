@@ -9,3 +9,5 @@ path = "build/main.rs"
 
 [dependencies]
 crossterm = "0.29.0"
+regex = "1.12.4"
+synoptic = "2.2.9"

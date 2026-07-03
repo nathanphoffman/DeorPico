@@ -1,5 +1,7 @@
 
 fn void editor_render(EditorState state)
+
+
 	rust
 		{
 			use std::io::Write;

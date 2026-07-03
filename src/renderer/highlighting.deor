@@ -1,0 +1,11 @@
+
+fn stringList get_highlighted_lines(stringList line_list, Highlighter hlt)
+
+    int total_lines = len(line_list)
+    stringList new_line_list = empty
+    for idx in range(total_lines)
+        string line = line_list at idx
+        string line_with_colors = xs_line(hlt, idx, line)
+        new_line_list at end = line_with_colors
+
+    return new_line_list

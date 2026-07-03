@@ -1,0 +1,95 @@
+raw Highlighter
+
+rust
+	#[derive(Clone)]
+	struct Highlighter(std::sync::Arc<std::sync::Mutex<synoptic::Highlighter>>);
+
+	fn xs_color_code(name: &str) -> &'static str {
+		match name {
+			"keyword" => "\x1b[33m",
+			"string" => "\x1b[32m",
+			"comment" => "\x1b[90m",
+			"number" => "\x1b[36m",
+			"type" => "\x1b[35m",
+			"function" => "\x1b[34m",
+			_ => "",
+		}
+	}
+
+struct BoundedSpec
+	string name
+	string start
+	string stop
+
+fn Highlighter xs_make(int tab_width)
+	rust
+		Highlighter(std::sync::Arc::new(std::sync::Mutex::new(synoptic::Highlighter::new(tab_width as usize))))
+
+fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
+	rust
+		{
+			hlt.0.lock().unwrap().keyword(name.clone(), pattern.as_str());
+			hlt
+		}
+
+fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
+	rust
+		{
+			hlt.0.lock().unwrap().bounded(spec.name.clone(), spec.start.clone(), spec.stop.clone(), escapable);
+			hlt
+		}
+
+fn Highlighter xs_run(Highlighter hlt, stringList lines)
+	rust
+		{
+			hlt.0.lock().unwrap().run(&lines);
+			hlt
+		}
+
+fn Highlighter xs_append(Highlighter hlt, string line)
+	rust
+		{
+			hlt.0.lock().unwrap().append(line.as_str());
+			hlt
+		}
+
+fn Highlighter xs_edit(Highlighter hlt, int row, string line)
+	rust
+		{
+			hlt.0.lock().unwrap().edit(row as usize, line.as_str());
+			hlt
+		}
+
+fn Highlighter xs_insert_line(Highlighter hlt, int row, string line)
+	rust
+		{
+			hlt.0.lock().unwrap().insert_line(row as usize, line.as_str());
+			hlt
+		}
+
+fn Highlighter xs_remove_line(Highlighter hlt, int row)
+	rust
+		{
+			hlt.0.lock().unwrap().remove_line(row as usize);
+			hlt
+		}
+
+fn string xs_line(Highlighter hlt, int row, string line)
+	rust
+		{
+			let toks = hlt.0.lock().unwrap().line(row as usize, line.as_str());
+			let mut out = String::new();
+			for tok in toks {
+				match tok {
+					synoptic::TokOpt::Some(text, kind) => {
+						out.push_str(xs_color_code(kind.as_str()));
+						out.push_str(&text);
+						out.push_str("\x1b[0m");
+					}
+					synoptic::TokOpt::None(text) => {
+						out.push_str(&text);
+					}
+				}
+			}
+			out
+		}
