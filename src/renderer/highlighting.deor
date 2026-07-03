@@ -1,4 +1,19 @@
 
+fn Highlighter initialize_highlighter(string ext)
+    const int TAB_WIDTH = 4
+    const string DEOR = "deor"
+	Highlighter highlighter = xs_make(TAB_WIDTH)
+
+	if ext is DEOR
+		# your own xs_add_keyword/xs_add_bounded calls here
+		kw_name as "keyword"
+		kw_pattern as "\\b(fn|let|return|if|else)\\b"
+		Highlighter highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+	else
+		Highlighter highlighter = xs_from_extension(ext, TAB_WIDTH)
+
+    return highlighter
+
 fn stringList get_highlighted_lines(stringList line_list, Highlighter hlt)
 
     int total_lines = len(line_list)

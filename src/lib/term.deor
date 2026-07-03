@@ -45,6 +45,7 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Up => break KeyEvent { kind: "up".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Down => break KeyEvent { kind: "down".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Tab => break KeyEvent { kind: "tab".to_string(), chr: String::new() },
 					_ => continue,
 				}
 			}

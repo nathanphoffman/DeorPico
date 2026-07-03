@@ -12,12 +12,15 @@ struct EditorState
 	bool dirty
 
 fn void main()
+
 	(first) in args()
 	string filename = first
 	EditorState state = editor_open(filename)
 
 	xt_raw_on()
-	Highlighter highlighter = xs_make(4)
+
+	const string EXT = "deor"
+	Highlighter highlighter = initialize_highlighter(EXT)
 
 	for if true
 		state = editor_scroll(state)

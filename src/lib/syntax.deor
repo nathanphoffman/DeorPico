@@ -25,6 +25,13 @@ fn Highlighter xs_make(int tab_width)
 	rust
 		Highlighter(std::sync::Arc::new(std::sync::Mutex::new(synoptic::Highlighter::new(tab_width as usize))))
 
+fn Highlighter xs_from_extension(string ext, int tab_width)
+	rust
+		{
+			let result = synoptic::from_extension(ext.as_str(), tab_width as usize).unwrap();
+			Highlighter(std::sync::Arc::new(std::sync::Mutex::new(result)))
+		}
+
 fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
 	rust
 		{
