@@ -14,6 +14,7 @@ fn Highlighter initialize_highlighter(string ext)
 
     return highlighter
 
+
 fn stringList get_highlighted_lines(stringList line_list, Highlighter hlt)
 
     int total_lines = len(line_list)

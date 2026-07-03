@@ -1,11 +1,4 @@
 macro key_char
-	string cur_line = lines at cursor_row
-	start as 0
-	string before = s_substring(cur_line, start, cursor_col)
-	int line_len = len(cur_line)
-	string after = s_substring(cur_line, cursor_col, line_len)
-	stringList insert_parts = [before, chr, after]
-	string new_line = s_join(insert_parts)
-	lines at cursor_row = new_line
+	macro_run input_key
 	cursor_col = cursor_col + 1
 	dirty = true

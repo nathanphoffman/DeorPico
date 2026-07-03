@@ -9,6 +9,7 @@ import "src/lib/term.deor"
 import "src/lib/syntax.deor"
 
 # Macros must be loaded first
+import "src/key_press/sub_macros/input_key.deor"
 import "src/key_press/quit.deor"
 import "src/key_press/save.deor"
 import "src/key_press/up.deor"
@@ -18,6 +19,7 @@ import "src/key_press/right.deor"
 import "src/key_press/backspace.deor"
 import "src/key_press/enter.deor"
 import "src/key_press/char.deor"
+import "src/key_press/tab.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor.deor"

@@ -21,6 +21,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run key_enter
 	else if kind is "char"
 		macro_run key_char
+	else if kind is "tab"
+		macro_run key_tab
 
 	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
 	return next_state
