@@ -43,6 +43,7 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Char(c) => break KeyEvent { kind: "char".to_string(), chr: c.to_string() },
 					crossterm::event::KeyCode::Enter => break KeyEvent { kind: "enter".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Backspace => break KeyEvent { kind: "backspace".to_string(), chr: String::new() },
+					crossterm::event::KeyCode::Delete => break KeyEvent { kind: "delete".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Left => break KeyEvent { kind: "left".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Right => break KeyEvent { kind: "right".to_string(), chr: String::new() },
 					crossterm::event::KeyCode::Up => break KeyEvent { kind: "up".to_string(), chr: String::new() },

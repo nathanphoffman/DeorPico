@@ -33,6 +33,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run key_right
 	else if kind is "backspace"
 		macro_run key_backspace
+	else if kind is "delete"
+		macro_run key_delete
 	else if kind is "enter"
 		macro_run key_enter
 	else if kind is "char"
