@@ -6,17 +6,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Test syntax highlighting for other languages
 - Done: Make it so that enter and space also expand the file browser
 - Done: wasd work like arrow keys while in browser mode
-
-- Done:
-### Git highlighting
-- Make it so the file explorer shows:
-    - Normally Standard Just As Today
-    - Green for a file that is staged in git
-    - Yellow for a file that has been edited
-    - Red for a file that has errors (don't worry about detecting errors we will set that up)
-^ I am thinking that we can probably use git commands to determine this with a git rust wrapper?  not sure the best way
-At some point I want to do a diff view, no reason to do that code now, but worthy of thinking about as our git plan
-
+- Done: Added Selections
+- Done: Git Highlighting
+- Done: Organized Structs
+- Done: Added git diff refresh everytime F1 is hit
 
 ## For Nate
 - If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning

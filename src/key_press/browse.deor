@@ -6,11 +6,15 @@ macro toggle_browse
 		if len(browse_entries) is 0
 			cwd as "."
 			browse_dir = cwd
-			entryList raw_entries = f_list_dir(browse_dir)
-			StringMap git_map = g_status(browse_dir)
-			browse_entries = g_apply_status(raw_entries, git_map)
+			browse_entries = f_list_dir(browse_dir)
 			browse_selected = 0
 			browse_scroll_row = 0
+
+		# Re-tag git status every time the browser opens, not just the first time --
+		# depth/expanded/name/path are untouched, only git_status gets refreshed, so
+		# already-expanded subdirectories keep their state while colors stay current.
+		StringMap fresh_git_map = g_status(browse_dir)
+		browse_entries = g_apply_status(browse_entries, fresh_git_map)
 
 macro browse_close
 	browsing = false
