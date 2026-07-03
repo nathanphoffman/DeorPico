@@ -8,7 +8,8 @@ fn EditorState editor_open(string filename)
 	dirty as false
 	scroll_row as 0
 	done as false
-	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
+	notice as ""
+	EditorState state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice)
 	return state
 
 fn EditorState editor_save(EditorState state)
@@ -18,4 +19,9 @@ fn EditorState editor_save(EditorState state)
 	bool did_save = f_write(filename, content)
 	dirty as false
 	new_state as state with (dirty)
+	return new_state
+
+fn EditorState editor_notice(EditorState state, string message)
+	notice as message
+	new_state as state with (notice)
 	return new_state

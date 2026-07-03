@@ -1,6 +1,6 @@
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done) in state
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice) in state
 	(kind, chr) in key
 
 	if kind is "quit"
@@ -24,5 +24,5 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	else if kind is "tab"
 		macro_run key_tab
 
-	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done)
+	EditorState next_state = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, done, notice)
 	return next_state

@@ -1,11 +1,32 @@
+
+
+macro look_behind_cursor
+	int before_end = cursor_col - 1
+	string before = s_substring(cur_line, start, before_end)
+
+
 macro key_backspace
 	if cursor_col > 0
 		string cur_line = lines at cursor_row
 		start as 0
-		int before_end = cursor_col - 1
-		string before = s_substring(cur_line, start, before_end)
 		int line_len = len(cur_line)
+
+		# defines before vars
+		macro_run look_behind_cursor
+
+		# Find out if it is a tab to delete
+		string without_white_space = s_trim(before)
+		bool white_space_before = without_white_space is ""
+		bool cursor_is_on_tab = cursor_col % 4 is 0
+
+		if white_space_before and cursor_is_on_tab
+			notice = "White space detected"
+			cursor_col = cursor_col - 3
+
+		macro_run look_behind_cursor
+
 		string after = s_substring(cur_line, cursor_col, line_len)
+
 		stringList join_parts = [before, after]
 		string new_line = s_join(join_parts)
 		lines at cursor_row = new_line

@@ -3,3 +3,4 @@ macro key_save
 	string content = s_join_with(lines, nls)
 	bool did_save = f_write(filename, content)
 	dirty = false
+	notice = "Saved"

@@ -11,6 +11,9 @@ struct EditorState
 	# Tracks whether there is unsaved changes
 	bool dirty
 
+	# Persists until replaced by another notice
+	string notice
+
 fn void main()
 
 	(first) in args()
