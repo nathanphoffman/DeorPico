@@ -82,3 +82,19 @@ macro browse_enter
 			dirty = false
 			scroll_row = 0
 			notice = "Opened"
+
+# Opens the selected file, or toggles expand/collapse on the selected directory.
+# Must decide which single action to take from one fresh read up front --
+# browse_right/browse_left each re-fetch browse_entries themselves, so calling
+# both back-to-back would let the second one immediately undo the first.
+macro browse_activate
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(is_dir, expanded) in selected
+		if is_dir
+			if expanded
+				macro_run browse_left
+			else
+				macro_run browse_right
+		else
+			macro_run browse_enter
