@@ -5,6 +5,7 @@ macro look_behind_cursor
 	string before = s_substring(cur_line, start, before_end)
 
 macro key_backspace
+	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
 	else if cursor_col > 0

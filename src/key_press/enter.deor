@@ -1,4 +1,5 @@
 macro key_enter
+	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
 	macro_run split_at_cursor

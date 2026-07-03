@@ -16,12 +16,13 @@ macro back_stop
         cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(core, browser, diff, selection, done, notice) in state
-	
+	(core, browser, diff, selection, undo, done, notice) in state
+
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
 	(diffing, diff_lines, diff_scroll_row) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
+	(undo_stack, redo_stack) in undo
 	(kind, chr, shift) in key
 
 	if kind is "browse_toggle"
@@ -79,6 +80,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run do_copy
 		else if kind is "paste"
 			macro_run do_paste
+		else if kind is "undo"
+			macro_run do_undo
+		else if kind is "redo"
+			macro_run do_redo
 		else if kind is "up"
 			if shift
 				macro_run start_or_extend_selection
@@ -124,6 +129,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
-	EditorState next_state = (core, browser, diff, selection, done, notice)
+	UndoState undo = (undo_stack, redo_stack)
+	EditorState next_state = (core, browser, diff, selection, undo, done, notice)
 	return next_state
 

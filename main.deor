@@ -30,11 +30,28 @@ struct SelectionState
 	int sel_anchor_row
 	int sel_anchor_col
 
+struct UndoSnapshot
+	# Deliberately not named `lines`/`cursor_row`/`cursor_col` -- destructuring a
+	# struct always shadows into a new binding, which can't reach back out of a
+	# nested `if` to update the real editor variables. Different names here force
+	# a genuinely new local on extraction, which can then be plainly reassigned.
+	stringList saved_lines
+	int saved_cursor_row
+	int saved_cursor_col
+
+shape undoList = list of UndoSnapshot
+
+struct UndoState
+	# Ctrl+Z / Ctrl+Y history -- one snapshot per edit action
+	undoList undo_stack
+	undoList redo_stack
+
 struct EditorState
 	BufferState core
 	BrowserState browser
 	DiffState diff
 	SelectionState selection
+	UndoState undo
 	bool done
 
 	# Persists until replaced by another notice

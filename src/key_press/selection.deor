@@ -97,12 +97,14 @@ macro do_copy
 
 macro do_cut
 	if has_selection
+		macro_run push_undo_snapshot
 		string selection_text = ""
 		macro_run copy_selection_text
 		bool copied = cp_set(selection_text)
 		macro_run delete_selection
 
 macro do_paste
+	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
 

@@ -90,6 +90,7 @@ macro browse_enter
 			dirty = false
 			scroll_row = 0
 			notice = "Opened"
+			macro_run reset_undo_history
 
 # Opens the selected file, or toggles expand/collapse on the selected directory.
 # Must decide which single action to take from one fresh read up front --

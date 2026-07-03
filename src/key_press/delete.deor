@@ -1,4 +1,5 @@
 macro key_delete
+	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
 	else

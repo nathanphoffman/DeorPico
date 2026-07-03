@@ -20,12 +20,15 @@ fn EditorState editor_open(string filename)
 	has_selection as false
 	sel_anchor_row as 0
 	sel_anchor_col as 0
+	undoList undo_stack = empty
+	undoList redo_stack = empty
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, dirty)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
-	EditorState state = (core, browser, diff, selection, done, notice)
+	UndoState undo = (undo_stack, redo_stack)
+	EditorState state = (core, browser, diff, selection, undo, done, notice)
 	return state
 
 fn EditorState editor_save(EditorState state)
