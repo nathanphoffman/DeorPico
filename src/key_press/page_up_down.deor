@@ -1,0 +1,8 @@
+macro page_up
+    macro_run use_consts
+	cursor_row = cursor_row - PAGE_DOWN_UP_AMOUNT
+
+macro page_down
+    macro_run use_consts
+    cursor_row = cursor_row + PAGE_DOWN_UP_AMOUNT
+
