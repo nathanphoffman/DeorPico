@@ -21,6 +21,11 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
+	# Recently-opened files, most recent first -- Tab switches focus to this column
+	entryList file_history
+	int history_selected
+	bool history_focused
+
 struct DiffState
 	# Git diff view (ctrl+d) state -- locks editing while true
 	bool diffing

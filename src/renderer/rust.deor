@@ -149,7 +149,7 @@ fn void editor_render(EditorState state)
 			);
 
 			// Blue background sets the status/notice rows apart from the buffer above.
-			let status_bg = "\x1b[44m";
+			let status_bg = "\x1b[48;5;240m";
 			let status_reset = "\x1b[0m";
 			let status_line_padded = format!("{:<width$}", status_line, width = max_visible_columns);
 			let notice_padded = format!("{:<width$}", state.notice, width = max_visible_columns);

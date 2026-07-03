@@ -19,7 +19,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, done, notice) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers) in core
-	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
+	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused) in browser
 	(diffing, diff_lines, diff_scroll_row) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -28,7 +28,17 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	if kind is "browse_toggle"
 		macro_run toggle_browse
 	else if browsing
-		if kind is "up"
+		if kind is "tab"
+			macro_run toggle_history_focus
+		else if kind is "up" and history_focused
+			macro_run browse_history_up
+		else if kind is "down" and history_focused
+			macro_run browse_history_down
+		else if kind is "char" and chr is "w" and history_focused
+			macro_run browse_history_up
+		else if kind is "char" and chr is "s" and history_focused
+			macro_run browse_history_down
+		else if kind is "up"
 			macro_run browse_up
 		else if kind is "down"
 			macro_run browse_down
@@ -44,6 +54,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run browse_left
 		else if kind is "char" and chr is "d"
 			macro_run browse_right
+		else if kind is "enter" and history_focused
+			macro_run browse_history_enter
+		else if kind is "char" and chr is " " and history_focused
+			macro_run browse_history_enter
 		else if kind is "enter"
 			macro_run browse_activate
 		else if kind is "char" and chr is " "
@@ -128,7 +142,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run back_stop
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers)
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)

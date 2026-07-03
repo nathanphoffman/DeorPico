@@ -15,6 +15,7 @@ macro toggle_browse
 		# already-expanded subdirectories keep their state while colors stay current.
 		StringMap fresh_git_map = g_status(browse_dir)
 		browse_entries = g_apply_status(browse_entries, fresh_git_map)
+		file_history = g_apply_status(file_history, fresh_git_map)
 
 macro browse_close
 	browsing = false
@@ -74,6 +75,63 @@ macro browse_left
 			FileEntry updated_selected = selected with (expanded)
 			browse_entries at browse_selected = updated_selected
 
+# Adds/moves the just-opened file to the top of the history column so the
+# most-recently-opened file is always first.
+macro track_file_history
+	name as f_basename(filename)
+	string path = filename
+	is_dir as false
+	depth as 0
+	expanded as false
+	git_status as ""
+	FileEntry history_entry = (name, path, is_dir, depth, expanded, git_status)
+	max_history_len as 15
+	file_history = e_history_push(file_history, history_entry, max_history_len)
+	history_selected = 0
+
+macro browse_history_up
+	history_selected = history_selected - 1
+	if history_selected < 0
+		history_selected = 0
+
+macro browse_history_down
+	int last_history_entry = len(file_history) - 1
+	history_selected = history_selected + 1
+	if history_selected > last_history_entry
+		history_selected = last_history_entry
+	if history_selected < 0
+		history_selected = 0
+
+macro toggle_history_focus
+	if history_focused
+		history_focused = false
+	else
+		history_focused = true
+		int last_history_entry = len(file_history) - 1
+		if history_selected > last_history_entry
+			history_selected = last_history_entry
+		if history_selected < 0
+			history_selected = 0
+
+macro browse_history_enter
+	if len(file_history) > 0
+		FileEntry selected = file_history at history_selected
+		(path, is_dir) in selected
+		if not is_dir
+			browsing = false
+			filename = path
+			stringList opened_lines = f_lines(filename)
+			if len(opened_lines) is 0
+				opened_lines at end = ""
+			lines = opened_lines
+			cursor_row = 0
+			cursor_col = 0
+			dirty = false
+			scroll_row = 0
+			notice = "Opened"
+			macro_run reset_undo_history
+			macro_run track_file_history
+
 macro browse_enter
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
@@ -91,6 +149,7 @@ macro browse_enter
 			scroll_row = 0
 			notice = "Opened"
 			macro_run reset_undo_history
+			macro_run track_file_history
 
 # Opens the selected file, or toggles expand/collapse on the selected directory.
 # Must decide which single action to take from one fresh read up front --

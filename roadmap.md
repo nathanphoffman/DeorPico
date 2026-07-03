@@ -10,8 +10,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Git Highlighting
 - Done: Organized Structs
 - Done: Added git diff refresh everytime F1 is hit
+- Done: Allowing undo and redo with ctrl y, ctrl z
+- Done: Footer Coloring
 
-Working On: - Allowing undo and redo with ctrl y, ctrl z
+- Working: File History Selection in File Browser "Most Recently Opened Deal"
 
 ## For Nate
 - If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning
@@ -22,16 +24,14 @@ Working On: - Allowing undo and redo with ctrl y, ctrl z
 
 ## Next Up For AI
 
-- we should allow toggling of line numbers with ctrl + n
-
-- Can we color the bottom status/notification area a background blue color to differentiate it from the top?
+- Big Bug for some reason the cursor fails when I hit certain strings like the color 
 
 - Quick prompts:
 -- ctrl + g should open a goto line # prompt allowing you to enter a line number and it should go there immediately
 -- ctrl + f should allow searching for a word in the current code file
 
-- A file history allowing you to simply tab to, the top of the history shows you what you last opened, the history should also have the same highlighting so the files listed should be say yellow if recently edited -- unstaged commits
 
+### v2:
 - When a directory is selected in the file browser allow colon (:) to be typed then a : to the right of it will appear where a search string can be typed in, as the letters are entered the files in that directory should filter down by name, once the search is at least 5 letters, immediately flatten the directory and all children directories and show any file names that include the search in their names at the top or even files that just include that search string in their contents (below those at the top) next to the files that should include it should be (instances: 5) or something of that sort to let the user know the number of matches in the file.  Files that match by name should be bolded and held at the top of the directory the : was used on.  Once escape is hit the folder structure should return to normal
 
 ### Git diff

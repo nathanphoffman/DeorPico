@@ -9,9 +9,25 @@ fn void editor_render_browser(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
+			// History column takes the right third of the screen (min 20 cols),
+			// separated from the tree by a blank gutter column.
+			let history_width = std::cmp::max(20, cols / 3);
+			let tree_width = cols.saturating_sub(history_width + 1);
+
+			fn colorize(line: &str, git_status: &str) -> String {
+				match git_status {
+					"staged" => format!("\x1b[32m{}\x1b[39m", line),
+					"edited" => format!("\x1b[33m{}\x1b[39m", line),
+					_ => line.to_string(),
+				}
+			}
+
 			let total = state.browser.browse_entries.len();
+			let history_total = state.browser.file_history.len();
 			for i in 0..view_rows {
 				let idx = state.browser.browse_scroll_row as usize + i;
+				let mut tree_visible_len = 0;
+				let mut tree_line = String::new();
 				if idx < total {
 					let entry = &state.browser.browse_entries[idx];
 					let indent = "  ".repeat(entry.depth as usize);
@@ -21,23 +37,39 @@ fn void editor_render_browser(EditorState state)
 						"  "
 					};
 					let suffix = if entry.is_dir { "/" } else { "" };
-					let mut line = format!("{}{}{}{}", indent, marker, entry.name, suffix);
-					if line.len() > cols {
-						line.truncate(cols);
+					let mut plain = format!("{}{}{}{}", indent, marker, entry.name, suffix);
+					if plain.len() > tree_width {
+						plain.truncate(tree_width);
 					}
-					line = match entry.git_status.as_str() {
-						"staged" => format!("\x1b[32m{}\x1b[39m", line),
-						"edited" => format!("\x1b[33m{}\x1b[39m", line),
-						_ => line,
-					};
-					if idx == state.browser.browse_selected as usize {
+					tree_visible_len = plain.len();
+					let mut line = colorize(&plain, &entry.git_status);
+					if idx == state.browser.browse_selected as usize && !state.browser.history_focused {
+						line = format!("\x1b[7m{}\x1b[0m", line);
+					}
+					tree_line = line;
+				}
+				let pad_len = tree_width.saturating_sub(tree_visible_len);
+				out.push_str(&tree_line);
+				out.push_str(&" ".repeat(pad_len + 1));
+
+				if i < history_total {
+					let entry = &state.browser.file_history[i];
+					let mut plain = entry.name.clone();
+					if plain.len() > history_width {
+						plain.truncate(history_width);
+					}
+					let mut line = colorize(&plain, &entry.git_status);
+					if i == state.browser.history_selected as usize && state.browser.history_focused {
 						line = format!("\x1b[7m{}\x1b[0m", line);
 					}
 					out.push_str(&line);
+				} else if i == 0 && history_total == 0 {
+					out.push_str("\x1b[2m(no history yet)\x1b[22m");
 				}
 				out.push_str("\r\n");
 			}
-			let status = format!("-- {} -- Enter open  F1/Esc close", state.browser.browse_dir);
+			let focus_hint = if state.browser.history_focused { "[History]" } else { "[Files]" };
+			let status = format!("-- {} {} -- Tab switch  Enter open  F1/Esc close", state.browser.browse_dir, focus_hint);
 			out.push_str(&status);
 			out.push_str("\r\n");
 			out.push_str(&state.notice);
