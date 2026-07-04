@@ -145,7 +145,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		else if kind is "down_ctrl"
 			macro_run key_down_ctrl
 
-		else if kind is "space_comment"
+		else if kind is "space_comment" and has_selection
 			macro_run key_space_comment_selection
 
 		else if kind is "backspace"

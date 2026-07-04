@@ -131,6 +131,8 @@ macro load_file_into_buffer
 	notice = "Opened"
 	error = false
 	macro_run reset_undo_history
+	if diffing
+		macro_run refresh_diff_for_new_file
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

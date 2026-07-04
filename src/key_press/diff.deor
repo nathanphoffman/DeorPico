@@ -1,3 +1,22 @@
+# Re-diffs whatever file was just loaded into the buffer so git diff mode
+# follows file-browser navigation instead of freezing on the file that was
+# active when diff mode was toggled on.
+macro refresh_diff_for_new_file
+	stringList raw_diff = g_diff(filename)
+	int change_count = g_diff_count(raw_diff)
+	if change_count > 0
+		diff_lines = raw_diff
+		macro_run align_diff_scroll
+		count_str as c_int_to_string(change_count)
+		suffix as " changes"
+		stringList notice_parts = [count_str, suffix]
+		notice = s_join(notice_parts)
+		error = false
+	else
+		diffing = false
+		notice = "Opened (no changes to diff)"
+		error = false
+
 macro toggle_diff
 	if diffing
 		diffing = false
