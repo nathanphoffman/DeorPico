@@ -25,6 +25,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning
 - If holding ctrl + right arrow, +4 shift, same thing with right arrow, same thing with up down
 - Allow selecting a block and tabbing it across the screen
+- Allow selecting a block and auto-commenting and uncommenting it
 
 ## Next Up For AI
 

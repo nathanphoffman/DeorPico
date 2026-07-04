@@ -1,2 +1,6 @@
 macro key_up
 	cursor_row = cursor_row - 1
+
+macro key_up_ctrl
+    macro_run use_consts
+	cursor_row = cursor_row - CTRL_ARROW_Y_AMOUNT
