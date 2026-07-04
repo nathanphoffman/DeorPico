@@ -29,6 +29,17 @@ macro start_or_extend_selection
 macro clear_selection
 	has_selection = false
 
+macro tab_selection
+	macro_run normalize_selection
+
+	if start_row < end_row
+		macro_run push_undo_snapshot
+
+	for row_id in range(start_row, end_row)
+		string line = lines at row_id
+		line = "    " + line
+		lines at row_id = line
+
 macro delete_selection
 	macro_run normalize_selection
 	zero as 0

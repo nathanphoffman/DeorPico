@@ -21,15 +21,19 @@ macro key_backspace
 		bool white_space_before = without_white_space is ""
 		bool cursor_is_on_tab = cursor_col % 4 is 0
 
+		string after = ""
 		if white_space_before and cursor_is_on_tab
+			after = s_substring(cur_line, cursor_col, line_len)
 			notice = "White space detected"
 			error = false
+
 			cursor_col = cursor_col - 3
-
-		macro_run look_behind_cursor
-
-		string after = s_substring(cur_line, cursor_col, line_len)
-
+			int end_with_tab_gone = before_end - 3
+			before = s_substring(cur_line, start, end_with_tab_gone)
+			
+		else
+			after = s_substring(cur_line, cursor_col, line_len)
+		
 		stringList join_parts = [before, after]
 		string new_line = s_join(join_parts)
 		lines at cursor_row = new_line

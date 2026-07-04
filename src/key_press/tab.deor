@@ -1,4 +1,8 @@
 macro key_tab
-	macro_run input_key
-	cursor_col = cursor_col + 4
-	dirty = true
+	if has_selection
+		macro_run tab_selection
+		dirty = true
+	else
+		macro_run input_key
+		cursor_col = cursor_col + 4
+		dirty = true

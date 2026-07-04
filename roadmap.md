@@ -18,12 +18,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: F9/F12 move back and forward files
 - Done ctrl + del change, error change, and navigate prevention
 - Done: Add markdown highlighting for .md files if it is not provided by our highlighting library
+- Done: Control plus arrow speed up
 
 - When git diff mode is applied it seems like it doesn't matter what file is opened the original file keeps showing itself, i think we should allow git diff mode to remain on but it shouldn't lock to the file that was moded it should allow new files to be selected from the file browser and displayed not selected, ignored, and you see the git diff file you were previously looking at.
 
 ## For Nate
-- If holding shift + right arrow go to the end of the line, shift + left arrow, go to the beginning
-- If holding ctrl + right arrow, +4 shift, same thing with right arrow, same thing with up down
 - Allow selecting a block and tabbing it across the screen
 - Allow selecting a block and auto-commenting and uncommenting it
 

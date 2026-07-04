@@ -1,14 +1,14 @@
 import "imports.deor"
 
 struct BufferState
-	string filename
-	stringList lines
-	int cursor_row
-	int cursor_col
-	int scroll_row
-
+    string filename
+    stringList lines
+    int cursor_row
+    int cursor_col
+    int scroll_row
+    
 	# Tracks whether there is unsaved changes
-	bool dirty
+    bool dirty
 
 	# Toggled with ctrl+n
 	bool show_line_numbers
