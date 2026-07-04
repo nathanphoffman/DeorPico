@@ -112,10 +112,7 @@ fn KeyEvent xt_read_key()
 						if ctrl => break KeyEvent 
 							{ kind: "up_ctrl".to_string(), chr: String::new(), shift },
 
-					crossterm::event::KeyCode::Char(' ') =>
-						break KeyEvent { kind: "space_comment".to_string(), chr: String::new(), shift },
-
-					crossterm::event::KeyCode::Char(c) => 
+					crossterm::event::KeyCode::Char(c) =>
 						break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
 					
 					crossterm::event::KeyCode::Enter => 
