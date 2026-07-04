@@ -29,6 +29,60 @@ macro start_or_extend_selection
 macro clear_selection
 	has_selection = false
 
+macro key_space_comment_selection
+	macro_run normalize_selection
+
+	if start_row < end_row
+		macro_run push_undo_snapshot
+
+	for row_id in range(start_row, end_row)
+		string line = lines at row_id
+		
+		string line_trimmed = s_trim(line)
+
+		# no point commenting out empty lines
+		if(line_trimmed is "")
+			continue
+
+		int first_position = 0
+		string first_character = s_char_at(line_trimmed, first_position)
+		bool is_comment = first_character is "#"
+
+		if is_comment
+			notice = "Comment Detected"
+			string comment_delimiter = "#"
+			sections_of_comment as s_split(line, comment_delimiter)
+
+			#int number_of_sections = len(sections_of_comment)
+
+			string new_line_string = ""
+			bool is_first_line_section = true
+
+			for line_section in sections_of_comment
+
+				# It is possible for the first section to be "" 
+				#  since this precedes the first comment # we must skip it
+				if line_section is "" and is_first_line_section
+					continue
+
+				else if is_first_line_section
+					new_line_string = new_line_string + line_section
+				
+				# We add the hash back on if it wasn't the first hash to the left, as it might
+				#  be part of legitimate code
+				else
+					new_line_string = s_join([new_line_string, comment_delimiter, line_section])
+				
+				is_first_line_section = false
+
+			line = new_line_string
+		else
+			line = "#" + line
+		
+		lines at row_id = line
+
+	dirty = true
+
 macro tab_selection
 	macro_run normalize_selection
 

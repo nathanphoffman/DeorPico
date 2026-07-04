@@ -30,7 +30,7 @@ fn void xt_raw_off()
 
 
 fn KeyEvent xt_read_key()
-	const string FOUR_SPACES = "    "
+	const string TAB_SPACES = "    "
 
 	rust
 		loop {
@@ -98,6 +98,8 @@ fn KeyEvent xt_read_key()
 						if ctrl => break KeyEvent 
 							{ kind: "up_ctrl".to_string(), chr: String::new(), shift },
 
+					crossterm::event::KeyCode::Char(' ') =>
+						break KeyEvent { kind: "space_comment".to_string(), chr: String::new(), shift },
 
 					crossterm::event::KeyCode::Char(c) => 
 						break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
@@ -124,7 +126,7 @@ fn KeyEvent xt_read_key()
 						break KeyEvent { kind: "down".to_string(), chr: String::new(), shift },
 					
 					crossterm::event::KeyCode::Tab => 
-						break KeyEvent { kind: "tab".to_string(), chr: FOUR_SPACES.to_string(), shift },
+						break KeyEvent { kind: "tab".to_string(), chr: TAB_SPACES.to_string(), shift },
 					
 					crossterm::event::KeyCode::PageUp => 
 						break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift },

@@ -81,7 +81,9 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run diff_page_up
 		else if kind is "page_down"
 			macro_run diff_page_down
-	else
+
+	# this is the main view
+	else 
 		if kind is "quit"
 			macro_run key_quit
 		else if kind is "diff_toggle"
@@ -142,6 +144,9 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 		else if kind is "down_ctrl"
 			macro_run key_down_ctrl
+
+		else if kind is "space_comment"
+			macro_run key_space_comment_selection
 
 		else if kind is "backspace"
 			macro_run key_backspace

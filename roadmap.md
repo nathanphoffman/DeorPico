@@ -19,11 +19,12 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done ctrl + del change, error change, and navigate prevention
 - Done: Add markdown highlighting for .md files if it is not provided by our highlighting library
 - Done: Control plus arrow speed up
+- Done: Fixed Tabbing Bug
+- Done: Allow selecting a block and tabbing it across the screen
 
 - When git diff mode is applied it seems like it doesn't matter what file is opened the original file keeps showing itself, i think we should allow git diff mode to remain on but it shouldn't lock to the file that was moded it should allow new files to be selected from the file browser and displayed not selected, ignored, and you see the git diff file you were previously looking at.
 
 ## For Nate
-- Allow selecting a block and tabbing it across the screen
 - Allow selecting a block and auto-commenting and uncommenting it
 
 ## Next Up For AI
