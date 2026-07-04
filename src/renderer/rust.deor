@@ -26,7 +26,7 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 				max_visible_columns: usize,
 				highlight_start_col: Option<usize>,
 				highlight_end_col: Option<usize>,
-			) -> String {
+			) -> (String, usize) {
 				let mut rendered = String::new();
 				let mut visible_column_count: usize = 0;
 				let mut chars = line.chars().peekable();
@@ -65,7 +65,7 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 				if highlight_open {
 					rendered.push_str("\x1b[27m");
 				}
-				rendered
+				(rendered, visible_column_count)
 			}
 
 			// The active selection is anchored wherever shift+arrow started and
@@ -136,8 +136,29 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 					let line = &state.core.lines[buffer_row_index];
 					let (highlight_start_col, highlight_end_col) =
 						selection_columns_for_row(&selection, buffer_row_index as i64);
-					let rendered_line = render_line(line, text_visible_columns, highlight_start_col, highlight_end_col);
-					screen.push_str(&rendered_line);
+					let (rendered_line, rendered_visible_cols) =
+						render_line(line, text_visible_columns, highlight_start_col, highlight_end_col);
+
+					// Alt+letter quick-search tints the whole row a match falls on,
+					// rather than highlighting individual matched columns -- padded
+					// out to the full text width so the tint isn't cut short by
+					// lines shorter than the terminal.
+					let row_has_search_match = state.search.search_active
+						&& state.search.search_matches.iter().any(|m| m.row == buffer_row_index as i64);
+					if row_has_search_match {
+						// Syntax highlighting embeds a full "\x1b[0m" reset after every
+						// colored token, which would otherwise cancel our background
+						// partway through the line -- re-assert it after each one so
+						// the tint survives every syntax-colored segment.
+						let patched_line = rendered_line.replace("\x1b[0m", "\x1b[0m\x1b[48;5;236m");
+						let fill = " ".repeat(text_visible_columns.saturating_sub(rendered_visible_cols));
+						screen.push_str("\x1b[48;5;236m");
+						screen.push_str(&patched_line);
+						screen.push_str(&fill);
+						screen.push_str("\x1b[0m");
+					} else {
+						screen.push_str(&rendered_line);
+					}
 				}
 				screen.push_str("\r\n");
 			}

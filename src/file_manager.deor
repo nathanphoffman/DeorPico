@@ -27,13 +27,26 @@ fn EditorState editor_open(string filename)
 	sel_anchor_col as 0
 	undoList undo_stack = empty
 	undoList redo_stack = empty
+	search_buffer as ""
+	search_active as false
+	matchList search_matches = empty
+	search_match_index as 0
+	filter_active as false
+	filter_query as ""
+	filter_dir as ""
+	filterMatchList filter_matches = empty
+	filter_selected as 0
+	filter_scroll_row as 0
+	filter_truncated_count as 0
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, dirty, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
-	EditorState state = (core, browser, diff, selection, undo, done, notice, error)
+	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
+	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
+	EditorState state = (core, browser, diff, selection, undo, search, filter, done, notice, error)
 	return state
 
 fn EditorState editor_save(EditorState state)

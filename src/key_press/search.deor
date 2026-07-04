@@ -1,0 +1,69 @@
+# Alt+<letter> "quick search" -- each letter typed while alt is held extends
+# the search term and re-highlights every matching row. The highlight
+# persists after alt is released (only Esc clears it, see search_clear);
+# releasing alt only clears search_buffer (see events.deor) so the next
+# alt+letter starts a brand new term instead of extending the old one.
+macro alt_search_char
+	macro_run clear_selection
+	stringList extended_search_parts = [search_buffer, chr]
+	search_buffer = s_join(extended_search_parts)
+	search_matches = x_find_matches(lines, search_buffer)
+	search_active = true
+	search_match_index = 0 - 1
+	match_count as len(search_matches)
+	count_str as c_int_to_string(match_count)
+	prefix as "Search: "
+	mid as " ("
+	suffix as " matches)"
+	stringList notice_parts = [prefix, search_buffer, mid, count_str, suffix]
+	notice = s_join(notice_parts)
+	error = false
+
+# Esc -- unhighlights the search and drops its state entirely.
+macro search_clear
+	search_active = false
+	search_buffer = ""
+	matchList search_matches = empty
+	search_match_index = 0 - 1
+	notice = ""
+	error = false
+
+# Moves the cursor to a search match. The first jump after a search term
+# changes (search_match_index is -1) lands on the nearest match at/after the
+# cursor; every jump after that just steps forward/backward through the
+# match list, wrapping at the ends. Caller sets `forward` before calling.
+macro search_jump
+	int total_matches = len(search_matches)
+	if total_matches > 0
+		if search_match_index < 0
+			int found_index = 0
+			int scan_index = 0
+			for candidate in search_matches
+				(row, col) in candidate
+				bool at_or_after = row > cursor_row or (row is cursor_row and col >= cursor_col)
+				if at_or_after
+					found_index = scan_index
+					break
+				scan_index = scan_index + 1
+			search_match_index = found_index
+		else if forward
+			search_match_index = search_match_index + 1
+			if search_match_index >= total_matches
+				search_match_index = 0
+		else
+			search_match_index = search_match_index - 1
+			if search_match_index < 0
+				search_match_index = total_matches - 1
+
+		SearchMatch target = search_matches at search_match_index
+		(row, col) in target
+		cursor_row = row
+		cursor_col = col
+
+macro search_next
+	forward as true
+	macro_run search_jump
+
+macro search_prev
+	forward as false
+	macro_run search_jump

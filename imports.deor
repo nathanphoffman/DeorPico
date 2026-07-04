@@ -12,6 +12,8 @@ import "src/lib/syntax.deor"
 import "src/lib/map.deor"
 import "src/lib/git.deor"
 import "src/lib/clip.deor"
+import "src/lib/search.deor"
+import "src/lib/dirsearch.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"
@@ -32,7 +34,9 @@ import "src/key_press/char.deor"
 import "src/key_press/tab.deor"
 import "src/key_press/page_up_down.deor"
 import "src/key_press/browse.deor"
+import "src/key_press/browse_filter.deor"
 import "src/key_press/diff.deor"
+import "src/key_press/search.deor"
 import "src/key_press/line_numbers.deor"
 
 # File open logic needed first, then renderer

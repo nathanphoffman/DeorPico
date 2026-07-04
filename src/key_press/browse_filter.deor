@@ -1,0 +1,108 @@
+# ':' on a selected directory -- starts a name/content filter scoped to that
+# directory (see events.deor). No-op if the selected entry is a file.
+macro start_browse_filter
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir) in selected
+		if is_dir
+			filter_active = true
+			filter_dir = path
+			filter_query = ""
+			filterMatchList filter_matches = empty
+			filter_selected = 0
+			filter_scroll_row = 0
+			filter_truncated_count = 0
+			notice = "Filter: "
+			error = false
+
+# Esc -- drops the filter and returns to the normal directory tree, which
+# was never touched while filtering (see rust_browser.deor).
+macro close_browse_filter
+	filter_active = false
+	filter_query = ""
+	filterMatchList filter_matches = empty
+	filter_selected = 0
+	filter_scroll_row = 0
+	filter_truncated_count = 0
+	notice = ""
+	error = false
+
+# Under 5 characters: a plain name filter over the selected directory's
+# direct children. At 5+: flattens the whole subtree and adds a content
+# search, capped per-directory for performance (see lib/dirsearch.deor).
+macro recompute_browse_filter
+	int query_len = len(filter_query)
+	filter_selected = 0
+	filter_scroll_row = 0
+	if query_len is 0
+		filterMatchList filter_matches = empty
+		filter_truncated_count = 0
+	else if query_len < 3
+		filter_matches = x_filter_shallow(filter_dir, filter_query)
+		filter_truncated_count = 0
+	else
+		per_dir_cap as 50
+		FilterOutcome outcome = x_filter_tree(filter_dir, filter_query, per_dir_cap)
+		(matches, truncated_count) in outcome
+		filter_matches = matches
+		filter_truncated_count = truncated_count
+
+	match_count as len(filter_matches)
+	count_str as c_int_to_string(match_count)
+	notice_prefix as "Filter: "
+	mid as " ("
+	suffix as " results)"
+	stringList notice_parts = [notice_prefix, filter_query, mid, count_str, suffix]
+	if filter_truncated_count > 0
+		truncated_str as c_int_to_string(filter_truncated_count)
+		truncated_prefix as ", "
+		truncated_suffix as " folder(s) over 50 files truncated"
+		notice_parts at end = truncated_prefix
+		notice_parts at end = truncated_str
+		notice_parts at end = truncated_suffix
+	notice = s_join(notice_parts)
+	error = false
+
+macro browse_filter_char
+	stringList extended_filter_parts = [filter_query, chr]
+	filter_query = s_join(extended_filter_parts)
+	macro_run recompute_browse_filter
+
+macro browse_filter_backspace
+	int query_len = len(filter_query)
+	if query_len > 0
+		zero as 0
+		int new_len = query_len - 1
+		filter_query = s_substring(filter_query, zero, new_len)
+		macro_run recompute_browse_filter
+
+macro browse_filter_up
+	filter_selected = filter_selected - 1
+	if filter_selected < 0
+		filter_selected = 0
+	if filter_selected < filter_scroll_row
+		filter_scroll_row = filter_selected
+
+macro browse_filter_down
+	int last_entry = len(filter_matches) - 1
+	filter_selected = filter_selected + 1
+	if filter_selected > last_entry
+		filter_selected = last_entry
+
+	TermSize size = xt_size()
+	(rows) in size
+	int view_rows = rows - 2
+	if view_rows < 1
+		view_rows = 1
+	if filter_selected >= filter_scroll_row + view_rows
+		filter_scroll_row = filter_selected - view_rows + 1
+
+macro browse_filter_enter
+	if len(filter_matches) > 0
+		FilterMatch selected_match = filter_matches at filter_selected
+		(full_path) in selected_match
+		path as full_path
+		macro_run close_browse_filter
+		browsing = false
+		macro_run load_file_into_buffer
+		macro_run track_file_history

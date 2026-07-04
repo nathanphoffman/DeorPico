@@ -16,19 +16,40 @@ macro back_stop
         cursor_col = current_line_length
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(core, browser, diff, selection, undo, done, notice, error) in state
+	(core, browser, diff, selection, undo, search, filter, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused) in browser
 	(diffing, diff_lines, diff_scroll_row) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
+	(search_buffer, search_active, search_matches, search_match_index) in search
+	(filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
 	(kind, chr, shift) in key
+
+	# A key that isn't a continuation of an alt+letter chord ends whatever
+	# chord was in progress -- the next alt+letter starts counting from
+	# scratch instead of picking up the old one.
+	if kind is not "alt_char"
+		search_buffer = ""
 
 	if kind is "browse_toggle"
 		macro_run toggle_browse
 	else if browsing
-		if kind is "tab"
+		if filter_active
+			if kind is "escape"
+				macro_run close_browse_filter
+			else if kind is "enter"
+				macro_run browse_filter_enter
+			else if kind is "up"
+				macro_run browse_filter_up
+			else if kind is "down"
+				macro_run browse_filter_down
+			else if kind is "backspace"
+				macro_run browse_filter_backspace
+			else if kind is "char"
+				macro_run browse_filter_char
+		else if kind is "tab"
 			macro_run toggle_history_focus
 		else if kind is "up" and history_focused
 			macro_run browse_history_up
@@ -46,6 +67,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run browse_left
 		else if kind is "right"
 			macro_run browse_right
+		else if kind is "char" and chr is ":"
+			macro_run start_browse_filter
 		else if kind is "char" and chr is "w"
 			macro_run browse_up
 		else if kind is "char" and chr is "s"
@@ -88,6 +111,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run key_quit
 		else if kind is "diff_toggle"
 			macro_run toggle_diff
+		else if kind is "alt_char"
+			macro_run alt_search_char
+		else if kind is "escape" and search_active
+			macro_run search_clear
 		else if kind is "history_back"
 			macro_run history_back
 		else if kind is "history_forward"
@@ -156,6 +183,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run key_enter
 		else if kind is "char"
 			macro_run key_char
+		else if kind is "tab" and search_active
+			macro_run search_next
+		else if kind is "shift_tab" and search_active
+			macro_run search_prev
 		else if kind is "tab"
 			macro_run key_tab
 		else if kind is "page_up"
@@ -170,6 +201,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
-	EditorState next_state = (core, browser, diff, selection, undo, done, notice, error)
+	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
+	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
+	EditorState next_state = (core, browser, diff, selection, undo, search, filter, done, notice, error)
 	return next_state
 

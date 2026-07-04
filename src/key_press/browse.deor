@@ -1,6 +1,7 @@
 macro toggle_browse
 	if browsing
 		browsing = false
+		macro_run close_browse_filter
 	else if dirty
 		macro_run notify_unsaved_changes
 	else
@@ -21,6 +22,7 @@ macro toggle_browse
 
 macro browse_close
 	browsing = false
+	macro_run close_browse_filter
 
 macro browse_up
 	browse_selected = browse_selected - 1

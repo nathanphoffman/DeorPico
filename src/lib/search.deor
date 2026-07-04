@@ -1,0 +1,30 @@
+struct SearchMatch
+	int row
+	int col
+
+shape matchList = list of SearchMatch
+
+# Finds every case-insensitive occurrence of `needle` in `lines`, in document
+# order (top-to-bottom, left-to-right) -- backs the alt+letter quick-search.
+fn matchList x_find_matches(stringList lines, string needle)
+	rust
+		{
+			let needle_lower = needle.to_lowercase();
+			let needle_chars: Vec<char> = needle_lower.chars().collect();
+			let mut matches: Vec<SearchMatch> = Vec::new();
+			if needle_chars.is_empty() {
+				return matches;
+			}
+			for (row, line) in lines.iter().enumerate() {
+				let chars: Vec<char> = line.to_lowercase().chars().collect();
+				if chars.len() < needle_chars.len() {
+					continue;
+				}
+				for col in 0..=(chars.len() - needle_chars.len()) {
+					if chars[col..col + needle_chars.len()] == needle_chars[..] {
+						matches.push(SearchMatch { row: row as i64, col: col as i64 });
+					}
+				}
+			}
+			matches
+		}

@@ -40,10 +40,24 @@ fn KeyEvent xt_read_key()
 				}
 				let ctrl = evt.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
 				let shift = evt.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
+				let alt = evt.modifiers.contains(crossterm::event::KeyModifiers::ALT);
 
 				match evt.code {
 
-					crossterm::event::KeyCode::Char('q') 
+					// Swallowed rather than falling through to the plain "char" case
+					// below -- without this, holding alt while pressing a digit would
+					// silently type the digit into the buffer.
+					crossterm::event::KeyCode::Char(c)
+						if alt && c.is_ascii_digit() => continue,
+
+					crossterm::event::KeyCode::Char(c)
+						if alt && c.is_ascii_alphabetic() => break KeyEvent
+							{ kind: "alt_char".to_string(), chr: c.to_string(), shift },
+
+					crossterm::event::KeyCode::BackTab =>
+						break KeyEvent { kind: "shift_tab".to_string(), chr: String::new(), shift },
+
+					crossterm::event::KeyCode::Char('q')
 						if ctrl => break KeyEvent 
 							{ kind: "quit".to_string(), chr: String::new(), shift },
 

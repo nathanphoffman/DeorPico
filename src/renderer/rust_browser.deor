@@ -9,6 +9,45 @@ fn void editor_render_browser(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
+			if state.filter.filter_active {
+				let total = state.filter.filter_matches.len();
+				for i in 0..view_rows {
+					let idx = state.filter.filter_scroll_row as usize + i;
+					if idx < total {
+						let entry = &state.filter.filter_matches[idx];
+						let mut plain = if entry.is_name_match {
+							entry.display_path.clone()
+						} else {
+							format!("{} (instances: {})", entry.display_path, entry.instance_count)
+						};
+						if plain.len() > cols {
+							plain.truncate(cols);
+						}
+						let mut line = if entry.is_name_match {
+							format!("\x1b[1m{}\x1b[22m", plain)
+						} else {
+							plain
+						};
+						if idx == state.filter.filter_selected as usize {
+							line = format!("\x1b[7m{}\x1b[0m", line);
+						}
+						out.push_str(&line);
+					}
+					out.push_str("\r\n");
+				}
+				let status = format!(
+					"-- Filter: {} -- Esc cancel  Enter open  Backspace edit",
+					state.filter.filter_dir
+				);
+				out.push_str(&status);
+				out.push_str("\r\n");
+				out.push_str(&state.notice);
+
+				print!("{}", out);
+				std::io::stdout().flush().unwrap();
+				return;
+			}
+
 			// History column takes the right third of the screen (min 20 cols),
 			// separated from the tree by a blank gutter column.
 			let history_width = std::cmp::max(20, cols / 3);

@@ -1,0 +1,140 @@
+struct FilterMatch
+	string full_path
+	string display_path
+	bool is_name_match
+	int instance_count
+
+shape filterMatchList = list of FilterMatch
+
+struct FilterOutcome
+	filterMatchList matches
+	int truncated_count
+
+# Non-recursive: direct children of `dir` only, matched by case-insensitive
+# substring in the file name -- used while the filter query is under 5
+# characters (see key_press/browse_filter.deor).
+fn filterMatchList x_filter_shallow(string dir, string query)
+	rust
+		{
+			let needle = query.to_lowercase();
+			let mut matches: Vec<FilterMatch> = Vec::new();
+			if needle.is_empty() {
+				return matches;
+			}
+			if let Ok(read_dir) = std::fs::read_dir(&dir) {
+				let mut entries: Vec<std::fs::DirEntry> = read_dir.flatten().collect();
+				entries.sort_by_key(|e| e.file_name());
+				for entry in entries {
+					let path = entry.path();
+					if path.is_dir() {
+						continue;
+					}
+					let name = entry.file_name().to_string_lossy().to_string();
+					if name.to_lowercase().contains(&needle) {
+						let full_path = path.to_string_lossy().to_string();
+						matches.push(FilterMatch {
+							full_path,
+							display_path: name,
+							is_name_match: true,
+							instance_count: 0,
+						});
+					}
+				}
+			}
+			matches
+		}
+
+# Recursive: walks every file under `dir` (skipping any file whose content
+# isn't valid UTF-8), matching by name first -- bolded by the caller, no
+# content read needed -- and otherwise by case-insensitive substring count
+# in content. A file that matches by name is never also counted as a content
+# match. Any single directory with more than `per_dir_cap` files only
+# considers the first `per_dir_cap` (alphabetically) for performance; each
+# time that happens increments the returned truncated_count so the caller
+# can let the user know some files were skipped. Results come back name
+# matches first, then content matches ordered by instance count descending.
+fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
+	rust
+		{
+			fn walk(
+				dir: &std::path::Path,
+				root: &std::path::Path,
+				needle: &str,
+				per_dir_cap: usize,
+				truncated_count: &mut i64,
+				name_matches: &mut Vec<FilterMatch>,
+				content_matches: &mut Vec<FilterMatch>,
+			) {
+				let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(dir) {
+					Ok(read_dir) => read_dir.flatten().collect(),
+					Err(_) => return,
+				};
+
+				let mut files: Vec<std::fs::DirEntry> = Vec::new();
+				let mut subdirs: Vec<std::fs::DirEntry> = Vec::new();
+				for entry in entries {
+					if entry.path().is_dir() {
+						subdirs.push(entry);
+					} else {
+						files.push(entry);
+					}
+				}
+				files.sort_by_key(|e| e.file_name());
+				subdirs.sort_by_key(|e| e.file_name());
+
+				if files.len() > per_dir_cap {
+					*truncated_count += 1;
+				}
+
+				for entry in files.into_iter().take(per_dir_cap) {
+					let path = entry.path();
+					let name = entry.file_name().to_string_lossy().to_string();
+					let full_path = path.to_string_lossy().to_string();
+					let display_path = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string();
+
+					if name.to_lowercase().contains(needle) {
+						name_matches.push(FilterMatch {
+							full_path,
+							display_path,
+							is_name_match: true,
+							instance_count: 0,
+						});
+						continue;
+					}
+
+					if let Ok(content) = std::fs::read_to_string(&path) {
+						let count = content.to_lowercase().matches(needle).count() as i64;
+						if count > 0 {
+							content_matches.push(FilterMatch {
+								full_path,
+								display_path,
+								is_name_match: false,
+								instance_count: count,
+							});
+						}
+					}
+				}
+
+				for entry in subdirs {
+					walk(&entry.path(), root, needle, per_dir_cap, truncated_count, name_matches, content_matches);
+				}
+			}
+
+			let needle = query.to_lowercase();
+			let mut name_matches: Vec<FilterMatch> = Vec::new();
+			let mut content_matches: Vec<FilterMatch> = Vec::new();
+			let mut truncated_count: i64 = 0;
+
+			if !needle.is_empty() {
+				let root_path = std::path::Path::new(&dir).to_path_buf();
+				let cap = if per_dir_cap > 0 { per_dir_cap as usize } else { 0 };
+				walk(&root_path, &root_path, &needle, cap, &mut truncated_count, &mut name_matches, &mut content_matches);
+			}
+
+			content_matches.sort_by(|a, b| b.instance_count.cmp(&a.instance_count));
+
+			let mut matches = name_matches;
+			matches.extend(content_matches);
+
+			FilterOutcome { matches, truncated_count }
+		}
