@@ -3,6 +3,11 @@ struct KeyEvent
 	string chr
 	bool shift
 
+	# Only meaningful when kind is one of the "mouse_*" kinds below --
+	# 0-indexed terminal column/row the mouse event happened at.
+	int col
+	int row
+
 struct TermSize
 	int cols
 	int rows
@@ -18,13 +23,21 @@ fn void xt_raw_on()
 	rust
 		{
 			crossterm::terminal::enable_raw_mode().unwrap();
-			crossterm::execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen).unwrap();
+			crossterm::execute!(
+				std::io::stdout(),
+				crossterm::terminal::EnterAlternateScreen,
+				crossterm::event::EnableMouseCapture
+			).unwrap();
 		}
 
 fn void xt_raw_off()
 	rust
 		{
-			crossterm::execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen).unwrap();
+			crossterm::execute!(
+				std::io::stdout(),
+				crossterm::event::DisableMouseCapture,
+				crossterm::terminal::LeaveAlternateScreen
+			).unwrap();
 			crossterm::terminal::disable_raw_mode().unwrap();
 		}
 
@@ -34,7 +47,8 @@ fn KeyEvent xt_read_key()
 
 	rust
 		loop {
-			if let crossterm::event::Event::Key(evt) = crossterm::event::read().unwrap() {
+			match crossterm::event::read().unwrap() {
+				crossterm::event::Event::Key(evt) => {
 				if evt.kind != crossterm::event::KeyEventKind::Press {
 					continue;
 				}
@@ -52,112 +66,127 @@ fn KeyEvent xt_read_key()
 
 					crossterm::event::KeyCode::Char(c)
 						if alt && c.is_ascii_alphabetic() => break KeyEvent
-							{ kind: "alt_char".to_string(), chr: c.to_string(), shift },
+							{ kind: "alt_char".to_string(), chr: c.to_string(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::BackTab =>
-						break KeyEvent { kind: "shift_tab".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "shift_tab".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char('q')
 						if ctrl => break KeyEvent 
-							{ kind: "quit".to_string(), chr: String::new(), shift },
+							{ kind: "quit".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char('s') 
 						if ctrl => break KeyEvent 
-							{ kind: "save".to_string(), chr: String::new(), shift },
+							{ kind: "save".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char('d') 
 						if ctrl => break KeyEvent 
-							{ kind: "diff_toggle".to_string(), chr: String::new(), shift },
+							{ kind: "diff_toggle".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char('x') 
-						if ctrl => break KeyEvent { kind: "cut".to_string(), chr: String::new(), shift },
+						if ctrl => break KeyEvent { kind: "cut".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Char('c') 
 						if ctrl => break KeyEvent 
-						{ kind: "copy".to_string(), chr: String::new(), shift },
+						{ kind: "copy".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Char('v') 
 						if ctrl => break KeyEvent 
-							{ kind: "paste".to_string(), chr: String::new(), shift },
+							{ kind: "paste".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Char('z') 
 						if ctrl => break KeyEvent 
-							{ kind: "undo".to_string(), chr: String::new(), shift },
+							{ kind: "undo".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Char('y') 
 						if ctrl => break KeyEvent 
-							{ kind: "redo".to_string(), chr: String::new(), shift },
+							{ kind: "redo".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Char('n') 
 						if ctrl => break KeyEvent 
-							{ kind: "toggle_line_numbers".to_string(), chr: String::new(), shift },
+							{ kind: "toggle_line_numbers".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Delete 
 						if ctrl => break KeyEvent 
-							{ kind: "discard_changes".to_string(), chr: String::new(), shift },
+							{ kind: "discard_changes".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Right
 						if ctrl => break KeyEvent 
-							{ kind: "right_ctrl".to_string(), chr: String::new(), shift },
+							{ kind: "right_ctrl".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Left
 						if ctrl => break KeyEvent 
-							{ kind: "left_ctrl".to_string(), chr: String::new(), shift },
+							{ kind: "left_ctrl".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Down
 						if ctrl => break KeyEvent 
-							{ kind: "down_ctrl".to_string(), chr: String::new(), shift },
+							{ kind: "down_ctrl".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Up
 						if ctrl => break KeyEvent 
-							{ kind: "up_ctrl".to_string(), chr: String::new(), shift },
+							{ kind: "up_ctrl".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char(c) =>
-						break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift },
+						break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Enter => 
-						break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Backspace => 
-						break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Delete => 
-						break KeyEvent { kind: "delete".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "delete".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Left => 
-						break KeyEvent { kind: "left".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "left".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Right => 
-						break KeyEvent { kind: "right".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "right".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Up => 
-						break KeyEvent { kind: "up".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "up".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Down => 
-						break KeyEvent { kind: "down".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "down".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Tab => 
-						break KeyEvent { kind: "tab".to_string(), chr: TAB_SPACES.to_string(), shift },
+						break KeyEvent { kind: "tab".to_string(), chr: TAB_SPACES.to_string(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::PageUp => 
-						break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::PageDown => 
-						break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::F(1) => 
-						break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "browse_toggle".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::F(9) => 
-						break KeyEvent { kind: "history_back".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "history_back".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::F(12) => 
-						break KeyEvent { kind: "history_forward".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "history_forward".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
 					crossterm::event::KeyCode::Esc => 
-						break KeyEvent { kind: "escape".to_string(), chr: String::new(), shift },
+						break KeyEvent { kind: "escape".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
 					_ => continue,
 				}
 			}
+			crossterm::event::Event::Mouse(m) => {
+				let col = m.column as i64;
+				let row = m.row as i64;
+				match m.kind {
+					crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) =>
+						break KeyEvent { kind: "mouse_down".to_string(), chr: String::new(), shift: false, col, row },
+					crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) =>
+						break KeyEvent { kind: "mouse_drag".to_string(), chr: String::new(), shift: false, col, row },
+					crossterm::event::MouseEventKind::Up(crossterm::event::MouseButton::Left) =>
+						break KeyEvent { kind: "mouse_up".to_string(), chr: String::new(), shift: false, col, row },
+					_ => continue,
+				}
+			}
+			_ => continue,
+		}
 		}

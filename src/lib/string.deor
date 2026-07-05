@@ -84,3 +84,25 @@ fn int s_visual_col(string str, int char_index, int tab_width)
 			}
 			visual_col
 		}
+
+# Inverse of s_visual_col -- given an on-screen column (post tab-expansion),
+# finds the raw character index that lands on or after it. Used to turn a
+# mouse click's screen column back into a cursor_col.
+fn int s_char_index_from_visual_col(string str, int target_visual_col, int tab_width)
+	rust
+		{
+			let mut visual_col: i64 = 0;
+			let mut char_index: i64 = 0;
+			for ch in str.chars() {
+				if visual_col >= target_visual_col {
+					break;
+				}
+				if ch == '\t' {
+					visual_col = (visual_col / tab_width + 1) * tab_width;
+				} else {
+					visual_col += 1;
+				}
+				char_index += 1;
+			}
+			char_index
+		}

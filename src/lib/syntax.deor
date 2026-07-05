@@ -4,26 +4,28 @@ rust
 	#[derive(Clone)]
 	struct Highlighter(std::sync::Arc<std::sync::Mutex<synoptic::Highlighter>>);
 
+	// Matches VS Code's default "Dark+" theme token colors (truecolor, not the
+	// 16-color ANSI palette) so highlighting looks the same as the VS Code editor.
 	fn xs_color_code(name: &str) -> &'static str {
 		match name {
-			"keyword" => "\x1b[33m",
-			"string" => "\x1b[32m",
-			"comment" => "\x1b[90m",
-			"number" => "\x1b[36m",
-			"type" => "\x1b[35m",
-			"function" => "\x1b[34m",
-			"invalid" => "\x1b[31m",
-			"heading" => "\x1b[1;36m",
-			"quote" => "\x1b[3;90m",
+			"keyword" => "\x1b[38;2;198;120;221m",        // #C586C0
+			"string" => "\x1b[38;2;206;145;120m",         // #CE9178
+			"comment" => "\x1b[38;2;106;153;85m",         // #6A9955
+			"number" => "\x1b[38;2;181;206;168m",         // #B5CEA8
+			"type" => "\x1b[38;2;78;201;176m",            // #4EC9B0
+			"function" => "\x1b[38;2;220;220;170m",       // #DCDCAA
+			"invalid" => "\x1b[38;2;244;71;71m",          // #F44747
+			"heading" => "\x1b[1;38;2;86;156;214m",       // #569CD6 bold
+			"quote" => "\x1b[3;38;2;106;153;85m",         // comment green, italic
 			"bold" => "\x1b[1m",
 			"italic" => "\x1b[3m",
 			"strikethrough" => "\x1b[9m",
-			"image" => "\x1b[35m",
-			"link" => "\x1b[4;34m",
-			"math" => "\x1b[36m",
-			"block" => "\x1b[32m",
-			"linebreak" => "\x1b[90m",
-			"list" => "\x1b[33m",
+			"image" => "\x1b[38;2;78;201;176m",           // type teal
+			"link" => "\x1b[4;38;2;86;156;214m",          // #569CD6 underlined
+			"math" => "\x1b[38;2;181;206;168m",           // number pale green
+			"block" => "\x1b[38;2;206;145;120m",          // string orange
+			"linebreak" => "\x1b[38;2;106;153;85m",       // comment green
+			"list" => "\x1b[38;2;198;120;221m",           // keyword purple
 			_ => "",
 		}
 	}

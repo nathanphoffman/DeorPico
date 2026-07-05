@@ -24,12 +24,16 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Allow space bar to comment code, it also preserves additional # in the code block
 - Done: Git Diff Mode has been fixed, it now stays in diff mode if other diffs or opened or exits when one non-diff is opened.
 - Done: Alt search filter (goto abandoned due to reserved numbers with alts/ctrls/, etc)
+- Done: Mouse Clicking
+
+Ready for Testing: Syntax Highlighting
+Ready for Testing: Scroll Fix
 
 
-
-## For Nate
-
+Do: leave the search up when going back into F1
+Do: file directory folder path needs updating maybe with an arg?  maybe it assumes the working directory of the file opened?
 Do some cleanup, specifically of sections and the lib and tab/comment code I added
+
 
 ## Next Up For AI
 

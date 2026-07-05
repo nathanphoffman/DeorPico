@@ -1,0 +1,70 @@
+# Shared by mouse_down/mouse_drag in the main text view -- maps a raw
+# terminal (col, row) click into buffer coordinates, matching the layout
+# editor_render uses (line-number gutter, then scroll_row-relative rows).
+macro locate_mouse_in_buffer
+	macro_run use_consts
+	int total_lines = len(lines)
+
+	int gutter_width = 0
+	if show_line_numbers
+		string total_str = c_int_to_string(total_lines)
+		gutter_width = len(total_str) + 1
+
+	int clicked_row = scroll_row + row
+	int last_row = total_lines - 1
+	int zero_bound = 0
+	clicked_row = m_clamp(clicked_row, zero_bound, last_row)
+
+	int visual_col = col - gutter_width
+	if visual_col < 0
+		visual_col = 0
+
+	string clicked_line = lines at clicked_row
+	int clicked_col = s_char_index_from_visual_col(clicked_line, visual_col, TAB_WIDTH)
+
+macro mouse_down_main
+	macro_run locate_mouse_in_buffer
+	cursor_row = clicked_row
+	cursor_col = clicked_col
+	sel_anchor_row = clicked_row
+	sel_anchor_col = clicked_col
+	has_selection = false
+
+macro mouse_drag_main
+	macro_run locate_mouse_in_buffer
+	if not has_selection
+		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
+			has_selection = true
+	cursor_row = clicked_row
+	cursor_col = clicked_col
+
+# Click in the file browser -- tree pane opens files / expands-collapses
+# directories, history pane opens the clicked recent file. Layout matches
+# the column split in renderer/rust_browser.deor.
+macro mouse_down_browser
+	TermSize size = xt_size()
+	(cols) in size
+	int min_history_width = 20
+	int cols_third = cols / 3
+	int history_width = m_max(min_history_width, cols_third)
+	int history_gutter = history_width + 1
+	int tree_width = cols - history_gutter
+
+	if col < tree_width
+		int idx = browse_scroll_row + row
+		if idx < len(browse_entries)
+			browse_selected = idx
+			history_focused = false
+			macro_run browse_activate
+	else
+		int idx = row
+		if idx < len(file_history)
+			history_selected = idx
+			history_focused = true
+			macro_run browse_history_enter
+
+macro mouse_down_browser_filter
+	int idx = filter_scroll_row + row
+	if idx < len(filter_matches)
+		filter_selected = idx
+		macro_run browse_filter_enter

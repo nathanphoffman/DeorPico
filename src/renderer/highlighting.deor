@@ -7,7 +7,7 @@ fn Highlighter initialize_highlighter(string ext)
 	if ext is DEOR
 		# control/storage/other keywords, constants -- lumped into one bucket
 		kw_name as "keyword"
-		kw_pattern as "\\b(fn|if|else|for|return|avow|break|continue|move|const|and|or|not|is|in|as|with|at|end|of|to|import|struct|shape|enum|type|block|rust|remove|where|true|false|valid|empty)\\b"
+		kw_pattern as "\\b(macro_run|macro|fn|if|else|for|return|avow|break|continue|move|const|and|or|not|is|in|as|with|at|end|of|to|import|struct|shape|enum|type|block|rust|remove|where|true|false|valid|empty)\\b"
 		highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
 		# builtin primitive/shape-kind type keywords

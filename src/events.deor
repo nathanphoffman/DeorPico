@@ -25,7 +25,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(undo_stack, redo_stack) in undo
 	(search_buffer, search_active, search_matches, search_match_index) in search
 	(filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
-	(kind, chr, shift) in key
+	(kind, chr, shift, col, row) in key
 
 	# A key that isn't a continuation of an alt+letter chord ends whatever
 	# chord was in progress -- the next alt+letter starts counting from
@@ -49,6 +49,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 				macro_run browse_filter_backspace
 			else if kind is "char"
 				macro_run browse_filter_char
+			else if kind is "mouse_down"
+				macro_run mouse_down_browser_filter
+		else if kind is "mouse_down"
+			macro_run mouse_down_browser
 		else if kind is "tab"
 			macro_run toggle_history_focus
 		else if kind is "up" and history_focused
@@ -192,6 +196,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run page_up
 		else if kind is "page_down"
 			macro_run page_down
+		else if kind is "mouse_down"
+			macro_run mouse_down_main
+		else if kind is "mouse_drag"
+			macro_run mouse_drag_main
 
 		macro_run back_stop
 

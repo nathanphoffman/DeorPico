@@ -38,10 +38,11 @@ import "src/key_press/browse_filter.deor"
 import "src/key_press/diff.deor"
 import "src/key_press/search.deor"
 import "src/key_press/line_numbers.deor"
+import "src/key_press/mouse.deor"
 
 # File open logic needed first, then renderer
-import "src/renderer/deor.deor"
-import "src/renderer/rust.deor"
+import "src/renderer/deor_editor.deor"
+import "src/renderer/rust_editor.deor"
 import "src/renderer/rust_browser.deor"
 import "src/renderer/rust_diff.deor"
 import "src/renderer/highlighting.deor"
