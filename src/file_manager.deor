@@ -1,5 +1,5 @@
 
-fn EditorState editor_open(string filename)
+macro initialize_core
 	stringList lines = f_lines(filename)
 	if len(lines) is 0
 		lines at end = ""
@@ -9,9 +9,9 @@ fn EditorState editor_open(string filename)
 	scroll_row as 0
 	wheel_scrolled as false
 	show_line_numbers as false
-	done as false
-	notice as ""
-	error as false
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers)
+
+macro initialize_browser
 	browsing as false
 	entryList browse_entries = empty
 	browse_selected as 0
@@ -20,18 +20,33 @@ fn EditorState editor_open(string filename)
 	entryList file_history = empty
 	history_selected as 0
 	history_focused as false
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
+
+macro initialize_diff
 	diffing as false
 	stringList diff_lines = empty
 	diff_scroll_row as 0
+	DiffState diff = (diffing, diff_lines, diff_scroll_row)
+
+macro initialize_selection
 	has_selection as false
 	sel_anchor_row as 0
 	sel_anchor_col as 0
+	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
+
+macro initialize_undo
 	undoList undo_stack = empty
 	undoList redo_stack = empty
+	UndoState undo = (undo_stack, redo_stack)
+
+macro initialize_search
 	search_buffer as ""
 	search_active as false
 	matchList search_matches = empty
 	search_match_index as 0
+	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
+
+macro initialize_filter
 	filter_active as false
 	filter_query as ""
 	filter_dir as ""
@@ -39,14 +54,21 @@ fn EditorState editor_open(string filename)
 	filter_selected as 0
 	filter_scroll_row as 0
 	filter_truncated_count as 0
-
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers)
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
-	DiffState diff = (diffing, diff_lines, diff_scroll_row)
-	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
-	UndoState undo = (undo_stack, redo_stack)
-	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
+
+fn EditorState editor_open(string filename)
+	macro_run initialize_core
+	macro_run initialize_browser
+	macro_run initialize_diff
+	macro_run initialize_selection
+	macro_run initialize_undo
+	macro_run initialize_search
+	macro_run initialize_filter
+
+	done as false
+	notice as ""
+	error as false
+
 	EditorState state = (core, browser, diff, selection, undo, search, filter, done, notice, error)
 	return state
 

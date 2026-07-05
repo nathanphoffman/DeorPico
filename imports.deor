@@ -17,6 +17,7 @@ import "src/lib/dirsearch.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"
+import "src/key_press/keymap.deor"
 import "src/key_press/sub_macros/split_at_cursor.deor"
 import "src/key_press/undo.deor"
 import "src/key_press/selection.deor"

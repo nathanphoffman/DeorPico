@@ -1,0 +1,37 @@
+# Translates the raw KeyEvent from lib/term.deor into the action kinds
+# editor_handle_key() dispatches on. This is where DeorPico's actual
+# keybindings live -- add or rebind an action here, not in term.deor.
+fn KeyEvent editor_translate_key(KeyEvent key)
+	(kind, chr, shift, col, row) in key
+
+	if kind is "ctrl_char"
+		if chr is "q"
+			kind = "quit"
+		else if chr is "s"
+			kind = "save"
+		else if chr is "d"
+			kind = "diff_toggle"
+		else if chr is "x"
+			kind = "cut"
+		else if chr is "c"
+			kind = "copy"
+		else if chr is "v"
+			kind = "paste"
+		else if chr is "z"
+			kind = "undo"
+		else if chr is "y"
+			kind = "redo"
+		else if chr is "n"
+			kind = "toggle_line_numbers"
+	else if kind is "ctrl_delete"
+		kind = "discard_changes"
+	else if kind is "function_key"
+		if chr is "1"
+			kind = "browse_toggle"
+		else if chr is "9"
+			kind = "history_back"
+		else if chr is "12"
+			kind = "history_forward"
+
+	translated as key with (kind)
+	return translated
