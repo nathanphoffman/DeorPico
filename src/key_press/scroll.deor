@@ -1,0 +1,31 @@
+# Clamps scroll_row for a plain wheel-driven scroll in the main buffer view --
+# same view_rows convention as editor_scroll (rows - 1), so the wheel never
+# scrolls further than the cursor-follow logic itself would allow.
+macro clamp_scroll
+	if scroll_row < 0
+		scroll_row = 0
+
+	int last_row = len(lines) - 1
+	TermSize size = xt_size()
+	(rows) in size
+	int view_rows = rows - 1
+	if view_rows < 1
+		view_rows = 1
+	int max_scroll = last_row - view_rows + 1
+	if max_scroll < 0
+		max_scroll = 0
+
+	if scroll_row > max_scroll
+		scroll_row = max_scroll
+
+macro scroll_up
+	macro_run use_consts
+	scroll_row = scroll_row - SCROLL_WHEEL_AMOUNT
+	macro_run clamp_scroll
+	wheel_scrolled = true
+
+macro scroll_down
+	macro_run use_consts
+	scroll_row = scroll_row + SCROLL_WHEEL_AMOUNT
+	macro_run clamp_scroll
+	wheel_scrolled = true

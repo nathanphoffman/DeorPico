@@ -9,3 +9,5 @@ macro use_consts
     const int CTRL_ARROW_X_AMOUNT = 15
     const int CTRL_ARROW_Y_AMOUNT = 8
 
+    const int SCROLL_WHEEL_AMOUNT = 3
+

@@ -39,6 +39,7 @@ import "src/key_press/diff.deor"
 import "src/key_press/search.deor"
 import "src/key_press/line_numbers.deor"
 import "src/key_press/mouse.deor"
+import "src/key_press/scroll.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor_editor.deor"

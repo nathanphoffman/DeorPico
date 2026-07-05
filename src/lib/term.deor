@@ -184,6 +184,10 @@ fn KeyEvent xt_read_key()
 						break KeyEvent { kind: "mouse_drag".to_string(), chr: String::new(), shift: false, col, row },
 					crossterm::event::MouseEventKind::Up(crossterm::event::MouseButton::Left) =>
 						break KeyEvent { kind: "mouse_up".to_string(), chr: String::new(), shift: false, col, row },
+					crossterm::event::MouseEventKind::ScrollUp =>
+						break KeyEvent { kind: "mouse_scroll_up".to_string(), chr: String::new(), shift: false, col, row },
+					crossterm::event::MouseEventKind::ScrollDown =>
+						break KeyEvent { kind: "mouse_scroll_down".to_string(), chr: String::new(), shift: false, col, row },
 					_ => continue,
 				}
 			}

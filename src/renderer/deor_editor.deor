@@ -1,18 +1,20 @@
 
 fn EditorState editor_scroll(EditorState state)
 	(core) in state
-	(cursor_row, scroll_row) in core
+	(cursor_row, scroll_row, wheel_scrolled) in core
 	TermSize size = xt_size()
 	(rows) in size
 	int view_rows = rows - 1
 	if view_rows < 1
 		view_rows = 1
 
-	if cursor_row < scroll_row
+	if wheel_scrolled
+		wheel_scrolled = false
+	else if cursor_row < scroll_row
 		scroll_row = cursor_row
 	else if cursor_row >= scroll_row + view_rows
 		scroll_row = cursor_row - view_rows + 1
 
-	BufferState core = core with (scroll_row)
+	BufferState core = core with (scroll_row, wheel_scrolled)
 	new_state as state with (core)
 	return new_state

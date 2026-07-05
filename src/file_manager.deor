@@ -7,6 +7,7 @@ fn EditorState editor_open(string filename)
 	cursor_col as 0
 	dirty as false
 	scroll_row as 0
+	wheel_scrolled as false
 	show_line_numbers as false
 	done as false
 	notice as ""
@@ -39,7 +40,7 @@ fn EditorState editor_open(string filename)
 	filter_scroll_row as 0
 	filter_truncated_count as 0
 
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, dirty, show_line_numbers)
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)

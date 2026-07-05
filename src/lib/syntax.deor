@@ -13,7 +13,8 @@ rust
 			"comment" => "\x1b[38;2;106;153;85m",         // #6A9955
 			"number" => "\x1b[38;2;181;206;168m",         // #B5CEA8
 			"type" => "\x1b[38;2;78;201;176m",            // #4EC9B0
-			"function" => "\x1b[38;2;220;220;170m",       // #DCDCAA
+			"function" => "\x1b[38;2;156;220;254m",       // #9CDCFE pale blue
+			"macro_name" => "\x1b[38;2;201;232;255m",     // #C9E8FF baby blue, lighter than function
 			"invalid" => "\x1b[38;2;244;71;71m",          // #F44747
 			"heading" => "\x1b[1;38;2;86;156;214m",       // #569CD6 bold
 			"quote" => "\x1b[3;38;2;106;153;85m",         // comment green, italic

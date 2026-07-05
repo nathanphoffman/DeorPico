@@ -18,7 +18,7 @@ macro back_stop
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, done, notice, error) in state
 
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers) in core
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused) in browser
 	(diffing, diff_lines, diff_scroll_row) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
@@ -108,6 +108,10 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run diff_page_up
 		else if kind is "page_down"
 			macro_run diff_page_down
+		else if kind is "mouse_scroll_up"
+			macro_run diff_scroll_up
+		else if kind is "mouse_scroll_down"
+			macro_run diff_scroll_down
 
 	# this is the main view
 	else 
@@ -200,10 +204,14 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 			macro_run mouse_down_main
 		else if kind is "mouse_drag"
 			macro_run mouse_drag_main
+		else if kind is "mouse_scroll_up"
+			macro_run scroll_up
+		else if kind is "mouse_scroll_down"
+			macro_run scroll_down
 
 		macro_run back_stop
 
-	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, show_line_numbers)
+	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, history_focused)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)

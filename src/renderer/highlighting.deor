@@ -10,6 +10,12 @@ fn Highlighter initialize_highlighter(string ext)
 		kw_pattern as "\\b(macro_run|macro|fn|if|else|for|return|avow|break|continue|move|const|and|or|not|is|in|as|with|at|end|of|to|import|struct|shape|enum|type|block|rust|remove|where|true|false|valid|empty)\\b"
 		highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
+		# macro definitions/invocations, name included since the regex crate has
+		# no lookbehind to highlight just the name after "macro"/"macro_run"
+		macro_name_name as "macro_name"
+		macro_name_pattern as "\\b(macro_run|macro)\\s+[a-z_][a-z0-9_]*\\b"
+		highlighter = xs_add_keyword(highlighter, macro_name_name, macro_name_pattern)
+
 		# builtin primitive/shape-kind type keywords
 		builtin_name as "type"
 		builtin_pattern as "\\b(int|float|bool|string|list|func|void|raw)\\b"

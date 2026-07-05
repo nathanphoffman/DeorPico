@@ -184,7 +184,12 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 			screen.push_str(&notice_padded);
 			screen.push_str(status_reset);
 
-			let cursor_screen_row = (state.core.cursor_row - state.core.scroll_row) as usize + 1;
+			// Wheel-scrolling can leave the cursor outside the current view (it no
+			// longer follows the viewport), so this can go negative or past the last
+			// visible row -- clamp before the usize cast, which would otherwise wrap
+			// a negative offset into a huge garbage terminal position.
+			let raw_cursor_screen_row = state.core.cursor_row - state.core.scroll_row + 1;
+			let cursor_screen_row = raw_cursor_screen_row.clamp(1, visible_row_count as i64) as usize;
 			let cursor_screen_col = cursor_visual_col as usize + gutter_width + 1;
 			screen.push_str(&format!("\x1b[{};{}H", cursor_screen_row, cursor_screen_col));
 
