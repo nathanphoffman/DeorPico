@@ -97,12 +97,15 @@ macro browse_filter_down
 	if filter_selected >= filter_scroll_row + view_rows
 		filter_scroll_row = filter_selected - view_rows + 1
 
+# Opens the selected match but leaves filter_active/filter_matches/filter_selected
+# untouched, so F1 back into the browser redisplays the same search results
+# instead of the full tree (see toggle_browse in browse.deor). Esc is still the
+# only way to actually drop the filter.
 macro browse_filter_enter
 	if len(filter_matches) > 0
 		FilterMatch selected_match = filter_matches at filter_selected
 		(full_path) in selected_match
 		path as full_path
-		macro_run close_browse_filter
 		browsing = false
 		macro_run load_file_into_buffer
 		macro_run track_file_history

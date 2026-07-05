@@ -25,21 +25,18 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Git Diff Mode has been fixed, it now stays in diff mode if other diffs or opened or exits when one non-diff is opened.
 - Done: Alt search filter (goto abandoned due to reserved numbers with alts/ctrls/, etc)
 - Done: Mouse Clicking
+- Done: Colon Searching
 - Done: Scroll Fix
 - Done: Syntax Highlighting
+- Done: New Git Modified Column
+- Done: Scroll alignment Fixed
 
+Working On: leave the search up when going back into F1
 
+## For AI
+Talk with ai about merging recent files with git diff -- I am actually finding recent files not very helpful
 
-Add a column that shows staged, and below that unstaged file changes, just in one column that I can click on each file (flattened structure).
-
-
-Do: Support better rust highlighting in deor
-Do: leave the search up when going back into F1
+## For Nate to Figure Out:
 Do: file directory folder path needs updating maybe with an arg?  maybe it assumes the working directory of the file opened?
-Do some cleanup, specifically of sections and the lib and tab/comment code I added
+Do: Support better rust highlighting in deor
 
-
-## Next Up For AI
-
-
-- When a directory is selected in the file browser allow colon (:) to be typed then a : to the right of it will appear where a search string can be typed in, as the letters are entered the files in that directory should filter down by name, once the search is at least 5 letters, immediately flatten the directory and all children directories and show any file names that include the search in their names at the top or even files that just include that search string in their contents (below those at the top) next to the files that should include it should be (instances: 5) or something of that sort to let the user know the number of matches in the file.  Files that match by name should be bolded and held at the top of the directory the : was used on.  Once escape is hit the folder structure should return to normal.  The order of priority should be file_name match then most instances to least instances of content matches.  

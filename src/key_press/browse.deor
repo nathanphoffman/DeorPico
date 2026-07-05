@@ -1,7 +1,9 @@
+# F1 while browsing only hides the browser -- it deliberately leaves an active
+# filter's matches/selection intact so the next F1 reopens onto the same
+# search results (see browse_filter_enter). Esc is what actually clears it.
 macro toggle_browse
 	if browsing
 		browsing = false
-		macro_run close_browse_filter
 	else if dirty
 		macro_run notify_unsaved_changes
 	else

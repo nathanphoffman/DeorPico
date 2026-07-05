@@ -8,12 +8,208 @@ macro back_stop
         cursor_row = len(lines) - 1
 
     current_line as lines at cursor_row
-    current_line_length as len(current_line)  
+    current_line_length as len(current_line)
 
     if cursor_col < 0
         cursor_col = 0
     else if cursor_col > current_line_length - 1
         cursor_col = current_line_length
+
+# Keys handled while the file/history/git-changes browser is open
+macro handle_browse_mode
+	if filter_active
+		if kind is "escape"
+			macro_run close_browse_filter
+		else if kind is "enter"
+			macro_run browse_filter_enter
+		else if kind is "up"
+			macro_run browse_filter_up
+		else if kind is "down"
+			macro_run browse_filter_down
+		else if kind is "backspace"
+			macro_run browse_filter_backspace
+		else if kind is "char"
+			macro_run browse_filter_char
+		else if kind is "mouse_down"
+			macro_run mouse_down_browser_filter
+	else if kind is "mouse_down"
+		macro_run mouse_down_browser
+	else if kind is "tab"
+		macro_run cycle_browser_focus
+	else if kind is "up" and browser_focus is History
+		macro_run browse_history_up
+	else if kind is "down" and browser_focus is History
+		macro_run browse_history_down
+	else if kind is "up" and browser_focus is Changes
+		macro_run git_changes_up
+	else if kind is "down" and browser_focus is Changes
+		macro_run git_changes_down
+	else if kind is "char" and chr is "w" and browser_focus is History
+		macro_run browse_history_up
+	else if kind is "char" and chr is "s" and browser_focus is History
+		macro_run browse_history_down
+	else if kind is "char" and chr is "w" and browser_focus is Changes
+		macro_run git_changes_up
+	else if kind is "char" and chr is "s" and browser_focus is Changes
+		macro_run git_changes_down
+	else if kind is "up"
+		macro_run browse_up
+	else if kind is "down"
+		macro_run browse_down
+	else if kind is "left"
+		macro_run browse_left
+	else if kind is "right"
+		macro_run browse_right
+	else if kind is "char" and chr is ":"
+		macro_run start_browse_filter
+	else if kind is "char" and chr is "w"
+		macro_run browse_up
+	else if kind is "char" and chr is "s"
+		macro_run browse_down
+	else if kind is "char" and chr is "a"
+		macro_run browse_left
+	else if kind is "char" and chr is "d"
+		macro_run browse_right
+	else if kind is "enter" and browser_focus is History
+		macro_run browse_history_enter
+	else if kind is "char" and chr is " " and browser_focus is History
+		macro_run browse_history_enter
+	else if kind is "enter" and browser_focus is Changes
+		macro_run git_changes_enter
+	else if kind is "char" and chr is " " and browser_focus is Changes
+		macro_run git_changes_enter
+	else if kind is "enter"
+		macro_run browse_activate
+	else if kind is "char" and chr is " "
+		macro_run browse_activate
+	else if kind is "escape"
+		macro_run browse_close
+	else if kind is "quit"
+		macro_run browse_close
+
+# Keys handled while the git diff view is open
+macro handle_diff_mode
+	if kind is "diff_toggle"
+		macro_run toggle_diff
+	else if kind is "escape"
+		macro_run toggle_diff
+	else if kind is "quit"
+		macro_run toggle_diff
+	else if kind is "up"
+		macro_run diff_scroll_up
+	else if kind is "down"
+		macro_run diff_scroll_down
+	else if kind is "page_up"
+		macro_run diff_page_up
+	else if kind is "page_down"
+		macro_run diff_page_down
+	else if kind is "mouse_scroll_up"
+		macro_run diff_scroll_up
+	else if kind is "mouse_scroll_down"
+		macro_run diff_scroll_down
+
+# Editing mode: app-wide actions -- quit/save/diff/search/history/undo-redo/clipboard
+macro handle_global_actions
+	if kind is "quit"
+		macro_run key_quit
+	else if kind is "diff_toggle"
+		macro_run toggle_diff
+	else if kind is "alt_char"
+		macro_run alt_search_char
+	else if kind is "escape" and search_active
+		macro_run search_clear
+	else if kind is "history_back"
+		macro_run history_back
+	else if kind is "history_forward"
+		macro_run history_forward
+	else if kind is "toggle_line_numbers"
+		macro_run toggle_line_numbers
+	else if kind is "save"
+		macro_run key_save
+	else if kind is "cut"
+		macro_run do_cut
+	else if kind is "copy"
+		macro_run do_copy
+	else if kind is "paste"
+		macro_run do_paste
+	else if kind is "undo"
+		macro_run do_undo
+	else if kind is "redo"
+		macro_run do_redo
+	else if kind is "discard_changes"
+		macro_run discard_unsaved_changes
+
+# Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
+macro handle_arrow_nav
+	if kind is "up"
+		if shift
+			macro_run start_or_extend_selection
+		else
+			macro_run clear_selection
+		macro_run key_up
+	else if kind is "down"
+		if shift
+			macro_run start_or_extend_selection
+		else
+			macro_run clear_selection
+		macro_run key_down
+	else if kind is "left"
+		if shift
+			macro_run start_or_extend_selection
+		else
+			macro_run clear_selection
+		macro_run key_left
+	else if kind is "right"
+		if shift
+			macro_run start_or_extend_selection
+		else
+			macro_run clear_selection
+		macro_run key_right
+	else if kind is "right_ctrl"
+		macro_run key_right_ctrl
+	else if kind is "left_ctrl"
+		macro_run key_left_ctrl
+	else if kind is "up_ctrl"
+		macro_run key_up_ctrl
+	else if kind is "down_ctrl"
+		macro_run key_down_ctrl
+
+# Editing mode: text mutation -- backspace/delete/enter/typed characters
+macro handle_text_edit
+	if kind is "backspace"
+		macro_run key_backspace
+	else if kind is "delete"
+		macro_run key_delete
+	else if kind is "enter"
+		macro_run key_enter
+	else if kind is "char" and chr is " " and has_selection
+		macro_run key_space_comment_selection
+	else if kind is "char"
+		macro_run key_char
+
+# Editing mode: tab/shift-tab, doubling as search-match cycling while searching
+macro handle_tab_and_search
+	if kind is "tab" and search_active
+		macro_run search_next
+	else if kind is "shift_tab" and search_active
+		macro_run search_prev
+	else if kind is "tab"
+		macro_run key_tab
+
+# Editing mode: paging and mouse input
+macro handle_page_and_mouse
+	if kind is "page_up"
+		macro_run page_up
+	else if kind is "page_down"
+		macro_run page_down
+	else if kind is "mouse_down"
+		macro_run mouse_down_main
+	else if kind is "mouse_drag"
+		macro_run mouse_drag_main
+	else if kind is "mouse_scroll_up"
+		macro_run scroll_up
+	else if kind is "mouse_scroll_down"
+		macro_run scroll_down
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, done, notice, error) in state
@@ -36,190 +232,17 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	if kind is "browse_toggle"
 		macro_run toggle_browse
 	else if browsing
-		if filter_active
-			if kind is "escape"
-				macro_run close_browse_filter
-			else if kind is "enter"
-				macro_run browse_filter_enter
-			else if kind is "up"
-				macro_run browse_filter_up
-			else if kind is "down"
-				macro_run browse_filter_down
-			else if kind is "backspace"
-				macro_run browse_filter_backspace
-			else if kind is "char"
-				macro_run browse_filter_char
-			else if kind is "mouse_down"
-				macro_run mouse_down_browser_filter
-		else if kind is "mouse_down"
-			macro_run mouse_down_browser
-		else if kind is "tab"
-			macro_run cycle_browser_focus
-		else if kind is "up" and browser_focus is History
-			macro_run browse_history_up
-		else if kind is "down" and browser_focus is History
-			macro_run browse_history_down
-		else if kind is "up" and browser_focus is Changes
-			macro_run git_changes_up
-		else if kind is "down" and browser_focus is Changes
-			macro_run git_changes_down
-		else if kind is "char" and chr is "w" and browser_focus is History
-			macro_run browse_history_up
-		else if kind is "char" and chr is "s" and browser_focus is History
-			macro_run browse_history_down
-		else if kind is "char" and chr is "w" and browser_focus is Changes
-			macro_run git_changes_up
-		else if kind is "char" and chr is "s" and browser_focus is Changes
-			macro_run git_changes_down
-		else if kind is "up"
-			macro_run browse_up
-		else if kind is "down"
-			macro_run browse_down
-		else if kind is "left"
-			macro_run browse_left
-		else if kind is "right"
-			macro_run browse_right
-		else if kind is "char" and chr is ":"
-			macro_run start_browse_filter
-		else if kind is "char" and chr is "w"
-			macro_run browse_up
-		else if kind is "char" and chr is "s"
-			macro_run browse_down
-		else if kind is "char" and chr is "a"
-			macro_run browse_left
-		else if kind is "char" and chr is "d"
-			macro_run browse_right
-		else if kind is "enter" and browser_focus is History
-			macro_run browse_history_enter
-		else if kind is "char" and chr is " " and browser_focus is History
-			macro_run browse_history_enter
-		else if kind is "enter" and browser_focus is Changes
-			macro_run git_changes_enter
-		else if kind is "char" and chr is " " and browser_focus is Changes
-			macro_run git_changes_enter
-		else if kind is "enter"
-			macro_run browse_activate
-		else if kind is "char" and chr is " "
-			macro_run browse_activate
-		else if kind is "escape"
-			macro_run browse_close
-		else if kind is "quit"
-			macro_run browse_close
+		macro_run handle_browse_mode
 	else if diffing
-		if kind is "diff_toggle"
-			macro_run toggle_diff
-		else if kind is "escape"
-			macro_run toggle_diff
-		else if kind is "quit"
-			macro_run toggle_diff
-		else if kind is "up"
-			macro_run diff_scroll_up
-		else if kind is "down"
-			macro_run diff_scroll_down
-		else if kind is "page_up"
-			macro_run diff_page_up
-		else if kind is "page_down"
-			macro_run diff_page_down
-		else if kind is "mouse_scroll_up"
-			macro_run diff_scroll_up
-		else if kind is "mouse_scroll_down"
-			macro_run diff_scroll_down
+		macro_run handle_diff_mode
 
 	# this is the main view
-	else 
-		if kind is "quit"
-			macro_run key_quit
-		else if kind is "diff_toggle"
-			macro_run toggle_diff
-		else if kind is "alt_char"
-			macro_run alt_search_char
-		else if kind is "escape" and search_active
-			macro_run search_clear
-		else if kind is "history_back"
-			macro_run history_back
-		else if kind is "history_forward"
-			macro_run history_forward
-		else if kind is "toggle_line_numbers"
-			macro_run toggle_line_numbers
-		else if kind is "save"
-			macro_run key_save
-		else if kind is "cut"
-			macro_run do_cut
-		else if kind is "copy"
-			macro_run do_copy
-		else if kind is "paste"
-			macro_run do_paste
-		else if kind is "undo"
-			macro_run do_undo
-		else if kind is "redo"
-			macro_run do_redo
-		else if kind is "discard_changes"
-			macro_run discard_unsaved_changes
-		else if kind is "up"
-			if shift
-				macro_run start_or_extend_selection
-			else
-				macro_run clear_selection
-			macro_run key_up
-		else if kind is "down"
-			if shift
-				macro_run start_or_extend_selection
-			else
-				macro_run clear_selection
-			macro_run key_down
-		else if kind is "left"
-			if shift
-				macro_run start_or_extend_selection
-			else
-				macro_run clear_selection
-			macro_run key_left
-		else if kind is "right"
-			if shift
-				macro_run start_or_extend_selection
-			else
-				macro_run clear_selection
-			macro_run key_right
-
-		else if kind is "right_ctrl"
-			macro_run key_right_ctrl
-
-		else if kind is "left_ctrl"
-			macro_run key_left_ctrl
-
-		else if kind is "up_ctrl"
-			macro_run key_up_ctrl
-
-		else if kind is "down_ctrl"
-			macro_run key_down_ctrl
-
-		else if kind is "backspace"
-			macro_run key_backspace
-		else if kind is "delete"
-			macro_run key_delete
-		else if kind is "enter"
-			macro_run key_enter
-		else if kind is "char" and chr is " " and has_selection
-			macro_run key_space_comment_selection
-		else if kind is "char"
-			macro_run key_char
-		else if kind is "tab" and search_active
-			macro_run search_next
-		else if kind is "shift_tab" and search_active
-			macro_run search_prev
-		else if kind is "tab"
-			macro_run key_tab
-		else if kind is "page_up"
-			macro_run page_up
-		else if kind is "page_down"
-			macro_run page_down
-		else if kind is "mouse_down"
-			macro_run mouse_down_main
-		else if kind is "mouse_drag"
-			macro_run mouse_drag_main
-		else if kind is "mouse_scroll_up"
-			macro_run scroll_up
-		else if kind is "mouse_scroll_down"
-			macro_run scroll_down
+	else
+		macro_run handle_global_actions
+		macro_run handle_arrow_nav
+		macro_run handle_text_edit
+		macro_run handle_tab_and_search
+		macro_run handle_page_and_mouse
 
 		macro_run back_stop
 
