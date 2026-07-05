@@ -25,6 +25,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "toggle_line_numbers"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
+	else if kind is "home"
+		kind = "browse_toggle"
 	else if kind is "function_key"
 		if chr is "1"
 			kind = "browse_toggle"

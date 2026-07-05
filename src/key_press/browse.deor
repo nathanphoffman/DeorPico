@@ -19,6 +19,9 @@ macro toggle_browse
 		StringMap fresh_git_map = g_status(browse_dir)
 		browse_entries = g_apply_status(browse_entries, fresh_git_map)
 		file_history = g_apply_status(file_history, fresh_git_map)
+		git_changes = g_changed_entries(fresh_git_map)
+		git_selected = 0
+		git_scroll_row = 0
 
 macro browse_close
 	browsing = false
@@ -106,16 +109,55 @@ macro browse_history_down
 	if history_selected < 0
 		history_selected = 0
 
-macro toggle_history_focus
-	if history_focused
-		history_focused = false
-	else
-		history_focused = true
+macro cycle_browser_focus
+	if browser_focus is Files
+		browser_focus = History
 		int last_history_entry = len(file_history) - 1
 		if history_selected > last_history_entry
 			history_selected = last_history_entry
 		if history_selected < 0
 			history_selected = 0
+	else if browser_focus is History
+		browser_focus = Changes
+		int last_git_entry = len(git_changes) - 1
+		if git_selected > last_git_entry
+			git_selected = last_git_entry
+		if git_selected < 0
+			git_selected = 0
+	else
+		browser_focus = Files
+
+macro git_changes_up
+	git_selected = git_selected - 1
+	if git_selected < 0
+		git_selected = 0
+	if git_selected < git_scroll_row
+		git_scroll_row = git_selected
+
+macro git_changes_down
+	int last_git_entry = len(git_changes) - 1
+	git_selected = git_selected + 1
+	if git_selected > last_git_entry
+		git_selected = last_git_entry
+	if git_selected < 0
+		git_selected = 0
+
+	TermSize size = xt_size()
+	(rows) in size
+	int view_rows = rows - 2
+	if view_rows < 1
+		view_rows = 1
+	if git_selected >= git_scroll_row + view_rows
+		git_scroll_row = git_selected - view_rows + 1
+
+macro git_changes_enter
+	if len(git_changes) > 0
+		FileEntry selected = git_changes at git_selected
+		(path, is_dir) in selected
+		if not is_dir
+			browsing = false
+			macro_run load_file_into_buffer
+			macro_run track_file_history
 
 # Loads `path` (already declared by the caller) into the active buffer,
 # discarding any unsaved state. Callers decide whether this should also

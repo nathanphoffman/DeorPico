@@ -38,30 +38,37 @@ macro mouse_drag_main
 	cursor_row = clicked_row
 	cursor_col = clicked_col
 
-# Click in the file browser -- tree pane opens files / expands-collapses
-# directories, history pane opens the clicked recent file. Layout matches
-# the column split in renderer/rust_browser.deor.
+# Click in the file browser -- files pane opens files / expands-collapses
+# directories, history pane opens the clicked recent file, changes pane opens
+# the clicked staged/unstaged file. Layout matches the column split in
+# renderer/rust_browser.deor.
 macro mouse_down_browser
 	TermSize size = xt_size()
 	(cols) in size
-	int min_history_width = 20
+	int min_col_width = 20
 	int cols_third = cols / 3
-	int history_width = m_max(min_history_width, cols_third)
-	int history_gutter = history_width + 1
-	int tree_width = cols - history_gutter
+	int col_width = m_max(min_col_width, cols_third)
+	int files_width = cols - col_width - col_width - 2
+	int history_end = files_width + 1 + col_width
 
-	if col < tree_width
+	if col < files_width
 		int idx = browse_scroll_row + row
 		if idx < len(browse_entries)
 			browse_selected = idx
-			history_focused = false
+			browser_focus = Files
 			macro_run browse_activate
-	else
+	else if col < history_end
 		int idx = row
 		if idx < len(file_history)
 			history_selected = idx
-			history_focused = true
+			browser_focus = History
 			macro_run browse_history_enter
+	else
+		int idx = git_scroll_row + row
+		if idx < len(git_changes)
+			git_selected = idx
+			browser_focus = Changes
+			macro_run git_changes_enter
 
 macro mouse_down_browser_filter
 	int idx = filter_scroll_row + row

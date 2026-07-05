@@ -127,9 +127,12 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::PageUp => 
 						break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 					
-					crossterm::event::KeyCode::PageDown => 
+					crossterm::event::KeyCode::PageDown =>
 						break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift, col: 0, row: 0 },
-					
+
+					crossterm::event::KeyCode::Home =>
+						break KeyEvent { kind: "home".to_string(), chr: String::new(), shift, col: 0, row: 0 },
+
 					// Raw function-key slot -- chr carries the number ("1".."12").
 					// Which slot means what is an app-level concern, see keymap.deor.
 					crossterm::event::KeyCode::F(n) =>

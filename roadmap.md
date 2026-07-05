@@ -25,14 +25,15 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Git Diff Mode has been fixed, it now stays in diff mode if other diffs or opened or exits when one non-diff is opened.
 - Done: Alt search filter (goto abandoned due to reserved numbers with alts/ctrls/, etc)
 - Done: Mouse Clicking
+- Done: Scroll Fix
+- Done: Syntax Highlighting
 
-Ready for Testing: Syntax Highlighting
-Ready for Testing: Scroll Fix
 
 
 Add a column that shows staged, and below that unstaged file changes, just in one column that I can click on each file (flattened structure).
 
 
+Do: Support better rust highlighting in deor
 Do: leave the search up when going back into F1
 Do: file directory folder path needs updating maybe with an arg?  maybe it assumes the working directory of the file opened?
 Do some cleanup, specifically of sections and the lib and tab/comment code I added

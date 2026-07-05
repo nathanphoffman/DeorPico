@@ -18,6 +18,11 @@ struct BufferState
 	# Toggled with ctrl+n
 	bool show_line_numbers
 
+enum BrowserPane
+	Files
+	History
+	Changes
+
 struct BrowserState
 	# File browser (F1) state
 	bool browsing
@@ -26,10 +31,16 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
-	# Recently-opened files, most recent first -- Tab switches focus to this column
+	# Recently-opened files, most recent first -- Tab cycles focus through these columns
 	entryList file_history
 	int history_selected
-	bool history_focused
+
+	# Git staged/unstaged files, refreshed every time the browser opens
+	entryList git_changes
+	int git_selected
+	int git_scroll_row
+
+	BrowserPane browser_focus
 
 struct DiffState
 	# Git diff view (ctrl+d) state -- locks editing while true

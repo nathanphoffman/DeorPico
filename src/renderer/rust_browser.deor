@@ -48,10 +48,12 @@ fn void editor_render_browser(EditorState state)
 				return;
 			}
 
-			// History column takes the right third of the screen (min 20 cols),
-			// separated from the tree by a blank gutter column.
-			let history_width = std::cmp::max(20, cols / 3);
-			let tree_width = cols.saturating_sub(history_width + 1);
+			// Files / History / Changes columns, each min 20 cols, separated by
+			// blank gutter columns. Files takes whatever space is left over.
+			let col_width = std::cmp::max(20, cols / 3);
+			let files_width = cols.saturating_sub(col_width * 2 + 2);
+			let history_width = col_width;
+			let changes_width = col_width;
 
 			fn colorize(line: &str, git_status: &str) -> String {
 				match git_status {
@@ -63,6 +65,7 @@ fn void editor_render_browser(EditorState state)
 
 			let total = state.browser.browse_entries.len();
 			let history_total = state.browser.file_history.len();
+			let git_total = state.browser.git_changes.len();
 			for i in 0..view_rows {
 				let idx = state.browser.browse_scroll_row as usize + i;
 				let mut tree_visible_len = 0;
@@ -77,37 +80,65 @@ fn void editor_render_browser(EditorState state)
 					};
 					let suffix = if entry.is_dir { "/" } else { "" };
 					let mut plain = format!("{}{}{}{}", indent, marker, entry.name, suffix);
-					if plain.len() > tree_width {
-						plain.truncate(tree_width);
+					if plain.len() > files_width {
+						plain.truncate(files_width);
 					}
 					tree_visible_len = plain.len();
 					let mut line = colorize(&plain, &entry.git_status);
-					if idx == state.browser.browse_selected as usize && !state.browser.history_focused {
+					if idx == state.browser.browse_selected as usize && state.browser.browser_focus == BrowserPane::Files {
 						line = format!("\x1b[7m{}\x1b[0m", line);
 					}
 					tree_line = line;
 				}
-				let pad_len = tree_width.saturating_sub(tree_visible_len);
+				let pad_len = files_width.saturating_sub(tree_visible_len);
 				out.push_str(&tree_line);
 				out.push_str(&" ".repeat(pad_len + 1));
 
+				let mut history_visible_len = 0;
+				let mut history_line = String::new();
 				if i < history_total {
 					let entry = &state.browser.file_history[i];
 					let mut plain = entry.name.clone();
 					if plain.len() > history_width {
 						plain.truncate(history_width);
 					}
+					history_visible_len = plain.len();
 					let mut line = colorize(&plain, &entry.git_status);
-					if i == state.browser.history_selected as usize && state.browser.history_focused {
+					if i == state.browser.history_selected as usize && state.browser.browser_focus == BrowserPane::History {
+						line = format!("\x1b[7m{}\x1b[0m", line);
+					}
+					history_line = line;
+				} else if i == 0 && history_total == 0 {
+					let msg = "(no history yet)";
+					history_visible_len = msg.len();
+					history_line = format!("\x1b[2m{}\x1b[22m", msg);
+				}
+				let history_pad = history_width.saturating_sub(history_visible_len);
+				out.push_str(&history_line);
+				out.push_str(&" ".repeat(history_pad + 1));
+
+				let idx_git = state.browser.git_scroll_row as usize + i;
+				if idx_git < git_total {
+					let entry = &state.browser.git_changes[idx_git];
+					let mut plain = entry.name.clone();
+					if plain.len() > changes_width {
+						plain.truncate(changes_width);
+					}
+					let mut line = colorize(&plain, &entry.git_status);
+					if idx_git == state.browser.git_selected as usize && state.browser.browser_focus == BrowserPane::Changes {
 						line = format!("\x1b[7m{}\x1b[0m", line);
 					}
 					out.push_str(&line);
-				} else if i == 0 && history_total == 0 {
-					out.push_str("\x1b[2m(no history yet)\x1b[22m");
+				} else if i == 0 && git_total == 0 {
+					out.push_str("\x1b[2m(clean)\x1b[22m");
 				}
 				out.push_str("\r\n");
 			}
-			let focus_hint = if state.browser.history_focused { "[History]" } else { "[Files]" };
+			let focus_hint = match state.browser.browser_focus {
+				BrowserPane::Files => "[Files]",
+				BrowserPane::History => "[History]",
+				BrowserPane::Changes => "[Changes]",
+			};
 			let status = format!("-- {} {} -- Tab switch  Enter open  F1/Esc close", state.browser.browse_dir, focus_hint);
 			out.push_str(&status);
 			out.push_str("\r\n");

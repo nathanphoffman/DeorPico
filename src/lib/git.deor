@@ -68,6 +68,18 @@ fn int g_diff_count(stringList diff_lines)
 			count
 		}
 
+fn entryList g_changed_entries(StringMap git_map)
+	rust
+		{
+			let mut items: Vec<FileEntry> = Vec::new();
+			for (path, status) in git_map.0.lock().unwrap().iter() {
+				let name = std::path::Path::new(path).file_name().and_then(|n| n.to_str()).unwrap_or(path).to_string();
+				items.push(FileEntry { name, path: path.clone(), is_dir: false, depth: 0, expanded: false, git_status: status.clone() });
+			}
+			items.sort_by(|a, b| a.path.to_lowercase().cmp(&b.path.to_lowercase()));
+			items
+		}
+
 fn entryList g_apply_status(entryList entries, StringMap git_map)
 	rust
 		{
