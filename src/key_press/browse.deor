@@ -22,8 +22,20 @@ macro toggle_browse
 		browse_entries = g_apply_status(browse_entries, fresh_git_map)
 		file_history = g_apply_status(file_history, fresh_git_map)
 		git_changes = g_changed_entries(fresh_git_map)
+		macro_run clamp_git_selection
+
+# Keeps git_selected/git_scroll_row pointing at whatever was selected before
+# the browser was last closed, rather than snapping back to the top -- only
+# clamps if the refreshed git_changes list is now shorter than the old index
+# (e.g. the selected file got committed/reverted and dropped off the list).
+macro clamp_git_selection
+	int last_git_entry = len(git_changes) - 1
+	if git_selected > last_git_entry
+		git_selected = last_git_entry
+	if git_selected < 0
 		git_selected = 0
-		git_scroll_row = 0
+	if git_scroll_row > git_selected
+		git_scroll_row = git_selected
 
 macro browse_close
 	browsing = false
@@ -177,6 +189,7 @@ macro load_file_into_buffer
 	notice = "Opened"
 	error = false
 	macro_run reset_undo_history
+	macro_run refresh_git_diff_lines
 	if diffing
 		macro_run refresh_diff_for_new_file
 

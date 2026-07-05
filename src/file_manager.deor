@@ -27,7 +27,7 @@ macro initialize_browser
 
 macro initialize_diff
 	diffing as false
-	stringList diff_lines = empty
+	stringList diff_lines = g_diff(filename)
 	diff_scroll_row as 0
 	DiffState diff = (diffing, diff_lines, diff_scroll_row)
 

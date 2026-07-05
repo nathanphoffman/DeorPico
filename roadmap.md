@@ -30,13 +30,15 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Syntax Highlighting
 - Done: New Git Modified Column
 - Done: Scroll alignment Fixed
+- Done: leave the search up when going back into F1
+- Done: git minimap added to the editor
 
-Working On: leave the search up when going back into F1
-
-## For AI
-Talk with ai about merging recent files with git diff -- I am actually finding recent files not very helpful
+## Nest For AI
+Add Auto Syntax Check for DeorPico
 
 ## For Nate to Figure Out:
 Do: file directory folder path needs updating maybe with an arg?  maybe it assumes the working directory of the file opened?
 Do: Support better rust highlighting in deor
+Do: Merge Recent and Git Diff? -- I am actually finding recent files not very helpful
+
 

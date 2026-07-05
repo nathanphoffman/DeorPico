@@ -5,9 +5,21 @@ fn void editor_render_diff(EditorState state)
 			use std::io::Write;
 			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
 			let cols = cols as usize;
-			let view_rows = if rows > 2 { (rows - 2) as usize } else { 1 };
+
+			// Same heat bar as the normal editor view (see g_diff_minimap in
+			// lib/git.deor), but rows here are diff_lines entries themselves --
+			// deleted lines get their own row instead of being folded onto a
+			// buffer row that doesn't exist in this view.
+			let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
+			let has_minimap = !minimap_bar.is_empty();
+			let reserved_rows = if has_minimap { 3 } else { 2 };
+			let view_rows = if rows as usize > reserved_rows { rows as usize - reserved_rows } else { 1 };
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
+			if has_minimap {
+				out.push_str(&minimap_bar);
+				out.push_str("\r\n");
+			}
 
 			let total = state.diff.diff_lines.len();
 			for i in 0..view_rows {

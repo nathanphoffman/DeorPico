@@ -5,3 +5,4 @@ macro key_save
 	dirty = false
 	notice = "Saved"
 	error = false
+	macro_run refresh_git_diff_lines

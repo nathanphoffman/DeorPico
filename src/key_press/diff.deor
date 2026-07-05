@@ -1,3 +1,11 @@
+# Keeps diff_lines current against disk regardless of whether diff mode is
+# open -- the git-change minimap (editor_render/editor_render_diff) reads
+# diff_lines every frame in both modes, so this must run on every file load
+# and every save, not just when diffing is toggled on.
+macro refresh_git_diff_lines
+	stringList raw_diff = g_diff(filename)
+	diff_lines = raw_diff
+
 # Re-diffs whatever file was just loaded into the buffer so git diff mode
 # follows file-browser navigation instead of freezing on the file that was
 # active when diff mode was toggled on.

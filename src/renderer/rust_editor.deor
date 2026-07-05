@@ -34,6 +34,12 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 
 				while let Some(current_char) = chars.next() {
 					if current_char == '\u{1b}' {
+						// Syntax highlighting wraps each colored token in its own
+						// "\x1b[0m" reset, which also cancels our reverse-video
+						// selection if it was turned on earlier in the line --
+						// re-assert it right after so the selection survives
+						// every syntax-colored token it spans.
+						let escape_seq_start = rendered.len();
 						rendered.push(current_char);
 						while let Some(&next_char) = chars.peek() {
 							rendered.push(next_char);
@@ -41,6 +47,9 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 							if next_char == 'm' {
 								break;
 							}
+						}
+						if highlight_open && &rendered[escape_seq_start..] == "\x1b[0m" {
+							rendered.push_str("\x1b[7m");
 						}
 						continue;
 					}
@@ -107,13 +116,24 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 
 			let (terminal_cols, terminal_rows) = crossterm::terminal::size().unwrap_or((80, 24));
 			let max_visible_columns = terminal_cols as usize;
-			let visible_row_count = if terminal_rows > 2 { (terminal_rows - 2) as usize } else { 1 };
-
-			let mut screen = String::new();
-			screen.push_str("\x1b[H\x1b[2J");
 
 			let selection = normalized_selection_range(&state);
 			let total_line_count = state.core.lines.len();
+
+			// One-row heat bar showing where git changes fall in the file,
+			// squashed proportionally across the terminal width -- hidden
+			// entirely (no reserved row) when the file has no git changes.
+			let minimap_bar = g_diff_minimap(state.diff.diff_lines.clone(), total_line_count as i64, max_visible_columns as i64);
+			let has_minimap = !minimap_bar.is_empty();
+			let reserved_rows = if has_minimap { 3 } else { 2 };
+			let visible_row_count = if terminal_rows as usize > reserved_rows { terminal_rows as usize - reserved_rows } else { 1 };
+
+			let mut screen = String::new();
+			screen.push_str("\x1b[H\x1b[2J");
+			if has_minimap {
+				screen.push_str(&minimap_bar);
+				screen.push_str("\r\n");
+			}
 
 			// Gutter is wide enough for the largest line number plus one trailing space.
 			let gutter_width = if state.core.show_line_numbers {
