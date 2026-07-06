@@ -32,24 +32,19 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Scroll alignment Fixed
 - Done: leave the search up when going back into F1
 - Done: git minimap added to the editor
+- Done: prevent deleted files from being normally opened, they just show locked out git diff content rather than no content at all
+- Done: now supports working folder pathing
+- Done: install now installs pico path locally
+
 
 ## Nest For AI
-
-We should make it that when pico opens a file, the working folder should be where that file was residing (the folder visible with F1) unless the user specifies a working directory.  Users should also be able to open a specific directory.  So both of these should be viable commands
-
-pico /something/filename.deor    << opens filename with the browser root to something
-pico /something    << opens a blank screen with the browser root to something
-pico /something/filename.deor /something/src   << opens the filename.deor but the browser actually only shows files deeper in /src.
-
-Can we add a build just command that installs pico to my global environment so I can just run "dpico" anywhere I want to open it?  I think the command sequence for the arguments should be `pico filename working_folder` with working_folder optional as per our discussion.
 
 Can we add two more arguments to deor a script "just run dev" which runs in the working folder and a regular expression "{regex}" which outputs a "{line_number} {file_name}".  The line_number is highlighted if anything is outputted from that prompt in dark orange, using similar highlighting to our search with the original raw line of the output at the top of the file
 
 Add Auto Syntax Check for DeorPico
 
 ## For Nate to Figure Out:
-Do: file directory folder path needs updating maybe with an arg?  maybe it assumes the working directory of the file opened?
-Do: Support better rust highlighting in deor
+Do: Support better rust highlighting in deor?
 Do: Merge Recent and Git Diff? -- I am actually finding recent files not very helpful
 
 

@@ -1,0 +1,3 @@
+# Copy this file to justfile.local (gitignored, not shared) to override
+# where `just install` puts the dpico binary.
+install_dir := '/custom/path/here'

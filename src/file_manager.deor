@@ -16,7 +16,7 @@ macro initialize_browser
 	entryList browse_entries = empty
 	browse_selected as 0
 	browse_scroll_row as 0
-	browse_dir as ""
+	string browse_dir = initial_dir
 	entryList file_history = empty
 	history_selected as 0
 	entryList git_changes = empty
@@ -61,7 +61,7 @@ macro initialize_filter
 	filter_truncated_count as 0
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 
-fn EditorState editor_open(string filename)
+fn EditorState editor_open(string filename, string initial_dir)
 	macro_run initialize_core
 	macro_run initialize_browser
 	macro_run initialize_diff

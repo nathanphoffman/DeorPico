@@ -9,8 +9,6 @@ macro toggle_browse
 	else
 		browsing = true
 		if len(browse_entries) is 0
-			cwd as "."
-			browse_dir = cwd
 			browse_entries = f_list_dir(browse_dir)
 			browse_selected = 0
 			browse_scroll_row = 0

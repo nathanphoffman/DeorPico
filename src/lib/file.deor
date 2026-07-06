@@ -93,6 +93,22 @@ fn bool f_exists(string path)
 	rust
 		std::path::Path::new(&path).exists()
 
+fn bool f_is_dir(string path)
+	rust
+		std::path::Path::new(&path).is_dir()
+
+# Parent directory of `path`, or "." when path has no directory component
+# (a bare filename) so callers always get a usable browse root.
+fn string f_dirname(string path)
+	rust
+		{
+			let parent = std::path::Path::new(&path).parent();
+			match parent {
+				Some(p) if !p.as_os_str().is_empty() => p.to_string_lossy().to_string(),
+				_ => ".".to_string(),
+			}
+		}
+
 fn stringList f_lines(string path)
 	rust
 		std::fs::read_to_string(&path).unwrap_or_default().lines().map(|l| l.to_string()).collect()

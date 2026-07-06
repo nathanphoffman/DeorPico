@@ -113,9 +113,18 @@ struct EditorState
 
 fn void main()
 
-	(first) in args()
-	string filename = first
-	EditorState state = editor_open(filename)
+	(first, second) in args()
+	string filename = ""
+	string initial_dir = "."
+	if first is not ""
+		if f_is_dir(first)
+			initial_dir = first
+		else
+			initial_dir = f_dirname(first)
+			filename = first
+	if second is not ""
+		initial_dir = second
+	EditorState state = editor_open(filename, initial_dir)
 
 	xt_raw_on()
 
