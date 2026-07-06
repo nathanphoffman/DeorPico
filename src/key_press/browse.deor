@@ -167,8 +167,8 @@ macro git_changes_down
 macro git_changes_enter
 	if len(git_changes) > 0
 		FileEntry selected = git_changes at git_selected
-		(path, is_dir) in selected
-		if not is_dir
+		(path, is_dir, git_status) in selected
+		if not is_dir and git_status is not "deleted"
 			browsing = false
 			macro_run load_file_into_buffer
 			macro_run track_file_history

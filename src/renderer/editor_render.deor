@@ -1,0 +1,296 @@
+
+struct SelectionRange
+	bool has_selection
+	int start_row
+	int start_col
+	int end_row
+	int end_col
+
+struct RowHighlight
+	int hl_start
+	int hl_end
+
+struct RenderedLine
+	string text
+	int visible_cols
+
+# Shared ANSI building blocks for the pure-Deor parts of rendering below.
+# xt_esc() is the one piece of these that Deor genuinely can't spell as a
+# string literal (no \x1b escape) -- everything built from it here is
+# ordinary string concatenation.
+macro use_ansi_codes
+	string esc = xt_esc()
+	const string ANSI_CRLF = xt_crlf()
+	const string ANSI_CLEAR_SCREEN = s_join([esc, "[H", esc, "[2J"])
+	const string ANSI_RESET = s_join([esc, "[0m"])
+	const string ANSI_SEARCH_TINT = s_join([esc, "[48;5;236m"])
+	const string ANSI_STATUS_BG = s_join([esc, "[48;5;240m"])
+	const string ANSI_ERROR_BG = s_join([esc, "[48;5;52m"])
+
+
+# The active selection is anchored wherever shift+arrow started and extends
+# to the current cursor position, which can land before OR after the anchor
+# -- this normalizes the two into a start/end range so rendering never has
+# to care which direction the user selected in.
+fn SelectionRange editor_selection_range(EditorState state)
+	(core, selection) in state
+	(cursor_row, cursor_col) in core
+	(has_selection, sel_anchor_row, sel_anchor_col) in selection
+
+	bool anchor_first = sel_anchor_row < cursor_row or (sel_anchor_row is cursor_row and sel_anchor_col <= cursor_col)
+
+	int start_row = cursor_row
+	int start_col = cursor_col
+	int end_row = sel_anchor_row
+	int end_col = sel_anchor_col
+	if anchor_first
+		start_row = sel_anchor_row
+		start_col = sel_anchor_col
+		end_row = cursor_row
+		end_col = cursor_col
+
+	SelectionRange sel_range = (has_selection, start_row, start_col, end_row, end_col)
+	return sel_range
+
+
+# A row entirely outside the selection gets no highlight (-1/-1), a row
+# entirely inside it is highlighted end-to-end, and the first/last row of
+# the selection are only highlighted from/to the actual anchor or cursor
+# column. -1 is Deor's usual "not present" sentinel (see s_index_of);
+# ROW_END_UNBOUNDED stands in for Rust's usize::MAX, since it only ever gets
+# compared against a visible-column count far below it.
+fn RowHighlight editor_row_highlight(SelectionRange sel_range, int row)
+	(has_selection, start_row, start_col, end_row, end_col) in sel_range
+	const int ROW_END_UNBOUNDED = 1_000_000_000
+
+	int hl_start = 0 - 1
+	int hl_end = 0 - 1
+
+	bool in_range = has_selection and row >= start_row and row <= end_row
+	if in_range
+		hl_start = 0
+		if row is start_row
+			hl_start = start_col
+
+		hl_end = ROW_END_UNBOUNDED
+		if row is end_row
+			hl_end = end_col
+
+	RowHighlight highlight = (hl_start, hl_end)
+	return highlight
+
+
+# Renders one line to at most `max_visible_columns` on-screen columns,
+# wrapping the half-open range [highlight.hl_start, highlight.hl_end) (in
+# visible-column terms) in reverse video. Escape sequences already embedded
+# by syntax highlighting are copied through untouched and never counted as
+# visible columns, so both truncation and the highlight land on the correct
+# visual column instead of a raw byte offset. Char-level escape-sequence
+# parsing has no Deor equivalent, so this stays the one rust-wrapped piece.
+fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHighlight highlight)
+	rust
+		{
+			let max_visible_columns = max_visible_columns as usize;
+			let highlight_start_col = if highlight.hl_start < 0 { None } else { Some(highlight.hl_start as usize) };
+			let highlight_end_col = if highlight.hl_end < 0 { None } else { Some(highlight.hl_end as usize) };
+
+			let mut rendered = String::new();
+			let mut visible_column_count: usize = 0;
+			let mut chars = line.chars().peekable();
+			let mut highlight_open = false;
+
+			while let Some(current_char) = chars.next() {
+				if current_char == '\u{1b}' {
+					// Syntax highlighting wraps each colored token in its own
+					// "\x1b[0m" reset, which also cancels our reverse-video
+					// selection if it was turned on earlier in the line --
+					// re-assert it right after so the selection survives
+					// every syntax-colored token it spans.
+					let escape_seq_start = rendered.len();
+					rendered.push(current_char);
+					while let Some(&next_char) = chars.peek() {
+						rendered.push(next_char);
+						chars.next();
+						if next_char == 'm' {
+							break;
+						}
+					}
+					if highlight_open && &rendered[escape_seq_start..] == "\x1b[0m" {
+						rendered.push_str("\x1b[7m");
+					}
+					continue;
+				}
+
+				if visible_column_count >= max_visible_columns {
+					break;
+				}
+
+				if highlight_start_col == Some(visible_column_count) && !highlight_open {
+					rendered.push_str("\x1b[7m");
+					highlight_open = true;
+				}
+				if highlight_end_col == Some(visible_column_count) && highlight_open {
+					rendered.push_str("\x1b[27m");
+					highlight_open = false;
+				}
+
+				rendered.push(current_char);
+				visible_column_count += 1;
+			}
+
+			if highlight_open {
+				rendered.push_str("\x1b[27m");
+			}
+
+			RenderedLine { text: rendered, visible_cols: visible_column_count as i64 }
+		}
+
+
+fn bool editor_row_has_match(matchList search_matches, int target_row)
+	for search_match in search_matches
+		(row) in search_match
+		if row is target_row
+			return true
+
+	return false
+
+
+fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
+	if not show_line_numbers
+		return 0
+
+	string total_str = c_int_to_string(total_line_count)
+	return len(total_str) + 1
+
+
+# Gutter is wide enough for the largest line number plus one trailing space.
+fn string editor_gutter_piece(int buffer_row_index, int total_line_count, int gutter_width)
+	if gutter_width is 0
+		return ""
+
+	string space = " "
+	if buffer_row_index < total_line_count
+		string row_number_str = c_int_to_string(buffer_row_index + 1)
+		int number_width = gutter_width - 1
+		string padded_number = s_pad_left(row_number_str, number_width)
+		return s_join([padded_number, space])
+
+	return s_repeat(space, gutter_width)
+
+
+# Alt+letter quick-search tints the whole row a match falls on, rather than
+# highlighting individual matched columns -- padded out to the full text
+# width so the tint isn't cut short by lines shorter than the terminal.
+# Syntax highlighting embeds a full reset after every colored token, which
+# would otherwise cancel our background partway through the line -- re-assert
+# it after each one so the tint survives every syntax-colored segment.
+fn string editor_tint_search_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
+	macro_run use_ansi_codes
+
+	string tint_reset_combo = s_join([ANSI_RESET, ANSI_SEARCH_TINT])
+	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)
+
+	int fill_width = text_visible_columns - rendered_visible_cols
+	if fill_width < 0
+		fill_width = 0
+
+	string space = " "
+	string fill = s_repeat(space, fill_width)
+
+	return s_join([ANSI_SEARCH_TINT, patched_line, fill, ANSI_RESET])
+
+
+fn void editor_render(EditorState state, int cursor_visual_col)
+	macro_run use_ansi_codes
+
+	(core, diff, search, notice, error) in state
+	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
+	(diff_lines) in diff
+	(search_active, search_matches) in search
+
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int max_visible_columns = cols
+
+	int total_line_count = len(lines)
+	SelectionRange selection = editor_selection_range(state)
+
+	# One-row heat bar showing where git changes fall in the file, squashed
+	# proportionally across the terminal width -- hidden entirely (no
+	# reserved row) when the file has no git changes.
+	string minimap_bar = g_diff_minimap(diff_lines, total_line_count, max_visible_columns)
+	bool has_minimap = minimap_bar is not ""
+
+	int reserved_rows = 2
+	if has_minimap
+		reserved_rows = 3
+
+	int visible_row_count = rows - reserved_rows
+	if visible_row_count < 1
+		visible_row_count = 1
+
+	string screen = ANSI_CLEAR_SCREEN
+	if has_minimap
+		screen = s_join([screen, minimap_bar, ANSI_CRLF])
+
+	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
+	int text_visible_columns = max_visible_columns - gutter_width
+	if text_visible_columns < 1
+		text_visible_columns = 1
+
+	for row_offset in range(visible_row_count)
+		int buffer_row_index = scroll_row + row_offset
+		string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
+		screen = s_join([screen, gutter_piece])
+
+		if buffer_row_index < total_line_count
+			string line = lines at buffer_row_index
+			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
+			RenderedLine rendered = render_visible_line(line, text_visible_columns, highlight)
+			(text, visible_cols) in rendered
+
+			bool row_matches = search_active and editor_row_has_match(search_matches, buffer_row_index)
+			if row_matches
+				string tinted_text = editor_tint_search_row(text, text_visible_columns, visible_cols)
+				screen = s_join([screen, tinted_text])
+			else
+				screen = s_join([screen, text])
+
+		screen = s_join([screen, ANSI_CRLF])
+
+	string modified_marker = ""
+	if dirty
+		modified_marker = " [modified]"
+
+	string total_line_str = c_int_to_string(total_line_count)
+	string status_tail = " -- ^S save  ^Q quit  ^N line#  F1 files"
+	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, status_tail])
+
+	# Blue background sets the status/notice rows apart from the buffer
+	# above; dark red instead whenever the notice is blocking a destructive
+	# action.
+	string status_bg = ANSI_STATUS_BG
+	if error
+		status_bg = ANSI_ERROR_BG
+
+	string status_line_padded = s_pad_right(status_line, max_visible_columns)
+	string notice_padded = s_pad_right(notice, max_visible_columns)
+
+	screen = s_join([screen, status_bg, status_line_padded, ANSI_RESET, ANSI_CRLF])
+	screen = s_join([screen, status_bg, notice_padded, ANSI_RESET])
+
+	# Wheel-scrolling can leave the cursor outside the current view (it no
+	# longer follows the viewport), so this can land above or below the
+	# visible rows -- clamp back into range before turning it into a
+	# terminal cursor position.
+	int top_row = 1
+	int raw_cursor_screen_row = cursor_row - scroll_row + 1
+	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, visible_row_count)
+	int cursor_screen_col = cursor_visual_col + gutter_width + 1
+
+	string row_str = c_int_to_string(cursor_screen_row)
+	string col_str = c_int_to_string(cursor_screen_col)
+	string cursor_escape = s_join([esc, "[", row_str, ";", col_str, "H"])
+	screen = s_join([screen, cursor_escape])
+
+	xt_flush_print(screen)

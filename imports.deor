@@ -44,7 +44,7 @@ import "src/key_press/mouse.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/deor_editor.deor"
-import "src/renderer/rust_editor.deor"
+import "src/renderer/editor_render.deor"
 import "src/renderer/rust_browser.deor"
 import "src/renderer/rust_diff.deor"
 import "src/renderer/highlighting.deor"

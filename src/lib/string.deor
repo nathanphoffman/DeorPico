@@ -56,6 +56,14 @@ fn string s_repeat(string str, int count)
 	rust
 		str.repeat(count as usize)
 
+fn string s_pad_left(string str, int width)
+	rust
+		format!("{:>width$}", str, width = width as usize)
+
+fn string s_pad_right(string str, int width)
+	rust
+		format!("{:<width$}", str, width = width as usize)
+
 fn string s_trim_start(string str)
 	rust
 		str.trim_start().to_string()

@@ -59,6 +59,7 @@ fn void editor_render_browser(EditorState state)
 				match git_status {
 					"staged" => format!("\x1b[32m{}\x1b[39m", line),
 					"edited" => format!("\x1b[33m{}\x1b[39m", line),
+					"deleted" => format!("\x1b[9;31m{}\x1b[29;39m", line),
 					_ => line.to_string(),
 				}
 			}

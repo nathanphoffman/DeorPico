@@ -19,7 +19,9 @@ fn StringMap g_status(string repo_path)
 					let index_status = chars[0];
 					let worktree_status = chars[1];
 					let path = line[3..].trim().to_string();
-					let status = if index_status != ' ' && index_status != '?' {
+					let status = if index_status == 'D' || worktree_status == 'D' {
+						"deleted"
+					} else if index_status != ' ' && index_status != '?' {
 						"staged"
 					} else if worktree_status != ' ' {
 						"edited"

@@ -41,6 +41,31 @@ fn void xt_raw_off()
 			crossterm::terminal::disable_raw_mode().unwrap();
 		}
 
+# The ESC byte (0x1B) that starts every ANSI escape sequence -- Deor string
+# literals only support \n \t \\ \", so building "\x1b[...]" sequences in
+# plain Deor code starts from this one wrapped constant instead of a rust
+# block per call site.
+fn string xt_esc()
+	rust
+		"\u{1b}".to_string()
+
+# Carriage-return + newline, same reason as xt_esc -- \r is not a supported
+# Deor string escape.
+fn string xt_crlf()
+	rust
+		"\r\n".to_string()
+
+# Writes text to stdout with no trailing newline and flushes immediately --
+# needed for raw-mode screen redraws, where print() would add an unwanted
+# newline and buffered output would lag behind key input.
+fn void xt_flush_print(string text)
+	rust
+		{
+			use std::io::Write;
+			print!("{}", text);
+			std::io::stdout().flush().unwrap();
+		}
+
 
 fn KeyEvent xt_read_key()
 	const string TAB_SPACES = "    "
