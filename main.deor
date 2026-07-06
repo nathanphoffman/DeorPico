@@ -48,6 +48,12 @@ struct DiffState
 	stringList diff_lines
 	int diff_scroll_row
 
+	# True when diffing was entered from browsing a deleted file rather than
+	# from ^D on an open buffer -- there's no editable file to return to, so
+	# exiting goes back to the browser instead of the phantom editor
+	bool diff_preview
+	string diff_preview_path
+
 struct SelectionState
 	# Shift+arrow selection state
 	bool has_selection

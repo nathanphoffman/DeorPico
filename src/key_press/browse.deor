@@ -168,10 +168,29 @@ macro git_changes_enter
 	if len(git_changes) > 0
 		FileEntry selected = git_changes at git_selected
 		(path, is_dir, git_status) in selected
-		if not is_dir and git_status is not "deleted"
-			browsing = false
-			macro_run load_file_into_buffer
-			macro_run track_file_history
+		if not is_dir
+			if git_status is "deleted"
+				macro_run preview_deleted_file
+			else
+				browsing = false
+				macro_run load_file_into_buffer
+				macro_run track_file_history
+
+# Deleted files no longer exist on disk, so they can't be loaded into the
+# normal editable buffer -- jump straight into a read-only diff of the
+# deletion (against HEAD, via g_diff) instead, and leave the real buffer
+# (filename/lines) untouched so Esc can hand control back to the browser
+# rather than a phantom editor for a file that isn't there.
+macro preview_deleted_file
+	stringList preview_diff = g_diff(path)
+	diff_lines = preview_diff
+	diff_scroll_row = 0
+	diffing = true
+	diff_preview = true
+	diff_preview_path = path
+	browsing = false
+	notice = "Deleted file (diff, read-only)"
+	error = false
 
 # Loads `path` (already declared by the caller) into the active buffer,
 # discarding any unsaved state. Callers decide whether this should also

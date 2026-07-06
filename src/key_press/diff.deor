@@ -27,8 +27,13 @@ macro refresh_diff_for_new_file
 
 macro toggle_diff
 	if diffing
-		macro_run align_editor_scroll_from_diff
-		diffing = false
+		if diff_preview
+			diff_preview = false
+			diffing = false
+			browsing = true
+		else
+			macro_run align_editor_scroll_from_diff
+			diffing = false
 	else
 		stringList raw_diff = g_diff(filename)
 		int change_count = g_diff_count(raw_diff)

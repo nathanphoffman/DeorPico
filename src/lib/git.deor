@@ -29,7 +29,11 @@ fn StringMap g_status(string repo_path)
 						""
 					};
 					if !status.is_empty() {
-						map.0.lock().unwrap().insert(path, status.to_string());
+						let mut guard = map.0.lock().unwrap();
+						let already_deleted = guard.get(&path).map(|s| s == "deleted").unwrap_or(false);
+						if !already_deleted {
+							guard.insert(path, status.to_string());
+						}
 					}
 				}
 			}

@@ -29,7 +29,9 @@ macro initialize_diff
 	diffing as false
 	stringList diff_lines = g_diff(filename)
 	diff_scroll_row as 0
-	DiffState diff = (diffing, diff_lines, diff_scroll_row)
+	diff_preview as false
+	diff_preview_path as ""
+	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 
 macro initialize_selection
 	has_selection as false

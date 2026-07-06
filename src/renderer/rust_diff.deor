@@ -44,7 +44,11 @@ fn void editor_render_diff(EditorState state)
 				}
 				out.push_str("\r\n");
 			}
-			let status = format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename);
+			let status = if state.diff.diff_preview {
+				format!("-- {} (deleted, diff, read-only) -- Esc/^Q back to browser", state.diff.diff_preview_path)
+			} else {
+				format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename)
+			};
 			out.push_str(&status);
 			out.push_str("\r\n");
 			out.push_str(&state.notice);

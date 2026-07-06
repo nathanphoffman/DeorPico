@@ -216,7 +216,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus) in browser
-	(diffing, diff_lines, diff_scroll_row) in diff
+	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
 	(search_buffer, search_active, search_matches, search_match_index) in search
@@ -248,7 +248,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
 	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus)
-	DiffState diff = (diffing, diff_lines, diff_scroll_row)
+	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
 	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
