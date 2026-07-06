@@ -7,6 +7,7 @@ struct BufferState
     int cursor_col
     int scroll_row
 
+
 	# True for exactly one frame after a wheel-scroll event -- tells
 	# editor_scroll to skip its cursor-follow clamp that frame, so the
 	# wheel can move the viewport without dragging the cursor along.
@@ -53,6 +54,21 @@ struct DiffState
 	# exiting goes back to the browser instead of the phantom editor
 	bool diff_preview
 	string diff_preview_path
+
+struct LintState
+	# On-save lint/build integration -- see dpico's 3rd/4th CLI args
+	string lint_command
+	string lint_working_dir
+	string lint_regex
+	LintRunner lint_runner
+	bool lint_running
+	matchList issue_matches
+
+struct LaunchArgs
+	string filename
+	string initial_dir
+	string lint_command
+	string lint_regex
 
 struct SelectionState
 	# Shift+arrow selection state
@@ -103,6 +119,7 @@ struct EditorState
 	UndoState undo
 	SearchState search
 	FilterState filter
+	LintState lint
 	bool done
 
 	# Persists until replaced by another notice
@@ -113,7 +130,7 @@ struct EditorState
 
 fn void main()
 
-	(first, second) in args()
+	(first, second, third, input_list) in args()
 	string filename = ""
 	string initial_dir = "."
 	if first is not ""
@@ -124,7 +141,14 @@ fn void main()
 			filename = first
 	if second is not ""
 		initial_dir = second
-	EditorState state = editor_open(filename, initial_dir)
+
+	string lint_command = third
+	string lint_regex = ""
+	if len(input_list) > 3
+		lint_regex = input_list at 3
+
+	LaunchArgs launch = (filename, initial_dir, lint_command, lint_regex)
+	EditorState state = editor_open(launch)
 
 	xt_raw_on()
 

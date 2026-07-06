@@ -33,6 +33,13 @@ macro initialize_diff
 	diff_preview_path as ""
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 
+macro initialize_lint
+	LintRunner lint_runner = lr_make()
+	lint_running as false
+	matchList issue_matches = empty
+	string lint_working_dir = initial_dir
+	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches)
+
 macro initialize_selection
 	has_selection as false
 	sel_anchor_row as 0
@@ -61,7 +68,9 @@ macro initialize_filter
 	filter_truncated_count as 0
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 
-fn EditorState editor_open(string filename, string initial_dir)
+fn EditorState editor_open(LaunchArgs launch)
+	(filename, initial_dir, lint_command, lint_regex) in launch
+
 	macro_run initialize_core
 	macro_run initialize_browser
 	macro_run initialize_diff
@@ -69,12 +78,13 @@ fn EditorState editor_open(string filename, string initial_dir)
 	macro_run initialize_undo
 	macro_run initialize_search
 	macro_run initialize_filter
+	macro_run initialize_lint
 
 	done as false
 	notice as ""
 	error as false
 
-	EditorState state = (core, browser, diff, selection, undo, search, filter, done, notice, error)
+	EditorState state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
 	return state
 
 fn EditorState editor_save(EditorState state)

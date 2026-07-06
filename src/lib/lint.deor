@@ -1,0 +1,162 @@
+import "src/lib/search.deor"
+
+shape stringList = list of string
+
+# Background lint/build runner -- Arc<Mutex<...>> wrapped so it can sit as a
+# plain EditorState field (cheap to clone, same underlying child tracked by
+# every clone) rather than needing special-cased global state.
+raw LintRunner
+
+rust
+	struct LintRunnerState {
+		child: Option<std::process::Child>,
+	}
+	#[derive(Clone)]
+	struct LintRunner(std::sync::Arc<std::sync::Mutex<LintRunnerState>>);
+
+	// LintState (a Deor struct) embeds this directly, and every Deor struct
+	// auto-derives PartialEq/Debug -- but std::process::Child implements
+	// neither, so derive can't reach through here. Hand-written impls at
+	// this level sidestep that; nothing in the app actually compares or
+	// prints EditorState, so these just need to exist and compile.
+	impl std::fmt::Debug for LintRunner {
+		fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+			f.write_str("LintRunner(..)")
+		}
+	}
+
+	impl PartialEq for LintRunner {
+		fn eq(&self, other: &Self) -> bool {
+			std::sync::Arc::ptr_eq(&self.0, &other.0)
+		}
+	}
+
+struct LintPoll
+	bool running
+	bool just_finished
+	stringList output_lines
+
+struct LintQuery
+	string regex_pattern
+	string working_dir
+	string current_file
+
+fn LintRunner lr_make()
+	rust
+		LintRunner(std::sync::Arc::new(std::sync::Mutex::new(LintRunnerState { child: None })))
+
+# Kills whatever run is already in flight (if any) and spawns `command`
+# through a shell in `working_dir`, merging stderr into the same stdout
+# pipe so a single later read captures everything. Passing an empty
+# `command` just kills the in-flight run without starting a new one.
+fn void lr_run(LintRunner runner, string command, string working_dir)
+	rust
+		{
+			use std::os::unix::process::CommandExt;
+
+			let mut state = runner.0.lock().unwrap();
+			if let Some(mut child) = state.child.take() {
+				// `sh -c "command"` forks a child to actually run `command`
+				// rather than exec'ing in place (e.g. when the command is
+				// itself a script) -- killing just this tracked PID would
+				// leave that grandchild (and anything it forked, like its
+				// own `sleep`) running as an orphan. Spawning into its own
+				// process group below (process_group(0)) makes the child's
+				// own PID double as the group ID, so killing -pid here
+				// reaches the whole tree in one signal.
+				let pid = child.id() as i32;
+				unsafe { libc::kill(-pid, libc::SIGKILL); }
+				let _ = child.wait();
+			}
+			if command.trim().is_empty() {
+				return;
+			}
+			let shell_cmd = format!("{} 2>&1", command);
+			let spawned = std::process::Command::new("sh")
+				.arg("-c")
+				.arg(&shell_cmd)
+				.current_dir(&working_dir)
+				.stdin(std::process::Stdio::null())
+				.stdout(std::process::Stdio::piped())
+				.stderr(std::process::Stdio::null())
+				.process_group(0)
+				.spawn();
+			if let Ok(child) = spawned {
+				state.child = Some(child);
+			}
+		}
+
+# Non-blocking -- checks whether the tracked child has exited yet without
+# ever waiting on it. Output is read only once, right when the child is
+# first found to have finished, since that's the only point the pipe is
+# guaranteed complete.
+fn LintPoll lr_poll(LintRunner runner)
+	rust
+		{
+			let mut state = runner.0.lock().unwrap();
+			let mut running = false;
+			let mut just_finished = false;
+			let mut output_lines: Vec<String> = Vec::new();
+
+			let finished = if let Some(child) = state.child.as_mut() {
+				matches!(child.try_wait(), Ok(Some(_)))
+			} else {
+				false
+			};
+
+			if state.child.is_some() {
+				if finished {
+					if let Some(mut child) = state.child.take() {
+						use std::io::Read;
+						let mut buf = String::new();
+						if let Some(mut out) = child.stdout.take() {
+							let _ = out.read_to_string(&mut buf);
+						}
+						let _ = child.wait();
+						output_lines = buf.lines().map(|l| l.to_string()).collect();
+					}
+					just_finished = true;
+				} else {
+					running = true;
+				}
+			}
+
+			LintPoll { running, just_finished, output_lines }
+		}
+
+# Extracts every output line matching `query.regex_pattern` under the
+# convention capture group 1 = path, group 2 = line number (1-indexed) --
+# e.g. a rustc/grep -n style "path:line:" prefix -- keeping only matches
+# that resolve (relative to working_dir) to the same file currently open
+# in the buffer, so errors from other files in a multi-file build don't
+# light up lines here.
+fn matchList lr_parse_issues(stringList output_lines, LintQuery query)
+	rust
+		{
+			let mut matches: Vec<SearchMatch> = Vec::new();
+			let re = match regex::Regex::new(&query.regex_pattern) {
+				Ok(r) => r,
+				Err(_) => return matches,
+			};
+			let current_canon = std::fs::canonicalize(&query.current_file).ok();
+			for line in output_lines.iter() {
+				let caps = match re.captures(line) {
+					Some(c) => c,
+					None => continue,
+				};
+				let path_str = match caps.get(1) {
+					Some(m) => m.as_str(),
+					None => continue,
+				};
+				let line_num: i64 = match caps.get(2).and_then(|m| m.as_str().parse().ok()) {
+					Some(n) => n,
+					None => continue,
+				};
+				let candidate = std::path::Path::new(&query.working_dir).join(path_str);
+				let candidate_canon = std::fs::canonicalize(&candidate).ok();
+				if candidate_canon.is_some() && candidate_canon == current_canon {
+					matches.push(SearchMatch { row: (line_num - 1).max(0), col: 0 });
+				}
+			}
+			matches
+		}

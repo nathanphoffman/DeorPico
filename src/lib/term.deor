@@ -72,6 +72,13 @@ fn KeyEvent xt_read_key()
 
 	rust
 		loop {
+			// Poll with a timeout rather than blocking on read() forever --
+			// lets the main loop wake up periodically even with no input, so
+			// a background lint job's completion gets picked up while the
+			// user is idle instead of only on the next keystroke.
+			if !crossterm::event::poll(std::time::Duration::from_millis(150)).unwrap_or(false) {
+				break KeyEvent { kind: "tick".to_string(), chr: String::new(), shift: false, col: 0, row: 0 };
+			}
 			match crossterm::event::read().unwrap() {
 				crossterm::event::Event::Key(evt) => {
 				if evt.kind != crossterm::event::KeyEventKind::Press {

@@ -212,7 +212,7 @@ macro handle_page_and_mouse
 		macro_run scroll_down
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
-	(core, browser, diff, selection, undo, search, filter, done, notice, error) in state
+	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
 	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus) in browser
@@ -221,7 +221,12 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(undo_stack, redo_stack) in undo
 	(search_buffer, search_active, search_matches, search_match_index) in search
 	(filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
+	(lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches) in lint
 	(kind, chr, shift, col, row) in key
+
+	# Non-blocking; runs every call (real key or synthetic tick) so a
+	# finished background lint job is picked up as soon as possible.
+	macro_run apply_lint_poll
 
 	# A key that isn't a continuation of an alt+letter chord ends whatever
 	# chord was in progress -- the next alt+letter starts counting from
@@ -253,6 +258,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	UndoState undo = (undo_stack, redo_stack)
 	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
-	EditorState next_state = (core, browser, diff, selection, undo, search, filter, done, notice, error)
+	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches)
+	EditorState next_state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
 	return next_state
 

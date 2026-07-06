@@ -1,0 +1,26 @@
+# Non-blocking -- runs on every editor_handle_key call, including synthetic
+# "tick" events (see xt_read_key's poll timeout), so a background lint job's
+# completion shows up on the very next loop iteration even if the user
+# hasn't pressed a key since saving.
+macro apply_lint_poll
+	LintPoll poll = lr_poll(lint_runner)
+	(running, just_finished, output_lines) in poll
+	if just_finished
+		lint_running = false
+		regex_pattern as lint_regex
+		working_dir as lint_working_dir
+		current_file as filename
+		LintQuery query = (regex_pattern, working_dir, current_file)
+		issue_matches = lr_parse_issues(output_lines, query)
+		int issue_count = len(issue_matches)
+		count_str as c_int_to_string(issue_count)
+		if issue_count is 0
+			notice = "Lint: no issues"
+		else
+			prefix as "Lint: "
+			suffix as " issues"
+			stringList notice_parts = [prefix, count_str, suffix]
+			notice = s_join(notice_parts)
+		error = false
+	else if running
+		lint_running = true

@@ -26,6 +26,17 @@ install:
     cp target/release/DeorPico {{install_dir}}/dpico
     @echo "Installed dpico to {{install_dir}}/dpico"
 
+# Opens this repo in your installed dpico, rebuilding/reinstalling it first
+# so you're always editing with your own latest changes. Wires `just build`
+# in as the on-save lint command -- deor's own transpile-validation errors
+# (e.g. "[validation] path line N: ...") get parsed back into orange
+# highlights on the offending line. Note: this only catches validation
+# errors -- if deor validation passes but rustc then fails on the
+# *generated* build/main.rs, that error's line numbers point into the
+# generated file, not back into the .deor source, so it won't highlight.
+edit: install
+    dpico . . "just build" '\[validation\] (\S+) line ([0-9]+):'
+
 update-deor-with-latest:
     curl -sSf https://raw.githubusercontent.com/nathanphoffman/DeorLang/main/setup/update.sh | sh
 

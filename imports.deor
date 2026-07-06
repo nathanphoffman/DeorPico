@@ -13,6 +13,7 @@ import "src/lib/map.deor"
 import "src/lib/git.deor"
 import "src/lib/clip.deor"
 import "src/lib/search.deor"
+import "src/lib/lint.deor"
 import "src/lib/dirsearch.deor"
 
 # Macros must be loaded first
@@ -38,6 +39,7 @@ import "src/key_press/browse.deor"
 import "src/key_press/browse_filter.deor"
 import "src/key_press/scroll.deor"
 import "src/key_press/diff.deor"
+import "src/key_press/lint.deor"
 import "src/key_press/search.deor"
 import "src/key_press/line_numbers.deor"
 import "src/key_press/mouse.deor"
@@ -54,4 +56,3 @@ import "src/file_manager.deor"
 
 # Finally events are listened to
 import "src/events.deor"
-

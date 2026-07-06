@@ -35,13 +35,13 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: prevent deleted files from being normally opened, they just show locked out git diff content rather than no content at all
 - Done: now supports working folder pathing
 - Done: install now installs pico path locally
+- Done: two additional arguments added for running dpico
 
+
+Working: 
+Add Auto Syntax Check for DeorPico
 
 ## Nest For AI
-
-Can we add two more arguments to deor a script "just run dev" which runs in the working folder and a regular expression "{regex}" which outputs a "{line_number} {file_name}".  The line_number is highlighted if anything is outputted from that prompt in dark orange, using similar highlighting to our search with the original raw line of the output at the top of the file
-
-Add Auto Syntax Check for DeorPico
 
 ## For Nate to Figure Out:
 Do: Support better rust highlighting in deor?
