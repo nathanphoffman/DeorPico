@@ -61,6 +61,9 @@ import "src/renderer/browser/macros/render_browser_filter_view.deor"
 import "src/renderer/browser/macros/render_browser_main_view.deor"
 import "src/renderer/browser/browser.deor"
 
+# persistent Files-tree sidebar (^B) -- reuses the F1 browser above
+import "src/renderer/editor/sidebar.deor"
+
 import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/highlighting.deor"
 

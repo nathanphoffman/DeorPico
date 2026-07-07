@@ -5,7 +5,7 @@ macro calculate_clamped_cursor_row
 	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, bottom_row)
 
 macro calculate_cursor_screen_column
-	int cursor_screen_col = cursor_visual_col + gutter_width + 1
+	int cursor_screen_col = cursor_visual_col + sidebar_width + gutter_width + 1
 
 # Format cursor position as an ANSI escape code
 macro format_cursor_escape_code

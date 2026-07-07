@@ -31,6 +31,12 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
+	# Persistent Files-tree sidebar (^B) -- shares browse_entries/
+	# browse_selected/browse_scroll_row/browse_dir with the F1 browser (same
+	# tree, same expand/collapse state), but toggles independently of
+	# `browsing` and never takes over the whole screen.
+	bool sidebar_visible
+
 	# Recently-opened files, most recent first. Only the top few show under
 	# the "Recent" header in the merged column (see BROWSER_RECENT_ROWS),
 	# but the full list still backs F9/F12 history stepping regardless of

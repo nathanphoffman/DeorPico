@@ -17,8 +17,9 @@ macro render_lint_output_section
 fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
 	macro_run use_ansi_codes
 
-	(core, diff, search, lint, notice, error) in state
+	(core, browser, diff, search, lint, notice, error) in state
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
+	(sidebar_visible, browse_entries, browse_selected, browse_scroll_row) in browser
 	(diff_lines) in diff
 	(search_active, search_matches) in search
 	(issue_matches, lint_output, lint_output_visible) in lint

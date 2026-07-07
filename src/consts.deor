@@ -27,6 +27,12 @@ macro use_consts
     const int BROWSER_LEFT_MARGIN = 8
     const int BROWSER_COLUMN_GAP = 3
 
+    # Fixed width of the persistent Files-tree sidebar (^B, see sidebar.deor)
+    # -- unlike the F1 browser's proportional Files/Recent-Git split, the
+    # sidebar always claims exactly this many columns so the text buffer's
+    # own width is predictable frame to frame.
+    const int SIDEBAR_WIDTH = 30
+
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
 # the lint output popup) -- any mismatch lets the cursor scroll past what's

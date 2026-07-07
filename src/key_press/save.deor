@@ -6,6 +6,7 @@ macro key_save
 	notice = "Saved"
 	error = false
 	macro_run refresh_git_diff_lines
+	macro_run refresh_sidebar_git_status
 
 	if lint_command is not ""
 		lr_run(lint_runner, lint_command, lint_working_dir)

@@ -11,7 +11,7 @@ macro clamp_scroll
 	TermSize size = xt_size()
 	(cols, rows) in size
 
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_visible)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
@@ -22,14 +22,23 @@ macro clamp_scroll
 	if scroll_row > max_scroll
 		scroll_row = max_scroll
 
+# A wheel scroll over the sidebar's columns scrolls the Files tree instead of
+# the text buffer (see sidebar_scroll_up/down) -- lets the tree be browsed
+# without needing F1's full-screen view just to reach an entry below the fold.
 macro scroll_up
 	macro_run use_consts
-	scroll_row = scroll_row - SCROLL_WHEEL_AMOUNT
-	macro_run clamp_scroll
+	if sidebar_visible and col < SIDEBAR_WIDTH
+		macro_run sidebar_scroll_up
+	else
+		scroll_row = scroll_row - SCROLL_WHEEL_AMOUNT
+		macro_run clamp_scroll
 	wheel_scrolled = true
 
 macro scroll_down
 	macro_run use_consts
-	scroll_row = scroll_row + SCROLL_WHEEL_AMOUNT
-	macro_run clamp_scroll
+	if sidebar_visible and col < SIDEBAR_WIDTH
+		macro_run sidebar_scroll_down
+	else
+		scroll_row = scroll_row + SCROLL_WHEEL_AMOUNT
+		macro_run clamp_scroll
 	wheel_scrolled = true

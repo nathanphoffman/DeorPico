@@ -13,7 +13,7 @@ macro initialize_core
 
 macro initialize_browser
 	browsing as false
-	entryList browse_entries = empty
+	entryList browse_entries = f_list_dir(initial_dir)
 	browse_selected as 0
 	browse_scroll_row as 0
 	string browse_dir = initial_dir
@@ -23,7 +23,15 @@ macro initialize_browser
 	git_scroll_row as 0
 	recent_git_selected as 0
 	BrowserPane browser_focus = Files
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus)
+
+	# The sidebar shows by default (see toggle_sidebar), so browse_entries
+	# needs its git-status colors up front rather than waiting for the
+	# first F1 press.
+	StringMap initial_git_map = g_status(browse_dir)
+	browse_entries = g_apply_status(browse_entries, initial_git_map)
+	sidebar_visible as true
+
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_visible)
 
 macro initialize_diff
 	diffing as false
