@@ -14,7 +14,6 @@ macro render_lint_output_section
 		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
 		screen = s_join([screen, lint_popup])
 
-
 fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
 	macro_run use_ansi_codes
 
