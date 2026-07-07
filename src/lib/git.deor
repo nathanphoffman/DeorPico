@@ -1,244 +1,356 @@
 import "src/lib/file.deor"
 import "src/lib/map.deor"
+import "src/lib/string.deor"
+import "src/lib/term.deor"
+import "src/lib/list.deor" where T = string
+
+shape intList = list of int
+
+macro use_git_minimap_ansi
+	string esc = xt_esc()
+	const string ANSI_MAP_ADD = s_join([esc, "[42m"])
+	const string ANSI_MAP_DEL = s_join([esc, "[41m"])
+	const string ANSI_MAP_MIX = s_join([esc, "[43m"])
+	const string ANSI_MAP_RESET = s_join([esc, "[0m"])
+
+# Rust's String::lines() drops a single trailing empty segment produced by
+# a final "\n" but keeps every other blank line -- s_split alone would keep
+# that trailing artifact too, so strip exactly one trailing newline first
+# to match .lines() exactly (git command output always ends with "\n").
+fn stringList g_split_lines(string raw_text)
+	string newline = "\n"
+	string trimmed = raw_text
+	if s_ends_with(raw_text, newline)
+		int raw_len = len(raw_text)
+		int trim_start = 0
+		int trim_end = raw_len - 1
+		trimmed = s_substring(raw_text, trim_start, trim_end)
+
+	return s_split(trimmed, newline)
+
+
+fn string g_raw_status(string repo_path)
+	rust
+		std::process::Command::new("git")
+			.args(["status", "--porcelain=v1"])
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+			.unwrap_or_default()
+
+
+# "staged_edited" is a staged file with further worktree edits on top
+# (git's "MM" case) -- kept distinct from plain "staged" so the browser can
+# flag it, since both would otherwise render identically green with no
+# sign of the extra local edit.
+fn string g_classify_status(string index_status, string worktree_status)
+	if index_status is "D" or worktree_status is "D"
+		return "deleted"
+
+	if index_status is not " " and index_status is not "?"
+		if worktree_status is not " "
+			return "staged_edited"
+		return "staged"
+
+	if worktree_status is not " "
+		return "edited"
+
+	return ""
+
 
 fn StringMap g_status(string repo_path)
-	rust
-		{
-			let map = h_make();
-			if let Ok(output) = std::process::Command::new("git")
-				.args(["status", "--porcelain=v1"])
-				.current_dir(&repo_path)
-				.output()
-			{
-				let text = String::from_utf8_lossy(&output.stdout);
-				for line in text.lines() {
-					if line.len() < 4 {
-						continue;
-					}
-					let chars: Vec<char> = line.chars().collect();
-					let index_status = chars[0];
-					let worktree_status = chars[1];
-					let path = line[3..].trim().to_string();
-					// "staged_edited" is a staged file with further worktree edits on
-					// top (git's "MM" case) -- kept distinct from plain "staged" so
-					// the browser can flag it, since both would otherwise render
-					// identically green with no sign of the extra local edit.
-					let status = if index_status == 'D' || worktree_status == 'D' {
-						"deleted"
-					} else if index_status != ' ' && index_status != '?' {
-						if worktree_status != ' ' {
-							"staged_edited"
-						} else {
-							"staged"
-						}
-					} else if worktree_status != ' ' {
-						"edited"
-					} else {
-						""
-					};
-					if !status.is_empty() {
-						let mut guard = map.0.lock().unwrap();
-						let already_deleted = guard.get(&path).map(|s| s == "deleted").unwrap_or(false);
-						if !already_deleted {
-							guard.insert(path, status.to_string());
-						}
-					}
-				}
-			}
-			map
-		}
+	string raw_text = g_raw_status(repo_path)
+	stringList lines = g_split_lines(raw_text)
 
-fn stringList g_diff(string path)
+	int zero_idx = 0
+	int one_idx = 1
+	int three_idx = 3
+
+	StringMap result = h_make()
+	for line in lines
+		int line_len = len(line)
+		if line_len < 4
+			continue
+
+		string index_status = s_char_at(line, zero_idx)
+		string worktree_status = s_char_at(line, one_idx)
+		string rest = s_substring(line, three_idx, line_len)
+		string path = s_trim(rest)
+		string status = g_classify_status(index_status, worktree_status)
+
+		if status is not ""
+			# A path only ever gets one line per `git status` run -- this
+			# just mirrors the map's own "don't downgrade a deleted entry"
+			# rule if that ever changes.
+			string existing = h_get(result, path)
+			if existing is not "deleted"
+				result = h_set(result, path, status)
+
+	return result
+
+
+fn string g_raw_diff(string path)
 	rust
-		{
-			let mut lines: Vec<String> = Vec::new();
-			if let Ok(output) = std::process::Command::new("git")
-				.args(["diff", "HEAD", "--no-color", "-U100000", "--"])
-				.arg(&path)
-				.output()
-			{
-				let text = String::from_utf8_lossy(&output.stdout);
-				let mut started = false;
-				for line in text.lines() {
-					if started {
-						lines.push(line.to_string());
-					} else if line.starts_with("@@") {
-						started = true;
-					}
-				}
-			}
-			lines
-		}
+		std::process::Command::new("git")
+			.args(["diff", "HEAD", "--no-color", "-U100000", "--"])
+			.arg(&path)
+			.output()
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+			.unwrap_or_default()
+
+
+# Drops the diff header (everything before the first hunk) -- only lines
+# after the first "@@" marker are real content, and the "@@" line itself is
+# never included in the result.
+fn stringList g_diff(string path)
+	string raw_text = g_raw_diff(path)
+	stringList lines = g_split_lines(raw_text)
+	string marker = "@@"
+
+	stringList result = empty
+	started as false
+	for line in lines
+		if started
+			result at end = line
+		else if s_starts_with(line, marker)
+			started = true
+
+	return result
+
 
 fn int g_diff_count(stringList diff_lines)
-	rust
-		{
-			let mut count: i64 = 0;
-			for line in diff_lines.iter() {
-				if line.starts_with('+') || line.starts_with('-') {
-					count += 1;
-				}
-			}
-			count
-		}
+	string plus_sign = "+"
+	string minus_sign = "-"
 
-# Shared by g_diff_minimap and g_diff_minimap_raw: buckets a per-row status
-# array (0 clean, 1 add, 2 del, 3 mixed) into `cols` proportional terminal
-# columns, then run-length encodes same-colored slices into background-color
-# spans so a long stretch of one color emits one escape code, not one per
-# column. A bare module-level rust block (see StringMap in lib/map.deor for
-# the same pattern) since Deor functions cap at 3 parameters and both callers
-# need to pass a status vec built from different sources.
-rust
-	fn render_minimap_bar(status: &[u8], cols: usize) -> String {
-		let total_lines = status.len();
-		let color_code = |bar: &mut String, code: i32, len: usize| {
-			if len == 0 {
-				return;
-			}
-			match code {
-				1 => bar.push_str("\x1b[42m"),
-				2 => bar.push_str("\x1b[41m"),
-				3 => bar.push_str("\x1b[43m"),
-				_ => bar.push_str("\x1b[0m"),
-			}
-			bar.push_str(&" ".repeat(len));
-			bar.push_str("\x1b[0m");
-		};
+	count as 0
+	for line in diff_lines
+		if s_starts_with(line, plus_sign) or s_starts_with(line, minus_sign)
+			count = count + 1
 
-		let mut bar = String::new();
-		let mut run_code: i32 = -1;
-		let mut run_len: usize = 0;
-		for col in 0..cols {
-			let start = col * total_lines / cols;
-			let end = (col + 1) * total_lines / cols;
-			let mut bucket_code = 0i32;
-			for row in start..end {
-				match status[row] {
-					1 => bucket_code = if bucket_code == 2 { 3 } else { 1 },
-					2 => bucket_code = if bucket_code == 1 { 3 } else { 2 },
-					3 => bucket_code = 3,
-					_ => {}
-				}
-			}
-			if bucket_code == run_code {
-				run_len += 1;
-			} else {
-				color_code(&mut bar, run_code, run_len);
-				run_code = bucket_code;
-				run_len = 1;
-			}
-		}
-		color_code(&mut bar, run_code, run_len);
-		bar
-	}
+	return count
+
+
+# Combines a bucket's running color with one more row's status -- yellow
+# ("mixed", 3) wins once a bucket has seen both an add and a delete.
+fn int g_merge_status(int bucket_code, int row_status)
+	if row_status is 1
+		if bucket_code is 2
+			return 3
+		return 1
+	if row_status is 2
+		if bucket_code is 1
+			return 3
+		return 2
+	if row_status is 3
+		return 3
+	return bucket_code
+
+
+# One escape-coded span of the minimap bar: `color_code` background, then
+# `length` spaces, then reset. The caller run-length encodes same-colored
+# slices first, so a long stretch of one color emits one span, not one per
+# column.
+fn string g_ansi_span(int color_code, int length)
+	if length is 0
+		return ""
+
+	macro_run use_git_minimap_ansi
+	string space = " "
+	string fill = s_repeat(space, length)
+
+	string bg_color = ANSI_MAP_RESET
+	if color_code is 1
+		bg_color = ANSI_MAP_ADD
+	else if color_code is 2
+		bg_color = ANSI_MAP_DEL
+	else if color_code is 3
+		bg_color = ANSI_MAP_MIX
+
+	return s_join([bg_color, fill, ANSI_MAP_RESET])
+
+
+# Buckets a per-row status list (0 clean, 1 add, 2 del, 3 mixed) into `cols`
+# proportional terminal columns and renders one span per same-colored run.
+# Shared by g_diff_minimap and g_diff_minimap_raw, which differ only in how
+# they build the row-status list handed to this function.
+fn string g_render_minimap_bar(intList status, int cols)
+	int total_lines = len(status)
+
+	string bar = ""
+	int run_code = 0 - 1
+	int run_len = 0
+
+	for col in range(cols)
+		int start = col * total_lines / cols
+		int stop = (col + 1) * total_lines / cols
+
+		int bucket_code = 0
+		for row in (start, stop)
+			int row_status = status at row
+			bucket_code = g_merge_status(bucket_code, row_status)
+
+		if bucket_code is run_code
+			run_len = run_len + 1
+		else
+			string span = g_ansi_span(run_code, run_len)
+			bar = s_join([bar, span])
+			run_code = bucket_code
+			run_len = 1
+
+	string last_span = g_ansi_span(run_code, run_len)
+	bar = s_join([bar, last_span])
+	return bar
+
+
+# Maps `diff_lines` onto a `total_lines`-sized row-status list. A '-' line
+# has no row of its own in the current buffer, so it's pinned to the
+# following (or last) buffer row instead -- the same mapping align_diff_scroll
+# uses to keep the minimap in sync with what's actually on screen.
+fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
+	intList status = empty
+	for in range(total_lines)
+		status at end = 0
+
+	int zero_idx = 0
+	int file_row = 0
+	for line in diff_lines
+		string first = s_char_at(line, zero_idx)
+
+		if first is "-"
+			int mark_row = file_row
+			if file_row >= total_lines
+				mark_row = total_lines - 1
+			int existing = status at mark_row
+			if existing is 1
+				status at mark_row = 3
+			else
+				status at mark_row = 2
+		else if first is "+"
+			if file_row < total_lines
+				int existing = status at file_row
+				if existing is 2
+					status at file_row = 3
+				else
+					status at file_row = 1
+			file_row = file_row + 1
+		else
+			file_row = file_row + 1
+
+	return status
+
+
+# One row per `diff_lines` entry, deleted lines included -- for the git-diff
+# view itself, unlike g_diff_status_rows which maps back onto buffer rows.
+fn intList g_diff_status_raw(stringList diff_lines)
+	int zero_idx = 0
+
+	intList status = empty
+	for line in diff_lines
+		string first = s_char_at(line, zero_idx)
+		if first is "+"
+			status at end = 1
+		else if first is "-"
+			status at end = 2
+		else
+			status at end = 0
+
+	return status
+
 
 # One-row proportional heat bar summarizing where `diff_lines`' changes fall
 # across `total_lines` buffer rows, squashed into `cols` terminal columns --
 # green for added, red for removed, yellow where a column's slice contains
-# both. Empty string (render nothing) when there's no diff. Maps diff rows
-# onto buffer rows the way align_diff_scroll does: a '-' line has no row of
-# its own in the current buffer, so it's pinned to the following (or last)
-# buffer row instead. Use g_diff_minimap_raw for the git-diff view itself,
-# where deleted lines are shown on their own line.
+# both. Empty string (render nothing) when there's no diff. Use
+# g_diff_minimap_raw for the git-diff view itself, where deleted lines are
+# shown on their own line.
 fn string g_diff_minimap(stringList diff_lines, int total_lines, int cols)
-	rust
-		{
-			if diff_lines.is_empty() || total_lines <= 0 || cols <= 0 {
-				return String::new();
-			}
-			let total_lines = total_lines as usize;
-			let cols = cols as usize;
-			let mut status = vec![0u8; total_lines]; // 0 clean, 1 add, 2 del, 3 mixed
+	if diff_lines is empty or total_lines <= 0 or cols <= 0
+		return ""
 
-			let mut file_row: usize = 0;
-			for line in diff_lines.iter() {
-				match line.chars().next().unwrap_or(' ') {
-					'-' => {
-						let mark_row = if file_row < total_lines { file_row } else { total_lines - 1 };
-						status[mark_row] = if status[mark_row] == 1 { 3 } else { 2 };
-					}
-					'+' => {
-						if file_row < total_lines {
-							status[file_row] = if status[file_row] == 2 { 3 } else { 1 };
-						}
-						file_row += 1;
-					}
-					_ => {
-						file_row += 1;
-					}
-				}
-			}
+	intList status = g_diff_status_rows(diff_lines, total_lines)
+	return g_render_minimap_bar(status, cols)
 
-			render_minimap_bar(&status, cols)
-		}
 
-# Same bar as g_diff_minimap, but for the git-diff view itself: each
-# diff_lines entry is its own row (deleted lines included), rather than
-# mapped back onto buffer rows.
+# Same bar as g_diff_minimap, but for the git-diff view itself.
 fn string g_diff_minimap_raw(stringList diff_lines, int cols)
+	if diff_lines is empty or cols <= 0
+		return ""
+
+	intList status = g_diff_status_raw(diff_lines)
+	return g_render_minimap_bar(status, cols)
+
+
+fn entryList g_sort_entries_by_path(entryList entries)
 	rust
 		{
-			if diff_lines.is_empty() || cols <= 0 {
-				return String::new();
-			}
-			let cols = cols as usize;
-			let status: Vec<u8> = diff_lines
-				.iter()
-				.map(|line| match line.chars().next().unwrap_or(' ') {
-					'+' => 1,
-					'-' => 2,
-					_ => 0,
-				})
-				.collect();
-
-			render_minimap_bar(&status, cols)
-		}
-
-fn entryList g_changed_entries(StringMap git_map)
-	rust
-		{
-			let mut items: Vec<FileEntry> = Vec::new();
-			for (path, status) in git_map.0.lock().unwrap().iter() {
-				let name = std::path::Path::new(path).file_name().and_then(|n| n.to_str()).unwrap_or(path).to_string();
-				items.push(FileEntry { name, path: path.clone(), is_dir: false, depth: 0, expanded: false, git_status: status.clone() });
-			}
+			let mut items = entries;
 			items.sort_by(|a, b| a.path.to_lowercase().cmp(&b.path.to_lowercase()));
 			items
 		}
 
+
+fn entryList g_changed_entries(StringMap git_map)
+	stringList paths = h_keys(git_map)
+
+	entryList items = empty
+	for path in paths
+		string git_status = h_get(git_map, path)
+		string name = f_basename(path)
+		bool is_dir = false
+		int depth = 0
+		bool expanded = false
+		FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
+		items at end = entry
+
+	return g_sort_entries_by_path(items)
+
+
 # Reorders `entries` so any that appear in `history` come first, most
 # recently opened first (recency = position in history) -- entries that
 # have never been opened keep their existing relative order at the tail
-# (stable sort). Lets the file browser's merged Recent/Git column show
+# (stable). Lets the file browser's merged Recent/Git column show
 # git-changed files "ordered by recent" without needing the git status map
 # again, so it can be re-applied to git_changes right after file_history
 # changes (see track_file_history) as well as when the browser refreshes.
 fn entryList g_reorder_by_recency(entryList entries, entryList history)
-	rust
-		{
-			use std::collections::HashMap;
-			let mut rank: HashMap<String, usize> = HashMap::new();
-			for (i, entry) in history.iter().enumerate() {
-				rank.entry(entry.path.clone()).or_insert(i);
-			}
-			let mut items = entries;
-			items.sort_by_key(|e| match rank.get(&e.path) {
-				Some(r) => (0usize, *r),
-				None => (1usize, 0usize),
-			});
-			items
-		}
+	stringList placed = empty
+	entryList result = empty
+
+	for hist_entry in history
+		(path) in hist_entry
+		string hist_path = path
+		if l_string_contains(placed, hist_path)
+			continue
+
+		for entry in entries
+			(path) in entry
+			if path is hist_path
+				result at end = entry
+				placed at end = hist_path
+				break
+
+	for entry in entries
+		(path) in entry
+		if not l_string_contains(placed, path)
+			result at end = entry
+
+	return result
+
 
 fn entryList g_apply_status(entryList entries, StringMap git_map)
-	rust
-		{
-			let mut result: Vec<FileEntry> = Vec::new();
-			for mut entry in entries.into_iter() {
-				let clean = entry.path.strip_prefix("./").unwrap_or(entry.path.as_str()).to_string();
-				let status = git_map.0.lock().unwrap().get(&clean).cloned().unwrap_or_default();
-				entry.git_status = status;
-				result.push(entry);
-			}
-			result
-		}
+	string dot_slash = "./"
+	int strip_len = 2
+
+	entryList result = empty
+	for entry in entries
+		(path) in entry
+		string clean = path
+		if s_starts_with(path, dot_slash)
+			int path_len = len(path)
+			clean = s_substring(path, strip_len, path_len)
+
+		string git_status = h_get(git_map, clean)
+		FileEntry updated = entry with (git_status)
+		result at end = updated
+
+	return result
