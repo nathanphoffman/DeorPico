@@ -1,0 +1,29 @@
+
+# Clear screen and append minimap if present
+macro initialize_screen_buffer_with_minimap
+	string screen = ANSI_CLEAR_SCREEN
+	if has_minimap
+		screen = s_join([screen, minimap_bar, ANSI_CRLF])
+
+
+# Generate minimap bar and calculate gutter width
+macro setup_minimap_and_gutters
+	# One-row heat bar showing where git changes fall in the file, squashed
+	# proportionally across the terminal width -- hidden entirely (no
+	# reserved row) when the file has no git changes.
+	string minimap_bar = g_diff_minimap(diff_lines, total_line_count, max_visible_columns)
+	bool has_minimap = minimap_bar is not ""
+
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
+
+	int visible_row_count = rows - reserved_rows
+	if visible_row_count < 1
+		visible_row_count = 1
+
+	macro_run initialize_screen_buffer_with_minimap
+
+	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
+	int text_visible_columns = max_visible_columns - gutter_width
+	if text_visible_columns < 1
+		text_visible_columns = 1
+

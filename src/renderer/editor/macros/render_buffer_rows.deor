@@ -1,0 +1,26 @@
+
+# Main rendering loop: iterate through visible rows and render each line
+macro render_buffer_rows
+	for row_offset in range(visible_row_count)
+		int buffer_row_index = scroll_row + row_offset
+		string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
+		screen = s_join([screen, gutter_piece])
+
+		if buffer_row_index < total_line_count
+			string line = lines at buffer_row_index
+			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
+			RenderedLine rendered = render_visible_line(line, text_visible_columns, highlight)
+			(text, visible_cols) in rendered
+
+			bool row_matches = search_active and editor_row_has_match(search_matches, buffer_row_index)
+			bool row_has_issue = editor_row_has_match(issue_matches, buffer_row_index)
+			if row_matches
+				string tinted_text = editor_tint_search_row(text, text_visible_columns, visible_cols)
+				screen = s_join([screen, tinted_text])
+			else if row_has_issue
+				string tinted_text = editor_tint_issue_row(text, text_visible_columns, visible_cols)
+				screen = s_join([screen, tinted_text])
+			else
+				screen = s_join([screen, text])
+
+		screen = s_join([screen, ANSI_CRLF])

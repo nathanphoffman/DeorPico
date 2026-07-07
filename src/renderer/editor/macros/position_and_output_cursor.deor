@@ -1,0 +1,22 @@
+
+# Calculate cursor position and generate escape code to position it
+macro position_and_output_cursor
+	# Wheel-scrolling can leave the cursor outside the current view (it no
+	# longer follows the viewport), so this can land above or below the
+	# visible rows -- clamp back into range before turning it into a
+	# terminal cursor position.
+	int minimap_offset = 0
+	if has_minimap
+		minimap_offset = 1
+	int top_row = 1 + minimap_offset
+	int bottom_row = visible_row_count + minimap_offset
+	int raw_cursor_screen_row = cursor_row - scroll_row + 1 + minimap_offset
+	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, bottom_row)
+	int cursor_screen_col = cursor_visual_col + gutter_width + 1
+
+	string row_str = c_int_to_string(cursor_screen_row)
+	string col_str = c_int_to_string(cursor_screen_col)
+	string cursor_escape = s_join([esc, "[", row_str, ";", col_str, "H"])
+	screen = s_join([screen, cursor_escape])
+
+	xt_flush_print(screen)

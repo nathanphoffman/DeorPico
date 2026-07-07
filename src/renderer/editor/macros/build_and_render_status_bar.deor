@@ -1,0 +1,26 @@
+
+# Construct status line with file info and append to screen
+macro build_and_render_status_bar
+	string modified_marker = ""
+	if dirty
+		modified_marker = " [modified]"
+
+	string total_line_str = c_int_to_string(total_line_count)
+	string status_shortcuts = editor_status_shortcuts(has_selection)
+	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, " -- ", status_shortcuts])
+	if len(status_line) > max_visible_columns
+		int truncate_start = 0
+		status_line = s_substring(status_line, truncate_start, max_visible_columns)
+
+	# Bottom status bar of the editor screen
+	# above; dark red instead whenever the notice is blocking a destructive
+	# action.
+	string status_bg = ANSI_STATUS_BG
+	if error
+		status_bg = ANSI_ERROR_BG
+
+	string status_line_padded = s_pad_right(status_line, max_visible_columns)
+	string notice_padded = s_pad_right(notice, max_visible_columns)
+
+	screen = s_join([screen, status_bg, status_line_padded, ANSI_RESET, ANSI_CRLF])
+	screen = s_join([screen, status_bg, notice_padded, ANSI_RESET])

@@ -202,6 +202,7 @@ fn void main()
 			editor_render_diff(render_state_with_colors)
 		else
 			editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
+			
 		KeyEvent raw_key = xt_read_key()
 		KeyEvent key = editor_translate_key(raw_key)
 		state = editor_handle_key(state, key)
