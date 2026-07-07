@@ -1,150 +1,229 @@
 
+# Colors and highlight/dim toggles specific to the file browser -- reuses
+# use_ansi_codes for esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than
+# redefining them.
+macro use_browser_ansi_codes
+	macro_run use_ansi_codes
+	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
+	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])
+	const string ANSI_DIM_ON = s_join([esc, "[2m"])
+	const string ANSI_DIM_OFF = s_join([esc, "[22m"])
+	const string ANSI_GIT_STAGED_ON = s_join([esc, "[32m"])
+	const string ANSI_GIT_STAGED_OFF = s_join([esc, "[39m"])
+	const string ANSI_GIT_EDITED_ON = s_join([esc, "[33m"])
+	const string ANSI_GIT_EDITED_OFF = s_join([esc, "[39m"])
+	const string ANSI_GIT_DELETED_ON = s_join([esc, "[9;31m"])
+	const string ANSI_GIT_DELETED_OFF = s_join([esc, "[29;39m"])
+
+
+struct FitResult
+	string text
+	int visible_len
+
+# Truncates `label` to at most `width` characters. s_substring's skip/take
+# is a no-op if label is already shorter, so this doubles as "truncate only
+# if needed" with no separate length check -- and being char-based (unlike
+# the byte-based .len()/.truncate() this replaces) it can't panic on a
+# multi-byte name landing mid-character.
+fn FitResult browser_fit(string label, int width)
+	zero as 0
+	string text = s_substring(label, zero, width)
+	int visible_len = len(text)
+	return (text, visible_len)
+
+
+# Wraps `line` in the ANSI color for `git_status` ("staged"/"edited"/
+# "deleted"), or returns it unchanged for any other status (including ""
+# for a clean file).
+fn string browser_colorize(string line, string git_status)
+	macro_run use_browser_ansi_codes
+
+	string result = line
+	if git_status is "staged"
+		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
+	else if git_status is "edited"
+		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
+	else if git_status is "deleted"
+		result = s_join([ANSI_GIT_DELETED_ON, line, ANSI_GIT_DELETED_OFF])
+
+	return result
+
+
+# Wraps `line` in reverse video when `selected` is true -- marks whichever
+# row/pane currently has focus.
+fn string browser_select_wrap(string line, bool selected)
+	macro_run use_ansi_codes
+
+	string result = line
+	if selected
+		result = s_join([ANSI_REVERSE_ON, line, ANSI_RESET])
+
+	return result
+
+
+# `width - visible_len` spaces of padding plus one separator column --
+# negative padding (cell already at/over width) clamps to just the
+# separator, matching Rust's saturating_sub.
+fn string browser_gutter(int visible_len, int width)
+	int pad_len = width - visible_len
+	if pad_len < 0
+		pad_len = 0
+	pad_len = pad_len + 1
+
+	space as " "
+	return s_repeat(space, pad_len)
+
+
 fn void editor_render_browser(EditorState state)
-	rust
-		{
-			use std::io::Write;
-			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
-			let cols = cols as usize;
-			let view_rows = if rows > 2 { (rows - 2) as usize } else { 1 };
-			let mut out = String::new();
-			out.push_str("\x1b[H\x1b[2J");
+	macro_run use_browser_ansi_codes
+	(browser, filter, notice) in state
+	(filter_active, filter_dir, filter_matches, filter_selected, filter_scroll_row) in filter
 
-			if state.filter.filter_active {
-				let total = state.filter.filter_matches.len();
-				for i in 0..view_rows {
-					let idx = state.filter.filter_scroll_row as usize + i;
-					if idx < total {
-						let entry = &state.filter.filter_matches[idx];
-						let mut plain = if entry.is_name_match {
-							entry.display_path.clone()
-						} else {
-							format!("{} (instances: {})", entry.display_path, entry.instance_count)
-						};
-						if plain.len() > cols {
-							plain.truncate(cols);
-						}
-						let mut line = if entry.is_name_match {
-							format!("\x1b[1m{}\x1b[22m", plain)
-						} else {
-							plain
-						};
-						if idx == state.filter.filter_selected as usize {
-							line = format!("\x1b[7m{}\x1b[0m", line);
-						}
-						out.push_str(&line);
-					}
-					out.push_str("\r\n");
-				}
-				let status = format!(
-					"-- Filter: {} -- Esc cancel  Enter open  Backspace edit",
-					state.filter.filter_dir
-				);
-				out.push_str(&status);
-				out.push_str("\r\n");
-				out.push_str(&state.notice);
+	TermSize size = xt_size()
+	(cols, rows) in size
+	int view_rows = rows - 2
+	if view_rows < 1
+		view_rows = 1
 
-				print!("{}", out);
-				std::io::stdout().flush().unwrap();
-				return;
-			}
+	stringList out_parts = empty
+	out_parts at end = ANSI_CLEAR_SCREEN
 
-			// Files / History / Changes columns, each min 20 cols, separated by
-			// blank gutter columns. Files takes whatever space is left over.
-			let col_width = std::cmp::max(20, cols / 3);
-			let files_width = cols.saturating_sub(col_width * 2 + 2);
-			let history_width = col_width;
-			let changes_width = col_width;
+	if filter_active
+		int total = len(filter_matches)
+		for row_idx in range(view_rows)
+			int idx = filter_scroll_row + row_idx
+			if idx < total
+				FilterMatch entry = filter_matches at idx
+				(display_path, is_name_match, instance_count) in entry
 
-			fn colorize(line: &str, git_status: &str) -> String {
-				match git_status {
-					"staged" => format!("\x1b[32m{}\x1b[39m", line),
-					"edited" => format!("\x1b[33m{}\x1b[39m", line),
-					"deleted" => format!("\x1b[9;31m{}\x1b[29;39m", line),
-					_ => line.to_string(),
-				}
-			}
+				string label = display_path
+				if not is_name_match
+					string count_str = c_int_to_string(instance_count)
+					label = s_join([display_path, " (instances: ", count_str, ")"])
 
-			let total = state.browser.browse_entries.len();
-			let history_total = state.browser.file_history.len();
-			let git_total = state.browser.git_changes.len();
-			for i in 0..view_rows {
-				let idx = state.browser.browse_scroll_row as usize + i;
-				let mut tree_visible_len = 0;
-				let mut tree_line = String::new();
-				if idx < total {
-					let entry = &state.browser.browse_entries[idx];
-					let indent = "  ".repeat(entry.depth as usize);
-					let marker = if entry.is_dir {
-						if entry.expanded { "v " } else { "> " }
-					} else {
-						"  "
-					};
-					let suffix = if entry.is_dir { "/" } else { "" };
-					let mut plain = format!("{}{}{}{}", indent, marker, entry.name, suffix);
-					if plain.len() > files_width {
-						plain.truncate(files_width);
-					}
-					tree_visible_len = plain.len();
-					let mut line = colorize(&plain, &entry.git_status);
-					if idx == state.browser.browse_selected as usize && state.browser.browser_focus == BrowserPane::Files {
-						line = format!("\x1b[7m{}\x1b[0m", line);
-					}
-					tree_line = line;
-				}
-				let pad_len = files_width.saturating_sub(tree_visible_len);
-				out.push_str(&tree_line);
-				out.push_str(&" ".repeat(pad_len + 1));
+				FitResult fit = browser_fit(label, cols)
+				(text, visible_len) in fit
 
-				let mut history_visible_len = 0;
-				let mut history_line = String::new();
-				if i < history_total {
-					let entry = &state.browser.file_history[i];
-					let mut plain = entry.name.clone();
-					if plain.len() > history_width {
-						plain.truncate(history_width);
-					}
-					history_visible_len = plain.len();
-					let mut line = colorize(&plain, &entry.git_status);
-					if i == state.browser.history_selected as usize && state.browser.browser_focus == BrowserPane::History {
-						line = format!("\x1b[7m{}\x1b[0m", line);
-					}
-					history_line = line;
-				} else if i == 0 && history_total == 0 {
-					let msg = "(no history yet)";
-					history_visible_len = msg.len();
-					history_line = format!("\x1b[2m{}\x1b[22m", msg);
-				}
-				let history_pad = history_width.saturating_sub(history_visible_len);
-				out.push_str(&history_line);
-				out.push_str(&" ".repeat(history_pad + 1));
+				string line = text
+				if is_name_match
+					line = s_join([ANSI_BOLD_ON, text, ANSI_BOLD_OFF])
 
-				let idx_git = state.browser.git_scroll_row as usize + i;
-				if idx_git < git_total {
-					let entry = &state.browser.git_changes[idx_git];
-					let mut plain = entry.name.clone();
-					if plain.len() > changes_width {
-						plain.truncate(changes_width);
-					}
-					let mut line = colorize(&plain, &entry.git_status);
-					if idx_git == state.browser.git_selected as usize && state.browser.browser_focus == BrowserPane::Changes {
-						line = format!("\x1b[7m{}\x1b[0m", line);
-					}
-					out.push_str(&line);
-				} else if i == 0 && git_total == 0 {
-					out.push_str("\x1b[2m(clean)\x1b[22m");
-				}
-				out.push_str("\r\n");
-			}
-			let focus_hint = match state.browser.browser_focus {
-				BrowserPane::Files => "[Files]",
-				BrowserPane::History => "[History]",
-				BrowserPane::Changes => "[Changes]",
-			};
-			let status = format!("-- {} {} -- Tab switch  Enter open  F1/Esc close", state.browser.browse_dir, focus_hint);
-			out.push_str(&status);
-			out.push_str("\r\n");
-			out.push_str(&state.notice);
+				bool selected = idx is filter_selected
+				line = browser_select_wrap(line, selected)
+				out_parts at end = line
 
-			print!("{}", out);
-			std::io::stdout().flush().unwrap();
-		}
+			out_parts at end = ANSI_CRLF
+
+		string filter_status = s_join(["-- Filter: ", filter_dir, " -- Esc cancel  Enter open  Backspace edit"])
+		out_parts at end = filter_status
+		out_parts at end = ANSI_CRLF
+		out_parts at end = notice
+
+	else
+		(browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
+		(file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus) in browser
+
+		# Files / History / Changes columns, each min 20 cols, separated by
+		# blank gutter columns. Files takes whatever space is left over.
+		int third = cols / 3
+		int col_width = 20
+		if third > col_width
+			col_width = third
+		int files_width = cols - col_width * 2 - 2
+		if files_width < 0
+			files_width = 0
+		int history_width = col_width
+		int changes_width = col_width
+
+		int total = len(browse_entries)
+		int history_total = len(file_history)
+		int git_total = len(git_changes)
+
+		for row_idx in range(view_rows)
+			int idx = browse_scroll_row + row_idx
+			string tree_line = ""
+			int tree_visible_len = 0
+			if idx < total
+				FileEntry entry = browse_entries at idx
+				(name, is_dir, depth, expanded, git_status) in entry
+
+				string two_spaces = "  "
+				string indent = s_repeat(two_spaces, depth)
+
+				string marker = "  "
+				if is_dir
+					marker = "> "
+					if expanded
+						marker = "v "
+
+				string suffix = ""
+				if is_dir
+					suffix = "/"
+
+				string plain = s_join([indent, marker, name, suffix])
+				FitResult fit = browser_fit(plain, files_width)
+				(text, visible_len) in fit
+				tree_visible_len = visible_len
+
+				string line = browser_colorize(text, git_status)
+				bool selected = idx is browse_selected and browser_focus is Files
+				tree_line = browser_select_wrap(line, selected)
+
+			string files_gutter = browser_gutter(tree_visible_len, files_width)
+			out_parts at end = tree_line
+			out_parts at end = files_gutter
+
+			string history_line = ""
+			int history_visible_len = 0
+			if row_idx < history_total
+				FileEntry entry = file_history at row_idx
+				(name, git_status) in entry
+
+				FitResult fit = browser_fit(name, history_width)
+				(text, visible_len) in fit
+				history_visible_len = visible_len
+
+				string line = browser_colorize(text, git_status)
+				bool selected = row_idx is history_selected and browser_focus is History
+				history_line = browser_select_wrap(line, selected)
+			else if row_idx is 0 and history_total is 0
+				string empty_msg = "(no history yet)"
+				history_visible_len = len(empty_msg)
+				history_line = s_join([ANSI_DIM_ON, empty_msg, ANSI_DIM_OFF])
+
+			string history_gutter = browser_gutter(history_visible_len, history_width)
+			out_parts at end = history_line
+			out_parts at end = history_gutter
+
+			int idx_git = git_scroll_row + row_idx
+			if idx_git < git_total
+				FileEntry entry = git_changes at idx_git
+				(name, git_status) in entry
+
+				FitResult fit = browser_fit(name, changes_width)
+				(text, visible_len) in fit
+
+				string line = browser_colorize(text, git_status)
+				bool selected = idx_git is git_selected and browser_focus is Changes
+				line = browser_select_wrap(line, selected)
+				out_parts at end = line
+			else if row_idx is 0 and git_total is 0
+				string clean_msg = "(clean)"
+				string clean_line = s_join([ANSI_DIM_ON, clean_msg, ANSI_DIM_OFF])
+				out_parts at end = clean_line
+
+			out_parts at end = ANSI_CRLF
+
+		string focus_hint = "[Files]"
+		if browser_focus is History
+			focus_hint = "[History]"
+		else if browser_focus is Changes
+			focus_hint = "[Changes]"
+
+		string status = s_join(["-- ", browse_dir, " ", focus_hint, " -- Tab switch  Enter open  F1/Esc close"])
+		out_parts at end = status
+		out_parts at end = ANSI_CRLF
+		out_parts at end = notice
+
+	string out = s_join(out_parts)
+	xt_flush_print(out)

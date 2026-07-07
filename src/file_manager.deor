@@ -38,7 +38,9 @@ macro initialize_lint
 	lint_running as false
 	matchList issue_matches = empty
 	string lint_working_dir = initial_dir
-	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches)
+	stringList lint_output = empty
+	lint_output_visible as false
+	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 
 macro initialize_selection
 	has_selection as false

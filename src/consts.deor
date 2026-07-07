@@ -11,3 +11,20 @@ macro use_consts
 
     const int SCROLL_WHEEL_AMOUNT = 3
 
+    # Fixed height of the ctrl+e raw lint output popup -- longer output is
+    # cut off rather than making the popup scrollable.
+    const int LINT_POPUP_HEIGHT = 10
+
+# Shared by editor_scroll and editor_render, which must agree exactly on how
+# many rows are reserved for chrome (status/notice, the git-diff minimap,
+# the lint output popup) -- any mismatch lets the cursor scroll past what's
+# actually drawn and the cursor/selection render a line off from reality.
+fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible)
+	macro_run use_consts
+	int reserved_rows = 2
+	if has_minimap
+		reserved_rows = reserved_rows + 1
+	if lint_output_visible
+		reserved_rows = reserved_rows + LINT_POPUP_HEIGHT
+	return reserved_rows
+

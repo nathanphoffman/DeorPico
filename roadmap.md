@@ -36,15 +36,18 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: now supports working folder pathing
 - Done: install now installs pico path locally
 - Done: two additional arguments added for running dpico
+- Done: auto syntax checking for deor
+- Done: cursor and selections have been fixed
+- Done: added keyboard shortcuts
+- Done: 
+
+working on: converting most remaining rust to deor
 
 
-Working: 
-Add Auto Syntax Check for DeorPico
+
 
 ## Nest For AI
 
 ## For Nate to Figure Out:
 Do: Support better rust highlighting in deor?
 Do: Merge Recent and Git Diff? -- I am actually finding recent files not very helpful
-
-

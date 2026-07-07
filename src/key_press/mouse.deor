@@ -10,7 +10,15 @@ macro locate_mouse_in_buffer
 		string total_str = c_int_to_string(total_lines)
 		gutter_width = len(total_str) + 1
 
-	int clicked_row = scroll_row + row
+    # row is the 0-indexed terminal row of the click; when the git-diff
+	# minimap is showing it occupies screen row 0, pushing the buffer's
+	# first visible row down to screen row 1 -- subtract that back out or
+	# every click resolves one buffer row below where it landed.
+	int minimap_offset = 0
+	if len(diff_lines) > 0
+		minimap_offset = 1
+
+	int clicked_row = scroll_row + row - minimap_offset
 	int last_row = total_lines - 1
 	int zero_bound = 0
 	clicked_row = m_clamp(clicked_row, zero_bound, last_row)

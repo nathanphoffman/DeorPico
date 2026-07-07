@@ -23,6 +23,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "redo"
 		else if chr is "n"
 			kind = "toggle_line_numbers"
+		else if chr is "e"
+			kind = "lint_output_toggle"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "home"

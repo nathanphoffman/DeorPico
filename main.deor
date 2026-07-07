@@ -64,6 +64,11 @@ struct LintState
 	bool lint_running
 	matchList issue_matches
 
+	# Raw stdout+stderr from the last completed lint run, and whether the
+	# ctrl+e popup showing it is currently open
+	stringList lint_output
+	bool lint_output_visible
+
 struct LaunchArgs
 	string filename
 	string initial_dir
@@ -159,20 +164,25 @@ fn void main()
 	for if true
 		state = editor_scroll(state)
 
-		(core, browser, diff) in state
+		(core, browser, diff, selection) in state
 		(filename, lines, cursor_row, cursor_col) in core
 		(browsing) in browser
 		(diffing) in diff
+		(sel_anchor_row, sel_anchor_col) in selection
 		if filename is not current_file
 			current_file = filename
 			ext = f_extension(current_file)
 			highlighter = initialize_highlighter(ext)
 
-		# Raw line, before tab-expansion, so the on-screen cursor column can
-		# be derived to match what synoptic does to the displayed text below.
+		# Raw lines, before tab-expansion, so the on-screen cursor/selection
+		# columns can be derived to match what synoptic does to the displayed
+		# text below.
 		string raw_cursor_line = lines at cursor_row
 		macro_run use_consts
 		int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
+
+		string raw_anchor_line = lines at sel_anchor_row
+		int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
 
 		highlights as xs_run(highlighter, lines)
 		lines = get_highlighted_lines(lines, highlights)
@@ -184,7 +194,7 @@ fn void main()
 		else if diffing
 			editor_render_diff(render_state_with_colors)
 		else
-			editor_render(render_state_with_colors, cursor_visual_col)
+			editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
 		KeyEvent raw_key = xt_read_key()
 		KeyEvent key = editor_translate_key(raw_key)
 		state = editor_handle_key(state, key)

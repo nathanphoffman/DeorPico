@@ -27,28 +27,36 @@ macro use_ansi_codes
 	const string ANSI_ISSUE_TINT = s_join([esc, "[48;5;130m"])
 	const string ANSI_STATUS_BG = s_join([esc, "[48;5;240m"])
 	const string ANSI_ERROR_BG = s_join([esc, "[48;5;52m"])
+	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])
+	const string ANSI_REVERSE_OFF = s_join([esc, "[27m"])
 
 
 # The active selection is anchored wherever shift+arrow started and extends
 # to the current cursor position, which can land before OR after the anchor
 # -- this normalizes the two into a start/end range so rendering never has
 # to care which direction the user selected in.
-fn SelectionRange editor_selection_range(EditorState state)
+# Columns come in already converted to on-screen visual columns (see
+# s_visual_col) rather than raw character indices -- raw cursor_col/
+# sel_anchor_col count a tab as one character, but render_visible_line
+# counts on-screen columns after tabs are expanded, so comparing raw
+# columns against those would shift the highlight horizontally on any row
+# with a leading tab.
+fn SelectionRange editor_selection_range(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
 	(core, selection) in state
-	(cursor_row, cursor_col) in core
-	(has_selection, sel_anchor_row, sel_anchor_col) in selection
+	(cursor_row) in core
+	(has_selection, sel_anchor_row) in selection
 
-	bool anchor_first = sel_anchor_row < cursor_row or (sel_anchor_row is cursor_row and sel_anchor_col <= cursor_col)
+	bool anchor_first = sel_anchor_row < cursor_row or (sel_anchor_row is cursor_row and sel_anchor_visual_col <= cursor_visual_col)
 
 	int start_row = cursor_row
-	int start_col = cursor_col
+	int start_col = cursor_visual_col
 	int end_row = sel_anchor_row
-	int end_col = sel_anchor_col
+	int end_col = sel_anchor_visual_col
 	if anchor_first
 		start_row = sel_anchor_row
-		start_col = sel_anchor_col
+		start_col = sel_anchor_visual_col
 		end_row = cursor_row
-		end_col = cursor_col
+		end_col = cursor_visual_col
 
 	SelectionRange sel_range = (has_selection, start_row, start_col, end_row, end_col)
 	return sel_range
@@ -86,65 +94,104 @@ fn RowHighlight editor_row_highlight(SelectionRange sel_range, int row)
 # visible-column terms) in reverse video. Escape sequences already embedded
 # by syntax highlighting are copied through untouched and never counted as
 # visible columns, so both truncation and the highlight land on the correct
-# visual column instead of a raw byte offset. Char-level escape-sequence
-# parsing has no Deor equivalent, so this stays the one rust-wrapped piece.
+# visual column instead of a raw byte offset. Syntax highlighting wraps each
+# colored token in its own "\x1b[0m" reset, which also cancels our
+# reverse-video selection if it was turned on earlier in the line --
+# re-assert it right after so the selection survives every syntax-colored
+# token it spans.
 fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHighlight highlight)
-	rust
-		{
-			let max_visible_columns = max_visible_columns as usize;
-			let highlight_start_col = if highlight.hl_start < 0 { None } else { Some(highlight.hl_start as usize) };
-			let highlight_end_col = if highlight.hl_end < 0 { None } else { Some(highlight.hl_end as usize) };
+	macro_run use_ansi_codes
+	(hl_start, hl_end) in highlight
 
-			let mut rendered = String::new();
-			let mut visible_column_count: usize = 0;
-			let mut chars = line.chars().peekable();
-			let mut highlight_open = false;
+    const string ANSI_ESCAPE_CHARACTER = "m"
 
-			while let Some(current_char) = chars.next() {
-				if current_char == '\u{1b}' {
-					// Syntax highlighting wraps each colored token in its own
-					// "\x1b[0m" reset, which also cancels our reverse-video
-					// selection if it was turned on earlier in the line --
-					// re-assert it right after so the selection survives
-					// every syntax-colored token it spans.
-					let escape_seq_start = rendered.len();
-					rendered.push(current_char);
-					while let Some(&next_char) = chars.peek() {
-						rendered.push(next_char);
-						chars.next();
-						if next_char == 'm' {
-							break;
-						}
-					}
-					if highlight_open && &rendered[escape_seq_start..] == "\x1b[0m" {
-						rendered.push_str("\x1b[7m");
-					}
-					continue;
-				}
+	stringList chars = s_chars(line)
+	int char_count = len(chars)
+	int idx = 0
+	stringList text_parts = empty
+	int visible_cols = 0
+	bool highlight_open = false
 
-				if visible_column_count >= max_visible_columns {
-					break;
-				}
+	for if idx < char_count
+		string current_char = chars at idx
 
-				if highlight_start_col == Some(visible_column_count) && !highlight_open {
-					rendered.push_str("\x1b[7m");
-					highlight_open = true;
-				}
-				if highlight_end_col == Some(visible_column_count) && highlight_open {
-					rendered.push_str("\x1b[27m");
-					highlight_open = false;
-				}
+		if current_char is esc
+			stringList escape_parts = empty
+			escape_parts at end = current_char
+			idx = idx + 1
+			for if idx < char_count
+				string next_char = chars at idx
+				escape_parts at end = next_char
+				idx = idx + 1
+				if next_char is ANSI_ESCAPE_CHARACTER
+					break
 
-				rendered.push(current_char);
-				visible_column_count += 1;
-			}
+			string escape_seq = s_join(escape_parts)
+			text_parts at end = escape_seq
+			if highlight_open and escape_seq is ANSI_RESET
+				text_parts at end = ANSI_REVERSE_ON
+			continue
 
-			if highlight_open {
-				rendered.push_str("\x1b[27m");
-			}
+		if visible_cols >= max_visible_columns
+			break
 
-			RenderedLine { text: rendered, visible_cols: visible_column_count as i64 }
-		}
+		if hl_start is visible_cols and not highlight_open
+			text_parts at end = ANSI_REVERSE_ON
+			highlight_open = true
+		if hl_end is visible_cols and highlight_open
+			text_parts at end = ANSI_REVERSE_OFF
+			highlight_open = false
+
+		text_parts at end = current_char
+		visible_cols = visible_cols + 1
+		idx = idx + 1
+
+	if highlight_open
+		text_parts at end = ANSI_REVERSE_OFF
+
+	string text = s_join(text_parts)
+	return (text, visible_cols)
+
+
+# Fixed-height gray popup showing the raw stdout+stderr of the last
+# completed lint run (ctrl+e) -- output beyond LINT_POPUP_HEIGHT lines, or
+# wider than the terminal, is simply cut off rather than made scrollable.
+fn string editor_render_lint_output(stringList lint_output, int max_visible_columns)
+	macro_run use_ansi_codes
+	macro_run use_consts
+
+	int output_line_count = len(lint_output)
+	string popup = ""
+
+	for popup_row in range(LINT_POPUP_HEIGHT)
+		string line_text = ""
+		if output_line_count is 0
+			if popup_row is 0
+				line_text = "(no lint output yet -- run a save with a lint command configured)"
+		else if popup_row < output_line_count
+			line_text = lint_output at popup_row
+
+		if len(line_text) > max_visible_columns
+			int truncate_start = 0
+			line_text = s_substring(line_text, truncate_start, max_visible_columns)
+
+		string line_padded = s_pad_right(line_text, max_visible_columns)
+		popup = s_join([popup, ANSI_STATUS_BG, line_padded, ANSI_RESET, ANSI_CRLF])
+
+	return popup
+
+
+# Keyboard shortcut hints for the status bar. When a selection is active,
+# the selection-only actions are pushed to the front of the list so they
+# survive truncation on a narrow terminal -- everything else is cut off
+# rather than wrapped (see editor_render).
+fn string editor_status_shortcuts(bool has_selection)
+	string selection_hint = ""
+	if has_selection
+		selection_hint = "SELECTION: space = comment/uncomment  tab = indent  |  "
+
+	string shortcuts = "^S save  ^Q quit  ^D diff  F1 file  ^N line#  ^E errors/log  ^Z undo  ^Y redo  ^X cut  ^C copy  ^V paste"
+	return s_join([selection_hint, shortcuts])
 
 
 fn bool editor_row_has_match(matchList search_matches, int target_row)
@@ -219,21 +266,22 @@ fn string editor_tint_issue_row(string rendered_line, int text_visible_columns, 
 	return s_join([ANSI_ISSUE_TINT, patched_line, fill, ANSI_RESET])
 
 
-fn void editor_render(EditorState state, int cursor_visual_col)
+fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
 	macro_run use_ansi_codes
 
 	(core, diff, search, lint, notice, error) in state
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
 	(diff_lines) in diff
 	(search_active, search_matches) in search
-	(issue_matches) in lint
+	(issue_matches, lint_output, lint_output_visible) in lint
 
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int max_visible_columns = cols
 
 	int total_line_count = len(lines)
-	SelectionRange selection = editor_selection_range(state)
+	SelectionRange selection = editor_selection_range(state, cursor_visual_col, sel_anchor_visual_col)
+	(has_selection) in selection
 
 	# One-row heat bar showing where git changes fall in the file, squashed
 	# proportionally across the terminal width -- hidden entirely (no
@@ -241,9 +289,7 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 	string minimap_bar = g_diff_minimap(diff_lines, total_line_count, max_visible_columns)
 	bool has_minimap = minimap_bar is not ""
 
-	int reserved_rows = 2
-	if has_minimap
-		reserved_rows = 3
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
 
 	int visible_row_count = rows - reserved_rows
 	if visible_row_count < 1
@@ -282,13 +328,20 @@ fn void editor_render(EditorState state, int cursor_visual_col)
 
 		screen = s_join([screen, ANSI_CRLF])
 
+	if lint_output_visible
+		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
+		screen = s_join([screen, lint_popup])
+
 	string modified_marker = ""
 	if dirty
 		modified_marker = " [modified]"
 
 	string total_line_str = c_int_to_string(total_line_count)
-	string status_tail = " -- ^S save  ^Q quit  ^N line#  F1 files"
-	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, status_tail])
+	string status_shortcuts = editor_status_shortcuts(has_selection)
+	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, " -- ", status_shortcuts])
+	if len(status_line) > max_visible_columns
+		int truncate_start = 0
+		status_line = s_substring(status_line, truncate_start, max_visible_columns)
 
 	# Blue background sets the status/notice rows apart from the buffer
 	# above; dark red instead whenever the notice is blocking a destructive
