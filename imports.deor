@@ -45,8 +45,8 @@ import "src/key_press/line_numbers.deor"
 import "src/key_press/mouse.deor"
 
 # File open logic needed first, then renderer
-import "src/renderer/deor_editor.deor"
-import "src/renderer/editor_render.deor"
+import "src/renderer/editor/deor_editor.deor"
+import "src/renderer/editor/editor_render.deor"
 
 # new editor pathing
 import "src/renderer/editor/macros/minimap_gutters.deor"
@@ -55,8 +55,12 @@ import "src/renderer/editor/macros/position_and_output_cursor.deor"
 import "src/renderer/editor/macros/render_buffer_rows.deor"
 import "src/renderer/editor/editor.deor"
 
-import "src/renderer/rust_browser.deor"
-import "src/renderer/rust_diff.deor"
+# browser pathing
+import "src/renderer/browser/macros/render_browser_filter_view.deor"
+import "src/renderer/browser/macros/render_browser_main_view.deor"
+import "src/renderer/browser/browser.deor"
+
+import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/highlighting.deor"
 
 # Then optional functionality is loaded in not needed initially
