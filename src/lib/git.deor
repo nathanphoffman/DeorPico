@@ -19,10 +19,18 @@ fn StringMap g_status(string repo_path)
 					let index_status = chars[0];
 					let worktree_status = chars[1];
 					let path = line[3..].trim().to_string();
+					// "staged_edited" is a staged file with further worktree edits on
+					// top (git's "MM" case) -- kept distinct from plain "staged" so
+					// the browser can flag it, since both would otherwise render
+					// identically green with no sign of the extra local edit.
 					let status = if index_status == 'D' || worktree_status == 'D' {
 						"deleted"
 					} else if index_status != ' ' && index_status != '?' {
-						"staged"
+						if worktree_status != ' ' {
+							"staged_edited"
+						} else {
+							"staged"
+						}
 					} else if worktree_status != ' ' {
 						"edited"
 					} else {
@@ -196,6 +204,29 @@ fn entryList g_changed_entries(StringMap git_map)
 				items.push(FileEntry { name, path: path.clone(), is_dir: false, depth: 0, expanded: false, git_status: status.clone() });
 			}
 			items.sort_by(|a, b| a.path.to_lowercase().cmp(&b.path.to_lowercase()));
+			items
+		}
+
+# Reorders `entries` so any that appear in `history` come first, most
+# recently opened first (recency = position in history) -- entries that
+# have never been opened keep their existing relative order at the tail
+# (stable sort). Lets the file browser's merged Recent/Git column show
+# git-changed files "ordered by recent" without needing the git status map
+# again, so it can be re-applied to git_changes right after file_history
+# changes (see track_file_history) as well as when the browser refreshes.
+fn entryList g_reorder_by_recency(entryList entries, entryList history)
+	rust
+		{
+			use std::collections::HashMap;
+			let mut rank: HashMap<String, usize> = HashMap::new();
+			for (i, entry) in history.iter().enumerate() {
+				rank.entry(entry.path.clone()).or_insert(i);
+			}
+			let mut items = entries;
+			items.sort_by_key(|e| match rank.get(&e.path) {
+				Some(r) => (0usize, *r),
+				None => (1usize, 0usize),
+			});
 			items
 		}
 

@@ -21,8 +21,7 @@ struct BufferState
 
 enum BrowserPane
 	Files
-	History
-	Changes
+	RecentGit
 
 struct BrowserState
 	# File browser (F1) state
@@ -32,14 +31,22 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
-	# Recently-opened files, most recent first -- Tab cycles focus through these columns
+	# Recently-opened files, most recent first. Only the top few show under
+	# the "Recent" header in the merged column (see BROWSER_RECENT_ROWS),
+	# but the full list still backs F9/F12 history stepping regardless of
+	# what's on screen.
 	entryList file_history
 	int history_selected
 
-	# Git staged/unstaged files, refreshed every time the browser opens
+	# Git staged/unstaged files, kept ordered by recency (see
+	# g_reorder_by_recency) and refreshed every time the browser opens.
+	# Shown under the "Git" header in the same merged column as file_history
+	# -- recent_git_selected indexes across both sections as one list
+	# (0..recent_count is Recent, the rest is Git), and git_scroll_row
+	# scrolls just the Git section once it overflows the screen.
 	entryList git_changes
-	int git_selected
 	int git_scroll_row
+	int recent_git_selected
 
 	BrowserPane browser_focus
 

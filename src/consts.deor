@@ -15,6 +15,18 @@ macro use_consts
     # cut off rather than making the popup scrollable.
     const int LINT_POPUP_HEIGHT = 10
 
+    # How many of the most-recently-opened files show under the "Recent"
+    # header in the file browser's merged Recent/Git column -- file_history
+    # itself holds more (for F9/F12 stepping), only the top of it is shown here.
+    const int BROWSER_RECENT_ROWS = 6
+
+    # Cosmetic breathing room in the file browser: a left indent before the
+    # Files column, and extra gap (beyond the usual 1-column separator)
+    # before the Recent/Git column -- shared with the mouse click handler so
+    # a click still resolves to the column it visually landed in.
+    const int BROWSER_LEFT_MARGIN = 8
+    const int BROWSER_COLUMN_GAP = 3
+
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
 # the lint output popup) -- any mismatch lets the cursor scroll past what's
@@ -27,4 +39,27 @@ fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible)
 	if lint_output_visible
 		reserved_rows = reserved_rows + LINT_POPUP_HEIGHT
 	return reserved_rows
+
+# How many of file_history's entries actually show under "Recent" -- capped
+# by both BROWSER_RECENT_ROWS and how many history entries actually exist.
+fn int browser_recent_count(int history_total)
+	macro_run use_consts
+	int recent_count = BROWSER_RECENT_ROWS
+	if history_total < recent_count
+		recent_count = history_total
+	return recent_count
+
+# Shared by the browser's renderer and its up/down scroll-adjust macro, which
+# must agree exactly on how many rows the Git section gets once the "Recent"
+# header+entries and the "Git" header have taken their share of view_rows --
+# any mismatch would scroll the Git section past what's actually drawn.
+fn int browser_git_visible_rows(int view_rows, int recent_count)
+	int recent_slot_rows = recent_count
+	if recent_slot_rows < 1
+		recent_slot_rows = 1
+	int header_rows = 2
+	int visible = view_rows - header_rows - recent_slot_rows
+	if visible < 0
+		visible = 0
+	return visible
 

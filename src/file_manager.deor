@@ -20,10 +20,10 @@ macro initialize_browser
 	entryList file_history = empty
 	history_selected as 0
 	entryList git_changes = empty
-	git_selected as 0
 	git_scroll_row as 0
+	recent_git_selected as 0
 	BrowserPane browser_focus = Files
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus)
 
 macro initialize_diff
 	diffing as false

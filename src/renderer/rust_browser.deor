@@ -32,14 +32,18 @@ fn FitResult browser_fit(string label, int width)
 	return (text, visible_len)
 
 
-# Wraps `line` in the ANSI color for `git_status` ("staged"/"edited"/
-# "deleted"), or returns it unchanged for any other status (including ""
-# for a clean file).
+# Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
+# "edited"/"deleted"), or returns it unchanged for any other status
+# (including "" for a clean file). "staged_edited" (staged with further
+# worktree edits on top) still renders green like plain "staged" --
+# browser_edit_prefix is what actually flags the extra edit.
 fn string browser_colorize(string line, string git_status)
 	macro_run use_browser_ansi_codes
 
 	string result = line
 	if git_status is "staged"
+		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
+	else if git_status is "staged_edited"
 		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
 	else if git_status is "edited"
 		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
@@ -47,6 +51,20 @@ fn string browser_colorize(string line, string git_status)
 		result = s_join([ANSI_GIT_DELETED_ON, line, ANSI_GIT_DELETED_OFF])
 
 	return result
+
+
+# A staged file that's since been edited again renders identically to a
+# plain staged file (both green) -- this "+" is the only visual sign the
+# extra worktree edit exists. Plain "edited"/untracked files get it too
+# since they're always a worktree edit by definition.
+fn string browser_edit_prefix(string git_status)
+	string prefix = ""
+	if git_status is "staged_edited"
+		prefix = "+"
+	else if git_status is "edited"
+		prefix = "+"
+
+	return prefix
 
 
 # Wraps `line` in reverse video when `selected` is true -- marks whichever
@@ -76,6 +94,7 @@ fn string browser_gutter(int visible_len, int width)
 
 fn void editor_render_browser(EditorState state)
 	macro_run use_browser_ansi_codes
+	macro_run use_consts
 	(browser, filter, notice) in state
 	(filter_active, filter_dir, filter_matches, filter_selected, filter_scroll_row) in filter
 
@@ -121,23 +140,48 @@ fn void editor_render_browser(EditorState state)
 
 	else
 		(browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
-		(file_history, history_selected, git_changes, git_selected, git_scroll_row, browser_focus) in browser
+		(file_history, git_changes, git_scroll_row, browser_focus, recent_git_selected) in browser
 
-		# Files / History / Changes columns, each min 20 cols, separated by
-		# blank gutter columns. Files takes whatever space is left over.
-		int third = cols / 3
+		# Files / Recent+Git columns, each min 20 cols, separated by a blank
+		# gutter column. Files takes whatever space is left over. The
+		# Recent+Git column stacks a fixed "Recent" section (its top few
+		# most-recently-opened files) above a scrollable "Git" section
+		# (every git-changed file, ordered by recency) -- a file can appear
+		# in both if it's both recent and currently changed.
+		int half = cols / 2
 		int col_width = 20
-		if third > col_width
-			col_width = third
-		int files_width = cols - col_width * 2 - 2
+		if half > col_width
+			col_width = half
+		int files_width = cols - col_width - 1
 		if files_width < 0
 			files_width = 0
-		int history_width = col_width
-		int changes_width = col_width
+		int recent_width = col_width
+
+		# Left indent before the Files column, plus extra gap before the
+		# Recent/Git column, both carved out of files_width so the total
+		# row width is unchanged (still exactly `cols` -- see mouse.deor's
+		# mouse_down_browser for the matching click-to-column math).
+		int left_margin_len = BROWSER_LEFT_MARGIN
+		int mid_gap_len = BROWSER_COLUMN_GAP
+		int files_content_width = files_width - left_margin_len - mid_gap_len
+		if files_content_width < 0
+			files_content_width = 0
+		space_char as " "
+		string left_margin = s_repeat(space_char, left_margin_len)
+		string mid_gap = s_repeat(space_char, mid_gap_len)
 
 		int total = len(browse_entries)
-		int history_total = len(file_history)
+
+		int recent_total = len(file_history)
+		int recent_count = browser_recent_count(recent_total)
+		int recent_slot_rows = recent_count
+		if recent_slot_rows < 1
+			recent_slot_rows = 1
+		int git_header_row = recent_slot_rows + 1
 		int git_total = len(git_changes)
+
+		string recent_header_text = "Recent"
+		string git_header_text = "Git"
 
 		for row_idx in range(view_rows)
 			int idx = browse_scroll_row + row_idx
@@ -160,8 +204,9 @@ fn void editor_render_browser(EditorState state)
 				if is_dir
 					suffix = "/"
 
-				string plain = s_join([indent, marker, name, suffix])
-				FitResult fit = browser_fit(plain, files_width)
+				string edit_prefix = browser_edit_prefix(git_status)
+				string plain = s_join([indent, marker, edit_prefix, name, suffix])
+				FitResult fit = browser_fit(plain, files_content_width)
 				(text, visible_len) in fit
 				tree_visible_len = visible_len
 
@@ -169,56 +214,59 @@ fn void editor_render_browser(EditorState state)
 				bool selected = idx is browse_selected and browser_focus is Files
 				tree_line = browser_select_wrap(line, selected)
 
-			string files_gutter = browser_gutter(tree_visible_len, files_width)
+			string files_gutter = browser_gutter(tree_visible_len, files_content_width)
+			out_parts at end = left_margin
 			out_parts at end = tree_line
 			out_parts at end = files_gutter
+			out_parts at end = mid_gap
 
-			string history_line = ""
-			int history_visible_len = 0
-			if row_idx < history_total
-				FileEntry entry = file_history at row_idx
-				(name, git_status) in entry
+			string recent_line = ""
+			if row_idx is 0
+				recent_line = s_join([ANSI_BOLD_ON, recent_header_text, ANSI_BOLD_OFF])
+			else if row_idx <= recent_slot_rows
+				if recent_count is 0
+					string empty_msg = "(no history yet)"
+					recent_line = s_join([ANSI_DIM_ON, empty_msg, ANSI_DIM_OFF])
+				else
+					int history_idx = row_idx - 1
+					FileEntry entry = file_history at history_idx
+					(name, git_status) in entry
 
-				FitResult fit = browser_fit(name, history_width)
-				(text, visible_len) in fit
-				history_visible_len = visible_len
+					string edit_prefix = browser_edit_prefix(git_status)
+					string display_name = s_join([edit_prefix, name])
+					FitResult fit = browser_fit(display_name, recent_width)
+					(text, visible_len) in fit
 
-				string line = browser_colorize(text, git_status)
-				bool selected = row_idx is history_selected and browser_focus is History
-				history_line = browser_select_wrap(line, selected)
-			else if row_idx is 0 and history_total is 0
-				string empty_msg = "(no history yet)"
-				history_visible_len = len(empty_msg)
-				history_line = s_join([ANSI_DIM_ON, empty_msg, ANSI_DIM_OFF])
-
-			string history_gutter = browser_gutter(history_visible_len, history_width)
-			out_parts at end = history_line
-			out_parts at end = history_gutter
-
-			int idx_git = git_scroll_row + row_idx
-			if idx_git < git_total
-				FileEntry entry = git_changes at idx_git
-				(name, git_status) in entry
-
-				FitResult fit = browser_fit(name, changes_width)
-				(text, visible_len) in fit
-
-				string line = browser_colorize(text, git_status)
-				bool selected = idx_git is git_selected and browser_focus is Changes
-				line = browser_select_wrap(line, selected)
-				out_parts at end = line
-			else if row_idx is 0 and git_total is 0
+					string line = browser_colorize(text, git_status)
+					bool selected = browser_focus is RecentGit and recent_git_selected is history_idx
+					recent_line = browser_select_wrap(line, selected)
+			else if row_idx is git_header_row
+				recent_line = s_join([ANSI_BOLD_ON, git_header_text, ANSI_BOLD_OFF])
+			else if row_idx is git_header_row + 1 and git_total is 0
 				string clean_msg = "(clean)"
-				string clean_line = s_join([ANSI_DIM_ON, clean_msg, ANSI_DIM_OFF])
-				out_parts at end = clean_line
+				recent_line = s_join([ANSI_DIM_ON, clean_msg, ANSI_DIM_OFF])
+			else if row_idx > git_header_row
+				int git_idx = git_scroll_row + (row_idx - git_header_row - 1)
+				if git_idx < git_total
+					FileEntry entry = git_changes at git_idx
+					(name, git_status) in entry
+
+					string edit_prefix = browser_edit_prefix(git_status)
+					string display_name = s_join([edit_prefix, name])
+					FitResult fit = browser_fit(display_name, recent_width)
+					(text, visible_len) in fit
+
+					string line = browser_colorize(text, git_status)
+					bool selected = browser_focus is RecentGit and recent_git_selected is (recent_count + git_idx)
+					recent_line = browser_select_wrap(line, selected)
+
+			out_parts at end = recent_line
 
 			out_parts at end = ANSI_CRLF
 
 		string focus_hint = "[Files]"
-		if browser_focus is History
-			focus_hint = "[History]"
-		else if browser_focus is Changes
-			focus_hint = "[Changes]"
+		if browser_focus is RecentGit
+			focus_hint = "[Recent/Git]"
 
 		string status = s_join(["-- ", browse_dir, " ", focus_hint, " -- Tab switch  Enter open  F1/Esc close"])
 		out_parts at end = status
