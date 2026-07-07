@@ -12,8 +12,10 @@ fn void editor_render_diff(EditorState state)
 			// buffer row that doesn't exist in this view.
 			let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
 			let has_minimap = !minimap_bar.is_empty();
-			let reserved_rows = if has_minimap { 3 } else { 2 };
-			let view_rows = if rows as usize > reserved_rows { rows as usize - reserved_rows } else { 1 };
+			// Same reserved-row formula every other scroll-clamp/render path
+			// in the app uses (see editor_view_rows in consts.deor) -- the
+			// diff view never shows the lint popup, hence `false`.
+			let view_rows = editor_view_rows(rows as i64, has_minimap, false) as usize;
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 			if has_minimap {

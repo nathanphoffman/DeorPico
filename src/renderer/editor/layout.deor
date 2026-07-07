@@ -1,0 +1,73 @@
+import "src/lib/file.deor"
+import "src/consts.deor"
+import "src/renderer/editor/editor_render.deor"
+
+# The one authoritative description of how the main editor view's screen
+# space is divided for a given frame: gutter width, whether the git-diff
+# minimap row is showing, and how many buffer rows are visible. Every place
+# that renders into, scroll-clamps, or maps a mouse click onto the buffer
+# builds an EditorLayoutInput and calls compute_editor_layout instead of
+# recomputing its own copy of this math -- see editor_view_rows in
+# consts.deor for why that matters.
+struct EditorLayoutInput
+	int rows
+	int cols
+	int total_line_count
+	bool show_line_numbers
+	bool lint_output_visible
+	stringList diff_lines
+
+struct EditorLayout
+	int gutter_width
+	int text_visible_columns
+	bool has_minimap
+	int minimap_offset
+	int view_rows
+	int top_row
+	int bottom_row
+
+
+# Whether the main editor's git-diff heat-bar row is shown above the
+# buffer -- mirrors g_diff_minimap's own "nothing to draw" guard exactly,
+# without having to build the bar string just to answer a yes/no question.
+fn bool editor_has_minimap(stringList diff_lines, int total_line_count, int cols)
+	if diff_lines is empty
+		return false
+	if total_line_count <= 0
+		return false
+	if cols <= 0
+		return false
+	return true
+
+
+# Same idea, for the git-diff view's own minimap (g_diff_minimap_raw)
+# instead -- that one has no buffer to map onto, so unlike editor_has_minimap
+# it never depends on a line count.
+fn bool editor_diff_has_minimap(stringList diff_lines, int cols)
+	if diff_lines is empty
+		return false
+	if cols <= 0
+		return false
+	return true
+
+
+fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
+	(rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines) in layout_input
+
+	bool has_minimap = editor_has_minimap(diff_lines, total_line_count, cols)
+	int minimap_offset = 0
+	if has_minimap
+		minimap_offset = 1
+
+	int view_rows = editor_view_rows(rows, has_minimap, lint_output_visible)
+
+	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
+	int text_visible_columns = cols - gutter_width
+	if text_visible_columns < 1
+		text_visible_columns = 1
+
+	int top_row = 1 + minimap_offset
+	int bottom_row = view_rows + minimap_offset
+
+	EditorLayout layout = (gutter_width, text_visible_columns, has_minimap, minimap_offset, view_rows, top_row, bottom_row)
+	return layout

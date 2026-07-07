@@ -1,25 +1,24 @@
 # Shared by mouse_down/mouse_drag in the main text view -- maps a raw
-# terminal (col, row) click into buffer coordinates, matching the layout
-# editor_render uses (line-number gutter, then scroll_row-relative rows).
+# terminal (col, row) click into buffer coordinates, using the exact same
+# EditorLayout the renderer computed for this frame (see layout.deor) so a
+# click always resolves to what's actually drawn.
 macro locate_mouse_in_buffer
 	macro_run use_consts
-	int total_lines = len(lines)
+	int total_line_count = len(lines)
 
-	int gutter_width = 0
-	if show_line_numbers
-		string total_str = c_int_to_string(total_lines)
-		gutter_width = len(total_str) + 1
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(gutter_width, minimap_offset) in layout
 
     # row is the 0-indexed terminal row of the click; when the git-diff
 	# minimap is showing it occupies screen row 0, pushing the buffer's
 	# first visible row down to screen row 1 -- subtract that back out or
 	# every click resolves one buffer row below where it landed.
-	int minimap_offset = 0
-	if len(diff_lines) > 0
-		minimap_offset = 1
-
 	int clicked_row = scroll_row + row - minimap_offset
-	int last_row = total_lines - 1
+	int last_row = total_line_count - 1
 	int zero_bound = 0
 	clicked_row = m_clamp(clicked_row, zero_bound, last_row)
 

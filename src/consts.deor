@@ -40,6 +40,19 @@ fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible)
 		reserved_rows = reserved_rows + LINT_POPUP_HEIGHT
 	return reserved_rows
 
+# The one shared "how many buffer rows fit on screen" formula -- every
+# render path and every scroll-clamp (cursor-follow, mouse wheel, paging,
+# in both the main editor and the git-diff view) must call this instead of
+# recomputing rows - reserved_rows by hand, or they drift out of sync (the
+# wheel-scroll and diff-view clamps used to each hardcode their own,
+# slightly wrong, reserved-row count).
+fn int editor_view_rows(int rows, bool has_minimap, bool lint_output_visible)
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
+	int view_rows = rows - reserved_rows
+	if view_rows < 1
+		view_rows = 1
+	return view_rows
+
 # How many of file_history's entries actually show under "Recent" -- capped
 # by both BROWSER_RECENT_ROWS and how many history entries actually exist.
 fn int browser_recent_count(int history_total)

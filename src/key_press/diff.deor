@@ -117,10 +117,17 @@ macro clamp_diff_scroll
 
 	int last_row = len(diff_lines) - 1
 	TermSize size = xt_size()
-	(rows) in size
-	int view_rows = rows - 2
-	if view_rows < 1
-		view_rows = 1
+	(cols, rows) in size
+
+	# The diff view's own minimap (g_diff_minimap_raw, see rust_diff.deor)
+	# has no buffer to map onto, so its presence only depends on
+	# diff_lines/cols -- editor_diff_has_minimap mirrors that guard exactly
+	# (unlike editor_has_minimap, which also checks a buffer line count that
+	# doesn't apply here). The diff view never shows the lint popup either
+	# way, so that's hardcoded false rather than read from lint_output_visible.
+	bool has_minimap = editor_diff_has_minimap(diff_lines, cols)
+	bool lint_never_shown_in_diff = false
+	int view_rows = editor_view_rows(rows, has_minimap, lint_never_shown_in_diff)
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0
 		max_scroll = 0

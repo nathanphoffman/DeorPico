@@ -6,24 +6,19 @@ macro initialize_screen_buffer_with_minimap
 		screen = s_join([screen, minimap_bar, ANSI_CRLF])
 
 
-# Generate minimap bar and calculate gutter width
+# Generate minimap bar and compute this frame's shared EditorLayout --
+# every macro after this reads gutter_width/text_visible_columns/
+# minimap_offset/view_rows/top_row/bottom_row from `layout` rather than
+# recomputing its own copy (see layout.deor).
 macro setup_minimap_and_gutters
 	# One-row heat bar showing where git changes fall in the file, squashed
 	# proportionally across the terminal width -- hidden entirely (no
 	# reserved row) when the file has no git changes.
 	string minimap_bar = g_diff_minimap(diff_lines, total_line_count, max_visible_columns)
-	bool has_minimap = minimap_bar is not ""
 
-	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
-
-	int visible_row_count = rows - reserved_rows
-	if visible_row_count < 1
-		visible_row_count = 1
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(gutter_width, text_visible_columns, has_minimap, minimap_offset, view_rows, top_row, bottom_row) in layout
 
 	macro_run initialize_screen_buffer_with_minimap
-
-	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
-	int text_visible_columns = max_visible_columns - gutter_width
-	if text_visible_columns < 1
-		text_visible_columns = 1
 

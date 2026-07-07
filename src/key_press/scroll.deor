@@ -1,16 +1,20 @@
 # Clamps scroll_row for a plain wheel-driven scroll in the main buffer view --
-# same view_rows convention as editor_scroll (rows - 1), so the wheel never
-# scrolls further than the cursor-follow logic itself would allow.
+# uses the exact same EditorLayout view_rows as editor_scroll and the
+# renderer (see layout.deor), so the wheel never scrolls further than the
+# cursor-follow logic or the drawn screen itself would allow.
 macro clamp_scroll
 	if scroll_row < 0
 		scroll_row = 0
 
 	int last_row = len(lines) - 1
+	int total_line_count = len(lines)
 	TermSize size = xt_size()
-	(rows) in size
-	int view_rows = rows - 1
-	if view_rows < 1
-		view_rows = 1
+	(cols, rows) in size
+
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0
 		max_scroll = 0

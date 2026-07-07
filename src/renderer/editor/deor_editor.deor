@@ -1,22 +1,20 @@
 
 fn EditorState editor_scroll(EditorState state)
 	(core, diff, lint) in state
-	(cursor_row, scroll_row, wheel_scrolled) in core
+	(lines, cursor_row, scroll_row, wheel_scrolled, show_line_numbers) in core
 	(diff_lines) in diff
 	(lint_output_visible) in lint
 	TermSize size = xt_size()
-	(rows) in size
+	(cols, rows) in size
 
-	# Must mirror editor_render's reserved_rows exactly (status + notice,
-    # the git-diff minimap row, the lint output popup) -- otherwise this
-	# lets the cursor scroll past what's actually drawn, and the
-	# cursor/selection highlight ends up rendered a line off.
-	bool has_minimap = len(diff_lines) > 0
-	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
-
-	int view_rows = rows - reserved_rows
-	if view_rows < 1
-		view_rows = 1
+	# Must use the exact same EditorLayout editor_render computes (see
+	# layout.deor) -- otherwise this lets the cursor scroll past what's
+	# actually drawn, and the cursor/selection highlight ends up rendered a
+	# line off.
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
 
 	if wheel_scrolled
 		wheel_scrolled = false

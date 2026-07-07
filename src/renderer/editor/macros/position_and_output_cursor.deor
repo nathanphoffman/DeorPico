@@ -1,9 +1,5 @@
 
 
-macro calculate_cursor_row_bounds
-	int top_row = 1 + minimap_offset
-	int bottom_row = visible_row_count + minimap_offset
-
 macro calculate_clamped_cursor_row
 	int raw_cursor_screen_row = cursor_row - scroll_row + 1 + minimap_offset
 	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, bottom_row)
@@ -25,14 +21,10 @@ macro position_and_output_cursor
 
 	# Wheel-scrolling can leave the cursor outside the current view (it no
 	# longer follows the viewport), so this can land above or below the
-	# visible rows -- clamp back into range before turning it into a
-	# terminal cursor position.
-	int minimap_offset = 0
-	if has_minimap
-		minimap_offset = 1
-
-    # prevents cursor from moving outside screen
-    macro_run calculate_cursor_row_bounds
+	# visible rows -- clamp back into range using minimap_offset/top_row/
+	# bottom_row from this frame's shared EditorLayout (see
+	# setup_minimap_and_gutters) before turning it into a terminal cursor
+	# position.
     macro_run calculate_clamped_cursor_row
     macro_run calculate_cursor_screen_column
 

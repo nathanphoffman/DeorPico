@@ -45,8 +45,9 @@ import "src/key_press/line_numbers.deor"
 import "src/key_press/mouse.deor"
 
 # File open logic needed first, then renderer
-import "src/renderer/editor/deor_editor.deor"
 import "src/renderer/editor/editor_render.deor"
+import "src/renderer/editor/layout.deor"
+import "src/renderer/editor/deor_editor.deor"
 
 # new editor pathing
 import "src/renderer/editor/macros/minimap_gutters.deor"
