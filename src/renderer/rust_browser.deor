@@ -92,6 +92,242 @@ fn string browser_gutter(int visible_len, int width)
 	return s_repeat(space, pad_len)
 
 
+# Renders the ':' filter results list into out_parts -- one match per row
+# (bold when it's a filename match, plain when it's a content match),
+# highlighted in reverse video when selected, followed by the
+# "-- Filter: ..." status line and the notice row. Assumes out_parts/
+# view_rows/cols and the filter_* locals are already set up by the caller
+# (editor_render_browser).
+macro render_browser_filter_view
+	int total = len(filter_matches)
+	for row_idx in range(view_rows)
+		int idx = filter_scroll_row + row_idx
+		if idx < total
+			FilterMatch entry = filter_matches at idx
+			(display_path, is_name_match, instance_count) in entry
+
+			string label = display_path
+			if not is_name_match
+				string count_str = c_int_to_string(instance_count)
+				label = s_join([display_path, " (instances: ", count_str, ")"])
+
+			FitResult fit = browser_fit(label, cols)
+			(text, visible_len) in fit
+
+			string line = text
+			if is_name_match
+				line = s_join([ANSI_BOLD_ON, text, ANSI_BOLD_OFF])
+
+			bool selected = idx is filter_selected
+			line = browser_select_wrap(line, selected)
+			out_parts at end = line
+
+		out_parts at end = ANSI_CRLF
+
+	string filter_status = s_join(["-- Filter: ", filter_dir, " -- Esc cancel  Enter open  Backspace edit"])
+	out_parts at end = filter_status
+	out_parts at end = ANSI_CRLF
+	out_parts at end = notice
+
+
+# Column-width math for the Files / Recent+Git split -- each column is at
+# least 20 cols wide, separated by a blank gutter column, with a left
+# margin before Files and an extra gap before Recent/Git carved out of the
+# same budget so the whole row still totals exactly `cols` (see
+# mouse.deor's mouse_down_browser for the matching click-to-column math).
+macro compute_browser_column_widths
+	int half = cols / 2
+	int col_width = 20
+	if half > col_width
+		col_width = half
+	int files_width = cols - col_width - 1
+	if files_width < 0
+		files_width = 0
+	int recent_width = col_width
+
+	int left_margin_len = BROWSER_LEFT_MARGIN
+	int mid_gap_len = BROWSER_COLUMN_GAP
+	int files_content_width = files_width - left_margin_len - mid_gap_len
+	if files_content_width < 0
+		files_content_width = 0
+	space_char as " "
+	string left_margin = s_repeat(space_char, left_margin_len)
+	string mid_gap = s_repeat(space_char, mid_gap_len)
+
+
+# Row bookkeeping for the merged Recent/Git column: how many of
+# file_history's entries actually show under "Recent" (recent_count/
+# recent_slot_rows), which row the "Git" header lands on, and the header
+# text for each section.
+macro compute_browser_recent_git_layout
+	int recent_total = len(file_history)
+	int recent_count = browser_recent_count(recent_total)
+	int recent_slot_rows = recent_count
+	if recent_slot_rows < 1
+		recent_slot_rows = 1
+	int git_header_row = recent_slot_rows + 1
+	int git_total = len(git_changes)
+
+	string recent_header_text = "Recent"
+	string git_header_text = "Git"
+
+
+# Renders one row of the Files tree column into tree_line/tree_visible_len
+# (indentation, expand/collapse marker, "+" edit prefix, git-status color,
+# selection highlight) -- blank if `row_idx` is past the end of
+# browse_entries. Appends the row plus its left margin/gutter/mid-gap
+# straight to out_parts, since this only ever runs inside render_browser_rows.
+macro render_browser_files_row
+	int idx = browse_scroll_row + row_idx
+	string tree_line = ""
+	int tree_visible_len = 0
+	if idx < total
+		FileEntry entry = browse_entries at idx
+		(name, is_dir, depth, expanded, git_status) in entry
+
+		string two_spaces = "  "
+		string indent = s_repeat(two_spaces, depth)
+
+		string marker = "  "
+		if is_dir
+			marker = "> "
+			if expanded
+				marker = "v "
+
+		string suffix = ""
+		if is_dir
+			suffix = "/"
+
+		string edit_prefix = browser_edit_prefix(git_status)
+		string plain = s_join([indent, marker, edit_prefix, name, suffix])
+		FitResult fit = browser_fit(plain, files_content_width)
+		(text, visible_len) in fit
+		tree_visible_len = visible_len
+
+		string line = browser_colorize(text, git_status)
+		bool selected = idx is browse_selected and browser_focus is Files
+		tree_line = browser_select_wrap(line, selected)
+
+	string files_gutter = browser_gutter(tree_visible_len, files_content_width)
+	out_parts at end = left_margin
+	out_parts at end = tree_line
+	out_parts at end = files_gutter
+	out_parts at end = mid_gap
+
+
+# "Recent" section header row (row 0 of the Recent/Git column).
+macro render_browser_recent_header_row
+	recent_line = s_join([ANSI_BOLD_ON, recent_header_text, ANSI_BOLD_OFF])
+
+
+# One row of the "Recent" section -- either the "(no history yet)" empty
+# state, or a file_history entry (edit prefix, git-status color, selection
+# highlight).
+macro render_browser_recent_entry_row
+	if recent_count is 0
+		string empty_msg = "(no history yet)"
+		recent_line = s_join([ANSI_DIM_ON, empty_msg, ANSI_DIM_OFF])
+	else
+		int history_idx = row_idx - 1
+		FileEntry entry = file_history at history_idx
+		(name, git_status) in entry
+
+		string edit_prefix = browser_edit_prefix(git_status)
+		string display_name = s_join([edit_prefix, name])
+		FitResult fit = browser_fit(display_name, recent_width)
+		(text, visible_len) in fit
+
+		string line = browser_colorize(text, git_status)
+		bool selected = browser_focus is RecentGit and recent_git_selected is history_idx
+		recent_line = browser_select_wrap(line, selected)
+
+
+# "Git" section header row.
+macro render_browser_git_header_row
+	recent_line = s_join([ANSI_BOLD_ON, git_header_text, ANSI_BOLD_OFF])
+
+
+# "(clean)" placeholder shown on the first row of the Git section when
+# there are no git-changed files.
+macro render_browser_git_empty_row
+	string clean_msg = "(clean)"
+	recent_line = s_join([ANSI_DIM_ON, clean_msg, ANSI_DIM_OFF])
+
+
+# One row of the "Git" section -- a git_changes entry (edit prefix,
+# git-status color, selection highlight), scrolled by git_scroll_row.
+macro render_browser_git_entry_row
+	int git_idx = git_scroll_row + (row_idx - git_header_row - 1)
+	if git_idx < git_total
+		FileEntry entry = git_changes at git_idx
+		(name, git_status) in entry
+
+		string edit_prefix = browser_edit_prefix(git_status)
+		string display_name = s_join([edit_prefix, name])
+		FitResult fit = browser_fit(display_name, recent_width)
+		(text, visible_len) in fit
+
+		string line = browser_colorize(text, git_status)
+		bool selected = browser_focus is RecentGit and recent_git_selected is (recent_count + git_idx)
+		recent_line = browser_select_wrap(line, selected)
+
+
+# Picks which Recent/Git row kind `row_idx` falls into and renders it into
+# recent_line, then appends it to out_parts.
+macro render_browser_recent_git_row
+	string recent_line = ""
+	if row_idx is 0
+		macro_run render_browser_recent_header_row
+	else if row_idx <= recent_slot_rows
+		macro_run render_browser_recent_entry_row
+	else if row_idx is git_header_row
+		macro_run render_browser_git_header_row
+	else if row_idx is git_header_row + 1 and git_total is 0
+		macro_run render_browser_git_empty_row
+	else if row_idx > git_header_row
+		macro_run render_browser_git_entry_row
+
+	out_parts at end = recent_line
+
+
+# Renders every visible row of the main (non-filter) browser view into
+# out_parts: the Files tree on the left and the merged Recent/Git column on
+# the right, one row at a time. Assumes compute_browser_column_widths/
+# compute_browser_recent_git_layout have already run and `total`
+# (len(browse_entries)) is set.
+macro render_browser_rows
+	for row_idx in range(view_rows)
+		macro_run render_browser_files_row
+		macro_run render_browser_recent_git_row
+		out_parts at end = ANSI_CRLF
+
+
+# Renders the full non-filter browser view into out_parts: column widths,
+# the Recent/Git section layout, every visible row, and finally the
+# "-- <dir> [pane] -- ..." status line and the notice row. Assumes
+# `browser`/`notice` are already destructured and out_parts/view_rows/cols
+# are set up by the caller (editor_render_browser).
+macro render_browser_main_view
+	(browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
+	(file_history, git_changes, git_scroll_row, browser_focus, recent_git_selected) in browser
+
+	macro_run compute_browser_column_widths
+	macro_run compute_browser_recent_git_layout
+
+	int total = len(browse_entries)
+
+	macro_run render_browser_rows
+
+	string focus_hint = "[Files]"
+	if browser_focus is RecentGit
+		focus_hint = "[Recent/Git]"
+
+	string status = s_join(["-- ", browse_dir, " ", focus_hint, " -- Tab switch  Enter open  F1/Esc close"])
+	out_parts at end = status
+	out_parts at end = ANSI_CRLF
+	out_parts at end = notice
+
+
 fn void editor_render_browser(EditorState state)
 	macro_run use_browser_ansi_codes
 	macro_run use_consts
@@ -108,170 +344,9 @@ fn void editor_render_browser(EditorState state)
 	out_parts at end = ANSI_CLEAR_SCREEN
 
 	if filter_active
-		int total = len(filter_matches)
-		for row_idx in range(view_rows)
-			int idx = filter_scroll_row + row_idx
-			if idx < total
-				FilterMatch entry = filter_matches at idx
-				(display_path, is_name_match, instance_count) in entry
-
-				string label = display_path
-				if not is_name_match
-					string count_str = c_int_to_string(instance_count)
-					label = s_join([display_path, " (instances: ", count_str, ")"])
-
-				FitResult fit = browser_fit(label, cols)
-				(text, visible_len) in fit
-
-				string line = text
-				if is_name_match
-					line = s_join([ANSI_BOLD_ON, text, ANSI_BOLD_OFF])
-
-				bool selected = idx is filter_selected
-				line = browser_select_wrap(line, selected)
-				out_parts at end = line
-
-			out_parts at end = ANSI_CRLF
-
-		string filter_status = s_join(["-- Filter: ", filter_dir, " -- Esc cancel  Enter open  Backspace edit"])
-		out_parts at end = filter_status
-		out_parts at end = ANSI_CRLF
-		out_parts at end = notice
-
+		macro_run render_browser_filter_view
 	else
-		(browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
-		(file_history, git_changes, git_scroll_row, browser_focus, recent_git_selected) in browser
-
-		# Files / Recent+Git columns, each min 20 cols, separated by a blank
-		# gutter column. Files takes whatever space is left over. The
-		# Recent+Git column stacks a fixed "Recent" section (its top few
-		# most-recently-opened files) above a scrollable "Git" section
-		# (every git-changed file, ordered by recency) -- a file can appear
-		# in both if it's both recent and currently changed.
-		int half = cols / 2
-		int col_width = 20
-		if half > col_width
-			col_width = half
-		int files_width = cols - col_width - 1
-		if files_width < 0
-			files_width = 0
-		int recent_width = col_width
-
-		# Left indent before the Files column, plus extra gap before the
-		# Recent/Git column, both carved out of files_width so the total
-		# row width is unchanged (still exactly `cols` -- see mouse.deor's
-		# mouse_down_browser for the matching click-to-column math).
-		int left_margin_len = BROWSER_LEFT_MARGIN
-		int mid_gap_len = BROWSER_COLUMN_GAP
-		int files_content_width = files_width - left_margin_len - mid_gap_len
-		if files_content_width < 0
-			files_content_width = 0
-		space_char as " "
-		string left_margin = s_repeat(space_char, left_margin_len)
-		string mid_gap = s_repeat(space_char, mid_gap_len)
-
-		int total = len(browse_entries)
-
-		int recent_total = len(file_history)
-		int recent_count = browser_recent_count(recent_total)
-		int recent_slot_rows = recent_count
-		if recent_slot_rows < 1
-			recent_slot_rows = 1
-		int git_header_row = recent_slot_rows + 1
-		int git_total = len(git_changes)
-
-		string recent_header_text = "Recent"
-		string git_header_text = "Git"
-
-		for row_idx in range(view_rows)
-			int idx = browse_scroll_row + row_idx
-			string tree_line = ""
-			int tree_visible_len = 0
-			if idx < total
-				FileEntry entry = browse_entries at idx
-				(name, is_dir, depth, expanded, git_status) in entry
-
-				string two_spaces = "  "
-				string indent = s_repeat(two_spaces, depth)
-
-				string marker = "  "
-				if is_dir
-					marker = "> "
-					if expanded
-						marker = "v "
-
-				string suffix = ""
-				if is_dir
-					suffix = "/"
-
-				string edit_prefix = browser_edit_prefix(git_status)
-				string plain = s_join([indent, marker, edit_prefix, name, suffix])
-				FitResult fit = browser_fit(plain, files_content_width)
-				(text, visible_len) in fit
-				tree_visible_len = visible_len
-
-				string line = browser_colorize(text, git_status)
-				bool selected = idx is browse_selected and browser_focus is Files
-				tree_line = browser_select_wrap(line, selected)
-
-			string files_gutter = browser_gutter(tree_visible_len, files_content_width)
-			out_parts at end = left_margin
-			out_parts at end = tree_line
-			out_parts at end = files_gutter
-			out_parts at end = mid_gap
-
-			string recent_line = ""
-			if row_idx is 0
-				recent_line = s_join([ANSI_BOLD_ON, recent_header_text, ANSI_BOLD_OFF])
-			else if row_idx <= recent_slot_rows
-				if recent_count is 0
-					string empty_msg = "(no history yet)"
-					recent_line = s_join([ANSI_DIM_ON, empty_msg, ANSI_DIM_OFF])
-				else
-					int history_idx = row_idx - 1
-					FileEntry entry = file_history at history_idx
-					(name, git_status) in entry
-
-					string edit_prefix = browser_edit_prefix(git_status)
-					string display_name = s_join([edit_prefix, name])
-					FitResult fit = browser_fit(display_name, recent_width)
-					(text, visible_len) in fit
-
-					string line = browser_colorize(text, git_status)
-					bool selected = browser_focus is RecentGit and recent_git_selected is history_idx
-					recent_line = browser_select_wrap(line, selected)
-			else if row_idx is git_header_row
-				recent_line = s_join([ANSI_BOLD_ON, git_header_text, ANSI_BOLD_OFF])
-			else if row_idx is git_header_row + 1 and git_total is 0
-				string clean_msg = "(clean)"
-				recent_line = s_join([ANSI_DIM_ON, clean_msg, ANSI_DIM_OFF])
-			else if row_idx > git_header_row
-				int git_idx = git_scroll_row + (row_idx - git_header_row - 1)
-				if git_idx < git_total
-					FileEntry entry = git_changes at git_idx
-					(name, git_status) in entry
-
-					string edit_prefix = browser_edit_prefix(git_status)
-					string display_name = s_join([edit_prefix, name])
-					FitResult fit = browser_fit(display_name, recent_width)
-					(text, visible_len) in fit
-
-					string line = browser_colorize(text, git_status)
-					bool selected = browser_focus is RecentGit and recent_git_selected is (recent_count + git_idx)
-					recent_line = browser_select_wrap(line, selected)
-
-			out_parts at end = recent_line
-
-			out_parts at end = ANSI_CRLF
-
-		string focus_hint = "[Files]"
-		if browser_focus is RecentGit
-			focus_hint = "[Recent/Git]"
-
-		string status = s_join(["-- ", browse_dir, " ", focus_hint, " -- Tab switch  Enter open  F1/Esc close"])
-		out_parts at end = status
-		out_parts at end = ANSI_CRLF
-		out_parts at end = notice
+		macro_run render_browser_main_view
 
 	string out = s_join(out_parts)
 	xt_flush_print(out)
