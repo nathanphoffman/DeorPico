@@ -46,12 +46,15 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: consolidated gutter logic to struct
 - Done: added ctrl 
 - Done: most rust is now in deor
-
-
+- Done: ctrl + b expands and contracts sidebar
+- Done: git can now be staged
 
 
 working on: final pass to make sure rust is in deor
 working on: more organization
+
+- Checkout git deletion files, staged vs unstaged, restoring deleted?
+- Add delete file and make file functionality  ctrl + backspace = delete; (deletes the highlighted file -> sends to trash not perma delete if possible)  ctrl + r: creates file in current directory (should pop the list downwards giving a blank cursor where a name can be typed and entered) -- on enter it creates file
 
 
 ## Nest For AI

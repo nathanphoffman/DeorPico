@@ -27,6 +27,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "lint_output_toggle"
 		else if chr is "b"
 			kind = "sidebar_toggle"
+		else if chr is "a"
+			kind = "stage_toggle"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "home"

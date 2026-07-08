@@ -36,6 +36,8 @@ macro handle_browse_mode
 		macro_run mouse_down_browser
 	else if kind is "tab"
 		macro_run cycle_browser_focus
+	else if kind is "stage_toggle"
+		macro_run browse_stage_toggle
 	else if kind is "up" and browser_focus is RecentGit
 		macro_run recent_git_up
 	else if kind is "down" and browser_focus is RecentGit

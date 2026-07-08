@@ -42,10 +42,15 @@ fn string g_raw_status(string repo_path)
 # "staged_edited" is a staged file with further worktree edits on top
 # (git's "MM" case) -- kept distinct from plain "staged" so the browser can
 # flag it, since both would otherwise render identically green with no
-# sign of the extra local edit.
+# sign of the extra local edit. "new" (git's "??") is kept distinct from
+# "edited" so the browser can tell a brand-new untracked file from a
+# further unstaged edit on an already-tracked one (see browser_edit_prefix).
 fn string g_classify_status(string index_status, string worktree_status)
 	if index_status is "D" or worktree_status is "D"
 		return "deleted"
+
+	if index_status is "?" and worktree_status is "?"
+		return "new"
 
 	if index_status is not " " and index_status is not "?"
 		if worktree_status is not " "
@@ -337,20 +342,99 @@ fn entryList g_reorder_by_recency(entryList entries, entryList history)
 	return result
 
 
-fn entryList g_apply_status(entryList entries, StringMap git_map)
+# Strips a leading "./" so a FileEntry.path (always rooted at the browse
+# dir, e.g. "./src/foo.rs") matches the plain-relative paths `git status`
+# reports (e.g. "src/foo.rs").
+fn string g_relative_path(string path)
 	string dot_slash = "./"
-	int strip_len = 2
+	string clean = path
+	if s_starts_with(path, dot_slash)
+		int strip_len = 2
+		int path_len = len(path)
+		clean = s_substring(path, strip_len, path_len)
+	return clean
 
+
+fn entryList g_apply_status(entryList entries, StringMap git_map)
 	entryList result = empty
 	for entry in entries
 		(path) in entry
-		string clean = path
-		if s_starts_with(path, dot_slash)
-			int path_len = len(path)
-			clean = s_substring(path, strip_len, path_len)
-
+		string clean = g_relative_path(path)
 		string git_status = h_get(git_map, clean)
 		FileEntry updated = entry with (git_status)
 		result at end = updated
 
 	return result
+
+
+# Runs `git add -- <pathspec>` (relative to repo_path) -- stages a file, or
+# recursively stages an entire directory's changes (new and modified files
+# alike), since git's own `add` already recurses into a directory pathspec.
+fn bool g_stage(string repo_path, string pathspec)
+	rust
+		std::process::Command::new("git")
+			.args(["add", "--"])
+			.arg(&pathspec)
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| output.status.success())
+			.unwrap_or(false)
+
+
+# Runs `git restore --staged -- <pathspec>` -- unstages a file or (since
+# `restore` also recurses into a directory pathspec) an entire directory,
+# leaving any actual worktree edits in place.
+fn bool g_unstage(string repo_path, string pathspec)
+	rust
+		std::process::Command::new("git")
+			.args(["restore", "--staged", "--"])
+			.arg(&pathspec)
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| output.status.success())
+			.unwrap_or(false)
+
+
+struct DirGitSummary
+	bool has_staged
+	bool has_unstaged
+
+# Whether `dir_path` (already relative, no leading "./") has any staged
+# and/or unstaged changes anywhere under it -- decides whether ^A on a
+# directory (see git_stage_toggle) stages or unstages its whole subtree.
+# A wholly-untracked directory shows as a single "?? dir/" line rather than
+# one line per file (git's default untracked-files mode), which the prefix
+# match below still catches since a string always starts with itself.
+fn DirGitSummary g_dir_status_summary(string repo_path, string dir_path)
+	string raw_text = g_raw_status(repo_path)
+	stringList lines = g_split_lines(raw_text)
+
+	int zero_idx = 0
+	int one_idx = 1
+	int three_idx = 3
+	string prefix = s_join([dir_path, "/"])
+
+	has_staged as false
+	has_unstaged as false
+
+	for line in lines
+		int line_len = len(line)
+		if line_len < 4
+			continue
+
+		string index_status = s_char_at(line, zero_idx)
+		string worktree_status = s_char_at(line, one_idx)
+		string rest = s_substring(line, three_idx, line_len)
+		string path = s_trim(rest)
+
+		if s_starts_with(path, prefix)
+			if index_status is "?" and worktree_status is "?"
+				has_unstaged = true
+			else
+				if index_status is not " "
+					has_staged = true
+				if worktree_status is not " "
+					has_unstaged = true
+
+	DirGitSummary summary = (has_staged, has_unstaged)
+	return summary

@@ -8,7 +8,8 @@ struct FileEntry
 	bool expanded
 
 	# "staged", "staged_edited" (staged with further worktree edits on
-	# top), "edited", "deleted", or "" (normal) -- set by g_apply_status
+	# top), "edited" (unstaged edit on a tracked file), "new" (untracked),
+	# "deleted", or "" (normal) -- set by g_apply_status
 	string git_status
 
 shape entryList = list of FileEntry

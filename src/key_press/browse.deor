@@ -13,15 +13,70 @@ macro toggle_browse
 			browse_selected = 0
 			browse_scroll_row = 0
 
-		# Re-tag git status every time the browser opens, not just the first time --
-		# depth/expanded/name/path are untouched, only git_status gets refreshed, so
-		# already-expanded subdirectories keep their state while colors stay current.
-		StringMap fresh_git_map = g_status(browse_dir)
-		browse_entries = g_apply_status(browse_entries, fresh_git_map)
-		file_history = g_apply_status(file_history, fresh_git_map)
-		git_changes = g_changed_entries(fresh_git_map)
-		git_changes = g_reorder_by_recency(git_changes, file_history)
-		macro_run clamp_recent_git_selection
+		macro_run refresh_all_git_status
+
+# Re-tags browse_entries/file_history/git_changes' git-status colors (not
+# the tree structure -- depth/expanded/name/path are untouched) and
+# reorders/reclamps the Recent+Git selection to match. Run whenever the
+# displayed git state might be stale: the browser opening, and after a ^A
+# stage/unstage (see git_stage_toggle).
+macro refresh_all_git_status
+	StringMap fresh_git_map = g_status(browse_dir)
+	browse_entries = g_apply_status(browse_entries, fresh_git_map)
+	file_history = g_apply_status(file_history, fresh_git_map)
+	git_changes = g_changed_entries(fresh_git_map)
+	git_changes = g_reorder_by_recency(git_changes, file_history)
+	macro_run clamp_recent_git_selection
+
+# ^A on the currently selected entry (bound by the caller into path/is_dir/
+# git_status) -- unstages if it's already staged (with or without a further
+# edit on top), stages otherwise. A directory recurses over its whole
+# subtree: `git add`/`git restore --staged` already do that for a directory
+# pathspec, so g_dir_status_summary just decides which direction to go
+# (stage wins if anything underneath is still unstaged/new, so one ^A press
+# can finish staging a partially-staged directory before a second press
+# unstages it). A no-op if there's nothing to change either way.
+macro git_stage_toggle
+	string clean_path = g_relative_path(path)
+	if is_dir
+		DirGitSummary summary = g_dir_status_summary(browse_dir, clean_path)
+		(has_staged, has_unstaged) in summary
+		if has_unstaged
+			bool staged_ok = g_stage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+		else if has_staged
+			bool unstaged_ok = g_unstage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+	else
+		if git_status is "staged" or git_status is "staged_edited"
+			bool unstaged_ok = g_unstage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+		else if git_status is "edited" or git_status is "new" or git_status is "deleted"
+			bool staged_ok = g_stage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+
+# ^A while the F1 browser is open -- resolves whichever entry is actually
+# highlighted (Files tree, or the Recent/Git merged column's Recent or Git
+# section) and hands it to git_stage_toggle.
+macro browse_stage_toggle
+	if browser_focus is Files
+		if len(browse_entries) > 0
+			FileEntry selected = browse_entries at browse_selected
+			(path, is_dir, git_status) in selected
+			macro_run git_stage_toggle
+	else
+		int recent_count = browser_recent_count(len(file_history))
+		if recent_git_selected < recent_count
+			if len(file_history) > 0
+				FileEntry selected = file_history at recent_git_selected
+				(path, is_dir, git_status) in selected
+				macro_run git_stage_toggle
+		else
+			int git_index = recent_git_selected - recent_count
+			if git_index < len(git_changes)
+				FileEntry selected = git_changes at git_index
+				(path, is_dir, git_status) in selected
+				macro_run git_stage_toggle
 
 # Keeps recent_git_selected/git_scroll_row pointing at whatever was selected
 # before the browser was last closed, rather than snapping back to the top --

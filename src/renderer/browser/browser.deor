@@ -47,22 +47,27 @@ fn string browser_colorize(string line, string git_status)
 		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
 	else if git_status is "edited"
 		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
+	else if git_status is "new"
+		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
 	else if git_status is "deleted"
 		result = s_join([ANSI_GIT_DELETED_ON, line, ANSI_GIT_DELETED_OFF])
 
 	return result
 
 
-# A staged file that's since been edited again renders identically to a
-# plain staged file (both green) -- this "+" is the only visual sign the
-# extra worktree edit exists. Plain "edited"/untracked files get it too
-# since they're always a worktree edit by definition.
+# "+" flags a brand-new untracked file (git's "??"), "%" flags an unstaged
+# edit on a file that's already tracked -- including a staged file with a
+# further worktree edit on top ("staged_edited"), since that extra edit is
+# always a modification, never a new file, once the path is already tracked.
+# A staged file with no further edits gets neither (just plain green).
 fn string browser_edit_prefix(string git_status)
 	string prefix = ""
-	if git_status is "staged_edited"
+	if git_status is "new"
 		prefix = "+"
 	else if git_status is "edited"
-		prefix = "+"
+		prefix = "%"
+	else if git_status is "staged_edited"
+		prefix = "%"
 
 	return prefix
 
