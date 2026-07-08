@@ -16,6 +16,7 @@ fn void editor_render_diff(EditorState state)
 			let git_changes = state.browser.git_changes.clone();
 			let sidebar_on_git = state.browser.sidebar_on_git.clone();
 			let git_selected = state.browser.git_selected.clone();
+			let git_section_collapsed = state.browser.git_section_collapsed.clone();
 
 			// Same sidebar width formula the normal editor view uses (widens
 			// while sidebar_focused, see layout.deor) -- diff_lines is left
@@ -49,7 +50,7 @@ fn void editor_render_diff(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
-			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64);
+			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64, git_section_collapsed);
 			let selected_idx = if sidebar_on_git {
 				1 + git_selected
 			} else {
@@ -64,6 +65,7 @@ fn void editor_render_diff(EditorState state)
 					browse_entries: browse_entries.clone(),
 					git_changes: git_changes.clone(),
 					git_section_rows,
+					git_section_collapsed,
 					idx: browse_scroll_row + i as i64,
 					selected_idx,
 					sidebar_width,

@@ -54,14 +54,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: minimap bar moved to bottom
 - Done: more editor code broken out
 - Done: sidebar is its own folder
-
-Working: removing F1 overlay, porting everything to sidebar, removing history -- keeping git
+- Done: F1 browser completely gone, sidebar click fix in place
+- Done: Refresh button added and tested
+- Done: GIT is collapsable
 
 Current Work:
-
-- Should we add a refresh button?  Before toggling between F1 and back would refresh now that might not work? -- what auto refreshes today?
-
-- Allow git to be collapsable
 
 - Final Spot Review
 
@@ -72,13 +69,15 @@ Needed for MVP
 - Sometimes the bottom file gets dropped from the git browser, it is just off the screen I can click it by mousing below, does it not respect the status bar?
 I should be able to scroll a tad further down.
 
-- Sometimes selections move really slowly performance wise on the screen, like a big drawn selection will start stuttering and slowing down near the end
-are we doing like infinitely fast polling or something?  It could also be partly or maybe also because the selection has a pretty big horizontal offset from
- the cursor so it could appear to slow down because I slow the cursor down but it never catches up do to the offset.
-
-- If page down is pressed, auto close the sidebar if it is open
+- Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
 
 - In diff mode the sidebar cant be clicked if the diff mode is open, allow it to be clicked
+
+---
+Lesser Important
+---
+
+- If page down is pressed, auto close the sidebar if it is open
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  Instead make a file that is both staged 
 show twice in the list as two different highlights.  Clicking the unstaged highlighted one will show just unstaged git diff, clicking the staged 

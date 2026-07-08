@@ -38,6 +38,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 	else if kind is "function_key"
 		if chr is "1"
 			kind = "sidebar_toggle"
+		else if chr is "5"
+			kind = "refresh"
 
 	translated as key with (kind)
 	return translated

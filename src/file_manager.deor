@@ -9,7 +9,9 @@ macro initialize_core
 	scroll_row as 0
 	wheel_scrolled as false
 	show_line_numbers as false
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers)
+	nls as "\n"
+	string synced_content = s_join_with(lines, nls)
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers, synced_content)
 
 macro initialize_browser
 	entryList browse_entries = f_list_dir(initial_dir)
@@ -19,6 +21,7 @@ macro initialize_browser
 	bool is_git_repo = g_is_repo(browse_dir)
 	sidebar_on_git as false
 	git_selected as 0
+	git_section_collapsed as false
 
 	# The sidebar is always shown, so browse_entries/git_changes need their
 	# git-status up front rather than waiting for the first F1 press.
@@ -32,7 +35,7 @@ macro initialize_browser
 	pending_delete_path as ""
 	pending_discard_path as ""
 
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 
 macro initialize_diff
 	diffing as false
@@ -105,7 +108,8 @@ fn EditorState editor_save(EditorState state)
 	string content = s_join_with(lines, nls)
 	bool did_save = f_write(filename, content)
 	dirty as false
-	BufferState core = core with (dirty)
+	synced_content as content
+	BufferState core = core with (dirty, synced_content)
 	new_state as state with (core)
 	return new_state
 

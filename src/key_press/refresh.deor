@@ -1,0 +1,33 @@
+# F5 -- refreshes the sidebar's git status/tree colors (see
+# refresh_all_git_status) and checks whether the currently open file changed
+# on disk since it was last loaded or saved (see synced_content). A clean
+# buffer just reloads silently; a dirty one is never overwritten -- it gets
+# the normal unsaved-changes gate, with a note appended when the file also
+# changed on disk, since that's a real conflict (^S would clobber the other
+# change, ^Del would clobber the local one) rather than the usual "you
+# forgot to save" case.
+macro key_refresh
+	macro_run refresh_all_git_status
+
+	if filename is not ""
+		stringList disk_lines = f_lines(filename)
+		if len(disk_lines) is 0
+			disk_lines at end = ""
+		nls as "\n"
+		string disk_content = s_join_with(disk_lines, nls)
+		bool changed_on_disk = disk_content is not synced_content
+
+		if changed_on_disk and dirty
+			notice = "Unsaved changes -- ^S save or ^Del discard (file also changed on disk -- may conflict)"
+			error = true
+		else if changed_on_disk
+			path as filename
+			macro_run load_file_into_buffer
+			notice = "Reloaded (changed on disk)"
+			error = false
+		else
+			notice = "Refreshed"
+			error = false
+	else
+		notice = "Refreshed"
+		error = false

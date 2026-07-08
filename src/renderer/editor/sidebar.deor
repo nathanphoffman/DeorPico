@@ -45,6 +45,10 @@ macro handle_sidebar_focus_mode
 		macro_run sidebar_nav_up
 	else if kind is "down"
 		macro_run sidebar_nav_down
+	else if kind is "left" and sidebar_on_git and git_selected is (0 - 1)
+		macro_run sidebar_collapse_git
+	else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
+		macro_run sidebar_expand_git
 	else if kind is "left" and not sidebar_on_git
 		macro_run browse_left
 	else if kind is "right" and not sidebar_on_git
@@ -74,10 +78,11 @@ macro handle_sidebar_focus_mode
 
 # ^A while the sidebar has keyboard focus -- toggles stage/unstage on
 # whichever entry is highlighted, in the <GIT> section or the Files tree
-# (see git_stage_toggle in browse.deor).
+# (see git_stage_toggle in browse.deor). A no-op on the <GIT> header itself
+# (git_selected is -1 there) -- there's no single file to stage.
 macro sidebar_stage_toggle
 	if sidebar_on_git
-		if len(git_changes) > 0
+		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
 			macro_run git_stage_toggle
@@ -87,10 +92,10 @@ macro sidebar_stage_toggle
 		macro_run git_stage_toggle
 
 # ^K while the sidebar has keyboard focus -- see file_delete_entry
-# in browse.deor.
+# in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
 macro sidebar_delete_entry
 	if sidebar_on_git
-		if len(git_changes) > 0
+		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir) in selected
 			macro_run file_delete_entry
@@ -100,10 +105,10 @@ macro sidebar_delete_entry
 		macro_run file_delete_entry
 
 # ^U while the sidebar has keyboard focus -- see discard_git_changes_entry
-# in browse.deor.
+# in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
 macro sidebar_discard_git_changes
 	if sidebar_on_git
-		if len(git_changes) > 0
+		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
 			macro_run discard_git_changes_entry
@@ -112,15 +117,24 @@ macro sidebar_discard_git_changes
 		(path, is_dir, git_status) in selected
 		macro_run discard_git_changes_entry
 
-# Up from the <GIT> section's top entry, or from the Files tree with no
-# <GIT> section above it, just clamps in place -- there's nothing further up.
-# Up from the Files tree's top row crosses into the <GIT> section's last
-# entry (if there is one), so the whole sidebar reads as one continuous list.
+# Left/Right on the <GIT> header -- same collapse/expand idea as a directory
+# in the Files tree, just toggling git_section_collapsed instead of an
+# entry's own `expanded` flag.
+macro sidebar_collapse_git
+	git_section_collapsed = true
+
+macro sidebar_expand_git
+	git_section_collapsed = false
+
+# Up from the <GIT> header, or from the Files tree with no <GIT> section
+# above it, just clamps in place -- there's nothing further up. Up from the
+# Files tree's top row crosses into the <GIT> section (if there is one),
+# landing on its last entry if expanded and non-empty, or the header itself
+# otherwise, so the whole sidebar reads as one continuous list.
 macro sidebar_nav_up
 	if sidebar_on_git
-		git_selected = git_selected - 1
-		if git_selected < 0
-			git_selected = 0
+		if git_selected > (0 - 1)
+			git_selected = git_selected - 1
 	else
 		browse_selected = browse_selected - 1
 		if browse_selected < 0
@@ -130,22 +144,33 @@ macro sidebar_nav_up
 			# sidebar_on_git, and previously this left it at -1, crashing
 			# the first time one of those ran.
 			browse_selected = 0
-			if len(git_changes) > 0
+			if is_git_repo
 				sidebar_on_git = true
-				git_selected = len(git_changes) - 1
+				git_selected = 0 - 1
+				if not git_section_collapsed and len(git_changes) > 0
+					git_selected = len(git_changes) - 1
 
 	macro_run sidebar_scroll_follow
 
-# Down from the <GIT> section's last entry crosses into the Files tree's
-# first row (see sidebar_nav_up for the reverse). Clamped against the same
-# view_rows the sidebar actually renders, same as sidebar_scroll_down.
+# Down from the <GIT> header moves into its first entry if expanded and
+# non-empty, or straight into the Files tree otherwise. Down from the <GIT>
+# section's last entry also crosses into the Files tree's first row (see
+# sidebar_nav_up for the reverse). Clamped against the same view_rows the
+# sidebar actually renders, same as sidebar_scroll_down.
 macro sidebar_nav_down
 	if sidebar_on_git
-		int last_git = len(git_changes) - 1
-		git_selected = git_selected + 1
-		if git_selected > last_git
-			sidebar_on_git = false
-			browse_selected = 0
+		if git_selected is (0 - 1)
+			if not git_section_collapsed and len(git_changes) > 0
+				git_selected = 0
+			else
+				sidebar_on_git = false
+				browse_selected = 0
+		else
+			int last_git = len(git_changes) - 1
+			git_selected = git_selected + 1
+			if git_selected > last_git
+				sidebar_on_git = false
+				browse_selected = 0
 	else
 		int last_entry = len(browse_entries) - 1
 		browse_selected = browse_selected + 1
@@ -157,7 +182,9 @@ macro sidebar_nav_down
 # Shared by sidebar_nav_up/down -- scrolls the sidebar just enough to keep
 # the current selection on screen, in screen-row terms (see
 # sidebar_git_section_rows: the <GIT> section shifts every Files-tree row
-# down by however many rows it occupies).
+# down by however many rows it occupies). git_selected of -1 (the header)
+# resolves to screen row 0 the same way any other entry resolves to
+# 1 + git_selected, so it needs no special case here.
 macro sidebar_scroll_follow
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
@@ -167,7 +194,7 @@ macro sidebar_scroll_follow
 	(view_rows) in layout
 
 	int git_count = len(git_changes)
-	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int screen_row = git_section_rows + browse_selected
 	if sidebar_on_git
 		screen_row = 1 + git_selected
@@ -177,22 +204,25 @@ macro sidebar_scroll_follow
 	else if screen_row >= browse_scroll_row + view_rows
 		browse_scroll_row = screen_row - view_rows + 1
 
-# Enter/space while the sidebar has keyboard focus -- opens the selected
-# file (from the <GIT> section or the Files tree) and hands focus back to
-# the editor (so typing starts right away), or expands/collapses the
-# selected directory (focus stays put so you can keep walking the tree). A
-# <GIT> entry that's been deleted has nothing to load, so it previews its
-# diff instead (see preview_deleted_file). If a diff is already showing when
-# a file is picked, load_file_into_buffer's own `if diffing` check re-diffs
-# onto that file instead of leaving diff mode, so focus stays in the
-# sidebar to let you keep flipping through diffs; it only drops back to the
-# editor once you land on a file that's either not being diffed, or has no
-# changes to diff (same idea for preview_deleted_file, which always sets
-# diffing, so focus deliberately stays put to keep flipping through deleted
-# files' diffs).
+# Enter/space while the sidebar has keyboard focus -- on the <GIT> header,
+# toggles git_section_collapsed (focus stays put, same as a directory).
+# Otherwise opens the selected file (from the <GIT> section or the Files
+# tree) and hands focus back to the editor (so typing starts right away),
+# or expands/collapses the selected directory (focus stays put so you can
+# keep walking the tree). A <GIT> entry that's been deleted has nothing to
+# load, so it previews its diff instead (see preview_deleted_file). If a
+# diff is already showing when a file is picked, load_file_into_buffer's
+# own `if diffing` check re-diffs onto that file instead of leaving diff
+# mode, so focus stays in the sidebar to let you keep flipping through
+# diffs; it only drops back to the editor once you land on a file that's
+# either not being diffed, or has no changes to diff (same idea for
+# preview_deleted_file, which always sets diffing, so focus deliberately
+# stays put to keep flipping through deleted files' diffs).
 macro sidebar_key_activate
 	if sidebar_on_git
-		if len(git_changes) > 0
+		if git_selected is (0 - 1)
+			git_section_collapsed = not git_section_collapsed
+		else if git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
 			if dirty
@@ -233,6 +263,7 @@ struct SidebarRowInput
 	entryList browse_entries
 	entryList git_changes
 	int git_section_rows
+	bool git_section_collapsed
 	int idx
 	int selected_idx
 	int sidebar_width
@@ -262,7 +293,7 @@ macro use_sidebar_border_colors
 # sidebar (see sidebar_git_section_rows), not raw list indices. Blank (just
 # padding) once `idx` runs past the end of the Files tree.
 fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, git_changes, git_section_rows, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
+	(browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
 
 	int git_count = len(git_changes)
 	bool has_git_section = git_section_rows > 0
@@ -326,14 +357,20 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 			string empty_text = ""
 			body = s_join([empty_text, blank_gutter])
 	else if top_row_is_header
-		string git_header_text = "<GIT>"
+		string git_marker = "v "
+		if git_section_collapsed
+			git_marker = "> "
+		string git_header_text = s_join([git_marker, "<GIT>"])
 		FitResult fit = browser_fit(git_header_text, content_width)
 		(text, visible_len) in fit
 		string colored = browser_bold_wrap(text)
+		bool selected = idx is selected_idx
+		string header_text = browser_select_wrap(colored, selected)
 		string gutter = browser_gutter(visible_len, content_width)
-		body = s_join([colored, gutter])
+		body = s_join([header_text, gutter])
 	else if has_git_section and idx < git_section_rows and git_count is 0
-		string git_clean_text = "clean"
+		string git_indent = "    "
+		string git_clean_text = s_join([git_indent, "clean"])
 		FitResult fit = browser_fit(git_clean_text, content_width)
 		(text, visible_len) in fit
 		string colored = browser_dim_wrap(text)
@@ -344,8 +381,13 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 		FileEntry entry = git_changes at git_idx
 		(name, git_status) in entry
 
+		# Indented one level, same as a plain (non-directory) file sitting
+		# at depth 1 in the Files tree below -- makes the git-changed files
+		# read as nested under the <GIT> header the same way real tree
+		# children nest under their parent directory.
+		string git_indent = "    "
 		string edit_prefix = browser_edit_prefix(git_status)
-		string plain = s_join([edit_prefix, name])
+		string plain = s_join([git_indent, edit_prefix, name])
 		FitResult fit = browser_fit(plain, content_width)
 		(text, visible_len) in fit
 
@@ -415,20 +457,25 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 
 	return body
 
-# Resolves a clicked screen row (`idx`, set by the caller) into either a
-# <GIT> entry or a Files-tree entry, same split as sidebar_row_piece, then
-# delegates to sidebar_key_activate to actually open/expand it -- shared by
-# sidebar mouse clicks. A click on the <GIT> header or "clean" placeholder
-# is a no-op, same as a click past the end of the Files tree. Also a no-op
-# while filtering -- the sidebar is showing filter_matches instead of the
-# git/tree rows this resolution assumes, so `idx` doesn't mean the same
-# thing here; clicking a filter result isn't wired up (use Enter instead).
+# Resolves a clicked screen row (`idx`, set by the caller) into the <GIT>
+# header, a <GIT> entry, or a Files-tree entry, same split as
+# sidebar_row_piece, then delegates to sidebar_key_activate to actually
+# toggle/open/expand it -- shared by sidebar mouse clicks. A click on the
+# "clean" placeholder is a no-op, same as a click past the end of the Files
+# tree. Also a no-op while filtering -- the sidebar is showing filter_matches
+# instead of the git/tree rows this resolution assumes, so `idx` doesn't
+# mean the same thing here; clicking a filter result isn't wired up (use
+# Enter instead).
 macro sidebar_activate_index
 	if not filter_active
 		int git_count = len(git_changes)
-		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 
-		if git_section_rows > 0 and idx > 0 and idx < git_section_rows and git_count > 0
+		if git_section_rows > 0 and idx is 0
+			sidebar_on_git = true
+			git_selected = 0 - 1
+			macro_run sidebar_key_activate
+		else if git_section_rows > 0 and idx > 0 and idx < git_section_rows and not git_section_collapsed and git_count > 0
 			sidebar_on_git = true
 			git_selected = idx - 1
 			macro_run sidebar_key_activate
@@ -456,7 +503,7 @@ macro sidebar_scroll_down
 	(view_rows) in layout
 
 	int git_count = len(git_changes)
-	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int last_row = git_section_rows + len(browse_entries) - 1
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0

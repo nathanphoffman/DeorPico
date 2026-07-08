@@ -51,14 +51,17 @@ fn int editor_view_rows(int rows, bool has_minimap, bool lint_output_visible)
 	return view_rows
 
 # How many screen rows the sidebar's <GIT> section occupies at the top of the
-# tree: 0 if this isn't a git repo (section hidden entirely), 2 (header +
-# "clean" placeholder) if it is but nothing's changed, or 1 (header) +
-# git_count otherwise. Shared by the sidebar's renderer and its nav/scroll/
-# mouse macros, which must agree exactly on this or the highlight and scroll
-# position drift from what's actually drawn.
-fn int sidebar_git_section_rows(bool is_git_repo, int git_count)
+# tree: 0 if this isn't a git repo (section hidden entirely), 1 (just the
+# header) if it's collapsed, 2 (header + "clean" placeholder) if it's
+# expanded but nothing's changed, or 1 (header) + git_count otherwise.
+# Shared by the sidebar's renderer and its nav/scroll/mouse macros, which
+# must agree exactly on this or the highlight and scroll position drift
+# from what's actually drawn.
+fn int sidebar_git_section_rows(bool is_git_repo, int git_count, bool git_collapsed)
 	if not is_git_repo
 		return 0
+	if git_collapsed
+		return 1
 	if git_count is 0
 		return 2
 	return 1 + git_count

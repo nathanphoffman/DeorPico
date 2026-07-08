@@ -19,6 +19,12 @@ struct BufferState
 	# Toggled with ctrl+n
 	bool show_line_numbers
 
+	# `lines` joined exactly as last read from or written to disk (see
+	# load_file_into_buffer/editor_save) -- lets F5 (key_refresh) tell
+	# "the file changed on disk" apart from "I have local unsaved edits",
+	# since `dirty` alone conflates the two.
+	string synced_content
+
 struct BrowserState
 	# Persistent Files-tree sidebar -- the only file browser there is now,
 	# always shown and never takes over the whole screen.
@@ -54,7 +60,15 @@ struct BrowserState
 	# browse_left/browse_right/start_create_file never need to know this
 	# exists.
 	bool sidebar_on_git
+
+	# -1 means the <GIT> header itself is highlighted (Enter/Space/Left/
+	# Right there toggles git_section_collapsed, same as a directory);
+	# 0..N-1 indexes into git_changes. Only meaningful while sidebar_on_git.
 	int git_selected
+
+	# Collapses the <GIT> section down to just its header row, same idea as
+	# collapsing a directory in the Files tree (see sidebar_git_section_rows).
+	bool git_section_collapsed
 
 	# ^R's inline "new file" prompt -- while true, a blank placeholder
 	# FileEntry sits in browse_entries at browse_selected and the sidebar

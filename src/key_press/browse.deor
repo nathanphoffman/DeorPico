@@ -9,21 +9,20 @@ macro refresh_all_git_status
 	macro_run clamp_sidebar_selection
 
 # Keeps the sidebar's selection/scroll valid after git_changes changes size
-# (stage/unstage/delete/discard/create) -- falls back to the Files tree if
-# the <GIT> section emptied out from under the highlight, and reclamps
+# (stage/unstage/delete/discard/create) -- falls back to the <GIT> header
+# (git_selected of -1, always valid whenever is_git_repo) if the section
+# collapsed or emptied out from under an entry selection, and reclamps
 # browse_scroll_row against the (possibly now shorter) total row count so
 # the sidebar can't stay scrolled past what it actually draws.
 macro clamp_sidebar_selection
 	if sidebar_on_git
 		int last_git = len(git_changes) - 1
-		if git_selected > last_git
+		if git_section_collapsed or last_git < 0
+			git_selected = 0 - 1
+		else if git_selected > last_git
 			git_selected = last_git
-		if git_selected < 0
-			if len(browse_entries) > 0
-				sidebar_on_git = false
-				browse_selected = 0
-			else
-				git_selected = 0
+		else if git_selected < (0 - 1)
+			git_selected = 0 - 1
 
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
@@ -33,7 +32,7 @@ macro clamp_sidebar_selection
 	(view_rows) in layout
 
 	int git_count = len(git_changes)
-	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int last_row = git_section_rows + len(browse_entries) - 1
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0
@@ -349,6 +348,8 @@ macro load_file_into_buffer
 	if len(opened_lines) is 0
 		opened_lines at end = ""
 	lines = opened_lines
+	nls as "\n"
+	synced_content = s_join_with(lines, nls)
 	cursor_row = 0
 	cursor_col = 0
 	dirty = false

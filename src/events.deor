@@ -64,6 +64,8 @@ macro handle_global_actions
 		macro_run discard_unsaved_changes
 	else if kind is "lint_output_toggle"
 		macro_run open_lint_output
+	else if kind is "refresh"
+		macro_run key_refresh
 
 # Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
 macro handle_arrow_nav
@@ -140,8 +142,8 @@ macro handle_page_and_mouse
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
-	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
-	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path) in browser
+	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content) in core
+	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -199,8 +201,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 		macro_run back_stop
 
-	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
+	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
