@@ -1,3 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/tab.deor
-macro key_tab
-	macro_run key_tab_impl

@@ -100,20 +100,3 @@ fn EditorState editor_open(LaunchArgs launch)
 
 	EditorState state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
 	return state
-
-fn EditorState editor_save(EditorState state)
-	(core) in state
-	(filename, lines) in core
-	nls as "\n"
-	string content = s_join_with(lines, nls)
-	bool did_save = f_write(filename, content)
-	dirty as false
-	synced_content as content
-	BufferState core = core with (dirty, synced_content)
-	new_state as state with (core)
-	return new_state
-
-fn EditorState editor_notice(EditorState state, string message)
-	notice as message
-	new_state as state with (notice)
-	return new_state

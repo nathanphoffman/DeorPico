@@ -20,7 +20,7 @@ struct BufferState
 	bool show_line_numbers
 
 	# `lines` joined exactly as last read from or written to disk (see
-	# load_file_into_buffer/editor_save) -- lets F5 (key_refresh) tell
+	# load_file_into_buffer/key_save_impl) -- lets F5 (key_refresh) tell
 	# "the file changed on disk" apart from "I have local unsaved edits",
 	# since `dirty` alone conflates the two.
 	string synced_content

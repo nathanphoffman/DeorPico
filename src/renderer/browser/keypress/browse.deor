@@ -372,8 +372,6 @@ macro load_file_into_buffer
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.
-# Pass-through stub lives at key_press/browse.deor (discard_unsaved_changes) --
-# this is the real implementation events.deor's stub forwards into.
 macro discard_unsaved_changes_impl
 	if dirty
 		path as filename

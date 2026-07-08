@@ -1,6 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/undo.deor
-macro do_undo
-	macro_run do_undo_impl
-
-macro do_redo
-	macro_run do_redo_impl

@@ -1,6 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/down.deor
-macro key_down
-	macro_run key_down_impl
-
-macro key_down_ctrl
-	macro_run key_down_ctrl_impl

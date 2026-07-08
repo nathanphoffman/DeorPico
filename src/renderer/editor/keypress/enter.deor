@@ -1,4 +1,3 @@
-# Pass-through stub lives at key_press/enter.deor.
 macro key_enter_impl
 	macro_run push_undo_snapshot
 	if has_selection

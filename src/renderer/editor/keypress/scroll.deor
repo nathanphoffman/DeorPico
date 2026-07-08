@@ -42,7 +42,6 @@ macro compute_scroll_sidebar_width
 # here a wheel scroll over the diff pane while the sidebar is focused moved
 # the (currently invisible) text-buffer scroll_row instead of diff_scroll_row,
 # and the diff view never appeared to move.
-# Pass-through stubs live at key_press/scroll.deor.
 macro scroll_up_impl
 	macro_run use_consts
 	macro_run compute_scroll_sidebar_width

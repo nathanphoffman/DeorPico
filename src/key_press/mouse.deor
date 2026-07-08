@@ -1,9 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/mouse.deor
-macro mouse_down_editor
-	macro_run mouse_down_editor_impl
-
-macro mouse_drag_main
-	macro_run mouse_drag_main_impl
-
-macro mouse_down_diff
-	macro_run mouse_down_diff_impl

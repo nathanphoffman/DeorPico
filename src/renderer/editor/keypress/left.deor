@@ -9,7 +9,6 @@ macro move_left
                 string new_line = lines at cursor_row
                 cursor_col = len(new_line)
 
-# Pass-through stubs live at key_press/left.deor.
 macro key_left_impl
     const int HORIZONTAL_MOVE = 1
     macro_run move_left

@@ -1,6 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/left.deor
-macro key_left
-	macro_run key_left_impl
-
-macro key_left_ctrl
-	macro_run key_left_ctrl_impl

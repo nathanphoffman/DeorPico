@@ -9,7 +9,6 @@ macro move_right
 			cursor_row = cursor_row + 1
 			cursor_col = 0
 
-# Pass-through stubs live at key_press/right.deor.
 macro key_right_impl
 	const int HORIZONTAL_MOVE = 1
 	macro_run move_right

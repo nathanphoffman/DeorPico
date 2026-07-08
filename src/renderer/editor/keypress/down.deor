@@ -1,4 +1,3 @@
-# Pass-through stubs live at key_press/down.deor.
 macro key_down_impl
 	cursor_row = cursor_row + 1
 

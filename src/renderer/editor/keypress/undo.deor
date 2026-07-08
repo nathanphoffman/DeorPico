@@ -16,7 +16,6 @@ macro push_undo_snapshot
 	undoList cleared_redo = empty
 	redo_stack = cleared_redo
 
-# Pass-through stub lives at key_press/undo.deor.
 macro do_undo_impl
 	if len(undo_stack) > 0
 		full_len as len(lines)
@@ -38,7 +37,6 @@ macro do_undo_impl
 		notice = "Undo"
 		error = false
 
-# Pass-through stub lives at key_press/undo.deor.
 macro do_redo_impl
 	if len(redo_stack) > 0
 		full_len as len(lines)

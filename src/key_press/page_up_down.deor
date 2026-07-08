@@ -1,6 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/page_up_down.deor
-macro page_up
-	macro_run page_up_impl
-
-macro page_down
-	macro_run page_down_impl

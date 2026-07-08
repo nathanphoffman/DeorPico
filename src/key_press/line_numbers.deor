@@ -1,3 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/line_numbers.deor
-macro toggle_line_numbers
-	macro_run toggle_line_numbers_impl

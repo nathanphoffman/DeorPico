@@ -1,9 +1,0 @@
-# Pass-through -- real logic lives in renderer/status/keypress/lint.deor
-macro apply_lint_poll
-	macro_run apply_lint_poll_impl
-
-macro open_lint_output
-	macro_run open_lint_output_impl
-
-macro handle_lint_output_mode
-	macro_run handle_lint_output_mode_impl

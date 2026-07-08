@@ -1,4 +1,3 @@
-# Pass-through stub lives at key_press/tab.deor.
 macro key_tab_impl
 	if has_selection
 		macro_run tab_selection

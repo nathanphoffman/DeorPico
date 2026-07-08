@@ -37,7 +37,6 @@ macro locate_mouse_in_buffer
 # A click also moves keyboard focus to whichever side it landed on, and
 # reassigns `col` before falling through to mouse_down_main so its own
 # gutter-relative math doesn't need to know the sidebar exists at all.
-# Pass-through stub lives at key_press/mouse.deor.
 macro mouse_down_editor_impl
 	macro_run use_consts
 	TermSize term_size = xt_size()
@@ -70,7 +69,6 @@ macro mouse_down_main
 	sel_anchor_col = clicked_col
 	has_selection = false
 
-# Pass-through stub lives at key_press/mouse.deor.
 macro mouse_drag_main_impl
 	macro_run locate_mouse_in_buffer
 	if not has_selection
@@ -87,7 +85,6 @@ macro mouse_drag_main_impl
 # show_line_numbers/lint_output_visible/diff_lines here don't need to match
 # what rust_diff.deor itself passes for its own has_minimap/view_rows math --
 # only sidebar_width is read out of `layout` below.
-# Pass-through stub lives at key_press/mouse.deor.
 macro mouse_down_diff_impl
 	macro_run use_consts
 	TermSize term_size = xt_size()

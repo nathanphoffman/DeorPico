@@ -3,7 +3,6 @@
 # persists after alt is released (only Esc clears it, see search_clear);
 # releasing alt only clears search_buffer (see events.deor) so the next
 # alt+letter starts a brand new term instead of extending the old one.
-# Pass-through stub lives at key_press/search.deor.
 macro alt_search_char_impl
 	macro_run clear_selection_impl
 	stringList extended_search_parts = [search_buffer, chr]
@@ -21,7 +20,6 @@ macro alt_search_char_impl
 	error = false
 
 # Esc -- unhighlights the search and drops its state entirely.
-# Pass-through stub lives at key_press/search.deor.
 macro search_clear_impl
 	search_active = false
 	search_buffer = ""
@@ -62,12 +60,10 @@ macro search_jump
 		cursor_row = row
 		cursor_col = col
 
-# Pass-through stub lives at key_press/search.deor.
 macro search_next_impl
 	forward as true
 	macro_run search_jump
 
-# Pass-through stub lives at key_press/search.deor.
 macro search_prev_impl
 	forward as false
 	macro_run search_jump

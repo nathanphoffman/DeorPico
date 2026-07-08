@@ -25,7 +25,6 @@ macro refresh_diff_for_new_file
 		notice = "Opened (no changes to diff)"
 		error = false
 
-# Pass-through stub lives at key_press/diff.deor.
 macro toggle_diff_impl
 	if diffing
 		if diff_preview
@@ -135,7 +134,6 @@ macro clamp_diff_scroll
 	if diff_scroll_row > max_scroll
 		diff_scroll_row = max_scroll
 
-# Pass-through stubs live at key_press/diff.deor.
 macro diff_scroll_up_impl
 	diff_scroll_row = diff_scroll_row - 1
 	macro_run clamp_diff_scroll

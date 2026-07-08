@@ -1,6 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/scroll.deor
-macro scroll_up
-	macro_run scroll_up_impl
-
-macro scroll_down
-	macro_run scroll_down_impl

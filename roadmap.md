@@ -69,6 +69,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
  - Any file more than 2000 lines long we should prevent from opening maybe?
  - When the editor starts up the directory sidebar should be selected
  
+
+Extract Sidebar into its own folder
+
+
+
 Probably better done by AI, required items:
 ---
 On any ctrl + s we should refresh the git directory listing -- so we see updates to git highlighting / entries

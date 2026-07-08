@@ -1,3 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/enter.deor
-macro key_enter
-	macro_run key_enter_impl

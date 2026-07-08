@@ -1,3 +1,0 @@
-# Pass-through -- real logic lives in renderer/editor/keypress/backspace.deor
-macro key_backspace
-	macro_run key_backspace_impl

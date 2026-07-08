@@ -1,3 +1,0 @@
-# Pass-through -- real logic lives in renderer/browser/keypress/browse.deor
-macro discard_unsaved_changes
-	macro_run discard_unsaved_changes_impl

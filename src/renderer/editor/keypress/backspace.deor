@@ -3,7 +3,6 @@ macro look_behind_cursor
 	int before_end = cursor_col - 1
 	string before = s_substring(cur_line, start, before_end)
 
-# Pass-through stub lives at key_press/backspace.deor.
 macro key_backspace_impl
 	macro_run push_undo_snapshot
 	if has_selection

@@ -2,7 +2,6 @@
 # "tick" events (see xt_read_key's poll timeout), so a background lint job's
 # completion shows up on the very next loop iteration even if the user
 # hasn't pressed a key since saving.
-# Pass-through stub lives at key_press/lint.deor.
 macro apply_lint_poll_impl
 	LintPoll poll = lr_poll(lint_runner)
 	(running, just_finished, output_lines) in poll
@@ -30,7 +29,6 @@ macro apply_lint_poll_impl
 # ctrl+e -- shows the raw stdout+stderr from the last completed lint run, in
 # a fixed-height popup (see editor_render / LINT_POPUP_HEIGHT) rather than
 # just the summarized issue count in the status bar.
-# Pass-through stub lives at key_press/lint.deor.
 macro open_lint_output_impl
 	lint_output_visible = true
 
@@ -40,7 +38,6 @@ macro close_lint_output
 # Keys handled while the lint output popup is open -- locks out normal
 # editing the same way handle_diff_mode does, so a stray keypress doesn't
 # edit the buffer underneath the popup.
-# Pass-through stub lives at key_press/lint.deor.
 macro handle_lint_output_mode_impl
 	if kind is "escape"
 		macro_run close_lint_output

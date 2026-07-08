@@ -1,4 +1,3 @@
-# Pass-through stub lives at key_press/quit.deor.
 macro key_quit_impl
 	if dirty
 		macro_run notify_unsaved_changes

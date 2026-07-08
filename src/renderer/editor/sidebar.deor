@@ -70,11 +70,11 @@ macro handle_sidebar_focus_mode
 	else if kind is "escape"
 		sidebar_focused = false
 	else if kind is "mouse_down"
-		macro_run mouse_down_editor
+		macro_run mouse_down_editor_impl
 	else if kind is "mouse_scroll_up"
-		macro_run scroll_up
+		macro_run scroll_up_impl
 	else if kind is "mouse_scroll_down"
-		macro_run scroll_down
+		macro_run scroll_down_impl
 
 # ^A while the sidebar has keyboard focus -- toggles stage/unstage on
 # whichever entry is highlighted, in the <GIT> section or the Files tree

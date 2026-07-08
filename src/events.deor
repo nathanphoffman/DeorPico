@@ -18,128 +18,128 @@ macro back_stop
 # Keys handled while the git diff view is open
 macro handle_diff_mode
 	if kind is "diff_toggle"
-		macro_run toggle_diff
+		macro_run toggle_diff_impl
 	else if kind is "escape"
-		macro_run toggle_diff
+		macro_run toggle_diff_impl
 	else if kind is "quit"
-		macro_run toggle_diff
+		macro_run toggle_diff_impl
 	else if kind is "up"
-		macro_run diff_scroll_up
+		macro_run diff_scroll_up_impl
 	else if kind is "down"
-		macro_run diff_scroll_down
+		macro_run diff_scroll_down_impl
 	else if kind is "page_up"
-		macro_run diff_page_up
+		macro_run diff_page_up_impl
 	else if kind is "page_down"
-		macro_run diff_page_down
+		macro_run diff_page_down_impl
 	else if kind is "mouse_down"
-		macro_run mouse_down_diff
+		macro_run mouse_down_diff_impl
 	else if kind is "mouse_scroll_up"
-		macro_run diff_scroll_up
+		macro_run diff_scroll_up_impl
 	else if kind is "mouse_scroll_down"
-		macro_run diff_scroll_down
+		macro_run diff_scroll_down_impl
 
 # Editing mode: app-wide actions -- quit/save/diff/search/history/undo-redo/clipboard
 macro handle_global_actions
 	if kind is "quit"
-		macro_run key_quit
+		macro_run key_quit_impl
 	else if kind is "diff_toggle"
-		macro_run toggle_diff
+		macro_run toggle_diff_impl
 	else if kind is "alt_char"
-		macro_run alt_search_char
+		macro_run alt_search_char_impl
 	else if kind is "escape" and search_active
-		macro_run search_clear
+		macro_run search_clear_impl
 	else if kind is "toggle_line_numbers"
-		macro_run toggle_line_numbers
+		macro_run toggle_line_numbers_impl
 	else if kind is "save"
-		macro_run key_save
+		macro_run key_save_impl
 	else if kind is "cut"
-		macro_run do_cut
+		macro_run do_cut_impl
 	else if kind is "copy"
-		macro_run do_copy
+		macro_run do_copy_impl
 	else if kind is "paste"
-		macro_run do_paste
+		macro_run do_paste_impl
 	else if kind is "undo"
-		macro_run do_undo
+		macro_run do_undo_impl
 	else if kind is "redo"
-		macro_run do_redo
+		macro_run do_redo_impl
 	else if kind is "discard_changes"
-		macro_run discard_unsaved_changes
+		macro_run discard_unsaved_changes_impl
 	else if kind is "lint_output_toggle"
-		macro_run open_lint_output
+		macro_run open_lint_output_impl
 	else if kind is "refresh"
-		macro_run key_refresh
+		macro_run key_refresh_impl
 
 # Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
 macro handle_arrow_nav
 	if kind is "up"
 		if shift
-			macro_run start_or_extend_selection
+			macro_run start_or_extend_selection_impl
 		else
-			macro_run clear_selection
-		macro_run key_up
+			macro_run clear_selection_impl
+		macro_run key_up_impl
 	else if kind is "down"
 		if shift
-			macro_run start_or_extend_selection
+			macro_run start_or_extend_selection_impl
 		else
-			macro_run clear_selection
-		macro_run key_down
+			macro_run clear_selection_impl
+		macro_run key_down_impl
 	else if kind is "left"
 		if shift
-			macro_run start_or_extend_selection
+			macro_run start_or_extend_selection_impl
 		else
-			macro_run clear_selection
-		macro_run key_left
+			macro_run clear_selection_impl
+		macro_run key_left_impl
 	else if kind is "right"
 		if shift
-			macro_run start_or_extend_selection
+			macro_run start_or_extend_selection_impl
 		else
-			macro_run clear_selection
-		macro_run key_right
+			macro_run clear_selection_impl
+		macro_run key_right_impl
 	else if kind is "right_ctrl"
-		macro_run key_right_ctrl
+		macro_run key_right_ctrl_impl
 	else if kind is "left_ctrl"
-		macro_run key_left_ctrl
+		macro_run key_left_ctrl_impl
 	else if kind is "up_ctrl"
-		macro_run key_up_ctrl
+		macro_run key_up_ctrl_impl
 	else if kind is "down_ctrl"
-		macro_run key_down_ctrl
+		macro_run key_down_ctrl_impl
 
 # Editing mode: text mutation -- backspace/delete/enter/typed characters
 macro handle_text_edit
 	if kind is "backspace"
-		macro_run key_backspace
+		macro_run key_backspace_impl
 	else if kind is "delete"
-		macro_run key_delete
+		macro_run key_delete_impl
 	else if kind is "enter"
-		macro_run key_enter
+		macro_run key_enter_impl
 	else if kind is "char" and chr is " " and has_selection
-		macro_run key_space_comment_selection
+		macro_run key_space_comment_selection_impl
 	else if kind is "char"
-		macro_run key_char
+		macro_run key_char_impl
 
 # Editing mode: tab/shift-tab, doubling as search-match cycling while searching
 macro handle_tab_and_search
 	if kind is "tab" and search_active
-		macro_run search_next
+		macro_run search_next_impl
 	else if kind is "shift_tab" and search_active
-		macro_run search_prev
+		macro_run search_prev_impl
 	else if kind is "tab"
-		macro_run key_tab
+		macro_run key_tab_impl
 
 # Editing mode: paging and mouse input
 macro handle_page_and_mouse
 	if kind is "page_up"
-		macro_run page_up
+		macro_run page_up_impl
 	else if kind is "page_down"
-		macro_run page_down
+		macro_run page_down_impl
 	else if kind is "mouse_down"
-		macro_run mouse_down_editor
+		macro_run mouse_down_editor_impl
 	else if kind is "mouse_drag"
-		macro_run mouse_drag_main
+		macro_run mouse_drag_main_impl
 	else if kind is "mouse_scroll_up"
-		macro_run scroll_up
+		macro_run scroll_up_impl
 	else if kind is "mouse_scroll_down"
-		macro_run scroll_down
+		macro_run scroll_down_impl
 
 fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
@@ -156,7 +156,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 	# Non-blocking; runs every call (real key or synthetic tick) so a
 	# finished background lint job is picked up as soon as possible.
-	macro_run apply_lint_poll
+	macro_run apply_lint_poll_impl
 
 	# A key that isn't a continuation of an alt+letter chord ends whatever
 	# chord was in progress -- the next alt+letter starts counting from
@@ -191,7 +191,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	else if diffing
 		macro_run handle_diff_mode
 	else if lint_output_visible
-		macro_run handle_lint_output_mode
+		macro_run handle_lint_output_mode_impl
 
 	# this is the main view
 	else

@@ -20,57 +20,33 @@ import "src/lib/dirsearch.deor"
 import "src/consts.deor"
 import "src/key_press/keymap.deor"
 
-# key_press/* below are thin pass-through macros for whatever raw key action
-# they're named after -- the actual logic lives in the corresponding
-# renderer/{browser,editor,status}/keypress/ file, loaded first here since
-# each stub's macro_run target must exist before the stub does.
+# Per-key-action logic, organized by which part of the screen it affects --
+# events.deor macro_runs these directly, no pass-through layer.
 import "src/renderer/editor/keypress/sub_macros/split_at_cursor.deor"
-import "src/renderer/editor/keypress/undo.deor"
-import "src/key_press/undo.deor"
-import "src/renderer/editor/keypress/selection.deor"
-import "src/key_press/selection.deor"
 import "src/renderer/editor/keypress/sub_macros/input_key.deor"
+import "src/renderer/editor/keypress/undo.deor"
+import "src/renderer/editor/keypress/selection.deor"
 import "src/renderer/editor/keypress/quit.deor"
-import "src/key_press/quit.deor"
 import "src/renderer/editor/keypress/save.deor"
-import "src/key_press/save.deor"
 import "src/renderer/editor/keypress/up.deor"
-import "src/key_press/up.deor"
 import "src/renderer/editor/keypress/down.deor"
-import "src/key_press/down.deor"
 import "src/renderer/editor/keypress/left.deor"
-import "src/key_press/left.deor"
 import "src/renderer/editor/keypress/right.deor"
-import "src/key_press/right.deor"
 import "src/renderer/editor/keypress/backspace.deor"
-import "src/key_press/backspace.deor"
 import "src/renderer/editor/keypress/delete.deor"
-import "src/key_press/delete.deor"
 import "src/renderer/editor/keypress/enter.deor"
-import "src/key_press/enter.deor"
 import "src/renderer/editor/keypress/char.deor"
-import "src/key_press/char.deor"
 import "src/renderer/editor/keypress/tab.deor"
-import "src/key_press/tab.deor"
 import "src/renderer/editor/keypress/page_up_down.deor"
-import "src/key_press/page_up_down.deor"
 import "src/renderer/browser/keypress/browse.deor"
-import "src/key_press/browse.deor"
 import "src/renderer/browser/keypress/browse_filter.deor"
 import "src/renderer/editor/keypress/refresh.deor"
-import "src/key_press/refresh.deor"
 import "src/renderer/editor/keypress/scroll.deor"
-import "src/key_press/scroll.deor"
 import "src/renderer/editor/keypress/diff.deor"
-import "src/key_press/diff.deor"
 import "src/renderer/status/keypress/lint.deor"
-import "src/key_press/lint.deor"
 import "src/renderer/editor/keypress/search.deor"
-import "src/key_press/search.deor"
 import "src/renderer/editor/keypress/line_numbers.deor"
-import "src/key_press/line_numbers.deor"
 import "src/renderer/editor/keypress/mouse.deor"
-import "src/key_press/mouse.deor"
 
 # File open logic needed first, then renderer
 import "src/renderer/editor/ansi_codes.deor"
@@ -102,8 +78,8 @@ import "src/renderer/editor/sidebar.deor"
 import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/highlighting.deor"
 
-# Then optional functionality is loaded in not needed initially
-import "src/file_manager.deor"
+# Builds the initial EditorState at startup
+import "src/state_init.deor"
 
 # Finally events are listened to
 import "src/events.deor"

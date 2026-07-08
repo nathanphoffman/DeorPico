@@ -1,4 +1,3 @@
-# Pass-through stub lives at key_press/save.deor.
 macro key_save_impl
 	nls as "\n"
 	string content = s_join_with(lines, nls)

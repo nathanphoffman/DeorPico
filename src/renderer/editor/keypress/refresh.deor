@@ -6,7 +6,6 @@
 # changed on disk, since that's a real conflict (^S would clobber the other
 # change, ^Del would clobber the local one) rather than the usual "you
 # forgot to save" case.
-# Pass-through stub lives at key_press/refresh.deor.
 macro key_refresh_impl
 	macro_run refresh_all_git_status
 

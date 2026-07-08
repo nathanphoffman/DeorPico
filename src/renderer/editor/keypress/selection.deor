@@ -20,18 +20,15 @@ macro normalize_selection
 		end_row = tmp_row
 		end_col = tmp_col
 
-# Pass-through stub lives at key_press/selection.deor.
 macro start_or_extend_selection_impl
 	if not has_selection
 		sel_anchor_row = cursor_row
 		sel_anchor_col = cursor_col
 		has_selection = true
 
-# Pass-through stub lives at key_press/selection.deor.
 macro clear_selection_impl
 	has_selection = false
 
-# Pass-through stub lives at key_press/selection.deor.
 macro key_space_comment_selection_impl
 	macro_run normalize_selection
 
@@ -151,14 +148,12 @@ macro copy_selection_text
 		nls as "\n"
 		selection_text = s_join_with(collected, nls)
 
-# Pass-through stub lives at key_press/selection.deor.
 macro do_copy_impl
 	if has_selection
 		string selection_text = ""
 		macro_run copy_selection_text
 		bool copied = cp_set(selection_text)
 
-# Pass-through stub lives at key_press/selection.deor.
 macro do_cut_impl
 	if has_selection
 		macro_run push_undo_snapshot
@@ -167,7 +162,6 @@ macro do_cut_impl
 		bool copied = cp_set(selection_text)
 		macro_run delete_selection
 
-# Pass-through stub lives at key_press/selection.deor.
 macro do_paste_impl
 	macro_run push_undo_snapshot
 	if has_selection
