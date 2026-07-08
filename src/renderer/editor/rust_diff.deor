@@ -8,7 +8,7 @@ fn void editor_render_diff(EditorState state)
 	rust
 		use std::io::Write;
 		let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
-		let cols = cols as usize;
+		let cols = cols as usize as i64;
         
 
     # Same sidebar width formula the normal editor view uses (widens
@@ -37,10 +37,19 @@ fn void editor_render_diff(EditorState state)
 	# buffer row that doesn't exist in this view. Spans the full
 	# terminal width, same as the normal editor's own minimap bar
     # (it doesn't reserve space for the sidebar either).
+
+    (diff) in state
+    (diff_lines) in diff 
+    minimap_bar as g_diff_minimap_raw(diff_lines, cols)
+
+    has_minimap as false
+    if minimap_bar is not empty
+        has_minimap = true
+
     rust
         {
-			let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
-			let has_minimap = !minimap_bar.is_empty();
+			//let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
+			//let has_minimap = !minimap_bar.is_empty();
 			// Same reserved-row formula every other scroll-clamp/render path
 			// in the app uses (see editor_view_rows in consts.deor) -- the
 			// diff view never shows the lint popup, hence `false`.
