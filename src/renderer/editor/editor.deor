@@ -30,6 +30,7 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	macro_run setup_minimap_and_gutters
 	macro_run render_buffer_rows
 	macro_run render_lint_output_section
+	macro_run render_minimap_bar
 	macro_run build_and_render_status_bar
 	macro_run position_and_output_cursor
 

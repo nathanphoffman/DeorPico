@@ -22,6 +22,13 @@ struct EditorLayout
 	int gutter_width
 	int text_visible_columns
 	bool has_minimap
+
+	# Always 0 -- the minimap row now sits below the buffer (just above the
+	# status bar, see minimap_gutters.deor) instead of pushing the buffer
+	# down from above, so nothing needs to offset for it anymore. Kept as
+	# its own field (rather than removed) since cursor positioning and mouse
+	# click mapping still add/subtract it; if it's ever reintroduced above
+	# the buffer for some other reason, those call sites are already wired.
 	int minimap_offset
 	int view_rows
 	int top_row
@@ -59,8 +66,6 @@ fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
 
 	bool has_minimap = editor_has_minimap(diff_lines, total_line_count, cols)
 	int minimap_offset = 0
-	if has_minimap
-		minimap_offset = 1
 
 	int view_rows = editor_view_rows(rows, has_minimap, lint_output_visible)
 

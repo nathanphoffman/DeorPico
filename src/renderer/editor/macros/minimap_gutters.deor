@@ -1,9 +1,11 @@
 
-# Clear screen and append minimap if present
+# Just clears the screen -- the minimap used to be prepended here, but that
+# pushed the buffer down a row the moment a file had git changes (and back
+# up the moment it didn't), which was jarring to look at. It's now appended
+# at the bottom instead (see render_minimap_bar), right above the status
+# bar, so the buffer's own rows never shift.
 macro initialize_screen_buffer_with_minimap
 	string screen = ANSI_CLEAR_SCREEN
-	if has_minimap
-		screen = s_join([screen, minimap_bar, ANSI_CRLF])
 
 
 # Generate minimap bar and compute this frame's shared EditorLayout --
@@ -21,4 +23,11 @@ macro setup_minimap_and_gutters
 	(gutter_width, text_visible_columns, has_minimap, minimap_offset, view_rows, top_row, bottom_row, sidebar_width) in layout
 
 	macro_run initialize_screen_buffer_with_minimap
+
+# Appends the minimap bar just above the status bar -- called after the
+# buffer/lint-popup rows so it always lands directly above
+# build_and_render_status_bar regardless of whether the lint popup is open.
+macro render_minimap_bar
+	if has_minimap
+		screen = s_join([screen, minimap_bar, ANSI_CRLF])
 

@@ -50,17 +50,20 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: git can now be staged
 - Done: git files can now be deleted 
 - Done: deleted files show in git history and can be staged / unstaged
-- Done: 
-
-Adding git discard -- and double confirm for discard / delete   u/k
+- Done: double confirm for delete and discard
+- Done: minimap bar moved to bottom
 
 Minimum Viable:
 
-- Allow git commit to be performed, ^m should toggle a git commit with currently staged files, a prompt should appear (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
+- More organization in the morning
+
+- Remove the F1 overlay and add git changes to a flat list in a folder that can be expanded, obviously make it look a bit different or something to differentiate it
+
+- git doesnt update when I do a delete -> discard (delete does -- discard does not update in file browser, so the file should return and it does not) -- even when reloaded unless the whole app is reloaded.
+
+- Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
-
 
 
 ## Nest For AI

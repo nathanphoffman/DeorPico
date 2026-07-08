@@ -44,10 +44,6 @@ fn void editor_render_diff(EditorState state)
 			let view_rows = editor_view_rows(rows as i64, has_minimap, false) as usize;
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
-			if has_minimap {
-				out.push_str(&minimap_bar);
-				out.push_str("\r\n");
-			}
 
 			let total = state.diff.diff_lines.len();
 			for i in 0..view_rows {
@@ -85,6 +81,13 @@ fn void editor_render_diff(EditorState state)
 					};
 					out.push_str(&line);
 				}
+				out.push_str("\r\n");
+			}
+			// Appended here (just above the status line) rather than above
+			// the rows, same as the normal editor view -- see
+			// render_minimap_bar in minimap_gutters.deor.
+			if has_minimap {
+				out.push_str(&minimap_bar);
 				out.push_str("\r\n");
 			}
 			let status = if state.diff.diff_preview {
