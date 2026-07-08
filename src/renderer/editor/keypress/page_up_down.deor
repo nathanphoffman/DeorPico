@@ -1,7 +1,7 @@
-macro page_up_impl
+fn int page_up_impl(int cursor_row)
     macro_run use_consts
-	cursor_row = cursor_row - PAGE_DOWN_UP_AMOUNT
+	return cursor_row - PAGE_DOWN_UP_AMOUNT
 
-macro page_down_impl
+fn int page_down_impl(int cursor_row)
     macro_run use_consts
-    cursor_row = cursor_row + PAGE_DOWN_UP_AMOUNT
+    return cursor_row + PAGE_DOWN_UP_AMOUNT

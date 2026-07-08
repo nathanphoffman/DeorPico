@@ -9,8 +9,8 @@ import "src/renderer/editor/layout.deor"
 # F1 -- moves keyboard focus between the always-visible Files sidebar and
 # the editor. The sidebar widens while focused (see SIDEBAR_WIDTH_FOCUSED)
 # to make room for long names, then shrinks back once focus returns.
-macro toggle_sidebar
-	sidebar_focused = not sidebar_focused
+fn bool toggle_sidebar(bool sidebar_focused)
+	return not sidebar_focused
 
 # Keys handled while the sidebar has keyboard focus. handle_global_actions
 # runs unconditionally first (same as the plain editor view) so ^S/^Del can
@@ -46,9 +46,9 @@ macro handle_sidebar_focus_mode
 	else if kind is "down"
 		macro_run sidebar_nav_down
 	else if kind is "left" and sidebar_on_git and git_selected is (0 - 1)
-		macro_run sidebar_collapse_git
+		git_section_collapsed = sidebar_collapse_git()
 	else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
-		macro_run sidebar_expand_git
+		git_section_collapsed = sidebar_expand_git()
 	else if kind is "left" and not sidebar_on_git
 		macro_run browse_left
 	else if kind is "right" and not sidebar_on_git
@@ -120,11 +120,11 @@ macro sidebar_discard_git_changes
 # Left/Right on the <GIT> header -- same collapse/expand idea as a directory
 # in the Files tree, just toggling git_section_collapsed instead of an
 # entry's own `expanded` flag.
-macro sidebar_collapse_git
-	git_section_collapsed = true
+fn bool sidebar_collapse_git()
+	return true
 
-macro sidebar_expand_git
-	git_section_collapsed = false
+fn bool sidebar_expand_git()
+	return false
 
 # Up from the <GIT> header, or from the Files tree with no <GIT> section
 # above it, just clamps in place -- there's nothing further up. Up from the

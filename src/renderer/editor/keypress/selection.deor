@@ -26,8 +26,8 @@ macro start_or_extend_selection_impl
 		sel_anchor_col = cursor_col
 		has_selection = true
 
-macro clear_selection_impl
-	has_selection = false
+fn bool clear_selection_impl()
+	return false
 
 macro key_space_comment_selection_impl
 	macro_run normalize_selection

@@ -4,7 +4,7 @@
 # releasing alt only clears search_buffer (see events.deor) so the next
 # alt+letter starts a brand new term instead of extending the old one.
 macro alt_search_char_impl
-	macro_run clear_selection_impl
+	has_selection = clear_selection_impl()
 	stringList extended_search_parts = [search_buffer, chr]
 	search_buffer = s_join(extended_search_parts)
 	search_matches = x_find_matches(lines, search_buffer)

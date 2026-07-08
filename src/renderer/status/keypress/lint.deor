@@ -29,19 +29,19 @@ macro apply_lint_poll_impl
 # ctrl+e -- shows the raw stdout+stderr from the last completed lint run, in
 # a fixed-height popup (see editor_render / LINT_POPUP_HEIGHT) rather than
 # just the summarized issue count in the status bar.
-macro open_lint_output_impl
-	lint_output_visible = true
+fn bool open_lint_output_impl()
+	return true
 
-macro close_lint_output
-	lint_output_visible = false
+fn bool close_lint_output()
+	return false
 
 # Keys handled while the lint output popup is open -- locks out normal
 # editing the same way handle_diff_mode does, so a stray keypress doesn't
 # edit the buffer underneath the popup.
 macro handle_lint_output_mode_impl
 	if kind is "escape"
-		macro_run close_lint_output
+		lint_output_visible = close_lint_output()
 	else if kind is "lint_output_toggle"
-		macro_run close_lint_output
+		lint_output_visible = close_lint_output()
 	else if kind is "quit"
-		macro_run close_lint_output
+		lint_output_visible = close_lint_output()

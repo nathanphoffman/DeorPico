@@ -1,6 +1,3 @@
 
-macro toggle_line_numbers_impl
-	if show_line_numbers
-		show_line_numbers = false
-	else
-		show_line_numbers = true
+fn bool toggle_line_numbers_impl(bool show_line_numbers)
+	return not show_line_numbers
