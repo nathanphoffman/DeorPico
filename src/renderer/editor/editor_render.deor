@@ -184,8 +184,14 @@ fn string editor_render_lint_output(stringList lint_output, int max_visible_colu
 # Keyboard shortcut hints for the status bar. When a selection is active,
 # the selection-only actions are pushed to the front of the list so they
 # survive truncation on a narrow terminal -- everything else is cut off
-# rather than wrapped (see editor_render).
-fn string editor_status_shortcuts(bool has_selection)
+# rather than wrapped (see editor_render). While the sidebar has keyboard
+# focus, none of the normal editing actions even run (see
+# handle_sidebar_focus_mode) so the whole list is swapped out for just the
+# ones that do.
+fn string editor_status_shortcuts(bool has_selection, bool sidebar_focused)
+	if sidebar_focused
+		return "^R new file  ^\\ delete"
+
 	string selection_hint = ""
 	if has_selection
 		selection_hint = "SELECTION: space = comment/uncomment  tab = indent  |  "

@@ -464,6 +464,15 @@ macro load_file_into_buffer
 	scroll_row = 0
 	notice = "Opened"
 	error = false
+
+	# The old selection anchor can point past the end of the new file (e.g.
+	# a selection anchored at row 50 of a long file, then a 10-line file is
+	# opened) -- main()'s render loop indexes `lines` by sel_anchor_row every
+	# frame regardless of has_selection, so a stale anchor panics on the very
+	# next frame instead of just harmlessly persisting.
+	has_selection = false
+	sel_anchor_row = 0
+	sel_anchor_col = 0
 	macro_run reset_undo_history
 	macro_run refresh_git_diff_lines
 	if diffing

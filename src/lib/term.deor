@@ -113,10 +113,6 @@ fn KeyEvent xt_read_key()
 						if ctrl => break KeyEvent
 							{ kind: "ctrl_delete".to_string(), chr: String::new(), shift, col: 0, row: 0 },
 
-					crossterm::event::KeyCode::Backspace
-						if ctrl => break KeyEvent
-							{ kind: "ctrl_backspace".to_string(), chr: String::new(), shift, col: 0, row: 0 },
-
 					crossterm::event::KeyCode::Right
 						if ctrl => break KeyEvent 
 							{ kind: "right_ctrl".to_string(), chr: String::new(), shift, col: 0, row: 0 },

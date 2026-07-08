@@ -6,7 +6,7 @@ macro build_and_render_status_bar
 		modified_marker = " [modified]"
 
 	string total_line_str = c_int_to_string(total_line_count)
-	string status_shortcuts = editor_status_shortcuts(has_selection)
+	string status_shortcuts = editor_status_shortcuts(has_selection, sidebar_focused)
 	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, " -- ", status_shortcuts])
 	if len(status_line) > max_visible_columns
 		int truncate_start = 0
