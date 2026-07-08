@@ -78,6 +78,197 @@ macro browse_stage_toggle
 				(path, is_dir, git_status) in selected
 				macro_run git_stage_toggle
 
+# ^Backspace on `path`/`is_dir` (bound by the caller from whichever entry is
+# currently selected) -- sends it to the OS trash rather than a permanent
+# delete, so a wrong keypress is still recoverable. A non-empty directory is
+# refused outright (recursing here would be far too easy to trigger by
+# accident); an empty one is trashed like a file. Deleting the file that's
+# currently open in the editor is allowed -- the in-memory buffer stays open
+# and just gets marked dirty, so ^S recreates it.
+macro file_delete_entry
+	if is_dir
+		bool dir_empty = f_dir_is_empty(path)
+		if dir_empty
+			bool trashed = f_trash(path)
+			if trashed
+				macro_run remove_deleted_entry
+				notice = "Moved to trash"
+				error = false
+			else
+				notice = "Could not delete (trash unavailable?)"
+				error = true
+		else
+			notice = "Directory not empty"
+			error = true
+	else
+		bool trashed = f_trash(path)
+		if trashed
+			if path is filename
+				dirty = true
+			macro_run remove_deleted_entry
+			notice = "Moved to trash"
+			error = false
+		else
+			notice = "Could not delete (trash unavailable?)"
+			error = true
+
+# Purges the just-deleted `path` from every list it might appear in and
+# reclamps the selections that indexed into them -- browse_entries always,
+# file_history/git_changes only if it happened to be there too.
+macro remove_deleted_entry
+	browse_entries = e_remove_by_path(browse_entries, path)
+	file_history = e_remove_by_path(file_history, path)
+	git_changes = e_remove_by_path(git_changes, path)
+
+	int last_browse_entry = len(browse_entries) - 1
+	if browse_selected > last_browse_entry
+		browse_selected = last_browse_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+	macro_run clamp_recent_git_selection
+
+# ^Backspace while the F1 browser is open -- resolves whichever entry is
+# highlighted (Files tree, or the Recent/Git column's Recent or Git section)
+# and hands it to file_delete_entry, same resolution as browse_stage_toggle.
+macro browse_delete_entry
+	if browser_focus is Files
+		if len(browse_entries) > 0
+			FileEntry selected = browse_entries at browse_selected
+			(path, is_dir) in selected
+			macro_run file_delete_entry
+	else
+		int recent_count = browser_recent_count(len(file_history))
+		if recent_git_selected < recent_count
+			if len(file_history) > 0
+				FileEntry selected = file_history at recent_git_selected
+				(path, is_dir) in selected
+				macro_run file_delete_entry
+		else
+			int git_index = recent_git_selected - recent_count
+			if git_index < len(git_changes)
+				FileEntry selected = git_changes at git_index
+				(path, is_dir) in selected
+				macro_run file_delete_entry
+
+# ^R -- opens the inline "new file" prompt: a blank placeholder row is
+# spliced into browse_entries right where typing will land, and
+# creating_file/new_file_name/create_parent_dir switch keyboard input over
+# to the name buffer (see confirm_create_file/cancel_create_file). A
+# highlighted directory is expanded (if needed) and becomes the parent, with
+# the placeholder as its first child; a highlighted file's parent directory
+# is used instead, with the placeholder as its next sibling. Only the Files
+# tree makes sense here (there's no single "current directory" in the
+# Recent/Git column), so this is Files-pane/sidebar only.
+macro start_create_file
+	int insert_index = 0
+	int insert_depth = 0
+	string parent_dir = browse_dir
+
+	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, depth, expanded) in selected
+		if is_dir
+			if not expanded
+				macro_run browse_right
+			insert_index = browse_selected + 1
+			insert_depth = depth + 1
+			parent_dir = path
+		else
+			insert_index = browse_selected + 1
+			insert_depth = depth
+			parent_dir = f_dirname(path)
+
+	string name = ""
+	string path = ""
+	bool is_dir = false
+	int depth = insert_depth
+	bool expanded = false
+	string git_status = ""
+	FileEntry placeholder = (name, path, is_dir, depth, expanded, git_status)
+	entryList one_entry = empty
+	one_entry at end = placeholder
+	int insert_at = insert_index - 1
+	browse_entries = e_insert_children(browse_entries, insert_at, one_entry)
+
+	browse_selected = insert_index
+	if browse_selected < browse_scroll_row
+		browse_scroll_row = browse_selected
+
+	creating_file = true
+	new_file_name = ""
+	create_parent_dir = parent_dir
+	notice = "New file name -- Enter to create, Esc to cancel"
+	error = false
+
+macro create_file_char
+	stringList extended_name_parts = [new_file_name, chr]
+	new_file_name = s_join(extended_name_parts)
+
+macro create_file_backspace
+	int name_len = len(new_file_name)
+	if name_len > 0
+		zero as 0
+		int new_len = name_len - 1
+		new_file_name = s_substring(new_file_name, zero, new_len)
+
+# Esc while the create-file prompt is open -- drops the placeholder row and
+# restores the selection to wherever it lands once that row is gone.
+macro cancel_create_file
+	browse_entries = e_remove_at(browse_entries, browse_selected)
+	int last_entry = len(browse_entries) - 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+	creating_file = false
+	new_file_name = ""
+	create_parent_dir = ""
+	notice = ""
+	error = false
+
+# Enter while the create-file prompt is open -- writes the new empty file to
+# disk (refusing to clobber an existing one), turns the placeholder row into
+# its real entry, and opens it into the editor. `browsing`/`sidebar_focused`
+# are unconditionally cleared since opening a file always lands in the
+# editor regardless of which of the two contexts ^R was pressed from.
+macro confirm_create_file
+	int name_len = len(new_file_name)
+	if name_len is 0
+		notice = "File name can't be empty"
+		error = true
+	else
+		string full_path = f_join_path(create_parent_dir, new_file_name)
+		bool already_exists = f_exists(full_path)
+		if already_exists
+			notice = "A file with that name already exists"
+			error = true
+		else
+			string empty_content = ""
+			bool created = f_write(full_path, empty_content)
+			if created
+				FileEntry placeholder_entry = browse_entries at browse_selected
+				string name = new_file_name
+				string path = full_path
+				FileEntry real_entry = placeholder_entry with (name, path)
+				browse_entries at browse_selected = real_entry
+
+				creating_file = false
+				new_file_name = ""
+				create_parent_dir = ""
+
+				macro_run refresh_all_git_status
+
+				path = full_path
+				browsing = false
+				sidebar_focused = false
+				macro_run load_file_into_buffer
+				macro_run track_file_history
+			else
+				notice = "Could not create file"
+				error = true
+
 # Keeps recent_git_selected/git_scroll_row pointing at whatever was selected
 # before the browser was last closed, rather than snapping back to the top --
 # only clamps if the refreshed Recent+Git list is now shorter than the old

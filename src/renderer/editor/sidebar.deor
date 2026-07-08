@@ -16,7 +16,16 @@ macro toggle_sidebar
 # handle_browse_mode's Files-pane bindings, but never sets `browsing` since
 # this isn't the F1 full-screen takeover.
 macro handle_sidebar_focus_mode
-	if kind is "up"
+	if creating_file
+		if kind is "escape"
+			macro_run cancel_create_file
+		else if kind is "enter"
+			macro_run confirm_create_file
+		else if kind is "backspace"
+			macro_run create_file_backspace
+		else if kind is "char"
+			macro_run create_file_char
+	else if kind is "up"
 		macro_run sidebar_nav_up
 	else if kind is "down"
 		macro_run sidebar_nav_down
@@ -30,6 +39,10 @@ macro handle_sidebar_focus_mode
 		macro_run sidebar_key_activate
 	else if kind is "stage_toggle"
 		macro_run sidebar_stage_toggle
+	else if kind is "delete_entry"
+		macro_run sidebar_delete_entry
+	else if kind is "create_file"
+		macro_run start_create_file
 	else if kind is "escape"
 		sidebar_focused = false
 	else if kind is "mouse_down"
@@ -46,6 +59,14 @@ macro sidebar_stage_toggle
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, git_status) in selected
 		macro_run git_stage_toggle
+
+# ^Backspace while the sidebar has keyboard focus -- see file_delete_entry
+# in browse.deor.
+macro sidebar_delete_entry
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir) in selected
+		macro_run file_delete_entry
 
 macro sidebar_nav_up
 	browse_selected = browse_selected - 1
@@ -110,6 +131,8 @@ struct SidebarRowInput
 	bool sidebar_focused
 	bool is_top_row
 	bool is_bottom_row
+	bool creating_file
+	string new_file_name
 
 # Red thin-line box drawn around the sidebar while it has keyboard focus --
 # the widened width (see SIDEBAR_WIDTH_FOCUSED) is subtle on its own, so
@@ -127,7 +150,7 @@ macro use_sidebar_border_colors
 # functions directly. Blank (just padding) once `idx` runs past the end of
 # browse_entries, same as render_browser_files_row.
 fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row) in row_input
+	(browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name) in row_input
 
 	if sidebar_focused and (is_top_row or is_bottom_row)
 		macro_run use_sidebar_border_colors
@@ -149,6 +172,8 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 		FileEntry entry = browse_entries at idx
 		(name, is_dir, depth, expanded, git_status) in entry
 
+		bool is_creating_row = creating_file and idx is selected_idx
+
 		string two_spaces = "  "
 		string indent = s_repeat(two_spaces, depth)
 
@@ -164,12 +189,28 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 
 		string edit_prefix = browser_edit_prefix(git_status)
 		string plain = s_join([indent, marker, edit_prefix, name, suffix])
-		FitResult fit = browser_fit(plain, content_width)
+		if is_creating_row
+			plain = s_join([indent, marker, new_file_name])
+
+		int fit_width = content_width
+		if is_creating_row
+			fit_width = content_width - 1
+			if fit_width < 0
+				fit_width = 0
+		FitResult fit = browser_fit(plain, fit_width)
 		(text, visible_len) in fit
 
-		string colored = browser_colorize(text, git_status)
-		bool selected = idx is selected_idx
-		string tree_text = browser_select_wrap(colored, selected)
+		string tree_text = ""
+		if is_creating_row
+			macro_run use_sidebar_border_colors
+			string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
+			tree_text = s_join([text, cursor_block])
+			visible_len = visible_len + 1
+		else
+			string colored = browser_colorize(text, git_status)
+			bool selected = idx is selected_idx
+			tree_text = browser_select_wrap(colored, selected)
+
 		string gutter = browser_gutter(visible_len, content_width)
 		body = s_join([tree_text, gutter])
 	else

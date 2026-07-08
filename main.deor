@@ -62,6 +62,19 @@ struct BrowserState
 
 	BrowserPane browser_focus
 
+	# ^R's inline "new file" prompt (Files tree, both the sidebar and F1) --
+	# while true, a blank placeholder FileEntry sits in browse_entries at
+	# browse_selected and the browser/sidebar renders its name from
+	# new_file_name plus a fake cursor block instead of the tree as normal
+	# (see start_create_file/confirm_create_file/cancel_create_file).
+	bool creating_file
+	string new_file_name
+
+	# Directory the pending new file will be created in -- captured up front
+	# since the typed name (and so the file's eventual path) isn't known
+	# until Enter confirms.
+	string create_parent_dir
+
 struct DiffState
 	# Git diff view (ctrl+d) state -- locks editing while true
 	bool diffing

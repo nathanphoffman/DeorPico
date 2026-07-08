@@ -19,7 +19,7 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 
 	(core, browser, diff, search, lint, notice, error) in state
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
-	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row) in browser
+	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name) in browser
 	(diff_lines) in diff
 	(search_active, search_matches) in search
 	(issue_matches, lint_output, lint_output_visible) in lint

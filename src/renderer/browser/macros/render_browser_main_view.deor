@@ -53,6 +53,8 @@ macro render_browser_files_row
 		FileEntry entry = browse_entries at idx
 		(name, is_dir, depth, expanded, git_status) in entry
 
+		bool is_creating_row = creating_file and idx is browse_selected and browser_focus is Files
+
 		string two_spaces = "  "
 		string indent = s_repeat(two_spaces, depth)
 
@@ -68,13 +70,28 @@ macro render_browser_files_row
 
 		string edit_prefix = browser_edit_prefix(git_status)
 		string plain = s_join([indent, marker, edit_prefix, name, suffix])
-		FitResult fit = browser_fit(plain, files_content_width)
+		if is_creating_row
+			plain = s_join([indent, marker, new_file_name])
+
+		int fit_width = files_content_width
+		if is_creating_row
+			fit_width = files_content_width - 1
+			if fit_width < 0
+				fit_width = 0
+		FitResult fit = browser_fit(plain, fit_width)
 		(text, visible_len) in fit
 		tree_visible_len = visible_len
 
-		string line = browser_colorize(text, git_status)
-		bool selected = idx is browse_selected and browser_focus is Files
-		tree_line = browser_select_wrap(line, selected)
+		string line = ""
+		if is_creating_row
+			string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
+			line = s_join([text, cursor_block])
+			tree_visible_len = visible_len + 1
+		else
+			string colored = browser_colorize(text, git_status)
+			bool selected = idx is browse_selected and browser_focus is Files
+			line = browser_select_wrap(colored, selected)
+		tree_line = line
 
 	string files_gutter = browser_gutter(tree_visible_len, files_content_width)
 	out_parts at end = left_margin
@@ -178,6 +195,7 @@ macro render_browser_rows
 macro render_browser_main_view
 	(browse_entries, browse_selected, browse_scroll_row, browse_dir) in browser
 	(file_history, git_changes, git_scroll_row, browser_focus, recent_git_selected) in browser
+	(creating_file, new_file_name) in browser
 
 	macro_run compute_browser_column_widths
 	macro_run compute_browser_recent_git_layout

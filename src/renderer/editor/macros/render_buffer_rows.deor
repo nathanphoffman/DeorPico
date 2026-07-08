@@ -6,7 +6,7 @@ macro render_buffer_rows
 		int selected_idx = browse_selected
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
-		SidebarRowInput row_input = (browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row)
+		SidebarRowInput row_input = (browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name)
 		string sidebar_piece = sidebar_row_piece(row_input)
 		screen = s_join([screen, sidebar_piece])
 

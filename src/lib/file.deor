@@ -79,6 +79,31 @@ fn entryList e_remove_children(entryList entries, int at_index, int min_depth)
 			result
 		}
 
+# Drops the single entry at `at_index` -- used to remove the blank
+# placeholder row if ^R's create-file prompt is cancelled (see
+# start_create_file/cancel_create_file). Out-of-range is a no-op.
+fn entryList e_remove_at(entryList entries, int at_index)
+	rust
+		{
+			let mut result = entries;
+			let idx = at_index as usize;
+			if idx < result.len() {
+				result.remove(idx);
+			}
+			result
+		}
+
+# Drops every entry matching `path` -- used after ^Backspace deletes a file
+# from disk, to purge it from browse_entries/file_history/git_changes alike
+# without needing each list's index (see remove_deleted_entry).
+fn entryList e_remove_by_path(entryList entries, string path)
+	rust
+		{
+			let mut result = entries;
+			result.retain(|e| e.path != path);
+			result
+		}
+
 fn string f_read(string path)
 	rust
 		std::fs::read_to_string(&path).unwrap_or_default()
@@ -118,6 +143,25 @@ fn stringList f_lines(string path)
 fn bool f_delete(string path)
 	rust
 		std::fs::remove_file(&path).is_ok()
+
+# Sends `path` to the OS trash (freedesktop trash on Linux, Recycle Bin/
+# Trash elsewhere) rather than permanently deleting it -- used by ^Backspace
+# in the file browser/sidebar (see file_delete_entry) so a wrong keypress is
+# still recoverable outside the editor.
+fn bool f_trash(string path)
+	rust
+		trash::delete(&path).is_ok()
+
+fn bool f_dir_is_empty(string path)
+	rust
+		std::fs::read_dir(&path).map(|mut entries| entries.next().is_none()).unwrap_or(false)
+
+# Joins `dir` and `name` the same way std::path::Path::join would -- used to
+# build a new file's full path from its parent directory and typed name
+# (see confirm_create_file), since the name doesn't exist as a FileEntry yet.
+fn string f_join_path(string dir, string name)
+	rust
+		std::path::Path::new(&dir).join(&name).to_string_lossy().to_string()
 
 fn string f_extension(string path)
 	rust
