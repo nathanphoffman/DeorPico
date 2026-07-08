@@ -39,15 +39,22 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: auto syntax checking for deor
 - Done: cursor and selections have been fixed
 - Done: added keyboard shortcuts
-- Done: 
+- Done: added sidebar file system
+- Done: meged diff and recent 
+- Done: fixed scrolling bugs
+- Done: organized editor and renderer, though more org remains
+- Done: consolidated gutter logic to struct
+- Done: added ctrl 
+- Done: most rust is now in deor
 
-working on: converting most remaining rust to deor
 
 
+
+working on: final pass to make sure rust is in deor
+working on: more organization
 
 
 ## Nest For AI
 
-## For Nate to Figure Out:
+## V2 Long Term:
 Do: Support better rust highlighting in deor?
-Do: Merge Recent and Git Diff? -- I am actually finding recent files not very helpful

@@ -205,7 +205,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
-	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_visible) in browser
+	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -241,6 +241,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run handle_diff_mode
 	else if lint_output_visible
 		macro_run handle_lint_output_mode
+	else if sidebar_focused
+		macro_run handle_sidebar_focus_mode
 
 	# this is the main view
 	else
@@ -253,7 +255,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run back_stop
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_visible)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)

@@ -16,7 +16,7 @@ struct EditorLayoutInput
 	bool show_line_numbers
 	bool lint_output_visible
 	stringList diff_lines
-	bool sidebar_visible
+	bool sidebar_focused
 
 struct EditorLayout
 	int gutter_width
@@ -55,7 +55,7 @@ fn bool editor_diff_has_minimap(stringList diff_lines, int cols)
 
 fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
 	macro_run use_consts
-	(rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_visible) in layout_input
+	(rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused) in layout_input
 
 	bool has_minimap = editor_has_minimap(diff_lines, total_line_count, cols)
 	int minimap_offset = 0
@@ -64,9 +64,9 @@ fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
 
 	int view_rows = editor_view_rows(rows, has_minimap, lint_output_visible)
 
-	int sidebar_width = 0
-	if sidebar_visible
-		sidebar_width = SIDEBAR_WIDTH
+	int sidebar_width = SIDEBAR_WIDTH
+	if sidebar_focused
+		sidebar_width = SIDEBAR_WIDTH_FOCUSED
 
 	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
 	int text_visible_columns = cols - sidebar_width - gutter_width

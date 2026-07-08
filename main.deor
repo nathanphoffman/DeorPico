@@ -31,11 +31,17 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
-	# Persistent Files-tree sidebar (^B) -- shares browse_entries/
-	# browse_selected/browse_scroll_row/browse_dir with the F1 browser (same
-	# tree, same expand/collapse state), but toggles independently of
-	# `browsing` and never takes over the whole screen.
-	bool sidebar_visible
+	# Persistent Files-tree sidebar -- shares browse_entries/browse_selected/
+	# browse_scroll_row/browse_dir with the F1 browser (same tree, same
+	# expand/collapse state), but is always shown and never takes over the
+	# whole screen.
+
+	# True while ^B has moved keyboard focus onto the sidebar -- up/down/
+	# left/right/enter navigate and open files in the tree instead of moving
+	# the cursor, and the sidebar renders wider (SIDEBAR_WIDTH_FOCUSED) to
+	# make room for long names. Cleared automatically after opening a file,
+	# or by pressing ^B/Esc again.
+	bool sidebar_focused
 
 	# Recently-opened files, most recent first. Only the top few show under
 	# the "Recent" header in the merged column (see BROWSER_RECENT_ROWS),

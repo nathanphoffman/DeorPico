@@ -6,10 +6,81 @@ import "src/consts.deor"
 import "src/renderer/browser/browser.deor"
 import "src/renderer/editor/layout.deor"
 
-# ^B toggle -- flips independently of `browsing` (F1's full-screen takeover),
-# so the sidebar can stay open while editing instead of blocking the view.
+# ^B -- moves keyboard focus between the always-visible Files sidebar and
+# the editor. The sidebar widens while focused (see SIDEBAR_WIDTH_FOCUSED)
+# to make room for long names, then shrinks back once focus returns.
 macro toggle_sidebar
-	sidebar_visible = not sidebar_visible
+	sidebar_focused = not sidebar_focused
+
+# Keys handled while the sidebar has keyboard focus -- mirrors
+# handle_browse_mode's Files-pane bindings, but never sets `browsing` since
+# this isn't the F1 full-screen takeover.
+macro handle_sidebar_focus_mode
+	if kind is "up"
+		macro_run sidebar_nav_up
+	else if kind is "down"
+		macro_run sidebar_nav_down
+	else if kind is "left"
+		macro_run browse_left
+	else if kind is "right"
+		macro_run browse_right
+	else if kind is "enter"
+		macro_run sidebar_key_activate
+	else if kind is "char" and chr is " "
+		macro_run sidebar_key_activate
+	else if kind is "escape"
+		sidebar_focused = false
+	else if kind is "mouse_down"
+		macro_run mouse_down_editor
+	else if kind is "mouse_scroll_up"
+		macro_run scroll_up
+	else if kind is "mouse_scroll_down"
+		macro_run scroll_down
+
+macro sidebar_nav_up
+	browse_selected = browse_selected - 1
+	if browse_selected < 0
+		browse_selected = 0
+	if browse_selected < browse_scroll_row
+		browse_scroll_row = browse_selected
+
+# Clamped against the same view_rows the sidebar actually renders, same as
+# sidebar_scroll_down.
+macro sidebar_nav_down
+	int last_entry = len(browse_entries) - 1
+	browse_selected = browse_selected + 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	if browse_selected >= browse_scroll_row + view_rows
+		browse_scroll_row = browse_selected - view_rows + 1
+
+# Enter/space while the sidebar has keyboard focus -- opens the selected
+# file and hands focus back to the editor (so typing starts right away), or
+# expands/collapses the selected directory (focus stays put so you can keep
+# walking the tree). Mirrors browse_activate.
+macro sidebar_key_activate
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, expanded) in selected
+		if is_dir
+			if expanded
+				macro_run browse_left
+			else
+				macro_run browse_right
+		else if dirty
+			macro_run notify_unsaved_changes
+		else
+			macro_run load_file_into_buffer
+			macro_run track_file_history
+			sidebar_focused = false
 
 # Re-tags browse_entries' git-status colors without touching the tree
 # structure itself (depth/expanded/name/path are untouched) -- run after a
@@ -19,15 +90,51 @@ macro refresh_sidebar_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
 
+# Bundled since sidebar_row_piece would otherwise need more than 3
+# parameters -- functions here are capped at 3.
+struct SidebarRowInput
+	entryList browse_entries
+	int idx
+	int selected_idx
+	int sidebar_width
+	bool sidebar_focused
+	bool is_top_row
+	bool is_bottom_row
+
+# Red thin-line box drawn around the sidebar while it has keyboard focus --
+# the widened width (see SIDEBAR_WIDTH_FOCUSED) is subtle on its own, so
+# mouse users get an explicit cue that ^B just changed something rather than
+# the tree spontaneously growing. Two columns of the normal content width
+# are given up to the left/right bars; the top/bottom rows are replaced
+# outright by a horizontal rule (see is_top_row/is_bottom_row below).
+macro use_sidebar_border_colors
+	macro_run use_ansi_codes
+	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])
+
 # Renders one row of the sidebar's Files tree -- same look as the F1
 # browser's Files column (indentation, expand/collapse marker, "+" edit
 # prefix, git-status color, selection highlight), reusing its helper
 # functions directly. Blank (just padding) once `idx` runs past the end of
 # browse_entries, same as render_browser_files_row.
-fn string sidebar_row_piece(entryList browse_entries, int idx, int selected_idx)
-	macro_run use_consts
-	int content_width = SIDEBAR_WIDTH - 1
+fn string sidebar_row_piece(SidebarRowInput row_input)
+	(browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row) in row_input
 
+	if sidebar_focused and (is_top_row or is_bottom_row)
+		macro_run use_sidebar_border_colors
+		string corner = "+"
+		string dash = "-"
+		int rule_len = sidebar_width - 2
+		if rule_len < 0
+			rule_len = 0
+		string rule = s_repeat(dash, rule_len)
+		string border_line = s_join([corner, rule, corner])
+		return s_join([ANSI_SIDEBAR_BORDER_ON, border_line, ANSI_RESET])
+
+	int content_width = sidebar_width - 1
+	if sidebar_focused
+		content_width = sidebar_width - 3
+
+	string body = ""
 	if idx >= 0 and idx < len(browse_entries)
 		FileEntry entry = browse_entries at idx
 		(name, is_dir, depth, expanded, git_status) in entry
@@ -54,12 +161,20 @@ fn string sidebar_row_piece(entryList browse_entries, int idx, int selected_idx)
 		bool selected = idx is selected_idx
 		string tree_text = browser_select_wrap(colored, selected)
 		string gutter = browser_gutter(visible_len, content_width)
-		return s_join([tree_text, gutter])
+		body = s_join([tree_text, gutter])
+	else
+		int zero_len = 0
+		string blank_gutter = browser_gutter(zero_len, content_width)
+		string empty_text = ""
+		body = s_join([empty_text, blank_gutter])
 
-	int zero_len = 0
-	string blank_gutter = browser_gutter(zero_len, content_width)
-	string empty_text = ""
-	return s_join([empty_text, blank_gutter])
+	if sidebar_focused
+		macro_run use_sidebar_border_colors
+		string bar = "|"
+		string colored_bar = s_join([ANSI_SIDEBAR_BORDER_ON, bar, ANSI_RESET])
+		return s_join([colored_bar, body, colored_bar])
+
+	return body
 
 # Opens the file at browse_entries[idx] into the buffer, or expands/collapses
 # a directory -- shared by sidebar mouse clicks. `idx` is set by the caller.
@@ -93,7 +208,7 @@ macro sidebar_scroll_down
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_visible)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
