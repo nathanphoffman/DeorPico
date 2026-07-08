@@ -15,133 +15,15 @@ macro back_stop
     else if cursor_col > current_line_length - 1
         cursor_col = current_line_length
 
-# Keys handled while the git diff view is open
-macro handle_diff_mode
-	if kind is "diff_toggle"
-		macro_run toggle_diff_impl
-	else if kind is "escape"
-		macro_run toggle_diff_impl
-	else if kind is "quit"
-		macro_run toggle_diff_impl
-	else if kind is "up"
-		macro_run diff_scroll_up_impl
-	else if kind is "down"
-		macro_run diff_scroll_down_impl
-	else if kind is "page_up"
-		macro_run diff_page_up_impl
-	else if kind is "page_down"
-		macro_run diff_page_down_impl
-	else if kind is "mouse_down"
-		macro_run mouse_down_diff_impl
-	else if kind is "mouse_scroll_up"
-		macro_run diff_scroll_up_impl
-	else if kind is "mouse_scroll_down"
-		macro_run diff_scroll_down_impl
+macro register_events
+    macro_run handle_global_actions
+	macro_run handle_arrow_nav
+	macro_run handle_text_edit
+	macro_run handle_tab_and_search
+	macro_run handle_page_and_mouse
+	macro_run back_stop
 
-# Editing mode: app-wide actions -- quit/save/diff/search/history/undo-redo/clipboard
-macro handle_global_actions
-	if kind is "quit"
-		macro_run key_quit_impl
-	else if kind is "diff_toggle"
-		macro_run toggle_diff_impl
-	else if kind is "alt_char"
-		macro_run alt_search_char_impl
-	else if kind is "escape" and search_active
-		macro_run search_clear_impl
-	else if kind is "toggle_line_numbers"
-		show_line_numbers = toggle_line_numbers_impl(show_line_numbers)
-	else if kind is "save"
-		macro_run key_save_impl
-	else if kind is "cut"
-		macro_run do_cut_impl
-	else if kind is "copy"
-		macro_run do_copy_impl
-	else if kind is "paste"
-		macro_run do_paste_impl
-	else if kind is "undo"
-		macro_run do_undo_impl
-	else if kind is "redo"
-		macro_run do_redo_impl
-	else if kind is "discard_changes"
-		macro_run discard_unsaved_changes_impl
-	else if kind is "lint_output_toggle"
-		lint_output_visible = open_lint_output_impl()
-	else if kind is "refresh"
-		macro_run key_refresh_impl
-
-# Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
-macro handle_arrow_nav
-	if kind is "up"
-		if shift
-			macro_run start_or_extend_selection_impl
-		else
-			has_selection = clear_selection_impl()
-		cursor_row = key_up_impl(cursor_row)
-	else if kind is "down"
-		if shift
-			macro_run start_or_extend_selection_impl
-		else
-			has_selection = clear_selection_impl()
-		cursor_row = key_down_impl(cursor_row)
-	else if kind is "left"
-		if shift
-			macro_run start_or_extend_selection_impl
-		else
-			has_selection = clear_selection_impl()
-		macro_run key_left_impl
-	else if kind is "right"
-		if shift
-			macro_run start_or_extend_selection_impl
-		else
-			has_selection = clear_selection_impl()
-		macro_run key_right_impl
-	else if kind is "right_ctrl"
-		macro_run key_right_ctrl_impl
-	else if kind is "left_ctrl"
-		macro_run key_left_ctrl_impl
-	else if kind is "up_ctrl"
-		cursor_row = key_up_ctrl_impl(cursor_row)
-	else if kind is "down_ctrl"
-		cursor_row = key_down_ctrl_impl(cursor_row)
-
-# Editing mode: text mutation -- backspace/delete/enter/typed characters
-macro handle_text_edit
-	if kind is "backspace"
-		macro_run key_backspace_impl
-	else if kind is "delete"
-		macro_run key_delete_impl
-	else if kind is "enter"
-		macro_run key_enter_impl
-	else if kind is "char" and chr is " " and has_selection
-		macro_run key_space_comment_selection_impl
-	else if kind is "char"
-		macro_run key_char_impl
-
-# Editing mode: tab/shift-tab, doubling as search-match cycling while searching
-macro handle_tab_and_search
-	if kind is "tab" and search_active
-		macro_run search_next_impl
-	else if kind is "shift_tab" and search_active
-		macro_run search_prev_impl
-	else if kind is "tab"
-		macro_run key_tab_impl
-
-# Editing mode: paging and mouse input
-macro handle_page_and_mouse
-	if kind is "page_up"
-		cursor_row = page_up_impl(cursor_row)
-	else if kind is "page_down"
-		cursor_row = page_down_impl(cursor_row)
-	else if kind is "mouse_down"
-		macro_run mouse_down_editor_impl
-	else if kind is "mouse_drag"
-		macro_run mouse_drag_main_impl
-	else if kind is "mouse_scroll_up"
-		macro_run scroll_up_impl
-	else if kind is "mouse_scroll_down"
-		macro_run scroll_down_impl
-
-fn EditorState editor_handle_key(EditorState state, KeyEvent key)
+fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content) in core
@@ -195,13 +77,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 
 	# this is the main view
 	else
-		macro_run handle_global_actions
-		macro_run handle_arrow_nav
-		macro_run handle_text_edit
-		macro_run handle_tab_and_search
-		macro_run handle_page_and_mouse
-
-		macro_run back_stop
+        macro_run register_events
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content)
 	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
@@ -213,4 +89,3 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 	EditorState next_state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
 	return next_state
-

@@ -62,7 +62,7 @@ fn void main()
 			
 		KeyEvent raw_key = xt_read_key()
 		KeyEvent key = editor_translate_key(raw_key)
-		state = editor_handle_key(state, key)
+		state = editor_handle_key_for_events(state, key)
 		(done) in state
 		if done
 			break

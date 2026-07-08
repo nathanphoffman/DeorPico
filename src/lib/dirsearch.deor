@@ -10,6 +10,58 @@ struct FilterOutcome
 	filterMatchList matches
 	int truncated_count
 
+struct EntryMatch
+	string full_path
+	string display_path
+	bool is_dir
+
+shape entryMatchList = list of EntryMatch
+
+# Recursive: walks every file and directory under `dir`, matching
+# case-insensitively against display_path (root-relative, "/"-prefixed) --
+# one substring check covers a bare name, a partial name, or a partial/full
+# path alike, e.g. "key_p", "key_press", and "/src/key_press" all match
+# "/src/key_press". Used by ^R's "mv X" prompt (see confirm_move_request) to
+# fuzzy-locate whatever's being pulled into the current directory, file or
+# folder alike, anywhere in the project -- not just whatever's currently
+# expanded in the sidebar.
+fn entryMatchList x_find_entries_matching(string dir, string query)
+	rust
+		{
+			fn walk(dir: &std::path::Path, root: &std::path::Path, needle: &str, matches: &mut Vec<EntryMatch>) {
+				let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(dir) {
+					Ok(read_dir) => read_dir.flatten().collect(),
+					Err(_) => return,
+				};
+				let mut items: Vec<std::fs::DirEntry> = entries;
+				items.sort_by_key(|e| e.file_name());
+				for entry in items {
+					let path = entry.path();
+					let is_dir = path.is_dir();
+					let rel = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string();
+					let display_path = format!("/{}", rel);
+					if display_path.to_lowercase().contains(needle) {
+						matches.push(EntryMatch {
+							full_path: path.to_string_lossy().to_string(),
+							display_path: display_path.clone(),
+							is_dir,
+						});
+					}
+					if is_dir {
+						walk(&path, root, needle, matches);
+					}
+				}
+			}
+
+			let needle = query.to_lowercase();
+			let mut matches: Vec<EntryMatch> = Vec::new();
+			if !needle.is_empty() {
+				let root_path = std::path::Path::new(&dir).to_path_buf();
+				walk(&root_path, &root_path, &needle, &mut matches);
+			}
+			matches
+		}
+
 # Non-recursive: direct children of `dir` only, matched by case-insensitive
 # substring in the file name -- used while the filter query is under 5
 # characters (see renderer/browser/keypress/browse_filter.deor).

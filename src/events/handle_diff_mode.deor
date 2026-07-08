@@ -1,0 +1,23 @@
+
+# Keys handled while the git diff view is open
+macro handle_diff_mode
+	if kind is "diff_toggle"
+		macro_run toggle_diff_impl
+	else if kind is "escape"
+		macro_run toggle_diff_impl
+	else if kind is "quit"
+		macro_run toggle_diff_impl
+	else if kind is "up"
+		macro_run diff_scroll_up_impl
+	else if kind is "down"
+		macro_run diff_scroll_down_impl
+	else if kind is "page_up"
+		macro_run diff_page_up_impl
+	else if kind is "page_down"
+		macro_run diff_page_down_impl
+	else if kind is "mouse_down"
+		macro_run mouse_down_diff_impl
+	else if kind is "mouse_scroll_up"
+		macro_run diff_scroll_up_impl
+	else if kind is "mouse_scroll_down"
+		macro_run diff_scroll_down_impl

@@ -1,0 +1,9 @@
+
+# Editing mode: tab/shift-tab, doubling as search-match cycling while searching
+macro handle_tab_and_search
+	if kind is "tab" and search_active
+		macro_run search_next_impl
+	else if kind is "shift_tab" and search_active
+		macro_run search_prev_impl
+	else if kind is "tab"
+		macro_run key_tab_impl

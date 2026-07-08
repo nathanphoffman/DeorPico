@@ -59,9 +59,19 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: GIT is collapsable
 - Done: Git diff does not lock sidebar any longer
 - Done: Finding out why the last item of the browser is cut off
+- Done: Splitting out more files into macros
+- Done: Split really simple macros into functions
+
+Working: crtl + r should create a folder
+
+- mv should be added as a move 
+
+- shift tab back tab selection
+
+- clicking on a file when there is a save prompt in progress should refuse selection of the file you want to go to until you 
+take action.
 
 - Pair with AI
- - ctrl + r should allow me to create a new folder (dir) or move (mv) commands
  - Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
  - F5 should run while I am in the editor view
  - If page down or up is pressed, auto close the sidebar if it is open

@@ -1,0 +1,13 @@
+
+# Editing mode: text mutation -- backspace/delete/enter/typed characters
+macro handle_text_edit
+	if kind is "backspace"
+		macro_run key_backspace_impl
+	else if kind is "delete"
+		macro_run key_delete_impl
+	else if kind is "enter"
+		macro_run key_enter_impl
+	else if kind is "char" and chr is " " and has_selection
+		macro_run key_space_comment_selection_impl
+	else if kind is "char"
+		macro_run key_char_impl

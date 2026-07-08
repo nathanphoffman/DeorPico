@@ -95,4 +95,11 @@ import "src/renderer/highlighting.deor"
 import "src/state_init.deor"
 
 # Finally events are listened to
-import "src/events.deor"
+import "src/events/handle_global_actions.deor"
+import "src/events/handle_arrow_nav.deor"
+import "src/events/handle_diff_mode.deor"
+import "src/events/handle_global_actions.deor"
+import "src/events/handle_page_and_mouse.deor"
+import "src/events/handle_tab_and_search.deor"
+import "src/events/handle_text_edit.deor"
+import "src/events/events.deor"

@@ -1,0 +1,31 @@
+
+# Editing mode: app-wide actions -- quit/save/diff/search/history/undo-redo/clipboard
+macro handle_global_actions
+	if kind is "quit"
+		macro_run key_quit_impl
+	else if kind is "diff_toggle"
+		macro_run toggle_diff_impl
+	else if kind is "alt_char"
+		macro_run alt_search_char_impl
+	else if kind is "escape" and search_active
+		macro_run search_clear_impl
+	else if kind is "toggle_line_numbers"
+		show_line_numbers = toggle_line_numbers_impl(show_line_numbers)
+	else if kind is "save"
+		macro_run key_save_impl
+	else if kind is "cut"
+		macro_run do_cut_impl
+	else if kind is "copy"
+		macro_run do_copy_impl
+	else if kind is "paste"
+		macro_run do_paste_impl
+	else if kind is "undo"
+		macro_run do_undo_impl
+	else if kind is "redo"
+		macro_run do_redo_impl
+	else if kind is "discard_changes"
+		macro_run discard_unsaved_changes_impl
+	else if kind is "lint_output_toggle"
+		lint_output_visible = open_lint_output_impl()
+	else if kind is "refresh"
+		macro_run key_refresh_impl

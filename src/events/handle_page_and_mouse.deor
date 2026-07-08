@@ -1,0 +1,15 @@
+
+# Editing mode: paging and mouse input
+macro handle_page_and_mouse
+	if kind is "page_up"
+		cursor_row = page_up_impl(cursor_row)
+	else if kind is "page_down"
+		cursor_row = page_down_impl(cursor_row)
+	else if kind is "mouse_down"
+		macro_run mouse_down_editor_impl
+	else if kind is "mouse_drag"
+		macro_run mouse_drag_main_impl
+	else if kind is "mouse_scroll_up"
+		macro_run scroll_up_impl
+	else if kind is "mouse_scroll_down"
+		macro_run scroll_down_impl

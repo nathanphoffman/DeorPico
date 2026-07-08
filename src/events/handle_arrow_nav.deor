@@ -1,0 +1,35 @@
+
+# Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
+macro handle_arrow_nav
+	if kind is "up"
+		if shift
+			macro_run start_or_extend_selection_impl
+		else
+			has_selection = clear_selection_impl()
+		cursor_row = key_up_impl(cursor_row)
+	else if kind is "down"
+		if shift
+			macro_run start_or_extend_selection_impl
+		else
+			has_selection = clear_selection_impl()
+		cursor_row = key_down_impl(cursor_row)
+	else if kind is "left"
+		if shift
+			macro_run start_or_extend_selection_impl
+		else
+			has_selection = clear_selection_impl()
+		macro_run key_left_impl
+	else if kind is "right"
+		if shift
+			macro_run start_or_extend_selection_impl
+		else
+			has_selection = clear_selection_impl()
+		macro_run key_right_impl
+	else if kind is "right_ctrl"
+		macro_run key_right_ctrl_impl
+	else if kind is "left_ctrl"
+		macro_run key_left_ctrl_impl
+	else if kind is "up_ctrl"
+		cursor_row = key_up_ctrl_impl(cursor_row)
+	else if kind is "down_ctrl"
+		cursor_row = key_down_ctrl_impl(cursor_row)

@@ -140,6 +140,56 @@ fn bool f_dir_is_empty(string path)
 	rust
 		std::fs::read_dir(&path).map(|mut entries| entries.next().is_none()).unwrap_or(false)
 
+# Creates a single directory -- used by ^R's "dir X" prompt (see
+# confirm_create_file). Not recursive: a missing parent fails, same as a
+# plain file create would.
+fn bool f_create_dir(string path)
+	rust
+		std::fs::create_dir(&path).is_ok()
+
+# Moves `source` into `dest_dir`, keeping its own basename -- used by ^R's
+# "mv X" prompt (see confirm_move_request). Only guards against a missing
+# basename; callers check f_exists at the destination themselves first so
+# this never clobbers an existing file/dir.
+fn bool f_move(string source, string dest_dir)
+	rust
+		{
+			match std::path::Path::new(&source).file_name() {
+				Some(name) => std::fs::rename(&source, std::path::Path::new(&dest_dir).join(name)).is_ok(),
+				None => false,
+			}
+		}
+
+struct EntryLookup
+	bool found
+	int index
+	int depth
+	bool expanded
+
+# Locates the row for `path` in `entries` -- used by confirm_move_request to
+# find the moved entry's own row (for removal, needs index/depth) and the
+# destination directory's row (for insertion, needs index/depth/expanded --
+# a new row for the moved item is only spliced in if the destination is
+# already expanded on screen).
+fn EntryLookup e_find_by_path(entryList entries, string path)
+	rust
+		{
+			let mut found = false;
+			let mut index: i64 = -1;
+			let mut depth: i64 = 0;
+			let mut expanded = false;
+			for (i, e) in entries.iter().enumerate() {
+				if e.path == path {
+					found = true;
+					index = i as i64;
+					depth = e.depth;
+					expanded = e.expanded;
+					break;
+				}
+			}
+			EntryLookup { found, index, depth, expanded }
+		}
+
 # Joins `dir` and `name` the same way std::path::Path::join would -- used to
 # build a new file's full path from its parent directory and typed name
 # (see confirm_create_file), since the name doesn't exist as a FileEntry yet.
