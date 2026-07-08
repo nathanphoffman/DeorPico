@@ -24,7 +24,7 @@ struct EditorLayout
 	bool has_minimap
 
 	# Always 0 -- the minimap row now sits below the buffer (just above the
-	# status bar, see minimap_gutters.deor) instead of pushing the buffer
+	# status bar, see status/minimap_gutters.deor) instead of pushing the buffer
 	# down from above, so nothing needs to offset for it anymore. Kept as
 	# its own field (rather than removed) since cursor positioning and mouse
 	# click mapping still add/subtract it; if it's ever reintroduced above

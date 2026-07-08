@@ -85,7 +85,7 @@ fn void editor_render_diff(EditorState state)
 			}
 			// Appended here (just above the status line) rather than above
 			// the rows, same as the normal editor view -- see
-			// render_minimap_bar in minimap_gutters.deor.
+			// render_minimap_bar in status/minimap_gutters.deor.
 			if has_minimap {
 				out.push_str(&minimap_bar);
 				out.push_str("\r\n");

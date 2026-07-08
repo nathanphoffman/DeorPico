@@ -48,16 +48,19 @@ import "src/key_press/mouse.deor"
 import "src/renderer/editor/ansi_codes.deor"
 import "src/renderer/editor/selection_highlight.deor"
 import "src/renderer/editor/render_visible_line.deor"
-import "src/renderer/editor/lint_output_popup.deor"
-import "src/renderer/editor/status_shortcuts.deor"
 import "src/renderer/editor/gutter.deor"
 import "src/renderer/editor/row_tint.deor"
 import "src/renderer/editor/layout.deor"
 import "src/renderer/editor/deor_editor.deor"
 
+# bottom-of-screen status bar row stack (status text, lint popup, git-diff
+# minimap) -- must be loaded before editor.deor, which macro_runs these
+import "src/renderer/status/status_shortcuts.deor"
+import "src/renderer/status/lint_output_popup.deor"
+import "src/renderer/status/minimap_gutters.deor"
+import "src/renderer/status/build_and_render_status_bar.deor"
+
 # new editor pathing
-import "src/renderer/editor/macros/minimap_gutters.deor"
-import "src/renderer/editor/macros/build_and_render_status_bar.deor"
 import "src/renderer/editor/macros/position_and_output_cursor.deor"
 import "src/renderer/editor/macros/render_buffer_rows.deor"
 import "src/renderer/editor/editor.deor"
