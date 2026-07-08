@@ -12,20 +12,19 @@ macro initialize_core
 	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, dirty, show_line_numbers)
 
 macro initialize_browser
-	browsing as false
 	entryList browse_entries = f_list_dir(initial_dir)
 	browse_selected as 0
 	browse_scroll_row as 0
 	string browse_dir = initial_dir
-	entryList git_changes = empty
-	git_scroll_row as 0
-	recent_git_selected as 0
-	BrowserPane browser_focus = Files
+	bool is_git_repo = g_is_repo(browse_dir)
+	sidebar_on_git as false
+	git_selected as 0
 
-	# The sidebar is always shown, so browse_entries needs its git-status
-	# colors up front rather than waiting for the first F1 press.
+	# The sidebar is always shown, so browse_entries/git_changes need their
+	# git-status up front rather than waiting for the first ^B/F1 press.
 	StringMap initial_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, initial_git_map)
+	entryList git_changes = g_changed_entries(initial_git_map)
 	sidebar_focused as false
 	creating_file as false
 	new_file_name as ""
@@ -33,7 +32,7 @@ macro initialize_browser
 	pending_delete_path as ""
 	pending_discard_path as ""
 
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 
 macro initialize_diff
 	diffing as false

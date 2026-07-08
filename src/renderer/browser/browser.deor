@@ -89,6 +89,20 @@ fn string browser_select_wrap(string line, bool selected)
 	return result
 
 
+# Wraps `line` in bold -- used for section headers like the sidebar's
+# <GIT> label.
+fn string browser_bold_wrap(string line)
+	macro_run use_browser_ansi_codes
+	return s_join([ANSI_BOLD_ON, line, ANSI_BOLD_OFF])
+
+
+# Wraps `line` in dim -- used for empty-state placeholders like the
+# sidebar's "clean" row.
+fn string browser_dim_wrap(string line)
+	macro_run use_browser_ansi_codes
+	return s_join([ANSI_DIM_ON, line, ANSI_DIM_OFF])
+
+
 # `width - visible_len` spaces of padding plus one separator column --
 # negative padding (cell already at/over width) clamps to just the
 # separator, matching Rust's saturating_sub.
@@ -102,25 +116,3 @@ fn string browser_gutter(int visible_len, int width)
 	return s_repeat(space, pad_len)
 
 
-fn void editor_render_browser(EditorState state)
-	macro_run use_browser_ansi_codes
-	macro_run use_consts
-	(browser, filter, notice) in state
-	(filter_active, filter_dir, filter_matches, filter_selected, filter_scroll_row) in filter
-
-	TermSize size = xt_size()
-	(cols, rows) in size
-	int view_rows = rows - 2
-	if view_rows < 1
-		view_rows = 1
-
-	stringList out_parts = empty
-	out_parts at end = ANSI_CLEAR_SCREEN
-
-	if filter_active
-		macro_run render_browser_filter_view
-	else
-		macro_run render_browser_main_view
-
-	string out = s_join(out_parts)
-	xt_flush_print(out)

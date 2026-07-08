@@ -19,54 +19,48 @@ struct BufferState
 	# Toggled with ctrl+n
 	bool show_line_numbers
 
-enum BrowserPane
-	Files
-	RecentGit
-
 struct BrowserState
-	# File browser (F1) state
-	bool browsing
+	# Persistent Files-tree sidebar -- the only file browser there is now,
+	# always shown and never takes over the whole screen.
 	entryList browse_entries
 	int browse_selected
 	int browse_scroll_row
 	string browse_dir
 
-	# Persistent Files-tree sidebar -- shares browse_entries/browse_selected/
-	# browse_scroll_row/browse_dir with the F1 browser (same tree, same
-	# expand/collapse state), but is always shown and never takes over the
-	# whole screen.
-
-	# True while ^B has moved keyboard focus onto the sidebar -- up/down/
+	# True while ^B/F1 has moved keyboard focus onto the sidebar -- up/down/
 	# left/right/enter navigate and open files in the tree instead of moving
 	# the cursor, and the sidebar renders wider (SIDEBAR_WIDTH_FOCUSED) to
 	# make room for long names. Cleared automatically after opening a file,
-	# or by pressing ^B/Esc again.
+	# or by pressing ^B/F1/Esc again.
 	bool sidebar_focused
 
-	# Recently-opened files, most recent first. Only the top few show under
-	# the "Recent" header in the merged column (see BROWSER_RECENT_ROWS),
-	# but the full list still backs F9/F12 history stepping regardless of
-	# what's on screen.
-	entryList file_history
-	int history_selected
+	# Whether browse_dir is inside a git repo at all -- decides whether the
+	# sidebar's <GIT> section shows up (see sidebar_git_section_rows).
+	# Computed once at startup (see g_is_repo); repo-ness isn't expected to
+	# change mid-session.
+	bool is_git_repo
 
-	# Git staged/unstaged files, kept ordered by recency (see
-	# g_reorder_by_recency) and refreshed every time the browser opens.
-	# Shown under the "Git" header in the same merged column as file_history
-	# -- recent_git_selected indexes across both sections as one list
-	# (0..recent_count is Recent, the rest is Git), and git_scroll_row
-	# scrolls just the Git section once it overflows the screen.
+	# Git staged/unstaged files, refreshed every time a stage/unstage happens
+	# (see refresh_all_git_status). Rendered as a flat list pinned above the
+	# Files tree in the sidebar (see sidebar_git_section_rows).
 	entryList git_changes
-	int git_scroll_row
-	int recent_git_selected
 
-	BrowserPane browser_focus
+	# True while the sidebar's highlighted row is in the <GIT> section
+	# rather than the Files tree -- up/down cross seamlessly between the two
+	# (see sidebar_nav_up/down), landing on the git entry at git_selected or
+	# the tree entry at browse_selected depending on which side of the
+	# boundary they're on. browse_selected always stays a valid Files-tree
+	# index regardless of which side currently has the highlight, so
+	# browse_left/browse_right/start_create_file never need to know this
+	# exists.
+	bool sidebar_on_git
+	int git_selected
 
-	# ^R's inline "new file" prompt (Files tree, both the sidebar and F1) --
-	# while true, a blank placeholder FileEntry sits in browse_entries at
-	# browse_selected and the browser/sidebar renders its name from
-	# new_file_name plus a fake cursor block instead of the tree as normal
-	# (see start_create_file/confirm_create_file/cancel_create_file).
+	# ^R's inline "new file" prompt -- while true, a blank placeholder
+	# FileEntry sits in browse_entries at browse_selected and the sidebar
+	# renders its name from new_file_name plus a fake cursor block instead
+	# of the tree as normal (see start_create_file/confirm_create_file/
+	# cancel_create_file).
 	bool creating_file
 	string new_file_name
 
@@ -91,9 +85,11 @@ struct DiffState
 	stringList diff_lines
 	int diff_scroll_row
 
-	# True when diffing was entered from browsing a deleted file rather than
-	# from ^D on an open buffer -- there's no editable file to return to, so
-	# exiting goes back to the browser instead of the phantom editor
+	# True when diffing was entered by opening a deleted git-changed file
+	# rather than from ^D on an open buffer -- there's no editable file to
+	# load, so the real buffer (filename/lines) is left untouched and
+	# exiting just drops back to whatever was open before (see
+	# preview_deleted_file/toggle_diff).
 	bool diff_preview
 	string diff_preview_path
 
@@ -206,9 +202,8 @@ fn void main()
 	for if true
 		state = editor_scroll(state)
 
-		(core, browser, diff, selection) in state
+		(core, diff, selection) in state
 		(filename, lines, cursor_row, cursor_col) in core
-		(browsing) in browser
 		(diffing) in diff
 		(sel_anchor_row, sel_anchor_col) in selection
 		if filename is not current_file
@@ -231,9 +226,7 @@ fn void main()
 		BufferState core = core with (lines)
 		EditorState render_state_with_colors = state with (core)
 
-		if browsing
-			editor_render_browser(render_state_with_colors)
-		else if diffing
+		if diffing
 			editor_render_diff(render_state_with_colors)
 		else
 			editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)

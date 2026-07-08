@@ -12,6 +12,10 @@ fn void editor_render_diff(EditorState state)
 			let browse_scroll_row = state.browser.browse_scroll_row.clone();
 			let creating_file = state.browser.creating_file.clone();
 			let new_file_name = state.browser.new_file_name.clone();
+			let is_git_repo = state.browser.is_git_repo.clone();
+			let git_changes = state.browser.git_changes.clone();
+			let sidebar_on_git = state.browser.sidebar_on_git.clone();
+			let git_selected = state.browser.git_selected.clone();
 
 			// Same sidebar width formula the normal editor view uses (widens
 			// while sidebar_focused, see layout.deor) -- diff_lines is left
@@ -45,20 +49,31 @@ fn void editor_render_diff(EditorState state)
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 
+			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64);
+			let selected_idx = if sidebar_on_git {
+				1 + git_selected
+			} else {
+				git_section_rows + browse_selected
+			};
+
 			let total = state.diff.diff_lines.len();
 			for i in 0..view_rows {
 				let is_top_row = i == 0;
 				let is_bottom_row = i == view_rows - 1;
 				let row_input = SidebarRowInput {
 					browse_entries: browse_entries.clone(),
+					git_changes: git_changes.clone(),
+					git_section_rows,
 					idx: browse_scroll_row + i as i64,
-					selected_idx: browse_selected,
+					selected_idx,
 					sidebar_width,
 					sidebar_focused,
 					is_top_row,
 					is_bottom_row,
 					creating_file,
 					new_file_name: new_file_name.clone(),
+					filter_active: false,
+					filter_matches: Vec::new(),
 				};
 				out.push_str(&sidebar_row_piece(row_input));
 
@@ -91,7 +106,7 @@ fn void editor_render_diff(EditorState state)
 				out.push_str("\r\n");
 			}
 			let status = if state.diff.diff_preview {
-				format!("-- {} (deleted, diff, read-only) -- Esc/^Q back to browser", state.diff.diff_preview_path)
+				format!("-- {} (deleted, diff, read-only) -- Esc/^Q back", state.diff.diff_preview_path)
 			} else {
 				format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename)
 			};

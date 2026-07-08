@@ -55,23 +55,48 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: more editor code broken out
 - Done: sidebar is its own folder
 
-Minimum Viable:
+Working: removing F1 overlay, porting everything to sidebar, removing history -- keeping git
+
+Current Work:
 
 - More organization in the morning
 
-- Remove the F1 overlay and add git changes to a flat list in a folder that can be expanded, obviously make it look a bit different or something to 
-differentiate it
+- Should we add a refresh button?  Before toggling between F1 and back would refresh now that might not work? -- what auto refreshes today?
 
-- git doesnt update when I do a delete -> discard (delete does -- discard does not update in file browser, so the file should return and it does not) 
--- even when reloaded unless the whole app is reloaded.
+
+--- 
+Needed for MVP
+---
+
+- Sometimes the bottom file gets dropped from the git browser, it is just off the screen I can click it by mousing below, does it not respect the status bar?
+I should be able to scroll a tad further down.
+
+- Sometimes selections move really slowly performance wise on the screen, like a big drawn selection will start stuttering and slowing down near the end
+are we doing like infinitely fast polling or something?  It could also be partly or maybe also because the selection has a pretty big horizontal offset from
+ the cursor so it could appear to slow down because I slow the cursor down but it never catches up do to the offset.
+
+- If page down is pressed, auto close the sidebar if it is open
+
+- In diff mode the sidebar cant be clicked if the diff mode is open, allow it to be clicked
+
+- We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  Instead make a file that is both staged 
+show twice in the list as two different highlights.  Clicking the unstaged highlighted one will show just unstaged git diff, clicking the staged 
+highlighted one will just show staged diff.  If either reverts to normal view, it will show the current file as is and update the cursor to that path 
+in the directory (the normal file). In the directory listing the file should show a new color as a yellow-green if both conditions are applied
 
 - Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
 (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
 
+- We should add a keyboard key mapping for wrap/unwrap of content ctrl + w? 
+
+---
+Not Needed for MVP
+---
+
+- Really long files like the rust/build.rs file really lag and slow down when scrolled, is there anything we can do about it?
+
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
-- Set the cursor to the position of a file if I selected it from the git view -- or maybe it doesnt matter if we put the git view in the main view?
 
 - The git minimap at the bottom seems to have spaces between green bars on new files / fully edited content, shouldn't it be a solid green bar across the 
 whole bottom?

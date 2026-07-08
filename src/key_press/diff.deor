@@ -30,7 +30,6 @@ macro toggle_diff
 		if diff_preview
 			diff_preview = false
 			diffing = false
-			browsing = true
 		else
 			macro_run align_editor_scroll_from_diff
 			diffing = false

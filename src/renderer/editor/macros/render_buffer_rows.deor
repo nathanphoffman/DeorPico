@@ -1,12 +1,20 @@
 
 # Main rendering loop: iterate through visible rows and render each line
 macro render_buffer_rows
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
-		int selected_idx = browse_selected
+		int selected_idx = git_section_rows + browse_selected
+		if sidebar_on_git
+			selected_idx = 1 + git_selected
+		if filter_active
+			idx = filter_scroll_row + row_offset
+			selected_idx = filter_selected
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
-		SidebarRowInput row_input = (browse_entries, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name)
+		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 		string sidebar_piece = sidebar_row_piece(row_input)
 		screen = s_join([screen, sidebar_piece])
 

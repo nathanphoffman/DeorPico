@@ -89,22 +89,30 @@ macro browse_filter_down
 	if filter_selected > last_entry
 		filter_selected = last_entry
 
+	int total_line_count = len(lines)
 	TermSize size = xt_size()
-	(rows) in size
-	int view_rows = rows - 2
-	if view_rows < 1
-		view_rows = 1
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
 	if filter_selected >= filter_scroll_row + view_rows
 		filter_scroll_row = filter_selected - view_rows + 1
 
 # Opens the selected match but leaves filter_active/filter_matches/filter_selected
-# untouched, so F1 back into the browser redisplays the same search results
-# instead of the full tree (see toggle_browse in browse.deor). Esc is still the
-# only way to actually drop the filter.
+# untouched, so reopening the filter redisplays the same search results
+# instead of the full tree. Esc is still the only way to actually drop the
+# filter. Hands focus back to the editor the same way every other sidebar
+# open path does (see sidebar_key_activate) -- unlike those, there's no
+# is_dir case here, a filter match is always a file.
 macro browse_filter_enter
 	if len(filter_matches) > 0
 		FilterMatch selected_match = filter_matches at filter_selected
 		(full_path) in selected_match
 		path as full_path
-		browsing = false
-		macro_run load_file_into_buffer
+		if dirty
+			macro_run notify_unsaved_changes
+		else
+			macro_run load_file_into_buffer
+			if not diffing
+				sidebar_focused = false

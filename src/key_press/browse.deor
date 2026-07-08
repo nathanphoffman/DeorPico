@@ -1,29 +1,45 @@
-# F1 while browsing only hides the browser -- it deliberately leaves an active
-# filter's matches/selection intact so the next F1 reopens onto the same
-# search results (see browse_filter_enter). Esc is what actually clears it.
-macro toggle_browse
-	if browsing
-		browsing = false
-	else if dirty
-		macro_run notify_unsaved_changes
-	else
-		browsing = true
-		if len(browse_entries) is 0
-			browse_entries = f_list_dir(browse_dir)
-			browse_selected = 0
-			browse_scroll_row = 0
-
-		macro_run refresh_all_git_status
-
 # Re-tags browse_entries/git_changes' git-status colors (not the tree
-# structure -- depth/expanded/name/path are untouched) and reclamps the Git
-# selection to match. Run whenever the displayed git state might be stale:
-# the browser opening, and after a ^A stage/unstage (see git_stage_toggle).
+# structure -- depth/expanded/name/path are untouched). Run whenever the
+# displayed git state might be stale: after a ^A stage/unstage (see
+# git_stage_toggle) and after a file is created/deleted/discarded.
 macro refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
 	git_changes = g_changed_entries(fresh_git_map)
-	macro_run clamp_recent_git_selection
+	macro_run clamp_sidebar_selection
+
+# Keeps the sidebar's selection/scroll valid after git_changes changes size
+# (stage/unstage/delete/discard/create) -- falls back to the Files tree if
+# the <GIT> section emptied out from under the highlight, and reclamps
+# browse_scroll_row against the (possibly now shorter) total row count so
+# the sidebar can't stay scrolled past what it actually draws.
+macro clamp_sidebar_selection
+	if sidebar_on_git
+		int last_git = len(git_changes) - 1
+		if git_selected > last_git
+			git_selected = last_git
+		if git_selected < 0
+			if len(browse_entries) > 0
+				sidebar_on_git = false
+				browse_selected = 0
+			else
+				git_selected = 0
+
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count)
+	int last_row = git_section_rows + len(browse_entries) - 1
+	int max_scroll = last_row - view_rows + 1
+	if max_scroll < 0
+		max_scroll = 0
+	if browse_scroll_row > max_scroll
+		browse_scroll_row = max_scroll
 
 # ^A on the currently selected entry (bound by the caller into path/is_dir/
 # git_status) -- unstages if it's already staged (with or without a further
@@ -51,21 +67,6 @@ macro git_stage_toggle
 		else if git_status is "edited" or git_status is "new" or git_status is "deleted"
 			bool staged_ok = g_stage(browse_dir, clean_path)
 			macro_run refresh_all_git_status
-
-# ^A while the F1 browser is open -- resolves whichever entry is actually
-# highlighted (Files tree, or the merged Git column) and hands it to
-# git_stage_toggle.
-macro browse_stage_toggle
-	if browser_focus is Files
-		if len(browse_entries) > 0
-			FileEntry selected = browse_entries at browse_selected
-			(path, is_dir, git_status) in selected
-			macro_run git_stage_toggle
-	else
-		if recent_git_selected < len(git_changes)
-			FileEntry selected = git_changes at recent_git_selected
-			(path, is_dir, git_status) in selected
-			macro_run git_stage_toggle
 
 # ^K on `path`/`is_dir` (bound by the caller from whichever entry is
 # currently selected) -- sends it to the OS trash rather than a permanent
@@ -113,9 +114,9 @@ macro file_delete_entry
 # and that tree is otherwise never re-listed on its own) and reclamps the
 # selection. git_changes is NOT hand-purged -- refresh_all_git_status
 # re-derives it from a fresh `git status` instead, so a tracked file shows
-# up immediately as "deleted" in the Git list (matching what F1 close/reopen
-# would show anyway) rather than just disappearing, while an untracked file
-# naturally drops out since git has no record of it either way.
+# up immediately as "deleted" in the Git list rather than just disappearing,
+# while an untracked file naturally drops out since git has no record of it
+# either way.
 macro remove_deleted_entry
 	browse_entries = e_remove_by_path(browse_entries, path)
 
@@ -126,21 +127,6 @@ macro remove_deleted_entry
 		browse_selected = 0
 
 	macro_run refresh_all_git_status
-
-# ^K while the F1 browser is open -- resolves whichever entry is
-# highlighted (Files tree, or the merged Git column) and hands it to
-# file_delete_entry, same resolution as browse_stage_toggle.
-macro browse_delete_entry
-	if browser_focus is Files
-		if len(browse_entries) > 0
-			FileEntry selected = browse_entries at browse_selected
-			(path, is_dir) in selected
-			macro_run file_delete_entry
-	else
-		if recent_git_selected < len(git_changes)
-			FileEntry selected = git_changes at recent_git_selected
-			(path, is_dir) in selected
-			macro_run file_delete_entry
 
 # ^U on `path`/`is_dir`/`git_status` (bound by the caller from whichever
 # entry is currently selected) -- discards all git-tracked changes to the
@@ -193,29 +179,13 @@ macro discard_git_changes_entry
 		notice = "Press ^U again to discard changes to this file -- cannot be undone"
 		error = true
 
-# ^U while the F1 browser is open -- same resolution as browse_stage_toggle/
-# browse_delete_entry.
-macro browse_discard_git_changes
-	if browser_focus is Files
-		if len(browse_entries) > 0
-			FileEntry selected = browse_entries at browse_selected
-			(path, is_dir, git_status) in selected
-			macro_run discard_git_changes_entry
-	else
-		if recent_git_selected < len(git_changes)
-			FileEntry selected = git_changes at recent_git_selected
-			(path, is_dir, git_status) in selected
-			macro_run discard_git_changes_entry
-
 # ^R -- opens the inline "new file" prompt: a blank placeholder row is
 # spliced into browse_entries right where typing will land, and
 # creating_file/new_file_name/create_parent_dir switch keyboard input over
 # to the name buffer (see confirm_create_file/cancel_create_file). A
 # highlighted directory is expanded (if needed) and becomes the parent, with
 # the placeholder as its first child; a highlighted file's parent directory
-# is used instead, with the placeholder as its next sibling. Only the Files
-# tree makes sense here (there's no single "current directory" in the
-# Recent/Git column), so this is Files-pane/sidebar only.
+# is used instead, with the placeholder as its next sibling.
 macro start_create_file
 	int insert_index = 0
 	int insert_depth = 0
@@ -286,9 +256,8 @@ macro cancel_create_file
 
 # Enter while the create-file prompt is open -- writes the new empty file to
 # disk (refusing to clobber an existing one), turns the placeholder row into
-# its real entry, and opens it into the editor. `browsing`/`sidebar_focused`
-# are unconditionally cleared since opening a file always lands in the
-# editor regardless of which of the two contexts ^R was pressed from.
+# its real entry, and opens it into the editor. `sidebar_focused` is
+# unconditionally cleared since opening a file always lands in the editor.
 macro confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
@@ -317,51 +286,11 @@ macro confirm_create_file
 				macro_run refresh_all_git_status
 
 				path = full_path
-				browsing = false
 				sidebar_focused = false
 				macro_run load_file_into_buffer
 			else
 				notice = "Could not create file"
 				error = true
-
-# Keeps recent_git_selected/git_scroll_row pointing at whatever was selected
-# before the browser was last closed, rather than snapping back to the top --
-# only clamps if the refreshed Git list is now shorter than the old index
-# (e.g. the selected file got committed/reverted and dropped off).
-macro clamp_recent_git_selection
-	int last_entry = len(git_changes) - 1
-	if recent_git_selected > last_entry
-		recent_git_selected = last_entry
-	if recent_git_selected < 0
-		recent_git_selected = 0
-
-	if git_scroll_row > recent_git_selected
-		git_scroll_row = recent_git_selected
-
-macro browse_close
-	browsing = false
-	macro_run close_browse_filter
-
-macro browse_up
-	browse_selected = browse_selected - 1
-	if browse_selected < 0
-		browse_selected = 0
-	if browse_selected < browse_scroll_row
-		browse_scroll_row = browse_selected
-
-macro browse_down
-	int last_entry = len(browse_entries) - 1
-	browse_selected = browse_selected + 1
-	if browse_selected > last_entry
-		browse_selected = last_entry
-
-	TermSize size = xt_size()
-	(rows) in size
-	int view_rows = rows - 2
-	if view_rows < 1
-		view_rows = 1
-	if browse_selected >= browse_scroll_row + view_rows
-		browse_scroll_row = browse_selected - view_rows + 1
 
 macro browse_right
 	if len(browse_entries) > 0
@@ -397,59 +326,11 @@ macro browse_left
 			FileEntry updated_selected = selected with (expanded)
 			browse_entries at browse_selected = updated_selected
 
-macro cycle_browser_focus
-	if browser_focus is Files
-		browser_focus = RecentGit
-		macro_run clamp_recent_git_selection
-	else
-		browser_focus = Files
-
-# recent_git_selected indexes directly into git_changes -- see
-# browser_git_visible_rows.
-macro recent_git_up
-	recent_git_selected = recent_git_selected - 1
-	if recent_git_selected < 0
-		recent_git_selected = 0
-	macro_run recent_git_adjust_scroll
-
-macro recent_git_down
-	int last_entry = len(git_changes) - 1
-	recent_git_selected = recent_git_selected + 1
-	if recent_git_selected > last_entry
-		recent_git_selected = last_entry
-	if recent_git_selected < 0
-		recent_git_selected = 0
-	macro_run recent_git_adjust_scroll
-
-macro recent_git_adjust_scroll
-	if recent_git_selected < git_scroll_row
-		git_scroll_row = recent_git_selected
-	else
-		TermSize size = xt_size()
-		(rows) in size
-		int view_rows = rows - 2
-		if view_rows < 1
-			view_rows = 1
-		int git_visible_rows = browser_git_visible_rows(view_rows)
-		if recent_git_selected >= git_scroll_row + git_visible_rows
-			git_scroll_row = recent_git_selected - git_visible_rows + 1
-
-macro recent_git_enter
-	if recent_git_selected < len(git_changes)
-		FileEntry selected = git_changes at recent_git_selected
-		(path, is_dir, git_status) in selected
-		if not is_dir
-			if git_status is "deleted" or git_status is "staged_deleted"
-				macro_run preview_deleted_file
-			else
-				browsing = false
-				macro_run load_file_into_buffer
-
 # Deleted files no longer exist on disk, so they can't be loaded into the
 # normal editable buffer -- jump straight into a read-only diff of the
 # deletion (against HEAD, via g_diff) instead, and leave the real buffer
-# (filename/lines) untouched so Esc can hand control back to the browser
-# rather than a phantom editor for a file that isn't there.
+# (filename/lines) untouched so Esc/^D can hand control back to whatever was
+# open before rather than a phantom editor for a file that isn't there.
 macro preview_deleted_file
 	stringList preview_diff = g_diff(path)
 	diff_lines = preview_diff
@@ -457,7 +338,6 @@ macro preview_deleted_file
 	diffing = true
 	diff_preview = true
 	diff_preview_path = path
-	browsing = false
 	notice = "Deleted file (diff, read-only)"
 	error = false
 
@@ -498,26 +378,3 @@ macro discard_unsaved_changes
 		notice = "Discarded unsaved changes"
 		error = false
 
-macro browse_enter
-	if len(browse_entries) > 0
-		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir) in selected
-		if not is_dir
-			browsing = false
-			macro_run load_file_into_buffer
-
-# Opens the selected file, or toggles expand/collapse on the selected directory.
-# Must decide which single action to take from one fresh read up front --
-# browse_right/browse_left each re-fetch browse_entries themselves, so calling
-# both back-to-back would let the second one immediately undo the first.
-macro browse_activate
-	if len(browse_entries) > 0
-		FileEntry selected = browse_entries at browse_selected
-		(is_dir, expanded) in selected
-		if is_dir
-			if expanded
-				macro_run browse_left
-			else
-				macro_run browse_right
-		else
-			macro_run browse_enter

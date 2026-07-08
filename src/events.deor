@@ -15,83 +15,6 @@ macro back_stop
     else if cursor_col > current_line_length - 1
         cursor_col = current_line_length
 
-# Keys handled while the file/recent-git browser is open
-macro handle_browse_mode
-	if creating_file
-		if kind is "escape"
-			macro_run cancel_create_file
-		else if kind is "enter"
-			macro_run confirm_create_file
-		else if kind is "backspace"
-			macro_run create_file_backspace
-		else if kind is "char"
-			macro_run create_file_char
-	else if filter_active
-		if kind is "escape"
-			macro_run close_browse_filter
-		else if kind is "enter"
-			macro_run browse_filter_enter
-		else if kind is "up"
-			macro_run browse_filter_up
-		else if kind is "down"
-			macro_run browse_filter_down
-		else if kind is "backspace"
-			macro_run browse_filter_backspace
-		else if kind is "char"
-			macro_run browse_filter_char
-		else if kind is "mouse_down"
-			macro_run mouse_down_browser_filter
-	else if kind is "mouse_down"
-		macro_run mouse_down_browser
-	else if kind is "tab"
-		macro_run cycle_browser_focus
-	else if kind is "stage_toggle"
-		macro_run browse_stage_toggle
-	else if kind is "delete_entry"
-		macro_run browse_delete_entry
-	else if kind is "discard_git_changes"
-		macro_run browse_discard_git_changes
-	else if kind is "create_file" and browser_focus is Files
-		macro_run start_create_file
-	else if kind is "up" and browser_focus is RecentGit
-		macro_run recent_git_up
-	else if kind is "down" and browser_focus is RecentGit
-		macro_run recent_git_down
-	else if kind is "char" and chr is "w" and browser_focus is RecentGit
-		macro_run recent_git_up
-	else if kind is "char" and chr is "s" and browser_focus is RecentGit
-		macro_run recent_git_down
-	else if kind is "up"
-		macro_run browse_up
-	else if kind is "down"
-		macro_run browse_down
-	else if kind is "left"
-		macro_run browse_left
-	else if kind is "right"
-		macro_run browse_right
-	else if kind is "char" and chr is ":"
-		macro_run start_browse_filter
-	else if kind is "char" and chr is "w"
-		macro_run browse_up
-	else if kind is "char" and chr is "s"
-		macro_run browse_down
-	else if kind is "char" and chr is "a"
-		macro_run browse_left
-	else if kind is "char" and chr is "d"
-		macro_run browse_right
-	else if kind is "enter" and browser_focus is RecentGit
-		macro_run recent_git_enter
-	else if kind is "char" and chr is " " and browser_focus is RecentGit
-		macro_run recent_git_enter
-	else if kind is "enter"
-		macro_run browse_activate
-	else if kind is "char" and chr is " "
-		macro_run browse_activate
-	else if kind is "escape"
-		macro_run browse_close
-	else if kind is "quit"
-		macro_run browse_close
-
 # Keys handled while the git diff view is open
 macro handle_diff_mode
 	if kind is "diff_toggle"
@@ -218,7 +141,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
-	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path) in browser
+	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -252,12 +175,8 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	if kind is not "tick" and kind is not "discard_git_changes"
 		pending_discard_path = ""
 
-	if kind is "browse_toggle"
-		macro_run toggle_browse
-	else if kind is "sidebar_toggle"
+	if kind is "sidebar_toggle"
 		macro_run toggle_sidebar
-	else if browsing
-		macro_run handle_browse_mode
 	# Checked before diffing/lint_output_visible so the sidebar stays fully
 	# navigable while a diff is showing (see rust_diff.deor) -- ^B still
 	# works to focus/unfocus it regardless (see the sidebar_toggle branch
@@ -281,7 +200,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run back_stop
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)

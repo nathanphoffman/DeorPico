@@ -15,17 +15,9 @@ macro use_consts
     # cut off rather than making the popup scrollable.
     const int LINT_POPUP_HEIGHT = 10
 
-    # Cosmetic breathing room in the file browser: a left indent before the
-    # Files column, and extra gap (beyond the usual 1-column separator)
-    # before the Recent/Git column -- shared with the mouse click handler so
-    # a click still resolves to the column it visually landed in.
-    const int BROWSER_LEFT_MARGIN = 8
-    const int BROWSER_COLUMN_GAP = 3
-
     # Fixed width of the persistent Files-tree sidebar (see sidebar.deor) --
-    # unlike the F1 browser's proportional Files/Recent-Git split, the
-    # sidebar always claims exactly this many columns so the text buffer's
-    # own width is predictable frame to frame.
+    # always claims exactly this many columns so the text buffer's own
+    # width is predictable frame to frame.
     const int SIDEBAR_WIDTH = 30
 
     # Width the sidebar widens to while it has keyboard focus (^B) -- gives
@@ -58,14 +50,16 @@ fn int editor_view_rows(int rows, bool has_minimap, bool lint_output_visible)
 		view_rows = 1
 	return view_rows
 
-# Shared by the browser's renderer and its up/down scroll-adjust macro, which
-# must agree exactly on how many rows the Git section gets once the "Git"
-# header has taken its share of view_rows -- any mismatch would scroll the
-# Git section past what's actually drawn.
-fn int browser_git_visible_rows(int view_rows)
-	int header_rows = 1
-	int visible = view_rows - header_rows
-	if visible < 0
-		visible = 0
-	return visible
+# How many screen rows the sidebar's <GIT> section occupies at the top of the
+# tree: 0 if this isn't a git repo (section hidden entirely), 2 (header +
+# "clean" placeholder) if it is but nothing's changed, or 1 (header) +
+# git_count otherwise. Shared by the sidebar's renderer and its nav/scroll/
+# mouse macros, which must agree exactly on this or the highlight and scroll
+# position drift from what's actually drawn.
+fn int sidebar_git_section_rows(bool is_git_repo, int git_count)
+	if not is_git_repo
+		return 0
+	if git_count is 0
+		return 2
+	return 1 + git_count
 

@@ -35,7 +35,7 @@ macro compute_scroll_sidebar_width
 
 # A wheel scroll over the sidebar's columns scrolls the Files tree instead of
 # the text buffer (see sidebar_scroll_up/down) -- lets the tree be browsed
-# without needing F1's full-screen view just to reach an entry below the fold.
+# without leaving the editor just to reach an entry below the fold.
 macro scroll_up
 	macro_run use_consts
 	macro_run compute_scroll_sidebar_width
