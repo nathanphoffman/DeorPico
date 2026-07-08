@@ -78,8 +78,8 @@ import "src/renderer/status/minimap_gutters.deor"
 import "src/renderer/status/build_and_render_status_bar.deor"
 
 # new editor pathing
-import "src/renderer/editor/macros/position_and_output_cursor.deor"
-import "src/renderer/editor/macros/render_buffer_rows.deor"
+import "src/renderer/editor/position_and_output_cursor.deor"
+import "src/renderer/editor/render_buffer_rows.deor"
 import "src/renderer/editor/editor.deor"
 
 # shared file-browser row-rendering helpers, reused by the sidebar below

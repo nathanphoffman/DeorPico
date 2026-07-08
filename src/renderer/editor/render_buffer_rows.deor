@@ -1,4 +1,14 @@
 
+macro render_sidebar_column
+	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
+	string sidebar_piece = sidebar_row_piece(row_input)
+	screen = s_join([screen, sidebar_piece])
+
+macro render_gutter_column
+	int buffer_row_index = scroll_row + row_offset
+	string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
+	screen = s_join([screen, gutter_piece])
+
 # Main rendering loop: iterate through visible rows and render each line
 macro render_buffer_rows
 	int git_count = len(git_changes)
@@ -14,13 +24,9 @@ macro render_buffer_rows
 			selected_idx = filter_selected
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
-		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
-		string sidebar_piece = sidebar_row_piece(row_input)
-		screen = s_join([screen, sidebar_piece])
 
-		int buffer_row_index = scroll_row + row_offset
-		string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
-		screen = s_join([screen, gutter_piece])
+        macro_run render_sidebar_column        
+        macro_run render_gutter_column
 
 		if buffer_row_index < total_line_count
 			string line = lines at buffer_row_index

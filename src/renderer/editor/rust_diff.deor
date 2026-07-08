@@ -1,46 +1,44 @@
 
 fn void editor_render_diff(EditorState state)
+
+    (browser) in state
+    (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
+    (new_file_name, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed) in browser
+    
 	rust
-		{
-			use std::io::Write;
-			let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
-			let cols = cols as usize;
+		use std::io::Write;
+		let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
+		let cols = cols as usize;
+        
 
-			let sidebar_focused = state.browser.sidebar_focused.clone();
-			let browse_entries = state.browser.browse_entries.clone();
-			let browse_selected = state.browser.browse_selected.clone();
-			let browse_scroll_row = state.browser.browse_scroll_row.clone();
-			let creating_file = state.browser.creating_file.clone();
-			let new_file_name = state.browser.new_file_name.clone();
-			let is_git_repo = state.browser.is_git_repo.clone();
-			let git_changes = state.browser.git_changes.clone();
-			let sidebar_on_git = state.browser.sidebar_on_git.clone();
-			let git_selected = state.browser.git_selected.clone();
-			let git_section_collapsed = state.browser.git_section_collapsed.clone();
+    # Same sidebar width formula the normal editor view uses (widens
+	# while sidebar_focused, see layout.deor) -- diff_lines is left
+	# empty here since the layout's own has_minimap/minimap_offset
+	# aren't used below; this view reserves its own minimap row.
+    rust 
+		let layout_input = EditorLayoutInput {
+			rows: rows as i64,
+			cols: cols as i64,
+			total_line_count: state.diff.diff_lines.len() as i64,
+			show_line_numbers: false,
+			lint_output_visible: false,
+			diff_lines: Vec::new(),
+			sidebar_focused,
+		};
 
-			// Same sidebar width formula the normal editor view uses (widens
-			// while sidebar_focused, see layout.deor) -- diff_lines is left
-			// empty here since the layout's own has_minimap/minimap_offset
-			// aren't used below; this view reserves its own minimap row.
-			let layout_input = EditorLayoutInput {
-				rows: rows as i64,
-				cols: cols as i64,
-				total_line_count: state.diff.diff_lines.len() as i64,
-				show_line_numbers: false,
-				lint_output_visible: false,
-				diff_lines: Vec::new(),
-				sidebar_focused,
-			};
-			let layout = compute_editor_layout(layout_input);
-			let sidebar_width = layout.sidebar_width;
-			let diff_content_width = (cols as i64 - sidebar_width).max(1) as usize;
+		let layout = compute_editor_layout(layout_input);
+		let sidebar_width = layout.sidebar_width;
+		let diff_content_width = (cols as i64 - sidebar_width).max(1) as usize;
 
-			// Same heat bar as the normal editor view (see g_diff_minimap in
-			// lib/git.deor), but rows here are diff_lines entries themselves --
-			// deleted lines get their own row instead of being folded onto a
-			// buffer row that doesn't exist in this view. Spans the full
-			// terminal width, same as the normal editor's own minimap bar
-			// (it doesn't reserve space for the sidebar either).
+
+	# Same heat bar as the normal editor view (see g_diff_minimap in
+	# lib/git.deor), but rows here are diff_lines entries themselves --
+	# deleted lines get their own row instead of being folded onto a
+	# buffer row that doesn't exist in this view. Spans the full
+	# terminal width, same as the normal editor's own minimap bar
+    # (it doesn't reserve space for the sidebar either).
+    rust
+        {
 			let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
 			let has_minimap = !minimap_bar.is_empty();
 			// Same reserved-row formula every other scroll-clamp/render path

@@ -61,10 +61,13 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Finding out why the last item of the browser is cut off
 - Done: Splitting out more files into macros
 - Done: Split really simple macros into functions
+- Done: mv has been added
+- Done: dir creates a folder
 
-Working: crtl + r should create a folder
+- Add ctrl + a To Select All
 
-- mv should be added as a move 
+- search needs fixed, results it returns do not seem to be returning proper file matches, I am using 
+    underscores if that matters
 
 - shift tab back tab selection
 
@@ -79,14 +82,12 @@ take action.
  - Any file more than 2000 lines long we should prevent from opening maybe?
  - When the editor starts up the directory sidebar should be selected
  
+- Extract Sidebar into its own folder
 
-Extract Sidebar into its own folder
-
-
+- On any ctrl + s we should refresh the git directory listing -- so we see updates to git highlighting / entries
 
 Probably better done by AI, required items:
 ---
-On any ctrl + s we should refresh the git directory listing -- so we see updates to git highlighting / entries
 
 Performance of big files, even just 400 lines or so can really slow performance when scrolling, typing, selecting, etc
 
