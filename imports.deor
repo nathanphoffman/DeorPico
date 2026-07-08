@@ -16,6 +16,19 @@ import "src/lib/search.deor"
 import "src/lib/lint.deor"
 import "src/lib/dirsearch.deor"
 
+# State/model structs -- one struct per file
+import "src/models/buffer_state.deor"
+import "src/models/browser_state.deor"
+import "src/models/diff_state.deor"
+import "src/models/lint_state.deor"
+import "src/models/launch_args.deor"
+import "src/models/selection_state.deor"
+import "src/models/search_state.deor"
+import "src/models/filter_state.deor"
+import "src/models/undo_snapshot.deor"
+import "src/models/undo_state.deor"
+import "src/models/editor_state.deor"
+
 # Macros must be loaded first
 import "src/consts.deor"
 import "src/key_press/keymap.deor"

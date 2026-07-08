@@ -1,0 +1,4 @@
+struct UndoState
+	# Ctrl+Z / Ctrl+Y history -- one snapshot per edit action
+	undoList undo_stack
+	undoList redo_stack

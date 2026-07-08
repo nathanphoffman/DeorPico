@@ -1,0 +1,7 @@
+struct SearchState
+	# Alt+<letter> "quick search" buffer -- cleared on any non-alt keypress,
+	# but the highlight it produced (below) persists until Esc
+	string search_buffer
+	bool search_active
+	matchList search_matches
+	int search_match_index

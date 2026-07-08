@@ -1,0 +1,24 @@
+struct BufferState
+    string filename
+    stringList lines
+    int cursor_row
+    int cursor_col
+    int scroll_row
+
+
+	# True for exactly one frame after a wheel-scroll event -- tells
+	# editor_scroll to skip its cursor-follow clamp that frame, so the
+	# wheel can move the viewport without dragging the cursor along.
+	bool wheel_scrolled
+
+	# Tracks whether there is unsaved changes
+    bool dirty
+
+	# Toggled with ctrl+n
+	bool show_line_numbers
+
+	# `lines` joined exactly as last read from or written to disk (see
+	# load_file_into_buffer/key_save_impl) -- lets F5 (key_refresh) tell
+	# "the file changed on disk" apart from "I have local unsaved edits",
+	# since `dirty` alone conflates the two.
+	string synced_content

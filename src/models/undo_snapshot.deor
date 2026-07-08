@@ -1,0 +1,10 @@
+struct UndoSnapshot
+	# Deliberately not named `lines`/`cursor_row`/`cursor_col` -- destructuring a
+	# struct always shadows into a new binding, which can't reach back out of a
+	# nested `if` to update the real editor variables. Different names here force
+	# a genuinely new local on extraction, which can then be plainly reassigned.
+	stringList saved_lines
+	int saved_cursor_row
+	int saved_cursor_col
+
+shape undoList = list of UndoSnapshot

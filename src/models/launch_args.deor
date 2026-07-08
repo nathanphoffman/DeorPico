@@ -1,0 +1,5 @@
+struct LaunchArgs
+	string filename
+	string initial_dir
+	string lint_command
+	string lint_regex

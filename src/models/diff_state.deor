@@ -1,0 +1,13 @@
+struct DiffState
+	# Git diff view (ctrl+d) state -- locks editing while true
+	bool diffing
+	stringList diff_lines
+	int diff_scroll_row
+
+	# True when diffing was entered by opening a deleted git-changed file
+	# rather than from ^D on an open buffer -- there's no editable file to
+	# load, so the real buffer (filename/lines) is left untouched and
+	# exiting just drops back to whatever was open before (see
+	# preview_deleted_file/toggle_diff).
+	bool diff_preview
+	string diff_preview_path

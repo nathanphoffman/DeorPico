@@ -1,0 +1,5 @@
+struct SelectionState
+	# Shift+arrow selection state
+	bool has_selection
+	int sel_anchor_row
+	int sel_anchor_col

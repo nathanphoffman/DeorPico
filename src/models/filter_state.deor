@@ -1,0 +1,10 @@
+struct FilterState
+	# ':' file-browser name/content filter, scoped to whichever directory
+	# was selected when ':' was pressed (see renderer/browser/keypress/browse_filter.deor)
+	bool filter_active
+	string filter_query
+	string filter_dir
+	filterMatchList filter_matches
+	int filter_selected
+	int filter_scroll_row
+	int filter_truncated_count

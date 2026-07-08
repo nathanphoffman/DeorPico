@@ -1,0 +1,13 @@
+struct LintState
+	# On-save lint/build integration -- see dpico's 3rd/4th CLI args
+	string lint_command
+	string lint_working_dir
+	string lint_regex
+	LintRunner lint_runner
+	bool lint_running
+	matchList issue_matches
+
+	# Raw stdout+stderr from the last completed lint run, and whether the
+	# ctrl+e popup showing it is currently open
+	stringList lint_output
+	bool lint_output_visible

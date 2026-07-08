@@ -1,0 +1,67 @@
+struct BrowserState
+	# Persistent Files-tree sidebar -- the only file browser there is now,
+	# always shown and never takes over the whole screen.
+	entryList browse_entries
+	int browse_selected
+	int browse_scroll_row
+	string browse_dir
+
+	# True while F1 has moved keyboard focus onto the sidebar -- up/down/
+	# left/right/enter navigate and open files in the tree instead of moving
+	# the cursor, and the sidebar renders wider (SIDEBAR_WIDTH_FOCUSED) to
+	# make room for long names. Cleared automatically after opening a file,
+	# or by pressing F1/Esc again.
+	bool sidebar_focused
+
+	# Whether browse_dir is inside a git repo at all -- decides whether the
+	# sidebar's <GIT> section shows up (see sidebar_git_section_rows).
+	# Computed once at startup (see g_is_repo); repo-ness isn't expected to
+	# change mid-session.
+	bool is_git_repo
+
+	# Git staged/unstaged files, refreshed every time a stage/unstage happens
+	# (see refresh_all_git_status). Rendered as a flat list pinned above the
+	# Files tree in the sidebar (see sidebar_git_section_rows).
+	entryList git_changes
+
+	# True while the sidebar's highlighted row is in the <GIT> section
+	# rather than the Files tree -- up/down cross seamlessly between the two
+	# (see sidebar_nav_up/down), landing on the git entry at git_selected or
+	# the tree entry at browse_selected depending on which side of the
+	# boundary they're on. browse_selected always stays a valid Files-tree
+	# index regardless of which side currently has the highlight, so
+	# browse_left/browse_right/start_create_file never need to know this
+	# exists.
+	bool sidebar_on_git
+
+	# -1 means the <GIT> header itself is highlighted (Enter/Space/Left/
+	# Right there toggles git_section_collapsed, same as a directory);
+	# 0..N-1 indexes into git_changes. Only meaningful while sidebar_on_git.
+	int git_selected
+
+	# Collapses the <GIT> section down to just its header row, same idea as
+	# collapsing a directory in the Files tree (see sidebar_git_section_rows).
+	bool git_section_collapsed
+
+	# ^R's inline "new file" prompt -- while true, a blank placeholder
+	# FileEntry sits in browse_entries at browse_selected and the sidebar
+	# renders its name from new_file_name plus a fake cursor block instead
+	# of the tree as normal (see start_create_file/confirm_create_file/
+	# cancel_create_file).
+	bool creating_file
+	string new_file_name
+
+	# Directory the pending new file will be created in -- captured up front
+	# since the typed name (and so the file's eventual path) isn't known
+	# until Enter confirms.
+	string create_parent_dir
+
+	# ^K delete / ^U discard-git-changes both require a second confirming
+	# keypress on the *same* path before actually doing anything, since
+	# neither is reliably recoverable (discard has no history to fall back
+	# on for uncommitted changes; delete only has the OS trash). Empty means
+	# not armed. Cleared by any other real key (see editor_handle_key) so an
+	# armed confirmation can't linger and get triggered by an unrelated
+	# later press of the same key on a different file.
+	string pending_delete_path
+	string pending_discard_path
