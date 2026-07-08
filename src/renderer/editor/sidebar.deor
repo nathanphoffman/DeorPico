@@ -207,17 +207,16 @@ macro sidebar_scroll_follow
 # Enter/space while the sidebar has keyboard focus -- on the <GIT> header,
 # toggles git_section_collapsed (focus stays put, same as a directory).
 # Otherwise opens the selected file (from the <GIT> section or the Files
-# tree) and hands focus back to the editor (so typing starts right away),
-# or expands/collapses the selected directory (focus stays put so you can
-# keep walking the tree). A <GIT> entry that's been deleted has nothing to
-# load, so it previews its diff instead (see preview_deleted_file). If a
-# diff is already showing when a file is picked, load_file_into_buffer's
-# own `if diffing` check re-diffs onto that file instead of leaving diff
-# mode, so focus stays in the sidebar to let you keep flipping through
-# diffs; it only drops back to the editor once you land on a file that's
-# either not being diffed, or has no changes to diff (same idea for
-# preview_deleted_file, which always sets diffing, so focus deliberately
-# stays put to keep flipping through deleted files' diffs).
+# tree) and unconditionally hands focus back to the editor, even if this
+# just re-diffed onto a new file while a diff was already showing -- Enter
+# is a keyboard user committing to that file, so the panel should hide
+# immediately rather than lingering. (Directory expand/collapse still keeps
+# focus put so you can keep walking the tree.) Mouse clicks go through this
+# same macro (see sidebar_activate_index) but re-assert focus afterward, so
+# clicking through several files/diffs in a row without it hiding each time
+# is still possible -- it's just not tied to Enter anymore. A <GIT> entry
+# that's been deleted has nothing to load, so it previews its diff instead
+# (see preview_deleted_file).
 macro sidebar_key_activate
 	if sidebar_on_git
 		if git_selected is (0 - 1)
@@ -229,12 +228,10 @@ macro sidebar_key_activate
 				macro_run notify_unsaved_changes
 			else if git_status is "deleted" or git_status is "staged_deleted"
 				macro_run preview_deleted_file
-				if not diffing
-					sidebar_focused = false
+				sidebar_focused = false
 			else
 				macro_run load_file_into_buffer
-				if not diffing
-					sidebar_focused = false
+				sidebar_focused = false
 	else if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, expanded) in selected
@@ -247,8 +244,7 @@ macro sidebar_key_activate
 			macro_run notify_unsaved_changes
 		else
 			macro_run load_file_into_buffer
-			if not diffing
-				sidebar_focused = false
+			sidebar_focused = false
 
 # Re-tags browse_entries' git-status colors without touching the tree
 # structure itself (depth/expanded/name/path are untouched) -- run after a
@@ -305,14 +301,31 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 	# keyboard focus.
 	bool top_row_is_header = has_git_section and idx is 0
 
+	# Border-only version of the same idea, covering the case with no git
+	# section too (idx 0 is then just the first Files-tree entry). Either
+	# way there's no way to scroll further up to compensate -- browse_scroll_row
+	# is already 0 -- so without this the very first row would be permanently
+	# unreachable while the sidebar has keyboard focus, not just briefly
+	# scrolled out of sight.
+	bool top_row_is_first_entry = idx is 0
+
+	# Mirrors top_row_is_first_entry at the other end: the very last row of
+	# the whole list has nothing below it to scroll further into view either,
+	# so losing it to the border would make it permanently unreachable
+	# (mousing below it still activated it, since sidebar_activate_index
+	# never knew the border was there -- this was reported as "the bottom
+	# file gets dropped off the git browser").
+	int total_row_count = git_section_rows + len(browse_entries)
+	bool bottom_row_is_last_entry = idx is (total_row_count - 1)
+
 	# The border normally sacrifices whatever would be at the very top/
 	# bottom of the viewport (an accepted quirk for the git/tree rows below
 	# it, since there's usually plenty more to see). Filter results are
 	# often just a handful of matches, so losing one to the border --
 	# possibly the *only* one -- reads as a bug rather than a quirk; drop
 	# the border entirely while filtering instead.
-	bool show_top_border = sidebar_focused and is_top_row and not filter_active and not top_row_is_header
-	bool show_bottom_border = sidebar_focused and is_bottom_row and not filter_active
+	bool show_top_border = sidebar_focused and is_top_row and not filter_active and not top_row_is_first_entry
+	bool show_bottom_border = sidebar_focused and is_bottom_row and not filter_active and not bottom_row_is_last_entry
 	if show_top_border or show_bottom_border
 		macro_run use_sidebar_border_colors
 		string corner = "+"

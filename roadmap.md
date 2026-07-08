@@ -58,25 +58,17 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Refresh button added and tested
 - Done: GIT is collapsable
 - Done: Git diff does not lock sidebar any longer
+- Done: Finding out why the last item of the browser is cut off
 
 
-- If page down is pressed, auto close the sidebar if it is open
+If page down or up is pressed, auto close the sidebar if it is open
 
-Current Work:
+Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
 
-- Final Spot Review
+Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
 
---- 
-Needed for MVP
----
+Any file more than 2000 lines long we should prevent from opening maybe?
 
-- Sometimes the bottom file gets dropped from the git browser, it is just off the screen I can click it by mousing below, does it not respect the status bar?
-I should be able to scroll a tad further down.
-
-- Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
-
----
-Lesser Important
 ---
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  Instead make a file that is both staged 
@@ -89,19 +81,15 @@ in the directory (the normal file). In the directory listing the file should sho
 
 - We should add a keyboard key mapping for wrap/unwrap of content ctrl + w? 
 
+- The git minimap at the bottom seems to have spaces between green bars on new files / fully edited content, shouldn't it be a solid green bar across the 
+whole bottom?
+
 ---
 Not Needed for MVP
 ---
 
-- Really long files like the rust/build.rs file really lag and slow down when scrolled, is there anything we can do about it?
-
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
-- The git minimap at the bottom seems to have spaces between green bars on new files / fully edited content, shouldn't it be a solid green bar across the 
-whole bottom?
-
-## Nest For AI
 
 ## V2 Longer Term:
 working on: final pass to make sure rust is in deor

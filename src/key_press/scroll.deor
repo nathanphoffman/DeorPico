@@ -35,12 +35,20 @@ macro compute_scroll_sidebar_width
 
 # A wheel scroll over the sidebar's columns scrolls the Files tree instead of
 # the text buffer (see sidebar_scroll_up/down) -- lets the tree be browsed
-# without leaving the editor just to reach an entry below the fold.
+# without leaving the editor just to reach an entry below the fold. These
+# also run while a git diff is open and the sidebar has keyboard focus (see
+# handle_sidebar_focus_mode) -- handle_diff_mode's own mouse_scroll_up/down
+# only fire once focus is off the sidebar, so without the `diffing` branch
+# here a wheel scroll over the diff pane while the sidebar is focused moved
+# the (currently invisible) text-buffer scroll_row instead of diff_scroll_row,
+# and the diff view never appeared to move.
 macro scroll_up
 	macro_run use_consts
 	macro_run compute_scroll_sidebar_width
 	if col < sidebar_width
 		macro_run sidebar_scroll_up
+	else if diffing
+		macro_run diff_scroll_up
 	else
 		scroll_row = scroll_row - SCROLL_WHEEL_AMOUNT
 		macro_run clamp_scroll
@@ -51,6 +59,8 @@ macro scroll_down
 	macro_run compute_scroll_sidebar_width
 	if col < sidebar_width
 		macro_run sidebar_scroll_down
+	else if diffing
+		macro_run diff_scroll_down
 	else
 		scroll_row = scroll_row + SCROLL_WHEEL_AMOUNT
 		macro_run clamp_scroll
