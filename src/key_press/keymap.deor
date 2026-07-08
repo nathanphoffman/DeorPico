@@ -31,7 +31,7 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "stage_toggle"
 		else if chr is "r"
 			kind = "create_file"
-		else if chr is "\\"
+		else if chr is "k"
 			kind = "delete_entry"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"

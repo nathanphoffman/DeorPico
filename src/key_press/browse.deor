@@ -78,7 +78,7 @@ macro browse_stage_toggle
 				(path, is_dir, git_status) in selected
 				macro_run git_stage_toggle
 
-# ^Backspace on `path`/`is_dir` (bound by the caller from whichever entry is
+# ^K on `path`/`is_dir` (bound by the caller from whichever entry is
 # currently selected) -- sends it to the OS trash rather than a permanent
 # delete, so a wrong keypress is still recoverable. A non-empty directory is
 # refused outright (recursing here would be far too easy to trigger by
@@ -112,13 +112,15 @@ macro file_delete_entry
 			notice = "Could not delete (trash unavailable?)"
 			error = true
 
-# Purges the just-deleted `path` from every list it might appear in and
-# reclamps the selections that indexed into them -- browse_entries always,
-# file_history/git_changes only if it happened to be there too.
+# Removes the just-deleted `path` from browse_entries (it's gone from disk,
+# and that tree is otherwise never re-listed on its own) and reclamps the
+# selection. file_history/git_changes are NOT hand-purged -- refresh_all_git_status
+# re-derives them from a fresh `git status` instead, so a tracked file shows
+# up immediately as "deleted" in the Git list (matching what F1 close/reopen
+# would show anyway) rather than just disappearing, while an untracked file
+# naturally drops out since git has no record of it either way.
 macro remove_deleted_entry
 	browse_entries = e_remove_by_path(browse_entries, path)
-	file_history = e_remove_by_path(file_history, path)
-	git_changes = e_remove_by_path(git_changes, path)
 
 	int last_browse_entry = len(browse_entries) - 1
 	if browse_selected > last_browse_entry
@@ -126,9 +128,9 @@ macro remove_deleted_entry
 	if browse_selected < 0
 		browse_selected = 0
 
-	macro_run clamp_recent_git_selection
+	macro_run refresh_all_git_status
 
-# ^Backspace while the F1 browser is open -- resolves whichever entry is
+# ^K while the F1 browser is open -- resolves whichever entry is
 # highlighted (Files tree, or the Recent/Git column's Recent or Git section)
 # and hands it to file_delete_entry, same resolution as browse_stage_toggle.
 macro browse_delete_entry
