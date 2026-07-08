@@ -31,6 +31,8 @@ macro handle_diff_mode
 		macro_run diff_page_up
 	else if kind is "page_down"
 		macro_run diff_page_down
+	else if kind is "mouse_down"
+		macro_run mouse_down_diff
 	else if kind is "mouse_scroll_up"
 		macro_run diff_scroll_up
 	else if kind is "mouse_scroll_down"

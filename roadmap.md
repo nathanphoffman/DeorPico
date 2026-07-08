@@ -57,6 +57,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: F1 browser completely gone, sidebar click fix in place
 - Done: Refresh button added and tested
 - Done: GIT is collapsable
+- Done: Git diff does not lock sidebar any longer
+
+
+- If page down is pressed, auto close the sidebar if it is open
 
 Current Work:
 
@@ -71,13 +75,9 @@ I should be able to scroll a tad further down.
 
 - Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
 
-- In diff mode the sidebar cant be clicked if the diff mode is open, allow it to be clicked
-
 ---
 Lesser Important
 ---
-
-- If page down is pressed, auto close the sidebar if it is open
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  Instead make a file that is both staged 
 show twice in the list as two different highlights.  Clicking the unstaged highlighted one will show just unstaged git diff, clicking the staged 
