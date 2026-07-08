@@ -36,6 +36,25 @@ fn entryList f_list_dir(string path)
 			items
 		}
 
+# Same ordering f_list_dir applies on its own (directories first, then
+# case-insensitive by name) -- used to re-sort a directory's listing after
+# splicing in synthetic deleted-file rows (see g_deleted_entries_for_dir),
+# since those need to interleave alphabetically with the real entries
+# rather than just being tacked on at the end.
+fn entryList e_sort_dir_listing(entryList entries)
+	rust
+		{
+			let mut items = entries;
+			items.sort_by(|a, b| {
+				match (a.is_dir, b.is_dir) {
+					(true, false) => std::cmp::Ordering::Less,
+					(false, true) => std::cmp::Ordering::Greater,
+					_ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+				}
+			});
+			items
+		}
+
 fn entryList e_insert_children(entryList entries, int at_index, entryList children)
 	rust
 		{

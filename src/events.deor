@@ -252,12 +252,17 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run toggle_sidebar
 	else if browsing
 		macro_run handle_browse_mode
+	# Checked before diffing/lint_output_visible so the sidebar stays fully
+	# navigable while a diff is showing (see rust_diff.deor) -- ^B still
+	# works to focus/unfocus it regardless (see the sidebar_toggle branch
+	# above), and handle_diff_mode/handle_lint_output_mode resume once focus
+	# moves back to the editor.
+	else if sidebar_focused
+		macro_run handle_sidebar_focus_mode
 	else if diffing
 		macro_run handle_diff_mode
 	else if lint_output_visible
 		macro_run handle_lint_output_mode
-	else if sidebar_focused
-		macro_run handle_sidebar_focus_mode
 
 	# this is the main view
 	else

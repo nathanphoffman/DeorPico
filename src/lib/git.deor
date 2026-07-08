@@ -294,6 +294,32 @@ fn entryList g_sort_entries_by_path(entryList entries)
 		}
 
 
+# Synthesizes FileEntry rows for git-tracked files that are deleted from the
+# working tree but still show up in `git status` -- these never come from
+# f_list_dir (it only sees what's actually on disk), so a directory listing
+# has to splice these in separately to make deleted files browsable at all
+# (see start_create_file's siblings initialize_browser/browse_right, which
+# call this once per directory as it's listed/expanded). `dir_path` must
+# already be relative (see g_relative_path) to match git's own path format.
+fn entryList g_deleted_entries_for_dir(StringMap git_map, string dir_path, int depth)
+	stringList paths = h_keys(git_map)
+
+	entryList items = empty
+	for path in paths
+		string git_status = h_get(git_map, path)
+		if git_status is "deleted"
+			string parent = f_dirname(path)
+			if parent is dir_path
+				string name = f_basename(path)
+				bool is_dir = false
+				bool expanded = false
+				string path = f_join_path(dir_path, name)
+				FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
+				items at end = entry
+
+	return items
+
+
 fn entryList g_changed_entries(StringMap git_map)
 	stringList paths = h_keys(git_map)
 
