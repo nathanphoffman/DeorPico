@@ -12,8 +12,8 @@ macro use_browser_ansi_codes
 	const string ANSI_GIT_STAGED_OFF = s_join([esc, "[39m"])
 	const string ANSI_GIT_EDITED_ON = s_join([esc, "[33m"])
 	const string ANSI_GIT_EDITED_OFF = s_join([esc, "[39m"])
-	const string ANSI_GIT_DELETED_ON = s_join([esc, "[9;31m"])
-	const string ANSI_GIT_DELETED_OFF = s_join([esc, "[29;39m"])
+	const string ANSI_STRIKETHROUGH_ON = s_join([esc, "[9m"])
+	const string ANSI_STRIKETHROUGH_OFF = s_join([esc, "[29m"])
 
 
 struct FitResult
@@ -33,10 +33,13 @@ fn FitResult browser_fit(string label, int width)
 
 
 # Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
-# "edited"/"deleted"), or returns it unchanged for any other status
-# (including "" for a clean file). "staged_edited" (staged with further
-# worktree edits on top) still renders green like plain "staged" --
-# browser_edit_prefix is what actually flags the extra edit.
+# "edited"/"new"/"staged_deleted"/"deleted"), or returns it unchanged for any
+# other status (including "" for a clean file). "staged_edited" (staged with
+# further worktree edits on top) still renders green like plain "staged" --
+# browser_edit_prefix is what actually flags the extra edit. A deletion gets
+# the same staged (green) / unstaged (yellow) color as any other change,
+# plus a strikethrough layered on top, rather than its own distinct color --
+# the strikethrough alone is enough to tell it apart from a plain edit.
 fn string browser_colorize(string line, string git_status)
 	macro_run use_browser_ansi_codes
 
@@ -49,8 +52,10 @@ fn string browser_colorize(string line, string git_status)
 		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
 	else if git_status is "new"
 		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
+	else if git_status is "staged_deleted"
+		result = s_join([ANSI_GIT_STAGED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_STAGED_OFF])
 	else if git_status is "deleted"
-		result = s_join([ANSI_GIT_DELETED_ON, line, ANSI_GIT_DELETED_OFF])
+		result = s_join([ANSI_GIT_EDITED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_EDITED_OFF])
 
 	return result
 

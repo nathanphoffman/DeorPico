@@ -28,18 +28,6 @@ macro initialize_browser
 	# colors up front rather than waiting for the first F1 press.
 	StringMap initial_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, initial_git_map)
-
-	# Deleted-but-still-tracked files never come from f_list_dir (nothing to
-	# list -- they're gone from disk), so they're spliced in here as their
-	# own rows instead (see g_deleted_entries_for_dir); browse_right does the
-	# same for a directory's children the moment it's expanded.
-	string root_dir_clean = g_relative_path(browse_dir)
-	int root_depth = 0
-	entryList deleted_at_root = g_deleted_entries_for_dir(initial_git_map, root_dir_clean, root_depth)
-	for deleted_entry in deleted_at_root
-		browse_entries at end = deleted_entry
-	browse_entries = e_sort_dir_listing(browse_entries)
-
 	sidebar_focused as false
 	creating_file as false
 	new_file_name as ""

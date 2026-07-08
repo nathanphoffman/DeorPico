@@ -101,25 +101,21 @@ macro sidebar_nav_down
 # Enter/space while the sidebar has keyboard focus -- opens the selected
 # file and hands focus back to the editor (so typing starts right away), or
 # expands/collapses the selected directory (focus stays put so you can keep
-# walking the tree). Mirrors browse_activate. A deleted-but-tracked entry
-# (see g_deleted_entries_for_dir) has no real file to load, so it previews
-# the diff instead -- same as browsing to one from the Recent/Git column
-# already does. If a diff is already showing when a normal file is picked,
-# load_file_into_buffer's own `if diffing` check re-diffs onto that file
-# instead of leaving diff mode, so focus stays in the sidebar to let you
-# keep flipping through diffs; it only drops back to the editor once you
-# land on a file that's either not being diffed, or has no changes to diff.
+# walking the tree). Mirrors browse_activate. If a diff is already showing
+# when a file is picked, load_file_into_buffer's own `if diffing` check
+# re-diffs onto that file instead of leaving diff mode, so focus stays in
+# the sidebar to let you keep flipping through diffs; it only drops back to
+# the editor once you land on a file that's either not being diffed, or has
+# no changes to diff.
 macro sidebar_key_activate
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir, expanded, git_status) in selected
+		(path, is_dir, expanded) in selected
 		if is_dir
 			if expanded
 				macro_run browse_left
 			else
 				macro_run browse_right
-		else if git_status is "deleted"
-			macro_run preview_deleted_file
 		else if dirty
 			macro_run notify_unsaved_changes
 		else
@@ -250,14 +246,12 @@ macro sidebar_activate_index
 	if idx >= 0 and idx < len(browse_entries)
 		browse_selected = idx
 		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir, expanded, git_status) in selected
+		(path, is_dir, expanded) in selected
 		if is_dir
 			if expanded
 				macro_run browse_left
 			else
 				macro_run browse_right
-		else if git_status is "deleted"
-			macro_run preview_deleted_file
 		else if dirty
 			macro_run notify_unsaved_changes
 		else

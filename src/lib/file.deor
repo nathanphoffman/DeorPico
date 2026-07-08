@@ -9,7 +9,8 @@ struct FileEntry
 
 	# "staged", "staged_edited" (staged with further worktree edits on
 	# top), "edited" (unstaged edit on a tracked file), "new" (untracked),
-	# "deleted", or "" (normal) -- set by g_apply_status
+	# "staged_deleted"/"deleted" (removal staged vs. not), or "" (normal) --
+	# set by g_apply_status
 	string git_status
 
 shape entryList = list of FileEntry
@@ -26,25 +27,6 @@ fn entryList f_list_dir(string path)
 					items.push(FileEntry { name: file_name, path: full_path, is_dir, depth: 0, expanded: false, git_status: String::new() });
 				}
 			}
-			items.sort_by(|a, b| {
-				match (a.is_dir, b.is_dir) {
-					(true, false) => std::cmp::Ordering::Less,
-					(false, true) => std::cmp::Ordering::Greater,
-					_ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-				}
-			});
-			items
-		}
-
-# Same ordering f_list_dir applies on its own (directories first, then
-# case-insensitive by name) -- used to re-sort a directory's listing after
-# splicing in synthetic deleted-file rows (see g_deleted_entries_for_dir),
-# since those need to interleave alphabetically with the real entries
-# rather than just being tacked on at the end.
-fn entryList e_sort_dir_listing(entryList entries)
-	rust
-		{
-			let mut items = entries;
 			items.sort_by(|a, b| {
 				match (a.is_dir, b.is_dir) {
 					(true, false) => std::cmp::Ordering::Less,

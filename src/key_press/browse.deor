@@ -48,7 +48,7 @@ macro git_stage_toggle
 			bool unstaged_ok = g_unstage(browse_dir, clean_path)
 			macro_run refresh_all_git_status
 	else
-		if git_status is "staged" or git_status is "staged_edited"
+		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted"
 			bool unstaged_ok = g_unstage(browse_dir, clean_path)
 			macro_run refresh_all_git_status
 		else if git_status is "edited" or git_status is "new" or git_status is "deleted"
@@ -333,16 +333,6 @@ macro browse_right
 				FileEntry adjusted = (name, path, is_dir, depth, expanded, git_status)
 				adjusted_children at end = adjusted
 
-			# Deleted-but-still-tracked files under this directory never came
-			# from f_list_dir above -- splice them in as their own rows too
-			# (see g_deleted_entries_for_dir), same as initialize_browser does
-			# for the root listing.
-			string clean_dir_path = g_relative_path(path)
-			entryList deleted_children = g_deleted_entries_for_dir(git_map, clean_dir_path, next_depth)
-			for deleted_child in deleted_children
-				adjusted_children at end = deleted_child
-			adjusted_children = e_sort_dir_listing(adjusted_children)
-
 			browse_entries = e_insert_children(browse_entries, browse_selected, adjusted_children)
 
 			expanded as true
@@ -438,7 +428,7 @@ macro recent_git_enter
 			FileEntry selected = git_changes at git_index
 			(path, is_dir, git_status) in selected
 			if not is_dir
-				if git_status is "deleted"
+				if git_status is "deleted" or git_status is "staged_deleted"
 					macro_run preview_deleted_file
 				else
 					browsing = false
@@ -502,14 +492,11 @@ macro discard_unsaved_changes
 macro browse_enter
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir, git_status) in selected
+		(path, is_dir) in selected
 		if not is_dir
-			if git_status is "deleted"
-				macro_run preview_deleted_file
-			else
-				browsing = false
-				macro_run load_file_into_buffer
-				macro_run track_file_history
+			browsing = false
+			macro_run load_file_into_buffer
+			macro_run track_file_history
 
 # F9 -- step back to the previously-visited file in file_history without
 # reshuffling it, so F12 can step forward again through the same order.

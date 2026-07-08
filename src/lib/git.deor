@@ -45,8 +45,15 @@ fn string g_raw_status(string repo_path)
 # sign of the extra local edit. "new" (git's "??") is kept distinct from
 # "edited" so the browser can tell a brand-new untracked file from a
 # further unstaged edit on an already-tracked one (see browser_edit_prefix).
+# "staged_deleted"/"deleted" split the same way for a removal -- a deletion
+# staged with `git rm`/`git add` (index "D") vs. one just removed from the
+# working tree but not yet staged (worktree "D") toggle in opposite
+# directions under ^A (see git_stage_toggle), so they can't share one status.
 fn string g_classify_status(string index_status, string worktree_status)
-	if index_status is "D" or worktree_status is "D"
+	if index_status is "D"
+		return "staged_deleted"
+
+	if worktree_status is "D"
 		return "deleted"
 
 	if index_status is "?" and worktree_status is "?"
@@ -88,7 +95,7 @@ fn StringMap g_status(string repo_path)
 			# just mirrors the map's own "don't downgrade a deleted entry"
 			# rule if that ever changes.
 			string existing = h_get(result, path)
-			if existing is not "deleted"
+			if existing is not "deleted" and existing is not "staged_deleted"
 				result = h_set(result, path, status)
 
 	return result
@@ -292,32 +299,6 @@ fn entryList g_sort_entries_by_path(entryList entries)
 			items.sort_by(|a, b| a.path.to_lowercase().cmp(&b.path.to_lowercase()));
 			items
 		}
-
-
-# Synthesizes FileEntry rows for git-tracked files that are deleted from the
-# working tree but still show up in `git status` -- these never come from
-# f_list_dir (it only sees what's actually on disk), so a directory listing
-# has to splice these in separately to make deleted files browsable at all
-# (see start_create_file's siblings initialize_browser/browse_right, which
-# call this once per directory as it's listed/expanded). `dir_path` must
-# already be relative (see g_relative_path) to match git's own path format.
-fn entryList g_deleted_entries_for_dir(StringMap git_map, string dir_path, int depth)
-	stringList paths = h_keys(git_map)
-
-	entryList items = empty
-	for path in paths
-		string git_status = h_get(git_map, path)
-		if git_status is "deleted"
-			string parent = f_dirname(path)
-			if parent is dir_path
-				string name = f_basename(path)
-				bool is_dir = false
-				bool expanded = false
-				string path = f_join_path(dir_path, name)
-				FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
-				items at end = entry
-
-	return items
 
 
 fn entryList g_changed_entries(StringMap git_map)
