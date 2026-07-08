@@ -130,7 +130,6 @@ macro sidebar_key_activate
 			macro_run notify_unsaved_changes
 		else
 			macro_run load_file_into_buffer
-			macro_run track_file_history
 			if not diffing
 				sidebar_focused = false
 
@@ -266,7 +265,6 @@ macro sidebar_activate_index
 			macro_run notify_unsaved_changes
 		else
 			macro_run load_file_into_buffer
-			macro_run track_file_history
 
 macro sidebar_scroll_up
 	browse_scroll_row = browse_scroll_row - 1

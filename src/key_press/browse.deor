@@ -15,17 +15,14 @@ macro toggle_browse
 
 		macro_run refresh_all_git_status
 
-# Re-tags browse_entries/file_history/git_changes' git-status colors (not
-# the tree structure -- depth/expanded/name/path are untouched) and
-# reorders/reclamps the Recent+Git selection to match. Run whenever the
-# displayed git state might be stale: the browser opening, and after a ^A
-# stage/unstage (see git_stage_toggle).
+# Re-tags browse_entries/git_changes' git-status colors (not the tree
+# structure -- depth/expanded/name/path are untouched) and reclamps the Git
+# selection to match. Run whenever the displayed git state might be stale:
+# the browser opening, and after a ^A stage/unstage (see git_stage_toggle).
 macro refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
-	file_history = g_apply_status(file_history, fresh_git_map)
 	git_changes = g_changed_entries(fresh_git_map)
-	git_changes = g_reorder_by_recency(git_changes, file_history)
 	macro_run clamp_recent_git_selection
 
 # ^A on the currently selected entry (bound by the caller into path/is_dir/
@@ -56,8 +53,8 @@ macro git_stage_toggle
 			macro_run refresh_all_git_status
 
 # ^A while the F1 browser is open -- resolves whichever entry is actually
-# highlighted (Files tree, or the Recent/Git merged column's Recent or Git
-# section) and hands it to git_stage_toggle.
+# highlighted (Files tree, or the merged Git column) and hands it to
+# git_stage_toggle.
 macro browse_stage_toggle
 	if browser_focus is Files
 		if len(browse_entries) > 0
@@ -65,18 +62,10 @@ macro browse_stage_toggle
 			(path, is_dir, git_status) in selected
 			macro_run git_stage_toggle
 	else
-		int recent_count = browser_recent_count(len(file_history))
-		if recent_git_selected < recent_count
-			if len(file_history) > 0
-				FileEntry selected = file_history at recent_git_selected
-				(path, is_dir, git_status) in selected
-				macro_run git_stage_toggle
-		else
-			int git_index = recent_git_selected - recent_count
-			if git_index < len(git_changes)
-				FileEntry selected = git_changes at git_index
-				(path, is_dir, git_status) in selected
-				macro_run git_stage_toggle
+		if recent_git_selected < len(git_changes)
+			FileEntry selected = git_changes at recent_git_selected
+			(path, is_dir, git_status) in selected
+			macro_run git_stage_toggle
 
 # ^K on `path`/`is_dir` (bound by the caller from whichever entry is
 # currently selected) -- sends it to the OS trash rather than a permanent
@@ -122,8 +111,8 @@ macro file_delete_entry
 
 # Removes the just-deleted `path` from browse_entries (it's gone from disk,
 # and that tree is otherwise never re-listed on its own) and reclamps the
-# selection. file_history/git_changes are NOT hand-purged -- refresh_all_git_status
-# re-derives them from a fresh `git status` instead, so a tracked file shows
+# selection. git_changes is NOT hand-purged -- refresh_all_git_status
+# re-derives it from a fresh `git status` instead, so a tracked file shows
 # up immediately as "deleted" in the Git list (matching what F1 close/reopen
 # would show anyway) rather than just disappearing, while an untracked file
 # naturally drops out since git has no record of it either way.
@@ -139,8 +128,8 @@ macro remove_deleted_entry
 	macro_run refresh_all_git_status
 
 # ^K while the F1 browser is open -- resolves whichever entry is
-# highlighted (Files tree, or the Recent/Git column's Recent or Git section)
-# and hands it to file_delete_entry, same resolution as browse_stage_toggle.
+# highlighted (Files tree, or the merged Git column) and hands it to
+# file_delete_entry, same resolution as browse_stage_toggle.
 macro browse_delete_entry
 	if browser_focus is Files
 		if len(browse_entries) > 0
@@ -148,18 +137,10 @@ macro browse_delete_entry
 			(path, is_dir) in selected
 			macro_run file_delete_entry
 	else
-		int recent_count = browser_recent_count(len(file_history))
-		if recent_git_selected < recent_count
-			if len(file_history) > 0
-				FileEntry selected = file_history at recent_git_selected
-				(path, is_dir) in selected
-				macro_run file_delete_entry
-		else
-			int git_index = recent_git_selected - recent_count
-			if git_index < len(git_changes)
-				FileEntry selected = git_changes at git_index
-				(path, is_dir) in selected
-				macro_run file_delete_entry
+		if recent_git_selected < len(git_changes)
+			FileEntry selected = git_changes at recent_git_selected
+			(path, is_dir) in selected
+			macro_run file_delete_entry
 
 # ^U on `path`/`is_dir`/`git_status` (bound by the caller from whichever
 # entry is currently selected) -- discards all git-tracked changes to the
@@ -221,18 +202,10 @@ macro browse_discard_git_changes
 			(path, is_dir, git_status) in selected
 			macro_run discard_git_changes_entry
 	else
-		int recent_count = browser_recent_count(len(file_history))
-		if recent_git_selected < recent_count
-			if len(file_history) > 0
-				FileEntry selected = file_history at recent_git_selected
-				(path, is_dir, git_status) in selected
-				macro_run discard_git_changes_entry
-		else
-			int git_index = recent_git_selected - recent_count
-			if git_index < len(git_changes)
-				FileEntry selected = git_changes at git_index
-				(path, is_dir, git_status) in selected
-				macro_run discard_git_changes_entry
+		if recent_git_selected < len(git_changes)
+			FileEntry selected = git_changes at recent_git_selected
+			(path, is_dir, git_status) in selected
+			macro_run discard_git_changes_entry
 
 # ^R -- opens the inline "new file" prompt: a blank placeholder row is
 # spliced into browse_entries right where typing will land, and
@@ -347,30 +320,23 @@ macro confirm_create_file
 				browsing = false
 				sidebar_focused = false
 				macro_run load_file_into_buffer
-				macro_run track_file_history
 			else
 				notice = "Could not create file"
 				error = true
 
 # Keeps recent_git_selected/git_scroll_row pointing at whatever was selected
 # before the browser was last closed, rather than snapping back to the top --
-# only clamps if the refreshed Recent+Git list is now shorter than the old
-# index (e.g. the selected file got committed/reverted and dropped off).
+# only clamps if the refreshed Git list is now shorter than the old index
+# (e.g. the selected file got committed/reverted and dropped off).
 macro clamp_recent_git_selection
-	int recent_count = browser_recent_count(len(file_history))
-	int total_merged = recent_count + len(git_changes)
-	int last_entry = total_merged - 1
+	int last_entry = len(git_changes) - 1
 	if recent_git_selected > last_entry
 		recent_git_selected = last_entry
 	if recent_git_selected < 0
 		recent_git_selected = 0
 
-	if recent_git_selected >= recent_count
-		int git_index = recent_git_selected - recent_count
-		if git_scroll_row > git_index
-			git_scroll_row = git_index
-	else
-		git_scroll_row = 0
+	if git_scroll_row > recent_git_selected
+		git_scroll_row = recent_git_selected
 
 macro browse_close
 	browsing = false
@@ -431,23 +397,6 @@ macro browse_left
 			FileEntry updated_selected = selected with (expanded)
 			browse_entries at browse_selected = updated_selected
 
-# Adds/moves the just-opened file to the top of the Recent section so the
-# most-recently-opened file is always first, and re-ranks git_changes too --
-# a git-changed file just opened from anywhere should immediately jump to
-# the top of the Git section as well (see g_reorder_by_recency).
-macro track_file_history
-	name as f_basename(filename)
-	string path = filename
-	is_dir as false
-	depth as 0
-	expanded as false
-	git_status as ""
-	FileEntry history_entry = (name, path, is_dir, depth, expanded, git_status)
-	max_history_len as 15
-	file_history = e_history_push(file_history, history_entry, max_history_len)
-	history_selected = 0
-	git_changes = g_reorder_by_recency(git_changes, file_history)
-
 macro cycle_browser_focus
 	if browser_focus is Files
 		browser_focus = RecentGit
@@ -455,9 +404,8 @@ macro cycle_browser_focus
 	else
 		browser_focus = Files
 
-# recent_git_selected indexes across the Recent section (file_history's top
-# BROWSER_RECENT_ROWS entries) followed by the Git section (git_changes) as
-# one continuous list -- see browser_recent_count/browser_git_visible_rows.
+# recent_git_selected indexes directly into git_changes -- see
+# browser_git_visible_rows.
 macro recent_git_up
 	recent_git_selected = recent_git_selected - 1
 	if recent_git_selected < 0
@@ -465,9 +413,7 @@ macro recent_git_up
 	macro_run recent_git_adjust_scroll
 
 macro recent_git_down
-	int recent_count = browser_recent_count(len(file_history))
-	int total_merged = recent_count + len(git_changes)
-	int last_entry = total_merged - 1
+	int last_entry = len(git_changes) - 1
 	recent_git_selected = recent_git_selected + 1
 	if recent_git_selected > last_entry
 		recent_git_selected = last_entry
@@ -475,46 +421,29 @@ macro recent_git_down
 		recent_git_selected = 0
 	macro_run recent_git_adjust_scroll
 
-# Only the Git section scrolls -- the Recent section is always the fixed
-# top few rows, so scrolling only matters once the selection moves past it.
 macro recent_git_adjust_scroll
-	int recent_count = browser_recent_count(len(file_history))
-	if recent_git_selected >= recent_count
-		int git_index = recent_git_selected - recent_count
-		if git_index < git_scroll_row
-			git_scroll_row = git_index
-		else
-			TermSize size = xt_size()
-			(rows) in size
-			int view_rows = rows - 2
-			if view_rows < 1
-				view_rows = 1
-			int git_visible_rows = browser_git_visible_rows(view_rows, recent_count)
-			if git_index >= git_scroll_row + git_visible_rows
-				git_scroll_row = git_index - git_visible_rows + 1
+	if recent_git_selected < git_scroll_row
+		git_scroll_row = recent_git_selected
+	else
+		TermSize size = xt_size()
+		(rows) in size
+		int view_rows = rows - 2
+		if view_rows < 1
+			view_rows = 1
+		int git_visible_rows = browser_git_visible_rows(view_rows)
+		if recent_git_selected >= git_scroll_row + git_visible_rows
+			git_scroll_row = recent_git_selected - git_visible_rows + 1
 
 macro recent_git_enter
-	int recent_count = browser_recent_count(len(file_history))
-	if recent_git_selected < recent_count
-		if len(file_history) > 0
-			FileEntry selected = file_history at recent_git_selected
-			(path, is_dir) in selected
-			if not is_dir
+	if recent_git_selected < len(git_changes)
+		FileEntry selected = git_changes at recent_git_selected
+		(path, is_dir, git_status) in selected
+		if not is_dir
+			if git_status is "deleted" or git_status is "staged_deleted"
+				macro_run preview_deleted_file
+			else
 				browsing = false
 				macro_run load_file_into_buffer
-				macro_run track_file_history
-	else
-		int git_index = recent_git_selected - recent_count
-		if git_index < len(git_changes)
-			FileEntry selected = git_changes at git_index
-			(path, is_dir, git_status) in selected
-			if not is_dir
-				if git_status is "deleted" or git_status is "staged_deleted"
-					macro_run preview_deleted_file
-				else
-					browsing = false
-					macro_run load_file_into_buffer
-					macro_run track_file_history
 
 # Deleted files no longer exist on disk, so they can't be loaded into the
 # normal editable buffer -- jump straight into a read-only diff of the
@@ -533,8 +462,7 @@ macro preview_deleted_file
 	error = false
 
 # Loads `path` (already declared by the caller) into the active buffer,
-# discarding any unsaved state. Callers decide whether this should also
-# update file_history, since history navigation itself must not.
+# discarding any unsaved state.
 macro load_file_into_buffer
 	filename = path
 	stringList opened_lines = f_lines(filename)
@@ -577,33 +505,6 @@ macro browse_enter
 		if not is_dir
 			browsing = false
 			macro_run load_file_into_buffer
-			macro_run track_file_history
-
-# F9 -- step back to the previously-visited file in file_history without
-# reshuffling it, so F12 can step forward again through the same order.
-macro history_back
-	if dirty
-		macro_run notify_unsaved_changes
-	else
-		int last_history_entry = len(file_history) - 1
-		if history_selected < last_history_entry
-			history_selected = history_selected + 1
-			FileEntry selected = file_history at history_selected
-			(path, is_dir) in selected
-			if not is_dir
-				macro_run load_file_into_buffer
-
-# F12 -- step forward toward the most-recently-visited file in file_history.
-macro history_forward
-	if dirty
-		macro_run notify_unsaved_changes
-	else
-		if history_selected > 0
-			history_selected = history_selected - 1
-			FileEntry selected = file_history at history_selected
-			(path, is_dir) in selected
-			if not is_dir
-				macro_run load_file_into_buffer
 
 # Opens the selected file, or toggles expand/collapse on the selected directory.
 # Must decide which single action to take from one fresh read up front --

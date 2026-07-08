@@ -42,10 +42,6 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 	else if kind is "function_key"
 		if chr is "1"
 			kind = "browse_toggle"
-		else if chr is "9"
-			kind = "history_back"
-		else if chr is "12"
-			kind = "history_forward"
 
 	translated as key with (kind)
 	return translated

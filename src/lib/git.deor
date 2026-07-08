@@ -39,6 +39,20 @@ fn string g_raw_status(string repo_path)
 			.unwrap_or_default()
 
 
+# Added to know whether to show the <GIT> section in the sidebar at all
+# (vs. showing "<GIT> clean" for a repo with no changes) -- g_status/
+# g_raw_status can't tell "not a repo" apart from "repo, no changes" since
+# both just come back as an empty map.
+fn bool g_is_repo(string repo_path)
+	rust
+		std::process::Command::new("git")
+			.args(["rev-parse", "--is-inside-work-tree"])
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| output.status.success())
+			.unwrap_or(false)
+
+
 # "staged_edited" is a staged file with further worktree edits on top
 # (git's "MM" case) -- kept distinct from plain "staged" so the browser can
 # flag it, since both would otherwise render identically green with no
@@ -315,38 +329,6 @@ fn entryList g_changed_entries(StringMap git_map)
 		items at end = entry
 
 	return g_sort_entries_by_path(items)
-
-
-# Reorders `entries` so any that appear in `history` come first, most
-# recently opened first (recency = position in history) -- entries that
-# have never been opened keep their existing relative order at the tail
-# (stable). Lets the file browser's merged Recent/Git column show
-# git-changed files "ordered by recent" without needing the git status map
-# again, so it can be re-applied to git_changes right after file_history
-# changes (see track_file_history) as well as when the browser refreshes.
-fn entryList g_reorder_by_recency(entryList entries, entryList history)
-	stringList placed = empty
-	entryList result = empty
-
-	for hist_entry in history
-		(path) in hist_entry
-		string hist_path = path
-		if l_string_contains(placed, hist_path)
-			continue
-
-		for entry in entries
-			(path) in entry
-			if path is hist_path
-				result at end = entry
-				placed at end = hist_path
-				break
-
-	for entry in entries
-		(path) in entry
-		if not l_string_contains(placed, path)
-			result at end = entry
-
-	return result
 
 
 # Strips a leading "./" so a FileEntry.path (always rooted at the browse

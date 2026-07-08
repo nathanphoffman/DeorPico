@@ -108,4 +108,3 @@ macro browse_filter_enter
 		path as full_path
 		browsing = false
 		macro_run load_file_into_buffer
-		macro_run track_file_history

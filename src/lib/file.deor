@@ -52,23 +52,6 @@ fn string f_basename(string path)
 	rust
 		std::path::Path::new(&path).file_name().and_then(|n| n.to_str()).unwrap_or(&path).to_string()
 
-# Moves (or inserts) `new_entry` to the front of `history`, keeping at most
-# `max_len` entries -- a file re-opened from history jumps back to the top
-# instead of appearing twice.
-fn entryList e_history_push(entryList history, FileEntry new_entry, int max_len)
-	rust
-		{
-			let mut result: Vec<FileEntry> = Vec::new();
-			result.push(new_entry.clone());
-			for entry in history.into_iter() {
-				if entry.path != new_entry.path {
-					result.push(entry);
-				}
-			}
-			result.truncate(max_len as usize);
-			result
-		}
-
 fn entryList e_remove_children(entryList entries, int at_index, int min_depth)
 	rust
 		{
@@ -95,8 +78,8 @@ fn entryList e_remove_at(entryList entries, int at_index)
 		}
 
 # Drops every entry matching `path` -- used after ^Backspace deletes a file
-# from disk, to purge it from browse_entries/file_history/git_changes alike
-# without needing each list's index (see remove_deleted_entry).
+# from disk, to purge it from browse_entries without needing its index (see
+# remove_deleted_entry).
 fn entryList e_remove_by_path(entryList entries, string path)
 	rust
 		{

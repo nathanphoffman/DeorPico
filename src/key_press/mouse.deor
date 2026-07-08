@@ -72,9 +72,8 @@ macro mouse_drag_main
 	cursor_col = clicked_col
 
 # Click in the file browser -- files pane opens files / expands-collapses
-# directories; the merged Recent/Git pane opens whichever recent or
-# git-changed file was clicked. Layout (including the "Recent"/"Git" header
-# rows) matches renderer/rust_browser.deor.
+# directories; the Git pane opens whichever git-changed file was clicked.
+# Layout (including the "Git" header row) matches renderer/rust_browser.deor.
 macro mouse_down_browser
 	macro_run use_consts
 	TermSize size = xt_size()
@@ -98,22 +97,11 @@ macro mouse_down_browser
 			browser_focus = Files
 			macro_run browse_activate
 	else
-		int recent_count = browser_recent_count(len(file_history))
-		int recent_slot_rows = recent_count
-		if recent_slot_rows < 1
-			recent_slot_rows = 1
-		int git_header_row = recent_slot_rows + 1
-
-		if row > 0 and row <= recent_count
-			int idx = row - 1
-			if idx < len(file_history)
-				recent_git_selected = idx
-				browser_focus = RecentGit
-				macro_run recent_git_enter
-		else if row > git_header_row
+		int git_header_row = 0
+		if row > git_header_row
 			int idx = git_scroll_row + (row - git_header_row - 1)
 			if idx < len(git_changes)
-				recent_git_selected = recent_count + idx
+				recent_git_selected = idx
 				browser_focus = RecentGit
 				macro_run recent_git_enter
 

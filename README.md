@@ -17,7 +17,15 @@ This is software is licensed under the GPLv3, see: License.md
 ---
 How To Install
 
-These instructions are only for Linux at this time because it is tested only for that platform, it may work on other Unix systems like Mac but is untested:
+These instructions are only for Linux at this time because it is tested only for that platform, it may work on other Unix systems like Mac but is untested.
+
+Quick install (requires git and Rust/cargo already installed):
+```
+curl -sSf https://raw.githubusercontent.com/nathanphoffman/DeorPico/main/setup/install.sh | sh
+```
+This clones the repo to `~/.local/share/DeorPico` (override with `DEOR_PICO_DIR`), installs `just` and `deor` if missing, and builds/installs `dpico`.
+
+Manual install:
 1) Clone the repository
 2) ```cd``` to the root of the repository ```cd DeorPico```
 3) Run the command ```just install```
