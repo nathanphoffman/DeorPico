@@ -1,0 +1,26 @@
+# Fixed-height gray popup showing the raw stdout+stderr of the last
+# completed lint run (ctrl+e) -- output beyond LINT_POPUP_HEIGHT lines, or
+# wider than the terminal, is simply cut off rather than made scrollable.
+fn string editor_render_lint_output(stringList lint_output, int max_visible_columns)
+	macro_run use_ansi_codes
+	macro_run use_consts
+
+	int output_line_count = len(lint_output)
+	string popup = ""
+
+	for popup_row in range(LINT_POPUP_HEIGHT)
+		string line_text = ""
+		if output_line_count is 0
+			if popup_row is 0
+				line_text = "(no lint output yet -- run a save with a lint command configured)"
+		else if popup_row < output_line_count
+			line_text = lint_output at popup_row
+
+		if len(line_text) > max_visible_columns
+			int truncate_start = 0
+			line_text = s_substring(line_text, truncate_start, max_visible_columns)
+
+		string line_padded = s_pad_right(line_text, max_visible_columns)
+		popup = s_join([popup, ANSI_STATUS_BG, line_padded, ANSI_RESET, ANSI_CRLF])
+
+	return popup

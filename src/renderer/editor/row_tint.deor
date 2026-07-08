@@ -1,0 +1,47 @@
+fn bool editor_row_has_match(matchList search_matches, int target_row)
+	for search_match in search_matches
+		(row) in search_match
+		if row is target_row
+			return true
+
+	return false
+
+
+# Alt+letter quick-search tints the whole row a match falls on, rather than
+# highlighting individual matched columns -- padded out to the full text
+# width so the tint isn't cut short by lines shorter than the terminal.
+# Syntax highlighting embeds a full reset after every colored token, which
+# would otherwise cancel our background partway through the line -- re-assert
+# it after each one so the tint survives every syntax-colored segment.
+fn string editor_tint_search_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
+	macro_run use_ansi_codes
+
+	string tint_reset_combo = s_join([ANSI_RESET, ANSI_SEARCH_TINT])
+	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)
+
+	int fill_width = text_visible_columns - rendered_visible_cols
+	if fill_width < 0
+		fill_width = 0
+
+	string space = " "
+	string fill = s_repeat(space, fill_width)
+
+	return s_join([ANSI_SEARCH_TINT, patched_line, fill, ANSI_RESET])
+
+
+# Same tint mechanism as editor_tint_search_row, dark orange instead --
+# tags a row flagged by the background lint/build job instead of a search hit.
+fn string editor_tint_issue_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
+	macro_run use_ansi_codes
+
+	string tint_reset_combo = s_join([ANSI_RESET, ANSI_ISSUE_TINT])
+	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)
+
+	int fill_width = text_visible_columns - rendered_visible_cols
+	if fill_width < 0
+		fill_width = 0
+
+	string space = " "
+	string fill = s_repeat(space, fill_width)
+
+	return s_join([ANSI_ISSUE_TINT, patched_line, fill, ANSI_RESET])

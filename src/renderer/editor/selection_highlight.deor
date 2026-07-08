@@ -1,0 +1,68 @@
+struct SelectionRange
+	bool has_selection
+	int start_row
+	int start_col
+	int end_row
+	int end_col
+
+struct RowHighlight
+	int hl_start
+	int hl_end
+
+
+# The active selection is anchored wherever shift+arrow started and extends
+# to the current cursor position, which can land before OR after the anchor
+# -- this normalizes the two into a start/end range so rendering never has
+# to care which direction the user selected in.
+# Columns come in already converted to on-screen visual columns (see
+# s_visual_col) rather than raw character indices -- raw cursor_col/
+# sel_anchor_col count a tab as one character, but render_visible_line
+# counts on-screen columns after tabs are expanded, so comparing raw
+# columns against those would shift the highlight horizontally on any row
+# with a leading tab.
+fn SelectionRange editor_selection_range(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
+	(core, selection) in state
+	(cursor_row) in core
+	(has_selection, sel_anchor_row) in selection
+
+	bool anchor_first = sel_anchor_row < cursor_row or (sel_anchor_row is cursor_row and sel_anchor_visual_col <= cursor_visual_col)
+
+	int start_row = cursor_row
+	int start_col = cursor_visual_col
+	int end_row = sel_anchor_row
+	int end_col = sel_anchor_visual_col
+	if anchor_first
+		start_row = sel_anchor_row
+		start_col = sel_anchor_visual_col
+		end_row = cursor_row
+		end_col = cursor_visual_col
+
+	SelectionRange sel_range = (has_selection, start_row, start_col, end_row, end_col)
+	return sel_range
+
+
+# A row entirely outside the selection gets no highlight (-1/-1), a row
+# entirely inside it is highlighted end-to-end, and the first/last row of
+# the selection are only highlighted from/to the actual anchor or cursor
+# column. -1 is Deor's usual "not present" sentinel (see s_index_of);
+# ROW_END_UNBOUNDED stands in for Rust's usize::MAX, since it only ever gets
+# compared against a visible-column count far below it.
+fn RowHighlight editor_row_highlight(SelectionRange sel_range, int row)
+	(has_selection, start_row, start_col, end_row, end_col) in sel_range
+	const int ROW_END_UNBOUNDED = 1_000_000_000
+
+	int hl_start = 0 - 1
+	int hl_end = 0 - 1
+
+	bool in_range = has_selection and row >= start_row and row <= end_row
+	if in_range
+		hl_start = 0
+		if row is start_row
+			hl_start = start_col
+
+		hl_end = ROW_END_UNBOUNDED
+		if row is end_row
+			hl_end = end_col
+
+	RowHighlight highlight = (hl_start, hl_end)
+	return highlight

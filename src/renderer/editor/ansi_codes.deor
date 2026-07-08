@@ -1,0 +1,15 @@
+# Shared ANSI building blocks for the pure-Deor parts of rendering below.
+# xt_esc() is the one piece of these that Deor genuinely can't spell as a
+# string literal (no \x1b escape) -- everything built from it here is
+# ordinary string concatenation.
+macro use_ansi_codes
+	string esc = xt_esc()
+	const string ANSI_CRLF = xt_crlf()
+	const string ANSI_CLEAR_SCREEN = s_join([esc, "[H", esc, "[2J"])
+	const string ANSI_RESET = s_join([esc, "[0m"])
+	const string ANSI_SEARCH_TINT = s_join([esc, "[48;5;236m"])
+	const string ANSI_ISSUE_TINT = s_join([esc, "[48;5;130m"])
+	const string ANSI_STATUS_BG = s_join([esc, "[48;5;240m"])
+	const string ANSI_ERROR_BG = s_join([esc, "[48;5;52m"])
+	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])
+	const string ANSI_REVERSE_OFF = s_join([esc, "[27m"])

@@ -1,6 +1,6 @@
 import "src/lib/file.deor"
 import "src/consts.deor"
-import "src/renderer/editor/editor_render.deor"
+import "src/renderer/editor/gutter.deor"
 
 # The one authoritative description of how the main editor view's screen
 # space is divided for a given frame: gutter width, whether the git-diff

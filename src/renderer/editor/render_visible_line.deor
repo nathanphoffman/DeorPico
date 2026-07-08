@@ -1,0 +1,66 @@
+struct RenderedLine
+	string text
+	int visible_cols
+
+# Renders one line to at most `max_visible_columns` on-screen columns,
+# wrapping the half-open range [highlight.hl_start, highlight.hl_end) (in
+# visible-column terms) in reverse video. Escape sequences already embedded
+# by syntax highlighting are copied through untouched and never counted as
+# visible columns, so both truncation and the highlight land on the correct
+# visual column instead of a raw byte offset. Syntax highlighting wraps each
+# colored token in its own "\x1b[0m" reset, which also cancels our
+# reverse-video selection if it was turned on earlier in the line --
+# re-assert it right after so the selection survives every syntax-colored
+# token it spans.
+fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHighlight highlight)
+	macro_run use_ansi_codes
+	(hl_start, hl_end) in highlight
+
+    const string ANSI_ESCAPE_CHARACTER = "m"
+
+	stringList chars = s_chars(line)
+	int char_count = len(chars)
+	int idx = 0
+	stringList text_parts = empty
+	int visible_cols = 0
+	bool highlight_open = false
+
+	for if idx < char_count
+		string current_char = chars at idx
+
+		if current_char is esc
+			stringList escape_parts = empty
+			escape_parts at end = current_char
+			idx = idx + 1
+			for if idx < char_count
+				string next_char = chars at idx
+				escape_parts at end = next_char
+				idx = idx + 1
+				if next_char is ANSI_ESCAPE_CHARACTER
+					break
+
+			string escape_seq = s_join(escape_parts)
+			text_parts at end = escape_seq
+			if highlight_open and escape_seq is ANSI_RESET
+				text_parts at end = ANSI_REVERSE_ON
+			continue
+
+		if visible_cols >= max_visible_columns
+			break
+
+		if hl_start is visible_cols and not highlight_open
+			text_parts at end = ANSI_REVERSE_ON
+			highlight_open = true
+		if hl_end is visible_cols and highlight_open
+			text_parts at end = ANSI_REVERSE_OFF
+			highlight_open = false
+
+		text_parts at end = current_char
+		visible_cols = visible_cols + 1
+		idx = idx + 1
+
+	if highlight_open
+		text_parts at end = ANSI_REVERSE_OFF
+
+	string text = s_join(text_parts)
+	return (text, visible_cols)

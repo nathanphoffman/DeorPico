@@ -55,6 +55,8 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 Minimum Viable:
 
+- Breakout sidebar into its own folder
+
 - More organization in the morning
 
 - Remove the F1 overlay and add git changes to a flat list in a folder that can be expanded, obviously make it look a bit different or something to differentiate it
@@ -65,6 +67,7 @@ Minimum Viable:
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
+- Set the cursor to the position of a file if I selected it from the git view -- or maybe it doesnt matter if we put the git view in the main view?
 
 ## Nest For AI
 
