@@ -60,33 +60,39 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Git diff does not lock sidebar any longer
 - Done: Finding out why the last item of the browser is cut off
 
+- Pair with AI
+ - Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
+ - F5 should run while I am in the editor view
+ - If page down or up is pressed, auto close the sidebar if it is open
+ - Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
+ - Any file more than 2000 lines long we should prevent from opening maybe?
 
-If page down or up is pressed, auto close the sidebar if it is open
+Probably better done by AI, required items:
+---
+Working: wrapping on ctrl + w, wrapping fix
 
-Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
+- We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
+Instead make a file that is both staged and unstaged
+show twice in the list as two different highlights.  Clicking the unstaged highlighted one will show 
+just unstaged git diff, clicking the staged 
+highlighted one will just show staged diff.  If either reverts to normal view, it will show the current 
+file as is and update the cursor to that path 
+in the directory (the normal file). In the directory listing the file should show twice as well in two different colors. 
+Make sure the unstaged one is the only one that can be marked for deletion, I think that makes sense?  Then when staged 
+it will update accordingly to show a deletion is staged.
 
-Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
-
-Any file more than 2000 lines long we should prevent from opening maybe?
+It is a possible there could be an issue with scrolling to the end of a file -- just scrolling best_practices crashes in the 
+DeorLang
 
 ---
-
-- We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  Instead make a file that is both staged 
-show twice in the list as two different highlights.  Clicking the unstaged highlighted one will show just unstaged git diff, clicking the staged 
-highlighted one will just show staged diff.  If either reverts to normal view, it will show the current file as is and update the cursor to that path 
-in the directory (the normal file). In the directory listing the file should show a new color as a yellow-green if both conditions are applied
+Lower Priority
+---
 
 - Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
 (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
 
-- We should add a keyboard key mapping for wrap/unwrap of content ctrl + w? 
-
 - The git minimap at the bottom seems to have spaces between green bars on new files / fully edited content, shouldn't it be a solid green bar across the 
 whole bottom?
-
----
-Not Needed for MVP
----
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
