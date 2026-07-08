@@ -7,7 +7,7 @@
 # ones that do.
 fn string editor_status_shortcuts(bool has_selection, bool sidebar_focused)
 	if sidebar_focused
-		return "^R new file  ^K delete  ^U discard changes"
+		return "^A stage/unstage  ^R new file  ^K delete  ^U discard changes  : filter"
 
 	string selection_hint = ""
 	if has_selection

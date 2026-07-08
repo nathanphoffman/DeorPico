@@ -4,7 +4,7 @@ A text editor created by Nathan Hoffman in the language he made Deor: the first 
 
 The text editor is a terminal editor with mouse-support, that tries to include most features found in other editors including:
 - Basic git support (stage, unstage, git file highlighting, git diff views, and commit)
-- A file browser (a sidebar and overlay)
+- A file browser (a persistent sidebar with a git-changes section and a name/content filter)
 - Syntax highlighting
 - Syntax checking (using regular expressions on the terminal output matching to line numbers)
 - Mouse support (but also fully native keyboard support as well for mouse-less systems)

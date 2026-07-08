@@ -6,7 +6,7 @@ import "src/consts.deor"
 import "src/renderer/browser/browser.deor"
 import "src/renderer/editor/layout.deor"
 
-# ^B/F1 -- moves keyboard focus between the always-visible Files sidebar and
+# F1 -- moves keyboard focus between the always-visible Files sidebar and
 # the editor. The sidebar widens while focused (see SIDEBAR_WIDTH_FOCUSED)
 # to make room for long names, then shrinks back once focus returns.
 macro toggle_sidebar
@@ -45,9 +45,9 @@ macro handle_sidebar_focus_mode
 		macro_run sidebar_nav_up
 	else if kind is "down"
 		macro_run sidebar_nav_down
-	else if kind is "left"
+	else if kind is "left" and not sidebar_on_git
 		macro_run browse_left
-	else if kind is "right"
+	else if kind is "right" and not sidebar_on_git
 		macro_run browse_right
 	else if kind is "char" and chr is ":" and not sidebar_on_git
 		macro_run start_browse_filter
@@ -61,7 +61,7 @@ macro handle_sidebar_focus_mode
 		macro_run sidebar_delete_entry
 	else if kind is "discard_git_changes"
 		macro_run sidebar_discard_git_changes
-	else if kind is "create_file"
+	else if kind is "create_file" and not sidebar_on_git
 		macro_run start_create_file
 	else if kind is "escape"
 		sidebar_focused = false
@@ -124,11 +124,15 @@ macro sidebar_nav_up
 	else
 		browse_selected = browse_selected - 1
 		if browse_selected < 0
+			# browse_selected must stay a valid Files-tree index even while
+			# crossing into the <GIT> section -- browse_left/browse_right/
+			# start_create_file read it directly without checking
+			# sidebar_on_git, and previously this left it at -1, crashing
+			# the first time one of those ran.
+			browse_selected = 0
 			if len(git_changes) > 0
 				sidebar_on_git = true
 				git_selected = len(git_changes) - 1
-			else
-				browse_selected = 0
 
 	macro_run sidebar_scroll_follow
 
@@ -242,7 +246,7 @@ struct SidebarRowInput
 
 # Red thin-line box drawn around the sidebar while it has keyboard focus --
 # the widened width (see SIDEBAR_WIDTH_FOCUSED) is subtle on its own, so
-# mouse users get an explicit cue that ^B just changed something rather than
+# mouse users get an explicit cue that F1 just changed something rather than
 # the tree spontaneously growing. Two columns of the normal content width
 # are given up to the left/right bars; the top/bottom rows are replaced
 # outright by a horizontal rule (see is_top_row/is_bottom_row below).

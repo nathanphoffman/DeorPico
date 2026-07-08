@@ -27,11 +27,11 @@ struct BrowserState
 	int browse_scroll_row
 	string browse_dir
 
-	# True while ^B/F1 has moved keyboard focus onto the sidebar -- up/down/
+	# True while F1 has moved keyboard focus onto the sidebar -- up/down/
 	# left/right/enter navigate and open files in the tree instead of moving
 	# the cursor, and the sidebar renders wider (SIDEBAR_WIDTH_FOCUSED) to
 	# make room for long names. Cleared automatically after opening a file,
-	# or by pressing ^B/F1/Esc again.
+	# or by pressing F1/Esc again.
 	bool sidebar_focused
 
 	# Whether browse_dir is inside a git repo at all -- decides whether the

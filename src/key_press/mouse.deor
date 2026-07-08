@@ -50,6 +50,12 @@ macro mouse_down_editor
 		int idx = browse_scroll_row + row - minimap_offset
 		sidebar_focused = true
 		macro_run sidebar_activate_index
+
+		# sidebar_key_activate drops focus after opening a file so keyboard
+		# Enter can start typing right away -- a mouse click should instead
+		# behave like F1 plus a selection: it stays focused so ^A/^K/^U can
+		# act on whatever was just clicked without a second click to refocus.
+		sidebar_focused = true
 	else
 		col = col - sidebar_width
 		sidebar_focused = false

@@ -20,7 +20,7 @@ macro use_consts
     # width is predictable frame to frame.
     const int SIDEBAR_WIDTH = 30
 
-    # Width the sidebar widens to while it has keyboard focus (^B) -- gives
+    # Width the sidebar widens to while it has keyboard focus (F1) -- gives
     # long file/directory names more room to display without truncation.
     const int SIDEBAR_WIDTH_FOCUSED = 46
 

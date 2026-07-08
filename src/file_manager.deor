@@ -21,7 +21,7 @@ macro initialize_browser
 	git_selected as 0
 
 	# The sidebar is always shown, so browse_entries/git_changes need their
-	# git-status up front rather than waiting for the first ^B/F1 press.
+	# git-status up front rather than waiting for the first F1 press.
 	StringMap initial_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, initial_git_map)
 	entryList git_changes = g_changed_entries(initial_git_map)

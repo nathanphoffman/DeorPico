@@ -68,7 +68,7 @@ import "src/renderer/editor/editor.deor"
 # shared file-browser row-rendering helpers, reused by the sidebar below
 import "src/renderer/browser/browser.deor"
 
-# persistent Files-tree sidebar (^B/F1) -- the only file browser
+# persistent Files-tree sidebar (F1) -- the only file browser
 import "src/renderer/editor/sidebar.deor"
 
 import "src/renderer/editor/rust_diff.deor"

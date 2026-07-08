@@ -16,7 +16,7 @@ macro start_browse_filter
 			error = false
 
 # Esc -- drops the filter and returns to the normal directory tree, which
-# was never touched while filtering (see rust_browser.deor).
+# was never touched while filtering.
 macro close_browse_filter
 	filter_active = false
 	filter_query = ""

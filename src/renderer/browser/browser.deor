@@ -90,7 +90,7 @@ fn string browser_select_wrap(string line, bool selected)
 
 
 # Wraps `line` in bold -- used for section headers like the sidebar's
-# <GIT> label.
+# <GIT> label, and for a name-match row in the ':' filter results.
 fn string browser_bold_wrap(string line)
 	macro_run use_browser_ansi_codes
 	return s_join([ANSI_BOLD_ON, line, ANSI_BOLD_OFF])

@@ -59,10 +59,11 @@ Working: removing F1 overlay, porting everything to sidebar, removing history --
 
 Current Work:
 
-- More organization in the morning
-
 - Should we add a refresh button?  Before toggling between F1 and back would refresh now that might not work? -- what auto refreshes today?
 
+- Allow git to be collapsable
+
+- Final Spot Review
 
 --- 
 Needed for MVP
