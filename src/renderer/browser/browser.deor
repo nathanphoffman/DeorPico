@@ -115,4 +115,3 @@ fn string browser_gutter(int visible_len, int width)
 	space as " "
 	return s_repeat(space, pad_len)
 
-

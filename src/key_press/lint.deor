@@ -1,47 +1,9 @@
-# Non-blocking -- runs on every editor_handle_key call, including synthetic
-# "tick" events (see xt_read_key's poll timeout), so a background lint job's
-# completion shows up on the very next loop iteration even if the user
-# hasn't pressed a key since saving.
+# Pass-through -- real logic lives in renderer/status/keypress/lint.deor
 macro apply_lint_poll
-	LintPoll poll = lr_poll(lint_runner)
-	(running, just_finished, output_lines) in poll
-	if just_finished
-		lint_running = false
-		regex_pattern as lint_regex
-		working_dir as lint_working_dir
-		current_file as filename
-		LintQuery query = (regex_pattern, working_dir, current_file)
-		issue_matches = lr_parse_issues(output_lines, query)
-		lint_output = output_lines
-		int issue_count = len(issue_matches)
-		count_str as c_int_to_string(issue_count)
-		if issue_count is 0
-			notice = "Lint: no issues"
-		else
-			prefix as "Lint: "
-			suffix as " issues"
-			stringList notice_parts = [prefix, count_str, suffix]
-			notice = s_join(notice_parts)
-		error = false
-	else if running
-		lint_running = true
+	macro_run apply_lint_poll_impl
 
-# ctrl+e -- shows the raw stdout+stderr from the last completed lint run, in
-# a fixed-height popup (see editor_render / LINT_POPUP_HEIGHT) rather than
-# just the summarized issue count in the status bar.
 macro open_lint_output
-	lint_output_visible = true
+	macro_run open_lint_output_impl
 
-macro close_lint_output
-	lint_output_visible = false
-
-# Keys handled while the lint output popup is open -- locks out normal
-# editing the same way handle_diff_mode does, so a stray keypress doesn't
-# edit the buffer underneath the popup.
 macro handle_lint_output_mode
-	if kind is "escape"
-		macro_run close_lint_output
-	else if kind is "lint_output_toggle"
-		macro_run close_lint_output
-	else if kind is "quit"
-		macro_run close_lint_output
+	macro_run handle_lint_output_mode_impl

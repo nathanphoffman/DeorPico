@@ -1,6 +1,3 @@
-
+# Pass-through -- real logic lives in renderer/editor/keypress/line_numbers.deor
 macro toggle_line_numbers
-	if show_line_numbers
-		show_line_numbers = false
-	else
-		show_line_numbers = true
+	macro_run toggle_line_numbers_impl

@@ -1,6 +1,6 @@
+# Pass-through -- real logic lives in renderer/editor/keypress/up.deor
 macro key_up
-	cursor_row = cursor_row - 1
+	macro_run key_up_impl
 
 macro key_up_ctrl
-    macro_run use_consts
-	cursor_row = cursor_row - CTRL_ARROW_Y_AMOUNT
+	macro_run key_up_ctrl_impl

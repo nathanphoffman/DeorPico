@@ -1,0 +1,20 @@
+macro move_right
+    for idx in range(HORIZONTAL_MOVE)
+		string cur_line = lines at cursor_row
+		int cur_len = len(cur_line)
+		int last_row = len(lines) - 1
+		if cursor_col < cur_len
+			cursor_col = cursor_col + 1
+		else if cursor_row < last_row
+			cursor_row = cursor_row + 1
+			cursor_col = 0
+
+# Pass-through stubs live at key_press/right.deor.
+macro key_right_impl
+	const int HORIZONTAL_MOVE = 1
+	macro_run move_right
+
+macro key_right_ctrl_impl
+    macro_run use_consts
+    const int HORIZONTAL_MOVE = CTRL_ARROW_X_AMOUNT
+	macro_run move_right

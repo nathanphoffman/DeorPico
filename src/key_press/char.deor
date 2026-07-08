@@ -1,4 +1,3 @@
+# Pass-through -- real logic lives in renderer/editor/keypress/char.deor
 macro key_char
-	macro_run input_key
-	cursor_col = cursor_col + 1
-	dirty = true
+	macro_run key_char_impl

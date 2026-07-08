@@ -1,20 +1,6 @@
-
-macro move_left
-    for idx in range(HORIZONTAL_MOVE)
-        if cursor_col > 0
-                cursor_col = cursor_col - 1
-        # wraps to the line above
-        else if cursor_row > 0
-                cursor_row = cursor_row - 1
-                string new_line = lines at cursor_row
-                cursor_col = len(new_line)
-
+# Pass-through -- real logic lives in renderer/editor/keypress/left.deor
 macro key_left
-    const int HORIZONTAL_MOVE = 1
-    macro_run move_left
+	macro_run key_left_impl
 
 macro key_left_ctrl
-    macro_run use_consts
-    const int HORIZONTAL_MOVE = CTRL_ARROW_X_AMOUNT
-    macro_run move_left
-    
+	macro_run key_left_ctrl_impl

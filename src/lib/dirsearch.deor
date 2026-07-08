@@ -12,7 +12,7 @@ struct FilterOutcome
 
 # Non-recursive: direct children of `dir` only, matched by case-insensitive
 # substring in the file name -- used while the filter query is under 5
-# characters (see key_press/browse_filter.deor).
+# characters (see renderer/browser/keypress/browse_filter.deor).
 fn filterMatchList x_filter_shallow(string dir, string query)
 	rust
 		{

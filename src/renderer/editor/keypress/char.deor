@@ -1,0 +1,5 @@
+# Pass-through stub lives at key_press/char.deor.
+macro key_char_impl
+	macro_run input_key
+	cursor_col = cursor_col + 1
+	dirty = true

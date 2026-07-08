@@ -1,0 +1,7 @@
+# Pass-through stubs live at key_press/down.deor.
+macro key_down_impl
+	cursor_row = cursor_row + 1
+
+macro key_down_ctrl_impl
+    macro_run use_consts
+	cursor_row = cursor_row + CTRL_ARROW_Y_AMOUNT

@@ -1,0 +1,7 @@
+
+# Pass-through stub lives at key_press/line_numbers.deor.
+macro toggle_line_numbers_impl
+	if show_line_numbers
+		show_line_numbers = false
+	else
+		show_line_numbers = true

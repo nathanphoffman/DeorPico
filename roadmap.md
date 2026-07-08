@@ -61,15 +61,25 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Finding out why the last item of the browser is cut off
 
 - Pair with AI
+ - ctrl + r should allow me to create a new folder (dir) or move (mv) commands
  - Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
  - F5 should run while I am in the editor view
  - If page down or up is pressed, auto close the sidebar if it is open
  - Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
  - Any file more than 2000 lines long we should prevent from opening maybe?
-
+ - When the editor starts up the directory sidebar should be selected
+ 
 Probably better done by AI, required items:
 ---
-Working: wrapping on ctrl + w, wrapping fix
+On any ctrl + s we should refresh the git directory listing -- so we see updates to git highlighting / entries
+
+Performance of big files, even just 400 lines or so can really slow performance when scrolling, typing, selecting, etc
+
+File search results should have mouse support
+
+Sometimes selection seem to get overwhelmed and buggy
+
+For wrapping text can we do something
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
 Instead make a file that is both staged and unstaged
@@ -87,6 +97,8 @@ DeorLang
 ---
 Lower Priority
 ---
+ - Add an extra space to the bottom of the file browser history, so it always scrolls if it looks close to the bottom 
+so users know there is nothing missing if they scroll down
 
 - Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
 (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
@@ -96,6 +108,8 @@ whole bottom?
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
+
+- Allow arrow keys to work in ctrl + r
 
 ## V2 Longer Term:
 working on: final pass to make sure rust is in deor

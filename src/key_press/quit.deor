@@ -1,13 +1,3 @@
+# Pass-through -- real logic lives in renderer/editor/keypress/quit.deor
 macro key_quit
-	if dirty
-		macro_run notify_unsaved_changes
-	else
-		done = true
-		empty_cmd as ""
-		lr_run(lint_runner, empty_cmd, lint_working_dir)
-
-# Shown when quitting or opening another file is blocked by unsaved changes --
-# ^Del (discard_unsaved_changes) clears dirty so the blocked action can proceed.
-macro notify_unsaved_changes
-	notice = "Unsaved changes -- ^S save or ^Del discard"
-	error = true
+	macro_run key_quit_impl

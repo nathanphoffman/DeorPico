@@ -1,0 +1,107 @@
+# Shared by mouse_down/mouse_drag in the main text view -- maps a raw
+# terminal (col, row) click into buffer coordinates, using the exact same
+# EditorLayout the renderer computed for this frame (see layout.deor) so a
+# click always resolves to what's actually drawn.
+macro locate_mouse_in_buffer
+	macro_run use_consts
+	int total_line_count = len(lines)
+
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(gutter_width, minimap_offset) in layout
+
+    # row is the 0-indexed terminal row of the click; when the git-diff
+	# minimap is showing it occupies screen row 0, pushing the buffer's
+	# first visible row down to screen row 1 -- subtract that back out or
+	# every click resolves one buffer row below where it landed.
+	int clicked_row = scroll_row + row - minimap_offset
+	int last_row = total_line_count - 1
+	int zero_bound = 0
+	clicked_row = m_clamp(clicked_row, zero_bound, last_row)
+
+	int visual_col = col - gutter_width
+	if visual_col < 0
+		visual_col = 0
+
+	string clicked_line = lines at clicked_row
+	int clicked_col = s_char_index_from_visual_col(clicked_line, visual_col, TAB_WIDTH)
+
+# Routes a mouse_down in the main editing view to the sidebar (open file /
+# expand-collapse, see sidebar.deor) or the text buffer, depending on which
+# side of sidebar_width the click landed on -- computed from the exact same
+# EditorLayout the renderer used this frame, so a click always resolves to
+# what's actually drawn even while the sidebar is widened by keyboard focus.
+# A click also moves keyboard focus to whichever side it landed on, and
+# reassigns `col` before falling through to mouse_down_main so its own
+# gutter-relative math doesn't need to know the sidebar exists at all.
+# Pass-through stub lives at key_press/mouse.deor.
+macro mouse_down_editor_impl
+	macro_run use_consts
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(sidebar_width, minimap_offset) in layout
+
+	if col < sidebar_width
+		int idx = browse_scroll_row + row - minimap_offset
+		sidebar_focused = true
+		macro_run sidebar_activate_index
+
+		# sidebar_key_activate drops focus after opening a file so keyboard
+		# Enter can start typing right away -- a mouse click should instead
+		# behave like F1 plus a selection: it stays focused so ^A/^K/^U can
+		# act on whatever was just clicked without a second click to refocus.
+		sidebar_focused = true
+	else
+		col = col - sidebar_width
+		sidebar_focused = false
+		macro_run mouse_down_main
+
+macro mouse_down_main
+	macro_run locate_mouse_in_buffer
+	cursor_row = clicked_row
+	cursor_col = clicked_col
+	sel_anchor_row = clicked_row
+	sel_anchor_col = clicked_col
+	has_selection = false
+
+# Pass-through stub lives at key_press/mouse.deor.
+macro mouse_drag_main_impl
+	macro_run locate_mouse_in_buffer
+	if not has_selection
+		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
+			has_selection = true
+	cursor_row = clicked_row
+	cursor_col = clicked_col
+
+# Routes a mouse_down while the git-diff view is open to the sidebar (open
+# file / expand-collapse, same as mouse_down_editor) if the click landed
+# within it -- clicks on the read-only diff pane itself are ignored, there's
+# nothing there to place a cursor in. sidebar_width only ever depends on
+# sidebar_focused (see compute_editor_layout), so total_line_count/
+# show_line_numbers/lint_output_visible/diff_lines here don't need to match
+# what rust_diff.deor itself passes for its own has_minimap/view_rows math --
+# only sidebar_width is read out of `layout` below.
+# Pass-through stub lives at key_press/mouse.deor.
+macro mouse_down_diff_impl
+	macro_run use_consts
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int total_line_count = len(diff_lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(sidebar_width) in layout
+
+	if col < sidebar_width
+		int idx = browse_scroll_row + row
+		sidebar_focused = true
+		macro_run sidebar_activate_index
+
+		# Same as mouse_down_editor -- stay focused so ^A/^K/^U work on
+		# whatever was just clicked without a second click to refocus.
+		sidebar_focused = true

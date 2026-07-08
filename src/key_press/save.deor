@@ -1,14 +1,3 @@
+# Pass-through -- real logic lives in renderer/editor/keypress/save.deor
 macro key_save
-	nls as "\n"
-	string content = s_join_with(lines, nls)
-	bool did_save = f_write(filename, content)
-	dirty = false
-	notice = "Saved"
-	error = false
-	macro_run refresh_git_diff_lines
-	macro_run refresh_sidebar_git_status
-
-	if lint_command is not ""
-		lr_run(lint_runner, lint_command, lint_working_dir)
-		lint_running = true
-		notice = "Saved, linting..."
+	macro_run key_save_impl

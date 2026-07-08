@@ -1,8 +1,3 @@
+# Pass-through -- real logic lives in renderer/editor/keypress/tab.deor
 macro key_tab
-	if has_selection
-		macro_run tab_selection
-		dirty = true
-	else
-		macro_run input_key
-		cursor_col = cursor_col + 4
-		dirty = true
+	macro_run key_tab_impl
