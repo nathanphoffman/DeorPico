@@ -46,6 +46,8 @@ macro handle_sidebar_focus_mode
 		macro_run sidebar_stage_toggle
 	else if kind is "delete_entry"
 		macro_run sidebar_delete_entry
+	else if kind is "discard_git_changes"
+		macro_run sidebar_discard_git_changes
 	else if kind is "create_file"
 		macro_run start_create_file
 	else if kind is "escape"
@@ -72,6 +74,14 @@ macro sidebar_delete_entry
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir) in selected
 		macro_run file_delete_entry
+
+# ^U while the sidebar has keyboard focus -- see discard_git_changes_entry
+# in browse.deor.
+macro sidebar_discard_git_changes
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, git_status) in selected
+		macro_run discard_git_changes_entry
 
 macro sidebar_nav_up
 	browse_selected = browse_selected - 1

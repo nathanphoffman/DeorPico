@@ -402,6 +402,23 @@ fn bool g_unstage(string repo_path, string pathspec)
 			.unwrap_or(false)
 
 
+# Runs `git checkout HEAD -- <pathspec>` -- discards both the index and the
+# working tree back to the last commit in one shot (^U, see
+# discard_git_changes_entry). Unlike ^A stage/unstage, this is a one-way
+# door: there's no git history to fall back to for uncommitted changes, so
+# the caller requires a second confirming keypress on the same file first.
+# Also resurrects a tracked-but-deleted file, since HEAD still has it.
+fn bool g_discard(string repo_path, string pathspec)
+	rust
+		std::process::Command::new("git")
+			.args(["checkout", "HEAD", "--"])
+			.arg(&pathspec)
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| output.status.success())
+			.unwrap_or(false)
+
+
 struct DirGitSummary
 	bool has_staged
 	bool has_unstaged

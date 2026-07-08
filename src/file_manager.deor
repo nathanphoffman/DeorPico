@@ -32,8 +32,10 @@ macro initialize_browser
 	creating_file as false
 	new_file_name as ""
 	create_parent_dir as ""
+	pending_delete_path as ""
+	pending_discard_path as ""
 
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 
 macro initialize_diff
 	diffing as false

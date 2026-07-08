@@ -190,7 +190,7 @@ fn string editor_render_lint_output(stringList lint_output, int max_visible_colu
 # ones that do.
 fn string editor_status_shortcuts(bool has_selection, bool sidebar_focused)
 	if sidebar_focused
-		return "^R new file  ^K delete"
+		return "^R new file  ^K delete  ^U discard changes"
 
 	string selection_hint = ""
 	if has_selection

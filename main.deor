@@ -75,6 +75,16 @@ struct BrowserState
 	# until Enter confirms.
 	string create_parent_dir
 
+	# ^K delete / ^U discard-git-changes both require a second confirming
+	# keypress on the *same* path before actually doing anything, since
+	# neither is reliably recoverable (discard has no history to fall back
+	# on for uncommitted changes; delete only has the OS trash). Empty means
+	# not armed. Cleared by any other real key (see editor_handle_key) so an
+	# armed confirmation can't linger and get triggered by an unrelated
+	# later press of the same key on a different file.
+	string pending_delete_path
+	string pending_discard_path
+
 struct DiffState
 	# Git diff view (ctrl+d) state -- locks editing while true
 	bool diffing

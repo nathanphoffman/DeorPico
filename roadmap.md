@@ -48,18 +48,19 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: most rust is now in deor
 - Done: ctrl + b expands and contracts sidebar
 - Done: git can now be staged
+- Done: git files can now be deleted 
+- Done: deleted files show in git history and can be staged / unstaged
+- Done: 
 
-
-
-Working on git deletion of files - Add delete file and make file functionality  ctrl + backspace = delete; (deletes the highlighted file -> sends to trash not perma delete if possible)  ctrl + r: creates file in current directory (should pop the list downwards giving a blank cursor where a name can be typed and entered) -- on enter it creates file
-
+Adding git discard -- and double confirm for discard / delete   u/k
 
 Minimum Viable:
-- Checkout git deletion files, staged vs unstaged, restoring deleted?  I am a little confused how this behavior works
+
+- Allow git commit to be performed, ^m should toggle a git commit with currently staged files, a prompt should appear (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
-- Allow git commit to be performed, ^m should toggle a git commit with currently staged files, a prompt should appear (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
+
 
 
 ## Nest For AI

@@ -33,6 +33,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "create_file"
 		else if chr is "k"
 			kind = "delete_entry"
+		else if chr is "u"
+			kind = "discard_git_changes"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "home"

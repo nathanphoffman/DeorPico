@@ -49,6 +49,8 @@ macro handle_browse_mode
 		macro_run browse_stage_toggle
 	else if kind is "delete_entry"
 		macro_run browse_delete_entry
+	else if kind is "discard_git_changes"
+		macro_run browse_discard_git_changes
 	else if kind is "create_file" and browser_focus is Files
 		macro_run start_create_file
 	else if kind is "up" and browser_focus is RecentGit
@@ -220,7 +222,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers) in core
-	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir) in browser
+	(browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -245,6 +247,14 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 	# being cleared before the user's next notch arrives.
 	if kind is not "tick" and kind is not "mouse_scroll_up" and kind is not "mouse_scroll_down"
 		wheel_scrolled = false
+
+	# ^K/^U's confirm-on-second-press only counts the *very next* matching
+	# press on the same path -- any other real key in between (navigating
+	# away, typing, etc.) disarms it rather than letting it linger.
+	if kind is not "tick" and kind is not "delete_entry"
+		pending_delete_path = ""
+	if kind is not "tick" and kind is not "discard_git_changes"
+		pending_discard_path = ""
 
 	if kind is "browse_toggle"
 		macro_run toggle_browse
@@ -275,7 +285,7 @@ fn EditorState editor_handle_key(EditorState state, KeyEvent key)
 		macro_run back_stop
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers)
-	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir)
+	BrowserState browser = (browsing, browse_entries, browse_selected, browse_scroll_row, browse_dir, file_history, history_selected, git_changes, git_scroll_row, recent_git_selected, browser_focus, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)

@@ -82,9 +82,12 @@ macro browse_stage_toggle
 # currently selected) -- sends it to the OS trash rather than a permanent
 # delete, so a wrong keypress is still recoverable. A non-empty directory is
 # refused outright (recursing here would be far too easy to trigger by
-# accident); an empty one is trashed like a file. Deleting the file that's
-# currently open in the editor is allowed -- the in-memory buffer stays open
-# and just gets marked dirty, so ^S recreates it.
+# accident); an empty one needs no confirmation since there's nothing in it
+# to lose. A file requires a second ^K on the *same* path first (see
+# pending_delete_path/editor_handle_key) since the trash is the only
+# recovery path. Deleting the file that's currently open in the editor is
+# allowed -- the in-memory buffer stays open and just gets marked dirty, so
+# ^S recreates it.
 macro file_delete_entry
 	if is_dir
 		bool dir_empty = f_dir_is_empty(path)
@@ -100,8 +103,9 @@ macro file_delete_entry
 		else
 			notice = "Directory not empty"
 			error = true
-	else
+	else if pending_delete_path is path
 		bool trashed = f_trash(path)
+		pending_delete_path = ""
 		if trashed
 			if path is filename
 				dirty = true
@@ -111,6 +115,10 @@ macro file_delete_entry
 		else
 			notice = "Could not delete (trash unavailable?)"
 			error = true
+	else
+		pending_delete_path = path
+		notice = "Press ^K again to move this file to trash -- cannot be undone"
+		error = true
 
 # Removes the just-deleted `path` from browse_entries (it's gone from disk,
 # and that tree is otherwise never re-listed on its own) and reclamps the
@@ -152,6 +160,79 @@ macro browse_delete_entry
 				FileEntry selected = git_changes at git_index
 				(path, is_dir) in selected
 				macro_run file_delete_entry
+
+# ^U on `path`/`is_dir`/`git_status` (bound by the caller from whichever
+# entry is currently selected) -- discards all git-tracked changes to the
+# file, reverting it to HEAD (see g_discard). A no-op on a directory (too
+# broad to confirm meaningfully in one shot) and on a clean file (nothing to
+# discard). An untracked "new" file has no HEAD version to fall back to, so
+# discarding it means deleting it instead -- same trash-not-permanent
+# treatment as ^K, just under pending_discard_path's own confirmation rather
+# than sharing pending_delete_path (so arming one doesn't silently arm the
+# other). Anything else requires a second ^U on the same path first, since
+# unlike stage/unstage this can't be toggled back -- there's no git history
+# for uncommitted changes to fall back on.
+macro discard_git_changes_entry
+	if is_dir
+		notice = ""
+		error = false
+	else if git_status is ""
+		notice = "No changes to discard"
+		error = false
+	else if git_status is "new"
+		if pending_discard_path is path
+			bool trashed = f_trash(path)
+			pending_discard_path = ""
+			if trashed
+				macro_run remove_deleted_entry
+				notice = "Deleted untracked file"
+				error = false
+			else
+				notice = "Could not delete (trash unavailable?)"
+				error = true
+		else
+			pending_discard_path = path
+			notice = "Press ^U again to delete this untracked file -- cannot be undone"
+			error = true
+	else if pending_discard_path is path
+		string clean_path = g_relative_path(path)
+		bool discarded_ok = g_discard(browse_dir, clean_path)
+		pending_discard_path = ""
+		if discarded_ok
+			if path is filename
+				macro_run load_file_into_buffer
+			macro_run refresh_all_git_status
+			notice = "Discarded changes"
+			error = false
+		else
+			notice = "Could not discard changes"
+			error = true
+	else
+		pending_discard_path = path
+		notice = "Press ^U again to discard changes to this file -- cannot be undone"
+		error = true
+
+# ^U while the F1 browser is open -- same resolution as browse_stage_toggle/
+# browse_delete_entry.
+macro browse_discard_git_changes
+	if browser_focus is Files
+		if len(browse_entries) > 0
+			FileEntry selected = browse_entries at browse_selected
+			(path, is_dir, git_status) in selected
+			macro_run discard_git_changes_entry
+	else
+		int recent_count = browser_recent_count(len(file_history))
+		if recent_git_selected < recent_count
+			if len(file_history) > 0
+				FileEntry selected = file_history at recent_git_selected
+				(path, is_dir, git_status) in selected
+				macro_run discard_git_changes_entry
+		else
+			int git_index = recent_git_selected - recent_count
+			if git_index < len(git_changes)
+				FileEntry selected = git_changes at git_index
+				(path, is_dir, git_status) in selected
+				macro_run discard_git_changes_entry
 
 # ^R -- opens the inline "new file" prompt: a blank placeholder row is
 # spliced into browse_entries right where typing will land, and
