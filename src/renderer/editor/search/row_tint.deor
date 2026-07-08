@@ -1,11 +1,3 @@
-fn bool editor_row_has_match(matchList search_matches, int target_row)
-	for search_match in search_matches
-		(row) in search_match
-		if row is target_row
-			return true
-
-	return false
-
 
 # Alt+letter quick-search tints the whole row a match falls on, rather than
 # highlighting individual matched columns -- padded out to the full text

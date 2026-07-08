@@ -66,9 +66,10 @@ import "src/renderer/editor/ansi_codes.deor"
 import "src/renderer/editor/selection_highlight.deor"
 import "src/renderer/editor/render_visible_line.deor"
 import "src/renderer/editor/gutter.deor"
-import "src/renderer/editor/row_tint.deor"
+import "src/renderer/editor/search/row_tint.deor"
+import "src/renderer/editor/search/row_search.deor"
 import "src/renderer/editor/layout.deor"
-import "src/renderer/editor/deor_editor.deor"
+import "src/renderer/editor/editor_scroll.deor"
 
 # bottom-of-screen status bar row stack (status text, lint popup, git-diff
 # minimap) -- must be loaded before editor.deor, which macro_runs these

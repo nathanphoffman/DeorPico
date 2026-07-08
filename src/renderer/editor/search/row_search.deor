@@ -1,0 +1,7 @@
+fn bool editor_row_has_match(matchList search_matches, int target_row)
+	for search_match in search_matches
+		(row) in search_match
+		if row is target_row
+			return true
+
+	return false

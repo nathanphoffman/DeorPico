@@ -1,0 +1,31 @@
+fn EditorState editor_scroll(EditorState state)
+	(core, browser, diff, lint) in state
+	(lines, cursor_row, scroll_row, wheel_scrolled, show_line_numbers) in core
+	(sidebar_focused) in browser
+	(diff_lines) in diff
+	(lint_output_visible) in lint
+	TermSize size = xt_size()
+	(cols, rows) in size
+
+	# Must use the exact same EditorLayout editor_render computes (see
+	# layout.deor) -- otherwise this lets the cursor scroll past what's
+	# actually drawn, and the cursor/selection highlight ends up rendered a
+	# line off.
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	# wheel_scrolled is cleared in editor_handle_key, not here -- clearing it
+	# here would let a lint-poll "tick" frame (see xt_read_key) consume it
+	# before the user's next real wheel notch arrives, snapping the view
+	# back to the cursor mid-scroll.
+	if not wheel_scrolled
+		if cursor_row < scroll_row
+			scroll_row = cursor_row
+		else if cursor_row >= scroll_row + view_rows
+			scroll_row = cursor_row - view_rows + 1
+
+	BufferState core = core with (scroll_row)
+	new_state as state with (core)
+	return new_state
