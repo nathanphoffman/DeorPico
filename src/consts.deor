@@ -5,6 +5,7 @@ macro use_consts
     # highlighted lines for display -- used to convert a raw cursor_col
     # (one tab = one character) into the on-screen column (one tab = several).
     const int TAB_WIDTH = 4
+    const string TAB_STRING = "    "
 
     const int CTRL_ARROW_X_AMOUNT = 15
     const int CTRL_ARROW_Y_AMOUNT = 8
@@ -65,4 +66,3 @@ fn int sidebar_git_section_rows(bool is_git_repo, int git_count, bool git_collap
 	if git_count is 0
 		return 2
 	return 1 + git_count
-

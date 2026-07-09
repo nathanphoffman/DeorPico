@@ -1,4 +1,9 @@
 
+struct HighlightRange
+    int start_row
+    int end_row
+
+
 fn Highlighter initialize_highlighter(string ext)
     macro_run use_consts
     const string DEOR = "deor"
@@ -17,10 +22,6 @@ fn Highlighter initialize_highlighter(string ext)
 
     return highlighter
 
-
-struct HighlightRange
-    int start_row
-    int end_row
 
 # Colors only [start_row, end_row) -- the rows actually on screen this frame
 # -- instead of the whole file. Rows outside that range are left as raw text,

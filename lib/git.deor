@@ -1,8 +1,9 @@
-import "lib/file.deor"
-import "lib/map.deor"
-import "lib/string.deor"
-import "lib/term.deor"
 import "lib/list.deor" where T = string
+
+
+struct DirGitSummary
+	bool has_staged
+	bool has_unstaged
 
 shape intList = list of int
 
@@ -402,10 +403,6 @@ fn bool g_discard(string repo_path, string pathspec)
 			.map(|output| output.status.success())
 			.unwrap_or(false)
 
-
-struct DirGitSummary
-	bool has_staged
-	bool has_unstaged
 
 # Whether `dir_path` (already relative, no leading "./") has any staged
 # and/or unstaged changes anywhere under it -- decides whether ^A on a

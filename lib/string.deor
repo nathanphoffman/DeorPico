@@ -44,11 +44,6 @@ fn string s_char_at(string str, int idx)
 	rust
 		str.chars().nth(idx as usize).map(|c| c.to_string()).unwrap_or_default()
 
-# Splits a string into a list of single-character strings, letting callers
-# scan by index with `at` instead of calling s_char_at in a loop -- s_char_at
-# is O(n) per call (it walks from the start every time), so looping it would
-# turn an O(n) scan into O(n^2). Also gives an accurate character count via
-# len(), unlike len(str) which is the string's byte length.
 fn stringList s_chars(string str)
 	rust
 		str.chars().map(|c| c.to_string()).collect()
@@ -80,3 +75,7 @@ fn string s_trim_start(string str)
 fn string s_trim_end(string str)
 	rust
 		str.trim_end().to_string()
+
+fn stringList s_split_whitespace(string str)
+	rust
+		str.split_whitespace().map(|s| s.to_string()).collect()

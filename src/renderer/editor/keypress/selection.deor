@@ -26,9 +26,6 @@ macro start_or_extend_selection_impl
 		sel_anchor_col = cursor_col
 		has_selection = true
 
-fn bool clear_selection_impl()
-	return false
-
 macro key_select_all_impl
     cursor_row = 0
     cursor_col = 0
@@ -91,16 +88,17 @@ macro key_space_comment_selection_impl
 macro add_tab_to_selection
     for row_id in range(start_row, end_row)
 		string line = lines at row_id
-		line = "    " + line
+		line = s_join([TAB_STRING, line])
 		lines at row_id = line
 
 macro remove_tab_from_selection
     for row_id in range(start_row, end_row)
 		string line = lines at row_id
-		line = "    " + line
+		line = s_join([TAB_STRING, line])
 		lines at row_id = line
     
 macro tab_selection
+    macro_run use_consts
 	macro_run normalize_selection
 
 	if start_row < end_row
@@ -186,15 +184,6 @@ macro do_cut_impl
 		bool copied = cp_set(selection_text)
 		macro_run delete_selection
 
-# chr passed by value here (not read as a bare outer identifier) so this
-# clones instead of moving it -- do_paste_impl is inlined into a giant
-# shared function body where chr is read again by many later macros, and
-# a bare `clip_text = chr` reassignment moves it instead of cloning.
-fn string resolve_paste_text(string kind, string chr)
-	if kind is "paste_text"
-		return chr
-	return cp_get()
-
 macro do_paste_impl
 	macro_run push_undo_snapshot
 	if has_selection
@@ -251,3 +240,17 @@ macro do_paste_impl
 			cursor_col = len(last_clip)
 
 		dirty = true
+
+
+# chr passed by value here (not read as a bare outer identifier) so this
+# clones instead of moving it -- do_paste_impl is inlined into a giant
+# shared function body where chr is read again by many later macros, and
+# a bare `clip_text = chr` reassignment moves it instead of cloning.
+fn string resolve_paste_text(string kind, string chr)
+	if kind is "paste_text"
+		return chr
+	return cp_get()
+
+
+fn bool clear_selection_impl()
+	return false

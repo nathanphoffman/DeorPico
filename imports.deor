@@ -1,5 +1,8 @@
 # Everything depends on libs
 import "lib/file.deor"
+import "lib/file_extension.deor"
+
+import "lib/file_extension.deor"
 import "lib/string.deor"
 import "lib/math.deor"
 import "lib/convert.deor"
