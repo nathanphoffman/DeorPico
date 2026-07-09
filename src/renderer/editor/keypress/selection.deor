@@ -88,16 +88,30 @@ macro key_space_comment_selection_impl
 
 	dirty = true
 
+
+macro add_tab_to_selection
+    for row_id in range(start_row, end_row)
+		string line = lines at row_id
+		line = "    " + line
+		lines at row_id = line
+
+macro remove_tab_from_selection
+    for row_id in range(start_row, end_row)
+		string line = lines at row_id
+		line = "    " + line
+		lines at row_id = line
+    
 macro tab_selection
 	macro_run normalize_selection
 
 	if start_row < end_row
 		macro_run push_undo_snapshot
 
-	for row_id in range(start_row, end_row)
-		string line = lines at row_id
-		line = "    " + line
-		lines at row_id = line
+    if shift
+        macro_run remove_tab_from_selection
+    else
+        macro_run add_tab_to_selection
+
 
 macro delete_selection
 	macro_run normalize_selection

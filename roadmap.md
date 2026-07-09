@@ -67,9 +67,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: alt + click selection in
 - Done: Add ctrl + a To Select All
 - Done: alt search is fixed
-- Done: Slow Git Diff Scroll
+- Done: Fixed Slow Git Diff Scroll
+- Done: Large Files now process correctly
 
-Working on: - Any file more than 2000 lines long we should prevent from opening maybe?
+- Alt needs to support underscores
 
 - Implement back-indentation shift + tab
 
@@ -80,22 +81,18 @@ take action.
 
 - Auto close sidebar on page up or page down
 
-- Pair with AI
- 
- - When the editor starts up the directory sidebar should be selected
+- When the editor starts up the directory sidebar should be selected
  
 - Extract Sidebar into its own folder
 
-Probably better done by AI, required items:
----
 
-Performance of big files, even just 400 lines or so can really slow performance when scrolling, typing, selecting, etc
+---
+Work with AI
+---
 
 File search results should have mouse support
 
-Sometimes selection seem to get overwhelmed and buggy
-
-For wrapping text can we do something
+For wrapping text can we do something with ^w?
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
 Instead make a file that is both staged and unstaged
@@ -113,6 +110,9 @@ DeorLang
 ---
 Lower Priority
 ---
+- There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
+a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
+
 - Add paste event for better windows support
   - Fix worth considering: enable crossterm's bracketed-paste mode (EnableBracketedPaste in xt_raw_on,
   handle crossterm::event::Event::Paste(String) in xt_read_key) — many terminals (including Windows
