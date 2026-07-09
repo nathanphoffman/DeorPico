@@ -1,0 +1,28 @@
+
+# Computes where the new placeholder goes: appended at the root by
+# default, then overridden if something's highlighted -- a highlighted
+# directory becomes the parent (expanding it first if needed), a
+# highlighted file's parent directory is used instead.
+#
+# macro_run browse_right below is SHARED machinery (directory expand/
+# collapse, see browse.deor) reused all over the sidebar, not
+# create-specific -- left as a macro_run rather than duplicated.
+macro resolve_create_insert_target
+	int insert_index = 0
+	int insert_depth = 0
+	string parent_dir = browse_dir
+
+	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, depth, expanded) in selected
+
+		if is_dir
+			if not expanded
+				macro_run browse_right
+			insert_index = browse_selected + 1
+			insert_depth = depth + 1
+			parent_dir = path
+		else
+			insert_index = browse_selected + 1
+			insert_depth = depth
+			parent_dir = f_dirname(path)

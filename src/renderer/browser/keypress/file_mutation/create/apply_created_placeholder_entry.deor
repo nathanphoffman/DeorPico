@@ -1,0 +1,20 @@
+
+# Turns the placeholder row into its real entry, then clears the
+# name-entry prompt state and re-tags git status now that disk changed.
+# Deliberately plain (not macro_block): `path` is left declared here on
+# purpose so report_created_entry_result can reuse it for
+# load_file_into_buffer right after.
+#
+# macro_run reset_placeholder_state and macro_run refresh_all_git_status
+# below are SHARED machinery (see ../mutate.deor / ../browse.deor), reused
+# by move and rename too -- left as macro_run rather than duplicated.
+macro apply_created_placeholder_entry
+	FileEntry placeholder_entry = browse_entries at browse_selected
+	string name = entry_name
+	string path = full_path
+	bool is_dir = is_dir_request
+	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
+	browse_entries at browse_selected = real_entry
+
+	macro_run reset_placeholder_state
+	macro_run refresh_all_git_status

@@ -10,6 +10,8 @@
 
 # Defaults to appending at the root, then overridden by
 # apply_placeholder_target_from_selection if something's highlighted.
+
+
 macro resolve_placeholder_target
 	int insert_index = 0
 	int insert_depth = 0
@@ -51,7 +53,7 @@ macro build_placeholder_entry
 # input over to the name buffer. Leaves `notice` alone -- the caller sets
 # its own hint text right after this runs, since that copy is specific to
 # whichever flow (create/move/rename) is driving the prompt.
-macro enter_placeholder_edit_mode
+macro_block enter_placeholder_edit_mode
 	browse_selected = insert_index
 	if browse_selected < browse_scroll_row
 		browse_scroll_row = browse_selected

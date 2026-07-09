@@ -1,0 +1,15 @@
+
+# Builds a blank placeholder row and splices it into browse_entries at
+# the target spot computed by resolve_create_insert_target.
+macro_block insert_create_placeholder_row
+	string name = ""
+	string path = ""
+	bool is_dir = false
+	int depth = insert_depth
+	bool expanded = false
+	string git_status = ""
+	FileEntry placeholder = (name, path, is_dir, depth, expanded, git_status)
+
+	entryList one_entry = [placeholder]
+	int insert_at = insert_index - 1
+	browse_entries = e_insert_children(browse_entries, insert_at, one_entry)

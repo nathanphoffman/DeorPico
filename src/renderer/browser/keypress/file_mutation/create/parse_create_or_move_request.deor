@@ -1,0 +1,19 @@
+
+# Splits off the "dir X" / "mv X" prefixes (if any). "mv X" is a short
+# hand-off to the move feature and is handled entirely here; the
+# create/dir path continues through the leaves below (see
+# resolve_create_entry_name.deor onward).
+#
+# macro_run confirm_move_request below is SHARED machinery (the move
+# feature, see ../move_file.deor) -- left as a macro_run rather than
+# duplicated.
+macro parse_create_or_move_request
+	dir_prefix as "dir "
+	mv_prefix as "mv "
+	bool is_dir_request = s_starts_with(new_file_name, dir_prefix)
+	bool is_move_request = s_starts_with(new_file_name, mv_prefix)
+
+	if is_move_request
+		int mv_prefix_len = len(mv_prefix)
+		string move_query = s_substring(new_file_name, mv_prefix_len, name_len)
+		macro_run confirm_move_request

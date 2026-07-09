@@ -1,29 +1,42 @@
 
-# ^R -- opens the inline "new file" prompt: a blank placeholder row is
+# ^F -- opens the inline "new file" prompt: a blank placeholder row is
 # spliced into browse_entries right where typing will land, and
-# creating_file/new_file_name/create_parent_dir switch keyboard input over
-# to the name buffer (see confirm_create_file/cancel_placeholder). A
-# highlighted directory is expanded (if needed) and becomes the parent, with
-# the placeholder as its first child; a highlighted file's parent directory
-# is used instead, with the placeholder as its next sibling. The
-# placeholder/name-buffer mechanics themselves live in mutate.deor since
-# move_file.deor and rename_file.deor reuse them too -- the hint text below
-# is set here instead of there since it's specific to this create/dir/mv flow.
-macro start_create_file
-	macro_run resolve_placeholder_target
-	macro_run insert_placeholder_entry
-	macro_run enter_placeholder_edit_mode
+# creating_file/new_file_name/create_parent_dir switch keyboard input
+# over to the name buffer (see confirm_create_file below). A highlighted
+# directory is expanded (if needed) and becomes the parent, with the
+# placeholder as its first child; a highlighted file's parent directory
+# is used instead, with the placeholder as its next sibling.
+#
+# Flat by design: every macro_run below is a single leaf step (see
+# create/*.deor) that shares this macro's own scope instead of nesting
+# further create-specific macro calls -- read top to bottom.
+macro_block start_create_file
+	macro_run resolve_create_insert_target
+	macro_run insert_create_placeholder_row
+	macro_run enter_create_edit_mode
 	notice = "Enter New File Name and ENTER; Esc to cancel OR: Enter 'dir X' or 'mv X' to create a directory of X or move"
 
 # Enter while the create-file prompt is open -- validates the name isn't
-# empty, then hands off to parse_create_file_request (create/parse_create_file_request.deor)
-# to route "dir X" / "mv X" and drive the rest of the flow: resolving/
-# writing the entry (create/resolve_create_file_destination.deor) and
-# finalizing/reporting the result (create/finalize_created_entry.deor).
+# empty, then walks straight through the create/dir/mv flow: parsing the
+# "dir X"/"mv X" prefixes, resolving the final entry name, writing to
+# disk, and (on success) finalizing the placeholder row and reporting the
+# result.
+#
+# Flat by design, same as start_create_file above -- each macro_run is a
+# single leaf step (see create/*.deor), gated by plain ifs rather than
+# nested inside one another. Only "mv X" hands off elsewhere (to the
+# shared move feature, from inside parse_create_or_move_request).
 macro_block confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
 		notice = "File name can't be empty"
 		error = true
 	else
-		macro_run parse_create_file_request
+		macro_run parse_create_or_move_request
+		if not is_move_request
+			macro_run resolve_create_entry_name
+			if not error
+				macro_run write_create_entry_to_disk
+				if created
+					macro_run apply_created_placeholder_entry
+					macro_run report_created_entry_result

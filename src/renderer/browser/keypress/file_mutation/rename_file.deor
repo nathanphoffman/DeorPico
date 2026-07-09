@@ -1,3 +1,7 @@
 
 macro start_file_rename
     notice = "hi"
+    string parent_dir = browse_dir
+    #macro_run enter_placeholder_edit_mode
+    macro_run build_placeholder_entry
+    macro_run insert_placeholder_entry

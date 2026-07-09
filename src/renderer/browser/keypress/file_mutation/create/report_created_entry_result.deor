@@ -1,0 +1,16 @@
+
+# Directories are left selected and collapsed -- there's no content to
+# open. Files fall through into the editor, so sidebar_focused is
+# cleared.
+#
+# macro_run load_file_into_buffer below is SHARED machinery (see
+# ../../../editor/keypress/refresh.deor and save.deor), reused throughout
+# the editor -- left as a macro_run rather than duplicated.
+macro report_created_entry_result
+	if is_dir_request
+		notice = "Created directory"
+		error = false
+	else
+		path = full_path
+		sidebar_focused = false
+		macro_run load_file_into_buffer
