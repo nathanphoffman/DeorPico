@@ -1,0 +1,28 @@
+
+
+# Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
+# "edited"/"new"/"staged_deleted"/"deleted"), or returns it unchanged for any
+# other status (including "" for a clean file). "staged_edited" (staged with
+# further worktree edits on top) still renders green like plain "staged" --
+# browser_edit_prefix is what actually flags the extra edit. A deletion gets
+# the same staged (green) / unstaged (yellow) color as any other change,
+# plus a strikethrough layered on top, rather than its own distinct color --
+# the strikethrough alone is enough to tell it apart from a plain edit.
+fn string browser_colorize(string line, string git_status)
+	macro_run use_browser_ansi_codes
+
+	string result = line
+	if git_status is "staged"
+		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
+	else if git_status is "staged_edited"
+		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
+	else if git_status is "edited"
+		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
+	else if git_status is "new"
+		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
+	else if git_status is "staged_deleted"
+		result = s_join([ANSI_GIT_STAGED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_STAGED_OFF])
+	else if git_status is "deleted"
+		result = s_join([ANSI_GIT_EDITED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_EDITED_OFF])
+
+	return result

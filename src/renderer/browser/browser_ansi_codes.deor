@@ -1,0 +1,16 @@
+
+# Colors and highlight/dim toggles specific to the file browser -- reuses
+# use_ansi_codes for esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than
+# redefining them.
+macro use_browser_ansi_codes
+	macro_run use_ansi_codes
+	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
+	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])
+	const string ANSI_DIM_ON = s_join([esc, "[2m"])
+	const string ANSI_DIM_OFF = s_join([esc, "[22m"])
+	const string ANSI_GIT_STAGED_ON = s_join([esc, "[32m"])
+	const string ANSI_GIT_STAGED_OFF = s_join([esc, "[39m"])
+	const string ANSI_GIT_EDITED_ON = s_join([esc, "[33m"])
+	const string ANSI_GIT_EDITED_OFF = s_join([esc, "[39m"])
+	const string ANSI_STRIKETHROUGH_ON = s_join([esc, "[9m"])
+	const string ANSI_STRIKETHROUGH_OFF = s_join([esc, "[29m"])

@@ -92,6 +92,10 @@ import "src/renderer/editor/render_buffer_rows.deor"
 import "src/renderer/editor/editor.deor"
 
 # shared file-browser row-rendering helpers, reused by the sidebar below
+import "src/renderer/browser/browser_ansi_codes.deor"
+import "src/renderer/browser/browser_wrap.deor"
+import "src/renderer/browser/browser_git.deor"
+import "src/renderer/browser/browser_colorize.deor"
 import "src/renderer/browser/browser.deor"
 
 # persistent Files-tree sidebar (F1) -- the only file browser

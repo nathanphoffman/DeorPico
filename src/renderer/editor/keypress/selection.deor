@@ -30,7 +30,6 @@ fn bool clear_selection_impl()
 	return false
 
 macro key_select_all_impl
-    notice = "hello world"
     cursor_row = 0
     cursor_col = 0
     has_selection = true

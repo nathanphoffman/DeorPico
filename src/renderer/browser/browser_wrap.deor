@@ -1,0 +1,25 @@
+
+# Wraps `line` in reverse video when `selected` is true -- marks whichever
+# row/pane currently has focus.
+fn string browser_select_wrap(string line, bool selected)
+	macro_run use_ansi_codes
+
+	string result = line
+	if selected
+		result = s_join([ANSI_REVERSE_ON, line, ANSI_RESET])
+
+	return result
+
+
+# Wraps `line` in bold -- used for section headers like the sidebar's
+# <GIT> label, and for a name-match row in the ':' filter results.
+fn string browser_bold_wrap(string line)
+	macro_run use_browser_ansi_codes
+	return s_join([ANSI_BOLD_ON, line, ANSI_BOLD_OFF])
+
+
+# Wraps `line` in dim -- used for empty-state placeholders like the
+# sidebar's "clean" row.
+fn string browser_dim_wrap(string line)
+	macro_run use_browser_ansi_codes
+	return s_join([ANSI_DIM_ON, line, ANSI_DIM_OFF])

@@ -1,0 +1,16 @@
+
+# "+" flags a brand-new untracked file (git's "??"), "%" flags an unstaged
+# edit on a file that's already tracked -- including a staged file with a
+# further worktree edit on top ("staged_edited"), since that extra edit is
+# always a modification, never a new file, once the path is already tracked.
+# A staged file with no further edits gets neither (just plain green).
+fn string browser_edit_prefix(string git_status)
+	string prefix = ""
+	if git_status is "new"
+		prefix = "+"
+	else if git_status is "edited"
+		prefix = "%"
+	else if git_status is "staged_edited"
+		prefix = "%"
+
+	return prefix

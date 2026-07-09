@@ -1,20 +1,4 @@
 
-# Colors and highlight/dim toggles specific to the file browser -- reuses
-# use_ansi_codes for esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than
-# redefining them.
-macro use_browser_ansi_codes
-	macro_run use_ansi_codes
-	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
-	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])
-	const string ANSI_DIM_ON = s_join([esc, "[2m"])
-	const string ANSI_DIM_OFF = s_join([esc, "[22m"])
-	const string ANSI_GIT_STAGED_ON = s_join([esc, "[32m"])
-	const string ANSI_GIT_STAGED_OFF = s_join([esc, "[39m"])
-	const string ANSI_GIT_EDITED_ON = s_join([esc, "[33m"])
-	const string ANSI_GIT_EDITED_OFF = s_join([esc, "[39m"])
-	const string ANSI_STRIKETHROUGH_ON = s_join([esc, "[9m"])
-	const string ANSI_STRIKETHROUGH_OFF = s_join([esc, "[29m"])
-
 
 struct FitResult
 	string text
@@ -32,77 +16,6 @@ fn FitResult browser_fit(string label, int width)
 	return (text, visible_len)
 
 
-# Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
-# "edited"/"new"/"staged_deleted"/"deleted"), or returns it unchanged for any
-# other status (including "" for a clean file). "staged_edited" (staged with
-# further worktree edits on top) still renders green like plain "staged" --
-# browser_edit_prefix is what actually flags the extra edit. A deletion gets
-# the same staged (green) / unstaged (yellow) color as any other change,
-# plus a strikethrough layered on top, rather than its own distinct color --
-# the strikethrough alone is enough to tell it apart from a plain edit.
-fn string browser_colorize(string line, string git_status)
-	macro_run use_browser_ansi_codes
-
-	string result = line
-	if git_status is "staged"
-		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
-	else if git_status is "staged_edited"
-		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
-	else if git_status is "edited"
-		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
-	else if git_status is "new"
-		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
-	else if git_status is "staged_deleted"
-		result = s_join([ANSI_GIT_STAGED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_STAGED_OFF])
-	else if git_status is "deleted"
-		result = s_join([ANSI_GIT_EDITED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_EDITED_OFF])
-
-	return result
-
-
-# "+" flags a brand-new untracked file (git's "??"), "%" flags an unstaged
-# edit on a file that's already tracked -- including a staged file with a
-# further worktree edit on top ("staged_edited"), since that extra edit is
-# always a modification, never a new file, once the path is already tracked.
-# A staged file with no further edits gets neither (just plain green).
-fn string browser_edit_prefix(string git_status)
-	string prefix = ""
-	if git_status is "new"
-		prefix = "+"
-	else if git_status is "edited"
-		prefix = "%"
-	else if git_status is "staged_edited"
-		prefix = "%"
-
-	return prefix
-
-
-# Wraps `line` in reverse video when `selected` is true -- marks whichever
-# row/pane currently has focus.
-fn string browser_select_wrap(string line, bool selected)
-	macro_run use_ansi_codes
-
-	string result = line
-	if selected
-		result = s_join([ANSI_REVERSE_ON, line, ANSI_RESET])
-
-	return result
-
-
-# Wraps `line` in bold -- used for section headers like the sidebar's
-# <GIT> label, and for a name-match row in the ':' filter results.
-fn string browser_bold_wrap(string line)
-	macro_run use_browser_ansi_codes
-	return s_join([ANSI_BOLD_ON, line, ANSI_BOLD_OFF])
-
-
-# Wraps `line` in dim -- used for empty-state placeholders like the
-# sidebar's "clean" row.
-fn string browser_dim_wrap(string line)
-	macro_run use_browser_ansi_codes
-	return s_join([ANSI_DIM_ON, line, ANSI_DIM_OFF])
-
-
 # `width - visible_len` spaces of padding plus one separator column --
 # negative padding (cell already at/over width) clamps to just the
 # separator, matching Rust's saturating_sub.
@@ -114,4 +27,3 @@ fn string browser_gutter(int visible_len, int width)
 
 	space as " "
 	return s_repeat(space, pad_len)
-
