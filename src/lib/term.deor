@@ -29,11 +29,21 @@ fn void xt_raw_on()
 				crossterm::terminal::EnterAlternateScreen,
 				crossterm::event::EnableMouseCapture
 			).unwrap();
+			// Overflowing rows (a tab landing at a terminal tab-stop past our
+			// counted width, a wide char counted as 1 column, ...) should clip
+			// silently rather than auto-wrap onto the next row, where they land
+			// in the sidebar's columns and look like corruption.
+			use std::io::Write;
+			print!("\x1b[?7l");
+			std::io::stdout().flush().unwrap();
 		}
 
 fn void xt_raw_off()
 	rust
 		{
+			use std::io::Write;
+			print!("\x1b[?7h");
+			std::io::stdout().flush().unwrap();
 			crossterm::execute!(
 				std::io::stdout(),
 				crossterm::event::DisableMouseCapture,

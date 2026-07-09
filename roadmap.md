@@ -15,13 +15,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: File search results should have proper mouse support
 - Done: auto-set alt text search based on file search
 - Done: clicking on a file when there is a save prompt in progress should lock out
-
-- Text wrap bug is back into sidebar
+- Done: Text wrap bug should be fixed
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
-test
 
 ---
 Nate thing tomorrow
@@ -34,8 +31,6 @@ Nate thing tomorrow
 ---
 Lower Priority
 ---
-
-- Text needs proper wrapping
 
 - There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
 a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
