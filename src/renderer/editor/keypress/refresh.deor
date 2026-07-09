@@ -20,6 +20,7 @@ macro key_refresh_impl
 		if changed_on_disk and dirty
 			notice = "Unsaved changes -- ^S save or ^Del discard (file also changed on disk -- may conflict)"
 			error = true
+			sidebar_locked = true
 		else if changed_on_disk
 			path as filename
 			macro_run load_file_into_buffer
@@ -28,6 +29,8 @@ macro key_refresh_impl
 		else
 			notice = "Refreshed"
 			error = false
+			sidebar_locked = false
 	else
 		notice = "Refreshed"
 		error = false
+		sidebar_locked = false

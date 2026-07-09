@@ -513,3 +513,4 @@ macro discard_unsaved_changes_impl
 		macro_run load_file_into_buffer
 		notice = "Discarded unsaved changes"
 		error = false
+		sidebar_locked = false

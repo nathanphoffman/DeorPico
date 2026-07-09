@@ -14,12 +14,14 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Git Bar not being solid
 - Done: File search results should have proper mouse support
 - Done: auto-set alt text search based on file search
+- Done: clicking on a file when there is a save prompt in progress should lock out
 
-Working: clicking on a file when there is a save prompt in progress should refuse selection of the file you want to go to until you 
-take action.
+- Text wrap bug is back into sidebar
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
+
+test
 
 ---
 Nate thing tomorrow

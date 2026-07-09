@@ -65,3 +65,11 @@ struct BrowserState
 	# later press of the same key on a different file.
 	string pending_delete_path
 	string pending_discard_path
+
+	# Set while notify_unsaved_changes' notice is up (an attempt to leave a
+	# dirty file was just blocked) -- freezes every other sidebar action
+	# (nav, mouse clicks, filter, create/stage/delete) so the highlighted
+	# row can't silently drift away from the still-open file while the
+	# notice sits unresolved. Cleared by whichever of ^S/^Del resolves it
+	# (see key_save_impl/discard_unsaved_changes_impl).
+	bool sidebar_locked

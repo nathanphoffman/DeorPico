@@ -19,70 +19,76 @@ fn bool toggle_sidebar(bool sidebar_focused)
 # focused was a dead end, since nothing in this mode could clear `dirty`.
 macro handle_sidebar_focus_mode
 	macro_run handle_global_actions
-	if creating_file
-		if kind is "escape"
-			macro_run cancel_create_file
-		else if kind is "enter"
-			macro_run confirm_create_file
-		else if kind is "backspace"
-			macro_run create_file_backspace
-		else if kind is "char"
-			macro_run create_file_char
-	else if filter_active
-		if kind is "escape"
-			macro_run close_browse_filter
-		else if kind is "enter"
-			macro_run browse_filter_enter
+	# Frozen while notify_unsaved_changes' notice is up -- see sidebar_locked's
+	# declaration in browser_state.deor. ^S/^Del already ran above
+	# (handle_global_actions), so everything below is skipped until one of
+	# those resolves it; this is what stops the highlighted row from
+	# drifting off the still-open file while the notice sits unresolved.
+	if not sidebar_locked
+		if creating_file
+			if kind is "escape"
+				macro_run cancel_create_file
+			else if kind is "enter"
+				macro_run confirm_create_file
+			else if kind is "backspace"
+				macro_run create_file_backspace
+			else if kind is "char"
+				macro_run create_file_char
+		else if filter_active
+			if kind is "escape"
+				macro_run close_browse_filter
+			else if kind is "enter"
+				macro_run browse_filter_enter
+			else if kind is "up"
+				macro_run browse_filter_up
+			else if kind is "down"
+				macro_run browse_filter_down
+			else if kind is "backspace"
+				macro_run browse_filter_backspace
+			else if kind is "char"
+				macro_run browse_filter_char
+			else if kind is "mouse_down"
+				macro_run mouse_down_editor_impl
+			else if kind is "mouse_scroll_up"
+				macro_run scroll_up_impl
+			else if kind is "mouse_scroll_down"
+				macro_run scroll_down_impl
 		else if kind is "up"
-			macro_run browse_filter_up
+			macro_run sidebar_nav_up
 		else if kind is "down"
-			macro_run browse_filter_down
-		else if kind is "backspace"
-			macro_run browse_filter_backspace
-		else if kind is "char"
-			macro_run browse_filter_char
+			macro_run sidebar_nav_down
+		else if kind is "left" and sidebar_on_git and git_selected is (0 - 1)
+			git_section_collapsed = sidebar_collapse_git()
+		else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
+			git_section_collapsed = sidebar_expand_git()
+		else if kind is "left" and not sidebar_on_git
+			macro_run browse_left
+		else if kind is "right" and not sidebar_on_git
+			macro_run browse_right
+		else if kind is "char" and chr is ":" and not sidebar_on_git
+			macro_run start_browse_filter
+		else if kind is "enter"
+			macro_run sidebar_key_activate
+		else if kind is "char" and chr is " "
+			macro_run sidebar_key_activate
+		else if kind is "stage_toggle"
+			macro_run sidebar_stage_toggle
+		else if kind is "delete_entry"
+			macro_run sidebar_delete_entry
+		else if kind is "discard_git_changes"
+			macro_run sidebar_discard_git_changes
+		else if kind is "create_file" and not sidebar_on_git
+			macro_run start_create_file
+		else if kind is "escape"
+			sidebar_focused = false
+		else if kind is "page_up" or kind is "page_down"
+			sidebar_focused = false
 		else if kind is "mouse_down"
 			macro_run mouse_down_editor_impl
 		else if kind is "mouse_scroll_up"
 			macro_run scroll_up_impl
 		else if kind is "mouse_scroll_down"
 			macro_run scroll_down_impl
-	else if kind is "up"
-		macro_run sidebar_nav_up
-	else if kind is "down"
-		macro_run sidebar_nav_down
-	else if kind is "left" and sidebar_on_git and git_selected is (0 - 1)
-		git_section_collapsed = sidebar_collapse_git()
-	else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
-		git_section_collapsed = sidebar_expand_git()
-	else if kind is "left" and not sidebar_on_git
-		macro_run browse_left
-	else if kind is "right" and not sidebar_on_git
-		macro_run browse_right
-	else if kind is "char" and chr is ":" and not sidebar_on_git
-		macro_run start_browse_filter
-	else if kind is "enter"
-		macro_run sidebar_key_activate
-	else if kind is "char" and chr is " "
-		macro_run sidebar_key_activate
-	else if kind is "stage_toggle"
-		macro_run sidebar_stage_toggle
-	else if kind is "delete_entry"
-		macro_run sidebar_delete_entry
-	else if kind is "discard_git_changes"
-		macro_run sidebar_discard_git_changes
-	else if kind is "create_file" and not sidebar_on_git
-		macro_run start_create_file
-	else if kind is "escape"
-		sidebar_focused = false
-	else if kind is "page_up" or kind is "page_down"
-		sidebar_focused = false
-	else if kind is "mouse_down"
-		macro_run mouse_down_editor_impl
-	else if kind is "mouse_scroll_up"
-		macro_run scroll_up_impl
-	else if kind is "mouse_scroll_down"
-		macro_run scroll_down_impl
 
 # ^A while the sidebar has keyboard focus -- toggles stage/unstage on
 # whichever entry is highlighted, in the <GIT> section or the Files tree
@@ -482,8 +488,14 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 macro sidebar_activate_index
 	if filter_active
 		if idx >= 0 and idx < len(filter_matches)
-			filter_selected = idx
-			macro_run browse_filter_enter
+			# A filter match is always a file (never a directory), so a click
+			# here is always an open attempt -- if it's blocked, don't move
+			# filter_selected onto the clicked row first (see sidebar_locked).
+			if dirty
+				macro_run notify_unsaved_changes
+			else
+				filter_selected = idx
+				macro_run browse_filter_enter
 	else
 		int git_count = len(git_changes)
 		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
@@ -493,15 +505,30 @@ macro sidebar_activate_index
 			git_selected = 0 - 1
 			macro_run sidebar_key_activate
 		else if git_section_rows > 0 and idx > 0 and idx < git_section_rows and not git_section_collapsed and git_count > 0
-			sidebar_on_git = true
-			git_selected = idx - 1
-			macro_run sidebar_key_activate
+			int git_idx = idx - 1
+			# <GIT> rows are always files -- same reasoning as the filter
+			# branch above, block the mutation itself rather than moving the
+			# highlight then refusing to open it.
+			if dirty
+				macro_run notify_unsaved_changes
+			else
+				sidebar_on_git = true
+				git_selected = git_idx
+				macro_run sidebar_key_activate
 		else if idx >= git_section_rows
 			int tree_idx = idx - git_section_rows
 			if tree_idx >= 0 and tree_idx < len(browse_entries)
-				sidebar_on_git = false
-				browse_selected = tree_idx
-				macro_run sidebar_key_activate
+				FileEntry clicked = browse_entries at tree_idx
+				(is_dir) in clicked
+				# Directories aren't gated by dirty (expand/collapse doesn't
+				# touch the buffer), only a file click is -- so only files
+				# need their selection-mutation held back here.
+				if not is_dir and dirty
+					macro_run notify_unsaved_changes
+				else
+					sidebar_on_git = false
+					browse_selected = tree_idx
+					macro_run sidebar_key_activate
 
 macro sidebar_scroll_up
 	if filter_active

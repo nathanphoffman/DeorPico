@@ -11,3 +11,4 @@ macro key_quit_impl
 macro notify_unsaved_changes
 	notice = "Unsaved changes -- ^S save or ^Del discard"
 	error = true
+	sidebar_locked = true

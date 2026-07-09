@@ -10,6 +10,7 @@ macro key_save_impl
 	synced_content = content
 	notice = "Saved"
 	error = false
+	sidebar_locked = false
 	macro_run refresh_git_diff_lines
 	# A save is a natural checkpoint to also pick up whatever changed
 	# elsewhere while this file was being edited -- other files added/
