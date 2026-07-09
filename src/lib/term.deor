@@ -97,8 +97,12 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::Char(c)
 						if alt && c.is_ascii_digit() => continue,
 
+					// '_' included alongside letters -- identifiers are full of
+					// them (snake_case), and without this an alt+_ falls through
+					// to the plain "char" case and types a literal underscore
+					// into the buffer instead of extending the search term.
 					crossterm::event::KeyCode::Char(c)
-						if alt && c.is_ascii_alphabetic() => break KeyEvent
+						if alt && (c.is_ascii_alphabetic() || c == '_') => break KeyEvent
 							{ kind: "alt_char".to_string(), chr: c.to_string(), shift, alt, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::BackTab =>

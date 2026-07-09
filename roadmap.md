@@ -70,8 +70,9 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Fixed Slow Git Diff Scroll
 - Done: Large Files now process correctly
 - Done: Sidebar now defaulted
+- Done:  Alt needs to support underscores
 
-- Alt needs to support underscores
+Working on: Auto close sidebar on page up or page down
 
 - Implement back-indentation shift + tab
 
@@ -105,8 +106,6 @@ DeorLang
 Lower Priority
 ---
 
-- Auto close sidebar on page up or page down
-
 - Text needs proper wrapping
 
 - There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
@@ -133,6 +132,8 @@ whole bottom?
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
 - Allow arrow keys to work in ctrl + r
+
+- Add word select / copy
 
 ## V2 Longer Term:
 working on: final pass to make sure rust is in deor
