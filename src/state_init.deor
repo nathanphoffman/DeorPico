@@ -28,7 +28,7 @@ macro initialize_browser
 	StringMap initial_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, initial_git_map)
 	entryList git_changes = g_changed_entries(initial_git_map)
-	sidebar_focused as false
+	sidebar_focused as true
 	creating_file as false
 	new_file_name as ""
 	create_parent_dir as ""

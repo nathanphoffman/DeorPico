@@ -69,6 +69,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: alt search is fixed
 - Done: Fixed Slow Git Diff Scroll
 - Done: Large Files now process correctly
+- Done: Sidebar now defaulted
 
 - Alt needs to support underscores
 
@@ -79,20 +80,13 @@ take action.
 
 - On ctrl + s refresh the file browser view -- i think we do this today but might be good for capturing external changes
 
-- Auto close sidebar on page up or page down
-
-- When the editor starts up the directory sidebar should be selected
- 
 - Extract Sidebar into its own folder
-
 
 ---
 Work with AI
 ---
 
 File search results should have mouse support
-
-For wrapping text can we do something with ^w?
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
 Instead make a file that is both staged and unstaged
@@ -110,6 +104,11 @@ DeorLang
 ---
 Lower Priority
 ---
+
+- Auto close sidebar on page up or page down
+
+- Text needs proper wrapping
+
 - There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
 a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
 
