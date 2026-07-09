@@ -1,4 +1,4 @@
-import "src/lib/file.deor"
+
 import "src/consts.deor"
 import "src/renderer/editor/gutter.deor"
 

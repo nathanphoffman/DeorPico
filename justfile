@@ -8,19 +8,19 @@ import? 'justfile.local'
 
 run *args:
     mkdir -p build
-    DEOR_LIB=src/lib deor main.deor build/main.rs
+    DEOR_LIB=lib deor main.deor build/main.rs
     cargo run -- {{args}}
 
 build:
     mkdir -p build
-    DEOR_LIB=src/lib deor main.deor build/main.rs
+    DEOR_LIB=lib deor main.deor build/main.rs
     cargo build
 
 # Builds a release binary and installs it as `dpico` on your PATH --
 # usage: dpico [filename] [working_folder]
 install:
     mkdir -p build
-    DEOR_LIB=src/lib deor main.deor build/main.rs
+    DEOR_LIB=lib deor main.deor build/main.rs
     cargo build --release
     mkdir -p {{install_dir}}
     cp target/release/DeorPico {{install_dir}}/dpico
@@ -50,4 +50,3 @@ install-ext:
     code --install-extension "$(ls "$TMP/DeorLang-main/deor-vscode/"*.vsix | tail -1)"
     rm -rf "$TMP"
     echo "Done — reload VS Code window to apply (Ctrl+Shift+P → Reload Window)."
-

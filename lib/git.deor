@@ -1,8 +1,8 @@
-import "src/lib/file.deor"
-import "src/lib/map.deor"
-import "src/lib/string.deor"
-import "src/lib/term.deor"
-import "src/lib/list.deor" where T = string
+import "lib/file.deor"
+import "lib/map.deor"
+import "lib/string.deor"
+import "lib/term.deor"
+import "lib/list.deor" where T = string
 
 shape intList = list of int
 

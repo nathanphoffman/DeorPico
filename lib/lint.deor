@@ -1,4 +1,4 @@
-import "src/lib/search.deor"
+import "lib/search.deor"
 
 shape stringList = list of string
 

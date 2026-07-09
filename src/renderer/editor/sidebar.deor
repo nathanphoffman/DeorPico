@@ -1,7 +1,4 @@
-import "src/lib/file.deor"
-import "src/lib/git.deor"
-import "src/lib/string.deor"
-import "src/lib/term.deor"
+
 import "src/consts.deor"
 import "src/renderer/browser/browser.deor"
 import "src/renderer/editor/layout.deor"
