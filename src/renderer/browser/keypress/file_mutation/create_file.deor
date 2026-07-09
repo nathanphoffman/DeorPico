@@ -15,15 +15,11 @@ macro start_create_file
 	macro_run enter_placeholder_edit_mode
 	notice = "Enter New File Name and ENTER; Esc to cancel OR: Enter 'dir X' or 'mv X' to create a directory of X or move"
 
-# Enter while the create-file prompt is open -- writes the new empty file to
-# disk (refusing to clobber an existing one), turns the placeholder row into
-# its real entry, and opens it into the editor. `sidebar_focused` is
-# unconditionally cleared since opening a file always lands in the editor.
-# A name typed as "dir X" creates a directory named X instead -- it's left
-# selected and collapsed in the tree rather than opened, since there's no
-# file content to edit. "mv X" is handled separately below (see
-# confirm_move_request) -- it relocates whatever X uniquely matches into
-# create_parent_dir rather than creating anything.
+# Enter while the create-file prompt is open -- validates the name isn't
+# empty, then hands off to parse_create_file_request (create/parse_create_file_request.deor)
+# to route "dir X" / "mv X" and drive the rest of the flow: resolving/
+# writing the entry (create/resolve_create_file_destination.deor) and
+# finalizing/reporting the result (create/finalize_created_entry.deor).
 macro confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
@@ -31,88 +27,3 @@ macro confirm_create_file
 		error = true
 	else
 		macro_run parse_create_file_request
-
-# Splits off the "dir X" / "mv X" prefixes (if any) and routes to the move
-# flow or the create flow.
-macro parse_create_file_request
-	dir_prefix as "dir "
-	mv_prefix as "mv "
-	bool is_dir_request = s_starts_with(new_file_name, dir_prefix)
-	bool is_move_request = s_starts_with(new_file_name, mv_prefix)
-
-	if is_move_request
-		macro_run dispatch_create_file_move
-	else
-		macro_run dispatch_create_file_or_dir
-
-macro dispatch_create_file_move
-	int mv_prefix_len = len(mv_prefix)
-	string move_query = s_substring(new_file_name, mv_prefix_len, name_len)
-	macro_run confirm_move_request
-
-macro dispatch_create_file_or_dir
-	string entry_name = new_file_name
-	if is_dir_request
-		int prefix_len = len(dir_prefix)
-		entry_name = s_substring(new_file_name, prefix_len, name_len)
-
-	if is_dir_request and len(entry_name) is 0
-		notice = "Directory name can't be empty"
-		error = true
-	else
-		macro_run resolve_create_file_destination
-
-macro resolve_create_file_destination
-	string full_path = f_join_path(create_parent_dir, entry_name)
-	bool already_exists = f_exists(full_path)
-	if already_exists
-		notice = "Something with that name already exists"
-		error = true
-	else
-		macro_run write_new_entry_to_disk
-
-macro write_new_entry_to_disk
-	bool created = false
-	if is_dir_request
-		created = f_create_dir(full_path)
-	else
-		string empty_content = ""
-		created = f_write(full_path, empty_content)
-
-	if created
-		macro_run finalize_created_entry
-	else
-		macro_run report_create_entry_failure
-
-macro finalize_created_entry
-	macro_run replace_create_file_placeholder_entry
-	macro_run reset_placeholder_state
-	macro_run refresh_all_git_status
-	macro_run report_created_entry_success
-
-macro replace_create_file_placeholder_entry
-	FileEntry placeholder_entry = browse_entries at browse_selected
-	string name = entry_name
-	string path = full_path
-	bool is_dir = is_dir_request
-	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
-	browse_entries at browse_selected = real_entry
-
-# Directories are left selected and collapsed -- there's no content to open.
-# Files fall through into the editor, so sidebar_focused is cleared.
-macro report_created_entry_success
-	if is_dir_request
-		notice = "Created directory"
-		error = false
-	else
-		path = full_path
-		sidebar_focused = false
-		macro_run load_file_into_buffer
-
-macro report_create_entry_failure
-	if is_dir_request
-		notice = "Could not create directory"
-		error = true
-	else
-		notice = "Could not create file"
-		error = true

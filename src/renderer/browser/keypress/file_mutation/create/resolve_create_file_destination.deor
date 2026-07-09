@@ -1,0 +1,25 @@
+
+# Downstream of dispatch_create_file_or_dir (see ../parse_create_file_request.deor)
+# -- resolves the full path under create_parent_dir, refuses to clobber an
+# existing file/dir, then writes the new empty file (or directory) to disk.
+macro resolve_create_file_destination
+	string full_path = f_join_path(create_parent_dir, entry_name)
+	bool already_exists = f_exists(full_path)
+	if already_exists
+		notice = "Something with that name already exists"
+		error = true
+	else
+		macro_run write_new_entry_to_disk
+
+macro write_new_entry_to_disk
+	bool created = false
+	if is_dir_request
+		created = f_create_dir(full_path)
+	else
+		string empty_content = ""
+		created = f_write(full_path, empty_content)
+
+	if created
+		macro_run finalize_created_entry
+	else
+		macro_run report_create_entry_failure

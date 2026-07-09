@@ -1,0 +1,36 @@
+
+# Downstream of write_new_entry_to_disk (see ../resolve_create_file_destination.deor)
+# -- turns the placeholder row into its real entry, clears the prompt
+# state, refreshes git status, and reports success/failure.
+macro finalize_created_entry
+	macro_run replace_create_file_placeholder_entry
+	macro_run reset_placeholder_state
+	macro_run refresh_all_git_status
+	macro_run report_created_entry_success
+
+macro replace_create_file_placeholder_entry
+	FileEntry placeholder_entry = browse_entries at browse_selected
+	string name = entry_name
+	string path = full_path
+	bool is_dir = is_dir_request
+	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
+	browse_entries at browse_selected = real_entry
+
+# Directories are left selected and collapsed -- there's no content to open.
+# Files fall through into the editor, so sidebar_focused is cleared.
+macro report_created_entry_success
+	if is_dir_request
+		notice = "Created directory"
+		error = false
+	else
+		path = full_path
+		sidebar_focused = false
+		macro_run load_file_into_buffer
+
+macro report_create_entry_failure
+	if is_dir_request
+		notice = "Could not create directory"
+		error = true
+	else
+		notice = "Could not create file"
+		error = true
