@@ -8,6 +8,40 @@ macro refresh_all_git_status
 	git_changes = g_changed_entries(fresh_git_map)
 	macro_run clamp_sidebar_selection
 
+# F5 -- unlike refresh_all_git_status, this re-scans disk from scratch (see
+# e_rebuild_tree), so files/folders added or removed outside the app (an
+# external `mkdir`, a git checkout, etc.) actually show up instead of only
+# ever changing once the app itself creates/moves/deletes something.
+# Re-expands whatever was expanded before by path, same as the git-status
+# refresh leaves the tree shape alone, and re-finds the previously selected
+# entry by path so the highlight doesn't jump if the rescan reordered or
+# shifted things around it.
+macro refresh_browse_tree_impl
+	string selected_path = ""
+	if len(browse_entries) > 0
+		FileEntry currently_selected = browse_entries at browse_selected
+		(path) in currently_selected
+		selected_path = path
+
+	entryList rebuilt = e_rebuild_tree(browse_entries, browse_dir)
+	StringMap fresh_git_map = g_status(browse_dir)
+	browse_entries = g_apply_status(rebuilt, fresh_git_map)
+	git_changes = g_changed_entries(fresh_git_map)
+
+	if len(selected_path) > 0
+		EntryLookup lookup = e_find_by_path(browse_entries, selected_path)
+		(found, index) in lookup
+		if found
+			browse_selected = index
+
+	int last_entry = len(browse_entries) - 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+	macro_run clamp_sidebar_selection
+
 # Keeps the sidebar's selection/scroll valid after git_changes changes size
 # (stage/unstage/delete/discard/create) -- falls back to the <GIT> header
 # (git_selected of -1, always valid whenever is_git_repo) if the section
