@@ -31,7 +31,7 @@ import "src/models/editor_state.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"
-import "src/key_press/keymap.deor"
+import "src/keymap.deor"
 
 # Per-key-action logic, organized by which part of the screen it affects --
 # events.deor macro_runs these directly, no pass-through layer.

@@ -65,17 +65,34 @@ macro mouse_down_main
 	macro_run locate_mouse_in_buffer
 	cursor_row = clicked_row
 	cursor_col = clicked_col
-	sel_anchor_row = clicked_row
-	sel_anchor_col = clicked_col
-	has_selection = false
+    
+    is_not_anchor_row as clicked_row is not sel_anchor_row
+    is_not_anchor_col as clicked_col is not sel_anchor_col
+    cursor_clicked_is_not_anchor as is_not_anchor_row or is_not_anchor_col
 
-macro mouse_drag_main_impl
-	macro_run locate_mouse_in_buffer
-	if not has_selection
-		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
-			has_selection = true
-	cursor_row = clicked_row
-	cursor_col = clicked_col
+    (alt) in key
+    
+    if alt is false
+	    sel_anchor_row = clicked_row
+	    sel_anchor_col = clicked_col
+        has_selection = false
+    else if cursor_clicked_is_not_anchor
+        has_selection = true
+        notice = "should have rendered" 
+
+    # selection is always reset otherwise as people expect clicking most areas to deselect    
+    else if alt is true
+	    has_selection = true
+    else 
+        has_selection = false
+
+# macro mouse_drag_main_impl
+	# macro_run locate_mouse_in_buffer
+	# if not has_selection
+		# if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
+			# has_selection = true
+	# cursor_row = clicked_row
+	# cursor_col = clicked_col
 
 # Routes a mouse_down while the git-diff view is open to the sidebar (open
 # file / expand-collapse, same as mouse_down_editor) if the click landed

@@ -64,6 +64,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: mv has been added
 - Done: dir creates a folder
 
+
 - Add ctrl + a To Select All
 
 - search needs fixed, results it returns do not seem to be returning proper file matches, I am using 
