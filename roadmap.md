@@ -65,12 +65,10 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: dir creates a folder
 - Done: drag selection gone
 - Done: alt + click selection in
-- Almost Done?: Add ctrl + a To Select All
+- Done: Add ctrl + a To Select All
+- Done: alt search is fixed
 
 - Implement back-indentation shift + tab
-
-- search needs fixed, results it returns do not seem to be returning proper file matches, I am using 
-    underscores if that matters
 
 - clicking on a file when there is a save prompt in progress should refuse selection of the file you want to go to until you 
 take action.

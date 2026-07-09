@@ -60,8 +60,11 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 
 	# A key that isn't a continuation of an alt+letter chord ends whatever
 	# chord was in progress -- the next alt+letter starts counting from
-	# scratch instead of picking up the old one.
-	if kind is not "alt_char"
+	# scratch instead of picking up the old one. "tick" is excluded because
+	# it's a synthetic idle poll (every 150ms, see xt_read_key), not a real
+	# key release -- without this, pausing between alt+letters for longer
+	# than one poll interval would wipe the buffer mid-chord.
+	if kind is not "alt_char" and kind is not "tick"
 		search_buffer = ""
 
 	# Only a real cursor-moving/editing key re-engages cursor-follow scroll --
