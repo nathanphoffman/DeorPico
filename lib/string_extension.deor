@@ -1,0 +1,37 @@
+# The alphanumeric/_ run touching `col` in `line` -- everything else (space,
+# (), ., etc.) is a boundary. `col` is a cursor position (may sit one past
+# the last char of a word, e.g. right after typing it), so a non-word char
+# at `col` falls back to checking `col - 1` before giving up. Empty if
+# neither is a word char (cursor on/after punctuation or whitespace).
+fn string s_word_at(string line, int col)
+	rust
+		{
+			let chars: Vec<char> = line.chars().collect();
+			let is_word = |c: char| c.is_alphanumeric() || c == '_';
+			let len = chars.len() as i64;
+			let mut idx = col;
+			if idx < 0 {
+				idx = 0;
+			}
+
+			let mut target: i64 = -1;
+			if idx < len && is_word(chars[idx as usize]) {
+				target = idx;
+			} else if idx - 1 >= 0 && idx - 1 < len && is_word(chars[(idx - 1) as usize]) {
+				target = idx - 1;
+			}
+
+			if target < 0 {
+				String::new()
+			} else {
+				let mut start = target;
+				while start > 0 && is_word(chars[(start - 1) as usize]) {
+					start -= 1;
+				}
+				let mut end = target;
+				while end + 1 < len && is_word(chars[(end + 1) as usize]) {
+					end += 1;
+				}
+				chars[start as usize..=end as usize].iter().collect()
+			}
+		}
