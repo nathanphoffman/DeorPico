@@ -58,6 +58,7 @@ import "src/renderer/editor/keypress/tab.deor"
 import "src/renderer/editor/keypress/page_up_down.deor"
 
 # browser
+import "src/renderer/browser/keypress/file_mutation/mutate.deor"
 import "src/renderer/browser/keypress/file_mutation/create_file.deor"
 import "src/renderer/browser/keypress/file_mutation/delete_file.deor"
 import "src/renderer/browser/keypress/file_mutation/rename_file.deor"
@@ -65,6 +66,7 @@ import "src/renderer/browser/keypress/file_mutation/move_file.deor"
 
 import "src/renderer/browser/keypress/browse.deor"
 import "src/renderer/browser/keypress/browse_filter.deor"
+import "src/renderer/editor/keypress/word_search.deor"
 
 
 import "src/renderer/editor/keypress/refresh.deor"

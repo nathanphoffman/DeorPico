@@ -29,3 +29,5 @@ macro handle_global_actions
 		lint_output_visible = open_lint_output_impl()
 	else if kind is "refresh"
 		macro_run key_refresh_impl
+	else if kind is "word_search"
+		macro_run key_word_search_impl

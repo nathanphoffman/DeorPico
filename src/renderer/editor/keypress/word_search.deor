@@ -1,0 +1,26 @@
+# F12 -- searches the whole project for whatever's at the cursor: the
+# selected text if there's a selection (copy_selection_text, same source
+# ^C uses), otherwise the alphanumeric/_ word the cursor is touching (split
+# on everything else -- space, (), etc., see s_word_at). Reuses the ':'
+# filter machinery (recompute_browse_filter), just scoped to the project
+# root (browse_dir) instead of a single directory, so results show in the
+# sidebar exactly like a ':' search.
+macro key_word_search_impl
+	string query = ""
+	if has_selection
+		string selection_text = ""
+		macro_run copy_selection_text
+		query = selection_text
+	else
+		string current_line = lines at cursor_row
+		query = s_word_at(current_line, cursor_col)
+
+	if len(query) is 0
+		notice = "No word under cursor"
+		error = true
+	else
+		string search_root = browse_dir
+		filter_active = true
+		filter_dir = search_root
+		filter_query = query
+		macro_run recompute_browse_filter

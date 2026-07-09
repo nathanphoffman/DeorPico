@@ -1,0 +1,89 @@
+
+# Shared inline-name-entry machinery: insert a blank placeholder FileEntry at
+# the target spot, switch keyboard input to the name buffer, and handle
+# typing/cancel while it's open. create_file.deor drives this to build a new
+# entry; move_file.deor reuses the same open prompt for "mv X"; rename will
+# drive it too. State lives on BrowserState (creating_file/new_file_name/
+# create_parent_dir) since it's shared across all three, not create-specific.
+
+# Defaults to appending at the root, then overridden by
+# apply_create_target_from_selection if something's highlighted.
+macro resolve_create_entry_target
+	int insert_index = 0
+	int insert_depth = 0
+	string parent_dir = browse_dir
+
+	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, depth, expanded) in selected
+		macro_run apply_create_target_from_selection
+
+macro apply_create_target_from_selection
+	if is_dir
+		if not expanded
+			macro_run browse_right
+		insert_index = browse_selected + 1
+		insert_depth = depth + 1
+		parent_dir = path
+	else
+		insert_index = browse_selected + 1
+		insert_depth = depth
+		parent_dir = f_dirname(path)
+
+macro insert_create_file_placeholder
+	macro_run build_create_file_placeholder
+	entryList one_entry = [placeholder]
+	int insert_at = insert_index - 1
+	browse_entries = e_insert_children(browse_entries, insert_at, one_entry)
+
+macro build_create_file_placeholder
+	string name = ""
+	string path = ""
+	bool is_dir = false
+	int depth = insert_depth
+	bool expanded = false
+	string git_status = ""
+	FileEntry placeholder = (name, path, is_dir, depth, expanded, git_status)
+
+macro enter_create_file_mode
+	browse_selected = insert_index
+	if browse_selected < browse_scroll_row
+		browse_scroll_row = browse_selected
+
+	creating_file = true
+	new_file_name = ""
+	create_parent_dir = parent_dir
+	notice = "Enter New File Name and ENTER; Esc to cancel OR: Enter 'dir X' or 'mv X' to create a directory of X or move"
+	error = false
+
+macro create_file_char
+	stringList extended_name_parts = [new_file_name, chr]
+	new_file_name = s_join(extended_name_parts)
+
+macro create_file_backspace
+	int name_len = len(new_file_name)
+	if name_len > 0
+		zero as 0
+		int new_len = name_len - 1
+		new_file_name = s_substring(new_file_name, zero, new_len)
+
+# Esc while the name-entry prompt is open -- drops the placeholder row and
+# restores the selection to wherever it lands once that row is gone.
+macro cancel_create_file
+	macro_run remove_create_file_placeholder
+	macro_run reset_create_file_state
+
+macro remove_create_file_placeholder
+	browse_entries = e_remove_at(browse_entries, browse_selected)
+	int last_entry = len(browse_entries) - 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+macro reset_create_file_state
+	creating_file = false
+	new_file_name = ""
+	create_parent_dir = ""
+	notice = ""
+	error = false
