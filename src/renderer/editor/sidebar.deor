@@ -41,6 +41,12 @@ macro handle_sidebar_focus_mode
 			macro_run browse_filter_backspace
 		else if kind is "char"
 			macro_run browse_filter_char
+		else if kind is "mouse_down"
+			macro_run mouse_down_editor_impl
+		else if kind is "mouse_scroll_up"
+			macro_run scroll_up_impl
+		else if kind is "mouse_scroll_down"
+			macro_run scroll_down_impl
 	else if kind is "up"
 		macro_run sidebar_nav_up
 	else if kind is "down"
@@ -470,12 +476,15 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 # sidebar_row_piece, then delegates to sidebar_key_activate to actually
 # toggle/open/expand it -- shared by sidebar mouse clicks. A click on the
 # "clean" placeholder is a no-op, same as a click past the end of the Files
-# tree. Also a no-op while filtering -- the sidebar is showing filter_matches
-# instead of the git/tree rows this resolution assumes, so `idx` doesn't
-# mean the same thing here; clicking a filter result isn't wired up (use
-# Enter instead).
+# tree. While filtering, `idx` instead indexes filter_matches directly (the
+# caller offsets by filter_scroll_row, not browse_scroll_row, to match) --
+# clicking a match selects and opens it the same as pressing Enter on it.
 macro sidebar_activate_index
-	if not filter_active
+	if filter_active
+		if idx >= 0 and idx < len(filter_matches)
+			filter_selected = idx
+			macro_run browse_filter_enter
+	else
 		int git_count = len(git_changes)
 		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 
@@ -495,9 +504,14 @@ macro sidebar_activate_index
 				macro_run sidebar_key_activate
 
 macro sidebar_scroll_up
-	browse_scroll_row = browse_scroll_row - 1
-	if browse_scroll_row < 0
-		browse_scroll_row = 0
+	if filter_active
+		filter_scroll_row = filter_scroll_row - 1
+		if filter_scroll_row < 0
+			filter_scroll_row = 0
+	else
+		browse_scroll_row = browse_scroll_row - 1
+		if browse_scroll_row < 0
+			browse_scroll_row = 0
 
 # Clamped against the same view_rows the sidebar actually renders (see
 # render_buffer_rows) -- without this the sidebar could scroll past its last
@@ -510,13 +524,23 @@ macro sidebar_scroll_down
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
-	int git_count = len(git_changes)
-	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
-	int last_row = git_section_rows + len(browse_entries) - 1
-	int max_scroll = last_row - view_rows + 1
-	if max_scroll < 0
-		max_scroll = 0
+	if filter_active
+		int last_match_row = len(filter_matches) - 1
+		int max_filter_scroll = last_match_row - view_rows + 1
+		if max_filter_scroll < 0
+			max_filter_scroll = 0
 
-	browse_scroll_row = browse_scroll_row + 1
-	if browse_scroll_row > max_scroll
-		browse_scroll_row = max_scroll
+		filter_scroll_row = filter_scroll_row + 1
+		if filter_scroll_row > max_filter_scroll
+			filter_scroll_row = max_filter_scroll
+	else
+		int git_count = len(git_changes)
+		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+		int last_row = git_section_rows + len(browse_entries) - 1
+		int max_scroll = last_row - view_rows + 1
+		if max_scroll < 0
+			max_scroll = 0
+
+		browse_scroll_row = browse_scroll_row + 1
+		if browse_scroll_row > max_scroll
+			browse_scroll_row = max_scroll

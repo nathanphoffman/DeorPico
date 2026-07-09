@@ -104,7 +104,10 @@ macro browse_filter_down
 # instead of the full tree. Esc is still the only way to actually drop the
 # filter. Hands focus back to the editor the same way every other sidebar
 # open path does (see sidebar_key_activate) -- unlike those, there's no
-# is_dir case here, a filter match is always a file.
+# is_dir case here, a filter match is always a file. Also seeds the alt+letter
+# "quick search" highlight (see alt_search_char_impl) with the filter query
+# itself, so the lines that matched are highlighted immediately and Tab
+# cycles straight to them instead of requiring the search to be retyped.
 macro browse_filter_enter
 	if len(filter_matches) > 0
 		FilterMatch selected_match = filter_matches at filter_selected
@@ -114,5 +117,10 @@ macro browse_filter_enter
 			macro_run notify_unsaved_changes
 		else
 			macro_run load_file_into_buffer
+			query_copy as filter_query
+			search_buffer = query_copy
+			search_matches = x_find_matches(lines, search_buffer)
+			search_active = true
+			search_match_index = 0 - 1
 			if not diffing
 				sidebar_focused = false
