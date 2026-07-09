@@ -17,7 +17,12 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: clicking on a file when there is a save prompt in progress should lock out
 - Done: Text wrap bug should be fixed
 
-- Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
+Working: - Check syntax highlighting of other languages
+
+- Add rename feature, we need an ability to select a row in the side bar, and use shift + r to rename the file, should allow typing just like the new file/dir logic does but typing over the name 
+  (clearing it out) on esc it should put it back, on enter it should rename it
+
+- Similar to hosw we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
 ---
@@ -28,13 +33,6 @@ Nate thing tomorrow
 - Implement back-indentation shift + tab
 
 
----
-Lower Priority
----
-
-- There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
-a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
-
 - Add paste event for better windows support
   - Fix worth considering: enable crossterm's bracketed-paste mode (EnableBracketedPaste in xt_raw_on,
   handle crossterm::event::Event::Paste(String) in xt_read_key) — many terminals (including Windows
@@ -43,12 +41,21 @@ a very specific bug has to be a search filter, I am guessing the tab moves the c
   Event::Paste at all right now, so it's currently silently dropped by the _ => continue fallback if a
   terminal does send it.
 
-- Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
-(make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
+
+---
+Lower Priority
+---
 
 - Allow arrow keys to work in ctrl + r
 
 - Add word select / copy
+
+- There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
+a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
+
+- Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
+(make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
+
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
 Instead make a file that is both staged and unstaged
