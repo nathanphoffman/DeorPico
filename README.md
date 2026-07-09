@@ -17,7 +17,7 @@ This is software is licensed under the GPLv3, see: License.md
 ---
 How To Install
 
-These instructions are only for Linux at this time because it is tested only for that platform, it may work on other Unix systems like Mac but is untested.
+Linux (tested) / other Unix systems like Mac (untested):
 
 Quick install (requires git and Rust/cargo already installed):
 ```
@@ -32,6 +32,18 @@ Manual install:
 4) The file binary will build and install to your home bin directory for execution.
 5) Restart your terminal and use the command ```dpico``` to execute it
 6) If you run it in a folder it will open the root, you can also specify a command in the form:
+
+Windows (untested, PowerShell):
+
+Requires git and Rust/cargo already installed (get Rust from https://rustup.rs -- accept the default install, which includes the Visual Studio C++ Build Tools it needs to link).
+
+Quick install -- open PowerShell (no need to run it as Administrator) and run:
+```
+irm https://raw.githubusercontent.com/nathanphoffman/DeorPico/main/setup/install.ps1 | iex
+```
+This only touches your user profile (no system-wide changes, nothing needs elevated permissions): it clones the repo to `%USERPROFILE%\.local\share\DeorPico` (override with the `DEOR_PICO_DIR` environment variable), installs `deor` if missing, and builds `dpico.exe` into `%USERPROFILE%\.local\bin`, adding that folder to your user `PATH`.
+
+Restart your terminal afterwards and run `dpico` to launch it.
 
 THIS FILE IS A WORK IN PROGRESS
 
