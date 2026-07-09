@@ -22,7 +22,7 @@ Working: - Check syntax highlighting of other languages
 - Add rename feature, we need an ability to select a row in the side bar, and use shift + r to rename the file, should allow typing just like the new file/dir logic does but typing over the name 
   (clearing it out) on esc it should put it back, on enter it should rename it
 
-- Similar to hosw we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
+- Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
 ---
@@ -44,6 +44,9 @@ Nate thing tomorrow
 ---
 Lower Priority
 ---
+
+- If I delete a file with k-k and then hit crtl + s to save it it gets added back into the GIT list, rare but odd behavior
+
 
 - Allow arrow keys to work in ctrl + r
 

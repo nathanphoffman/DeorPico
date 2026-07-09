@@ -187,12 +187,21 @@ macro do_cut_impl
 		bool copied = cp_set(selection_text)
 		macro_run delete_selection
 
+# chr passed by value here (not read as a bare outer identifier) so this
+# clones instead of moving it -- do_paste_impl is inlined into a giant
+# shared function body where chr is read again by many later macros, and
+# a bare `clip_text = chr` reassignment moves it instead of cloning.
+fn string resolve_paste_text(string kind, string chr)
+	if kind is "paste_text"
+		return chr
+	return cp_get()
+
 macro do_paste_impl
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
 
-	string clip_text = cp_get()
+	string clip_text = resolve_paste_text(kind, chr)
 	int clip_len = len(clip_text)
 	if clip_len > 0
 		nls as "\n"

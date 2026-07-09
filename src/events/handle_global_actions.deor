@@ -17,7 +17,7 @@ macro handle_global_actions
 		macro_run do_cut_impl
 	else if kind is "copy"
 		macro_run do_copy_impl
-	else if kind is "paste"
+	else if kind is "paste" or kind is "paste_text"
 		macro_run do_paste_impl
 	else if kind is "undo"
 		macro_run do_undo_impl

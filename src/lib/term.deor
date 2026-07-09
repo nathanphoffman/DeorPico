@@ -27,7 +27,8 @@ fn void xt_raw_on()
 			crossterm::execute!(
 				std::io::stdout(),
 				crossterm::terminal::EnterAlternateScreen,
-				crossterm::event::EnableMouseCapture
+				crossterm::event::EnableMouseCapture,
+				crossterm::event::EnableBracketedPaste
 			).unwrap();
 			// Overflowing rows (a tab landing at a terminal tab-stop past our
 			// counted width, a wide char counted as 1 column, ...) should clip
@@ -46,6 +47,7 @@ fn void xt_raw_off()
 			std::io::stdout().flush().unwrap();
 			crossterm::execute!(
 				std::io::stdout(),
+				crossterm::event::DisableBracketedPaste,
 				crossterm::event::DisableMouseCapture,
 				crossterm::terminal::LeaveAlternateScreen
 			).unwrap();
@@ -192,6 +194,9 @@ fn KeyEvent xt_read_key()
 				}
 			}
         
+			crossterm::event::Event::Paste(text) =>
+				break KeyEvent { kind: "paste_text".to_string(), chr: text, shift: false, alt: false, col: 0, row: 0 },
+
 			crossterm::event::Event::Mouse(m) => {
 				let col = m.column as i64;
 				let row = m.row as i64;
