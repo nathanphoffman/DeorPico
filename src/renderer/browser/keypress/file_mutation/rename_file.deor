@@ -1,7 +1,19 @@
 
 macro start_file_rename
     notice = "hi"
-    string parent_dir = browse_dir
+    macro_run resolve_placeholder_target
     #macro_run enter_placeholder_edit_mode
-    macro_run build_placeholder_entry
+
+    # the entry replaces the file name, so we update the shared code for create to go up
+    insert_index = insert_index - 1
+    
+    original_entry as browse_entries at insert_index
+    
+    browse_entries remove at insert_index
+    
+    (name) in original_entry    
+    notice = name
+    
+
+
     macro_run insert_placeholder_entry

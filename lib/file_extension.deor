@@ -164,6 +164,11 @@ fn EntryLookup e_find_by_path(entryList entries, string path)
 			EntryLookup { found, index, depth, expanded }
 		}
 
+
+fn bool f_rename(string source, string dest_path)
+    rust
+        std::fs::rename(&source, &dest_path).is_ok()
+
 # Joins `dir` and `name` the same way std::path::Path::join would -- used to
 # build a new file's full path from its parent directory and typed name
 # (see confirm_create_file), since the name doesn't exist as a FileEntry yet.
