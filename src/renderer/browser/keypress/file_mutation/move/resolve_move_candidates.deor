@@ -34,7 +34,7 @@ macro is_excluded_move_candidate
 # x_find_entries_matching). A query shaped like a directory path (has a "/",
 # no extension) that narrows to exactly one directory among the candidates
 # is assumed to mean that directory, not its contents.
-macro narrow_move_candidates_to_directory
+macro_block narrow_move_candidates_to_directory
 	bool has_slash = s_contains(move_query, slash)
 	bool has_no_extension = len(f_extension(move_query)) is 0
 	bool looks_like_dir_path = has_slash and has_no_extension

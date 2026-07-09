@@ -20,7 +20,7 @@ macro start_create_file
 # to route "dir X" / "mv X" and drive the rest of the flow: resolving/
 # writing the entry (create/resolve_create_file_destination.deor) and
 # finalizing/reporting the result (create/finalize_created_entry.deor).
-macro confirm_create_file
+macro_block confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
 		notice = "File name can't be empty"

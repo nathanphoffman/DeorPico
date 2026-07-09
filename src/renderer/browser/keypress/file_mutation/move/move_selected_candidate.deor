@@ -2,7 +2,7 @@
 # Downstream of dispatch_move_candidate.deor -- resolves the single chosen
 # candidate's source/destination paths, refuses to clobber an existing
 # entry, then performs the move on disk.
-macro move_selected_candidate
+macro_block move_selected_candidate
 	macro_run resolve_move_destination
 	bool already_exists = f_exists(dest_full_path)
 	if already_exists
@@ -19,7 +19,7 @@ macro resolve_move_destination
 	string moved_name = f_basename(source_path)
 	string dest_full_path = f_join_path(create_parent_dir, moved_name)
 
-macro apply_confirmed_move
+macro_block apply_confirmed_move
 	bool moved = f_move(source_path, create_parent_dir)
 	if moved
 		macro_run finalize_moved_entry
@@ -37,7 +37,7 @@ macro finalize_moved_entry
 	macro_run refresh_all_git_status
 	macro_run report_move_success
 
-macro report_move_success
+macro_block report_move_success
 	moved_prefix as "Moved "
 	moved_suffix as " here"
 	stringList moved_parts = [moved_prefix, display_path, moved_suffix]
