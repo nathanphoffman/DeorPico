@@ -142,6 +142,21 @@ macro diff_scroll_down_impl
 	diff_scroll_row = diff_scroll_row + 1
 	macro_run clamp_diff_scroll
 
+# Mouse-wheel variants -- moves by SCROLL_WHEEL_AMOUNT per notch, same as the
+# main buffer view's scroll_up_impl/scroll_down_impl (see scroll.deor).
+# diff_scroll_up_impl/down_impl above stay 1-line-per-call since they're also
+# shared with the Up/Down arrow keys (see handle_diff_mode.deor), which
+# should keep moving a single line per press.
+macro diff_wheel_scroll_up_impl
+	macro_run use_consts
+	diff_scroll_row = diff_scroll_row - SCROLL_WHEEL_AMOUNT
+	macro_run clamp_diff_scroll
+
+macro diff_wheel_scroll_down_impl
+	macro_run use_consts
+	diff_scroll_row = diff_scroll_row + SCROLL_WHEEL_AMOUNT
+	macro_run clamp_diff_scroll
+
 macro diff_page_up_impl
 	macro_run use_consts
 	diff_scroll_row = diff_scroll_row - PAGE_DOWN_UP_AMOUNT

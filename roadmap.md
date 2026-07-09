@@ -67,20 +67,21 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: alt + click selection in
 - Done: Add ctrl + a To Select All
 - Done: alt search is fixed
+- Done: Slow Git Diff Scroll
+
+Working on: - Any file more than 2000 lines long we should prevent from opening maybe?
 
 - Implement back-indentation shift + tab
 
 - clicking on a file when there is a save prompt in progress should refuse selection of the file you want to go to until you 
 take action.
 
-- F5 should run in editor view
 - On ctrl + s refresh the file browser view -- i think we do this today but might be good for capturing external changes
 
 - Auto close sidebar on page up or page down
 
 - Pair with AI
- - Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
- - Any file more than 2000 lines long we should prevent from opening maybe?
+ 
  - When the editor starts up the directory sidebar should be selected
  
 - Extract Sidebar into its own folder
@@ -112,6 +113,14 @@ DeorLang
 ---
 Lower Priority
 ---
+- Add paste event for better windows support
+  - Fix worth considering: enable crossterm's bracketed-paste mode (EnableBracketedPaste in xt_raw_on,
+  handle crossterm::event::Event::Paste(String) in xt_read_key) — many terminals (including Windows
+  Terminal) route native paste through that protocol as one atomic blob regardless of the Ctrl+V
+  interception, so you'd get one clean paste event instead of N keystrokes. term.deor doesn't handle
+  Event::Paste at all right now, so it's currently silently dropped by the _ => continue fallback if a
+  terminal does send it.
+
  - Add an extra space to the bottom of the file browser history, so it always scrolls if it looks close to the bottom 
 so users know there is nothing missing if they scroll down
 

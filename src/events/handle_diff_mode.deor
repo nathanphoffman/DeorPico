@@ -18,6 +18,6 @@ macro handle_diff_mode
 	else if kind is "mouse_down"
 		macro_run mouse_down_diff_impl
 	else if kind is "mouse_scroll_up"
-		macro_run diff_scroll_up_impl
+		macro_run diff_wheel_scroll_up_impl
 	else if kind is "mouse_scroll_down"
-		macro_run diff_scroll_down_impl
+		macro_run diff_wheel_scroll_down_impl
