@@ -1,7 +1,7 @@
 
 # Downstream of write_new_entry_to_disk (see ../resolve_create_file_destination.deor)
 # -- turns the placeholder row into its real entry, clears the prompt
-# state, refreshes git status, and reports success/failure.
+# state, refreshes git status, and reports success.
 macro finalize_created_entry
 	macro_run replace_create_file_placeholder_entry
 	macro_run reset_placeholder_state
@@ -26,11 +26,3 @@ macro report_created_entry_success
 		path = full_path
 		sidebar_focused = false
 		macro_run load_file_into_buffer
-
-macro report_create_entry_failure
-	if is_dir_request
-		notice = "Could not create directory"
-		error = true
-	else
-		notice = "Could not create file"
-		error = true

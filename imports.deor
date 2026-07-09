@@ -69,7 +69,7 @@ import "src/renderer/browser/keypress/file_mutation/rename_file.deor"
 import "src/renderer/browser/keypress/file_mutation/move_file.deor"
 import "src/renderer/browser/keypress/file_mutation/move/resolve_move_candidates.deor"
 import "src/renderer/browser/keypress/file_mutation/move/dispatch_move_candidate.deor"
-import "src/renderer/browser/keypress/file_mutation/move/apply_move.deor"
+import "src/renderer/browser/keypress/file_mutation/move/move_selected_candidate.deor"
 import "src/renderer/browser/keypress/file_mutation/move/relocate_browse_tree_entry.deor"
 
 import "src/renderer/browser/keypress/browse.deor"

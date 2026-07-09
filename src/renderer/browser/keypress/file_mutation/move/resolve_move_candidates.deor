@@ -1,8 +1,14 @@
 
-# Downstream of confirm_move_request (see ../move_file.deor) -- finds every
-# file/directory matching move_query and filters out candidates that are
-# already where they'd be moved to, or that the destination sits inside of
-# (pulling a folder into its own descendant is filesystem-invalid).
+# Downstream of confirm_move_request (see ../move_file.deor) -- resolves
+# move_query into the final candidate list: finds every match, then narrows
+# to directory-only matches if the query looks like a directory path.
+macro resolve_move_candidates
+	macro_run collect_valid_move_candidates
+	macro_run narrow_move_candidates_to_directory
+
+# finds every file/directory matching move_query and filters out candidates
+# that are already where they'd be moved to, or that the destination sits
+# inside of (pulling a folder into its own descendant is filesystem-invalid).
 macro collect_valid_move_candidates
 	entryMatchList raw_matches = x_find_entries_matching(browse_dir, move_query)
 	slash as "/"

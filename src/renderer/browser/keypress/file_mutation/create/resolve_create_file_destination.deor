@@ -23,3 +23,11 @@ macro write_new_entry_to_disk
 		macro_run finalize_created_entry
 	else
 		macro_run report_create_entry_failure
+
+macro report_create_entry_failure
+	if is_dir_request
+		notice = "Could not create directory"
+		error = true
+	else
+		notice = "Could not create file"
+		error = true
