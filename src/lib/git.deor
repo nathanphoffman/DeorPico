@@ -209,6 +209,8 @@ fn string g_render_minimap_bar(intList status, int cols)
 	for col in range(cols)
 		int start = col * total_lines / cols
 		int stop = (col + 1) * total_lines / cols
+		if stop <= start
+			stop = start + 1
 
 		int bucket_code = 0
 		for row in (start, stop)

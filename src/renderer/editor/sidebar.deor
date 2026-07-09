@@ -69,6 +69,8 @@ macro handle_sidebar_focus_mode
 		macro_run start_create_file
 	else if kind is "escape"
 		sidebar_focused = false
+	else if kind is "page_up" or kind is "page_down"
+		sidebar_focused = false
 	else if kind is "mouse_down"
 		macro_run mouse_down_editor_impl
 	else if kind is "mouse_scroll_up"
@@ -245,13 +247,6 @@ macro sidebar_key_activate
 		else
 			macro_run load_file_into_buffer
 			sidebar_focused = false
-
-# Re-tags browse_entries' git-status colors without touching the tree
-# structure itself (depth/expanded/name/path are untouched) -- run after a
-# save so the always-visible sidebar reflects the new git state immediately.
-macro refresh_sidebar_git_status
-	StringMap fresh_git_map = g_status(browse_dir)
-	browse_entries = g_apply_status(browse_entries, fresh_git_map)
 
 # Bundled since sidebar_row_piece would otherwise need more than 3
 # parameters -- functions here are capped at 3.
