@@ -11,3 +11,5 @@ macro handle_text_edit
 		macro_run key_space_comment_selection_impl
 	else if kind is "char"
 		macro_run key_char_impl
+    else if kind is "select_all"
+        macro_run key_select_all_impl

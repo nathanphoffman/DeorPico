@@ -29,6 +29,17 @@ macro start_or_extend_selection_impl
 fn bool clear_selection_impl()
 	return false
 
+macro key_select_all_impl
+    notice = "hello world"
+    cursor_row = 0
+    cursor_col = 0
+    has_selection = true
+
+    int total_line_count = len(lines)
+    sel_anchor_row = total_line_count
+    last_line as lines at (total_line_count - 1)
+    sel_anchor_col = len(last_line)
+
 macro key_space_comment_selection_impl
 	macro_run normalize_selection
 

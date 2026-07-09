@@ -65,28 +65,27 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: dir creates a folder
 - Done: drag selection gone
 - Done: alt + click selection in
+- Almost Done?: Add ctrl + a To Select All
 
-- Add ctrl + a To Select All
+- Implement back-indentation shift + tab
 
 - search needs fixed, results it returns do not seem to be returning proper file matches, I am using 
     underscores if that matters
 
-- shift tab back tab selection
-
 - clicking on a file when there is a save prompt in progress should refuse selection of the file you want to go to until you 
 take action.
 
+- F5 should run in editor view
+- On ctrl + s refresh the file browser view -- i think we do this today but might be good for capturing external changes
+
+- Auto close sidebar on page up or page down
+
 - Pair with AI
- - Selections seem to have a pretty extreme horizontal offset from the mouse cursor (not the keyboard cursor which is fine)
- - F5 should run while I am in the editor view
- - If page down or up is pressed, auto close the sidebar if it is open
  - Can we make the scroll wheel go further on scroll down on scroll -- it is painfully slow
  - Any file more than 2000 lines long we should prevent from opening maybe?
  - When the editor starts up the directory sidebar should be selected
  
 - Extract Sidebar into its own folder
-
-- On any ctrl + s we should refresh the git directory listing -- so we see updates to git highlighting / entries
 
 Probably better done by AI, required items:
 ---
