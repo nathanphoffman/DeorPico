@@ -15,6 +15,24 @@ macro back_stop
     else if cursor_col > current_line_length - 1
         cursor_col = current_line_length
 
+    # sel_anchor_row/col are read unconditionally every render frame
+    # (main.deor) regardless of has_selection, so a stale anchor left
+    # pointing past the end of a buffer that just got shorter (deleting
+    # lines near the bottom) crashes the next render with an out-of-bounds
+    # index -- clamp it the same way cursor_row/cursor_col are clamped above.
+    if sel_anchor_row < 0
+        sel_anchor_row = 0
+    else if sel_anchor_row > len(lines) - 1
+        sel_anchor_row = len(lines) - 1
+
+    anchor_line as lines at sel_anchor_row
+    anchor_line_length as len(anchor_line)
+
+    if sel_anchor_col < 0
+        sel_anchor_col = 0
+    else if sel_anchor_col > anchor_line_length - 1
+        sel_anchor_col = anchor_line_length
+
 macro register_events
     macro_run handle_global_actions
 	macro_run handle_arrow_nav

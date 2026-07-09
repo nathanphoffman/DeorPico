@@ -63,7 +63,8 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: Split really simple macros into functions
 - Done: mv has been added
 - Done: dir creates a folder
-
+- Done: drag selection gone
+- Done: alt + click selection in
 
 - Add ctrl + a To Select All
 
