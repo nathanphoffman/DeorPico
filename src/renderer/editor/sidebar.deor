@@ -38,13 +38,13 @@ macro handle_sidebar_focus_mode
 	if not sidebar_locked
 		if creating_file
 			if kind is "escape"
-				macro_run cancel_create_file
+				macro_run cancel_placeholder
 			else if kind is "enter"
 				macro_run confirm_create_file
 			else if kind is "backspace"
-				macro_run create_file_backspace
+				macro_run placeholder_backspace
 			else if kind is "char"
-				macro_run create_file_char
+				macro_run placeholder_char
 		else if filter_active
 			if kind is "escape"
 				macro_run close_browse_filter

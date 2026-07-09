@@ -47,7 +47,7 @@ struct BrowserState
 	# FileEntry sits in browse_entries at browse_selected and the sidebar
 	# renders its name from new_file_name plus a fake cursor block instead
 	# of the tree as normal (see start_create_file/confirm_create_file/
-	# cancel_create_file).
+	# cancel_placeholder).
 	bool creating_file
 	string new_file_name
 
