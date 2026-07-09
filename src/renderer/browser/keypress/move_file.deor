@@ -1,0 +1,98 @@
+
+# Handles the "mv X" form of confirm_create_file -- a genuinely different
+# operation (pull an existing file or directory into create_parent_dir,
+# i.e. wherever ^R was pressed) from the create-file/create-dir paths above
+# it, not just another name variant. `move_query` is set by the caller. X is
+# matched case-insensitively against every file/directory's root-relative
+# path anywhere in the project (see x_find_entries_matching), so a bare
+# name, a partial name, or a partial/full path all work. A candidate
+# already directly inside create_parent_dir (a no-op -- it's already there)
+# and one that create_parent_dir sits inside of (pulling a folder into its
+# own descendant is filesystem-invalid) are excluded before checking for
+# ambiguity.
+macro confirm_move_request
+	if len(move_query) is 0
+		notice = "Name can't be empty"
+		error = true
+	else
+		entryMatchList raw_matches = x_find_entries_matching(browse_dir, move_query)
+		slash as "/"
+		string dest_prefix = s_join([create_parent_dir, slash])
+
+		entryMatchList valid_matches = empty
+		for candidate in raw_matches
+			(full_path) in candidate
+			string candidate_parent = f_dirname(full_path)
+			bool is_already_here = candidate_parent is create_parent_dir
+			bool is_self = full_path is create_parent_dir
+			string candidate_prefix = s_join([full_path, slash])
+			bool dest_is_inside_candidate = s_starts_with(create_parent_dir, candidate_prefix)
+			if not is_already_here and not is_self and not dest_is_inside_candidate
+				valid_matches at end = candidate
+
+		int match_count = len(valid_matches)
+		if match_count is 0
+			no_match_prefix as "No file or directory matches '"
+			no_match_suffix as "'"
+			stringList no_match_parts = [no_match_prefix, move_query, no_match_suffix]
+			notice = s_join(no_match_parts)
+			error = true
+		else if match_count > 1
+			notice = "Multiple matches -- be more specific"
+			error = true
+		else
+			zero as 0
+			EntryMatch chosen = valid_matches at zero
+			(full_path, display_path, is_dir) in chosen
+			string source_path = full_path
+			string moved_name = f_basename(source_path)
+			string dest_full_path = f_join_path(create_parent_dir, moved_name)
+			bool already_exists = f_exists(dest_full_path)
+			if already_exists
+				notice = "Something with that name already exists there"
+				error = true
+			else
+				bool moved = f_move(source_path, create_parent_dir)
+				if moved
+					browse_entries = e_remove_at(browse_entries, browse_selected)
+
+					EntryLookup source_lookup = e_find_by_path(browse_entries, source_path)
+					(found, index, depth) in source_lookup
+					if found
+						if is_dir
+							browse_entries = e_remove_children(browse_entries, index, depth)
+						browse_entries = e_remove_by_path(browse_entries, source_path)
+
+					EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
+					(found, index, depth, expanded) in dest_lookup
+					if found and expanded
+						string name = moved_name
+						string path = dest_full_path
+						depth = depth + 1
+						expanded = false
+						string git_status = ""
+						FileEntry moved_entry = (name, path, is_dir, depth, expanded, git_status)
+						entryList one_entry = empty
+						one_entry at end = moved_entry
+						browse_entries = e_insert_children(browse_entries, index, one_entry)
+
+					int last_browse_entry = len(browse_entries) - 1
+					if browse_selected > last_browse_entry
+						browse_selected = last_browse_entry
+					if browse_selected < 0
+						browse_selected = 0
+
+					creating_file = false
+					new_file_name = ""
+					create_parent_dir = ""
+
+					macro_run refresh_all_git_status
+
+					moved_prefix as "Moved "
+					moved_suffix as " here"
+					stringList moved_parts = [moved_prefix, display_path, moved_suffix]
+					notice = s_join(moved_parts)
+					error = false
+				else
+					notice = "Could not move"
+					error = true

@@ -45,6 +45,8 @@ Nate thing tomorrow
 Lower Priority
 ---
 
+- Refresh should perhaps capture directory changes too like folder and file renames from outside not just git changes?
+
 - If I delete a file with k-k and then hit crtl + s to save it it gets added back into the GIT list, rare but odd behavior
 
 

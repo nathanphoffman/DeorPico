@@ -1,0 +1,60 @@
+
+# ^K on `path`/`is_dir` (bound by the caller from whichever entry is
+# currently selected) -- sends it to the OS trash rather than a permanent
+# delete, so a wrong keypress is still recoverable. A non-empty directory is
+# refused outright (recursing here would be far too easy to trigger by
+# accident); an empty one needs no confirmation since there's nothing in it
+# to lose. A file requires a second ^K on the *same* path first (see
+# pending_delete_path/editor_handle_key) since the trash is the only
+# recovery path. Deleting the file that's currently open in the editor is
+# allowed -- the in-memory buffer stays open and just gets marked dirty, so
+# ^S recreates it.
+macro file_delete_entry
+	if is_dir
+		bool dir_empty = f_dir_is_empty(path)
+		if dir_empty
+			bool trashed = f_trash(path)
+			if trashed
+				macro_run remove_deleted_entry
+				notice = "Moved to trash"
+				error = false
+			else
+				notice = "Could not delete (trash unavailable?)"
+				error = true
+		else
+			notice = "Directory not empty"
+			error = true
+	else if pending_delete_path is path
+		bool trashed = f_trash(path)
+		pending_delete_path = ""
+		if trashed
+			if path is filename
+				dirty = true
+			macro_run remove_deleted_entry
+			notice = "Moved to trash"
+			error = false
+		else
+			notice = "Could not delete (trash unavailable?)"
+			error = true
+	else
+		pending_delete_path = path
+		notice = "Press ^K again to move this file to trash -- cannot be undone"
+		error = true
+
+# Removes the just-deleted `path` from browse_entries (it's gone from disk,
+# and that tree is otherwise never re-listed on its own) and reclamps the
+# selection. git_changes is NOT hand-purged -- refresh_all_git_status
+# re-derives it from a fresh `git status` instead, so a tracked file shows
+# up immediately as "deleted" in the Git list rather than just disappearing,
+# while an untracked file naturally drops out since git has no record of it
+# either way.
+macro remove_deleted_entry
+	browse_entries = e_remove_by_path(browse_entries, path)
+
+	int last_browse_entry = len(browse_entries) - 1
+	if browse_selected > last_browse_entry
+		browse_selected = last_browse_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+	macro_run refresh_all_git_status

@@ -51,8 +51,16 @@ import "src/renderer/editor/keypress/enter.deor"
 import "src/renderer/editor/keypress/char.deor"
 import "src/renderer/editor/keypress/tab.deor"
 import "src/renderer/editor/keypress/page_up_down.deor"
+
+# browser
+import "src/renderer/browser/keypress/create_file.deor"
+import "src/renderer/browser/keypress/delete_file.deor"
+import "src/renderer/browser/keypress/move_file.deor"
+
 import "src/renderer/browser/keypress/browse.deor"
 import "src/renderer/browser/keypress/browse_filter.deor"
+
+
 import "src/renderer/editor/keypress/refresh.deor"
 import "src/renderer/editor/keypress/scroll.deor"
 import "src/renderer/editor/keypress/diff.deor"
