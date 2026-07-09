@@ -1,20 +1,20 @@
 # Everything depends on libs
-import "src/lib/file.deor"
-import "src/lib/string.deor"
-import "src/lib/math.deor"
-import "src/lib/convert.deor"
-import "src/lib/list.deor" where T = string
+import "lib/file.deor"
+import "lib/string.deor"
+import "lib/math.deor"
+import "lib/convert.deor"
+import "lib/list.deor" where T = string
 
 # these are external (x) libs x*_ functions
-import "src/lib/term.deor"
-import "src/lib/syntax.deor"
+import "lib/term.deor"
+import "lib/syntax.deor"
 
-import "src/lib/map.deor"
-import "src/lib/git.deor"
-import "src/lib/clip.deor"
-import "src/lib/search.deor"
-import "src/lib/lint.deor"
-import "src/lib/dirsearch.deor"
+import "lib/map.deor"
+import "lib/git.deor"
+import "lib/clip.deor"
+import "lib/search.deor"
+import "lib/lint.deor"
+import "lib/dirsearch.deor"
 
 import "src/rust_helper.deor"
 
