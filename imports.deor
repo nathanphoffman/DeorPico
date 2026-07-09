@@ -16,6 +16,8 @@ import "src/lib/search.deor"
 import "src/lib/lint.deor"
 import "src/lib/dirsearch.deor"
 
+import "src/rust_helper.deor"
+
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"
 import "src/models/browser_state.deor"
@@ -53,9 +55,10 @@ import "src/renderer/editor/keypress/tab.deor"
 import "src/renderer/editor/keypress/page_up_down.deor"
 
 # browser
-import "src/renderer/browser/keypress/create_file.deor"
-import "src/renderer/browser/keypress/delete_file.deor"
-import "src/renderer/browser/keypress/move_file.deor"
+import "src/renderer/browser/keypress/file_mutation/create_file.deor"
+import "src/renderer/browser/keypress/file_mutation/delete_file.deor"
+import "src/renderer/browser/keypress/file_mutation/rename_file.deor"
+import "src/renderer/browser/keypress/file_mutation/move_file.deor"
 
 import "src/renderer/browser/keypress/browse.deor"
 import "src/renderer/browser/keypress/browse_filter.deor"

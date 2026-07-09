@@ -16,8 +16,9 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: auto-set alt text search based on file search
 - Done: clicking on a file when there is a save prompt in progress should lock out
 - Done: Text wrap bug should be fixed
-
-Working: - Check syntax highlighting of other languages
+- Done: other lang syntax highlighting added
+- Done: built windows client
+- Done: more organization
 
 - Add rename feature, we need an ability to select a row in the side bar, and use shift + r to rename the file, should allow typing just like the new file/dir logic does but typing over the name 
   (clearing it out) on esc it should put it back, on enter it should rename it
