@@ -32,7 +32,6 @@ Nate thing tomorrow
 
 - Implement back-indentation shift + tab
 
-
 - Add paste event for better windows support
   - Fix worth considering: enable crossterm's bracketed-paste mode (EnableBracketedPaste in xt_raw_on,
   handle crossterm::event::Event::Paste(String) in xt_read_key) — many terminals (including Windows
@@ -56,6 +55,7 @@ a very specific bug has to be a search filter, I am guessing the tab moves the c
 - Allow git commit to be performed, ^m should toggle a git commit while in the file browser sidebar with currently staged files, a prompt should appear 
 (make it a new screen -- which defaults the cursor into a comments: enter confirms, esc should exit)  We should make a new folder called prompt in renderer for this, it could be expanded later on.
 
+- Maybe make alt (like shift) both work for arrow keys selections so it mirrors the current alt + click today?
 
 - We should talk about improving the git change list: instead of % for edited file, lets get rid of that.  
 Instead make a file that is both staged and unstaged

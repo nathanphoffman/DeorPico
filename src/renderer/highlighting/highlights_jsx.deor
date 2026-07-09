@@ -1,0 +1,74 @@
+macro highlights_jsx
+	# block comments (also covers JSX's {/* ... */} form -- the braces
+	# aren't part of the comment syntax so this matches inside them fine)
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# double/single/template-literal strings -- template ${} interpolation
+	# isn't separately colored, the whole literal is just one string token
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec tstr_spec = (name, start, stop)
+	tstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
+
+	# JSX tag names: "<" or "</" immediately followed by a tag/component
+	# name (dotted for namespaced components like <Foo.Bar>) -- the "<" is
+	# swallowed into the match since the regex crate has no lookbehind,
+	# same trick as the call-site pattern below
+	tag_name as "type"
+	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.]*"
+	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+
+	# JSX attribute names (className=, onClick=): identifier tight against
+	# "=" with no space, which in practice only really happens for JSX
+	# attributes and tight assignments -- the "=" is swallowed into the
+	# match for the same lookahead reason as above
+	attr_name as "function"
+	attr_pattern as "\\b[a-zA-Z_][a-zA-Z0-9_-]*="
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+	# call sites: name immediately followed by "(" -- both cases allowed
+	# since components (PascalCase) are sometimes invoked directly too
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_$][A-Za-z0-9_$]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|false|finally|for|from|function|get|if|import|in|instanceof|let|new|null|of|return|set|static|super|switch|this|throw|true|try|typeof|undefined|var|void|while|with|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# PascalCase identifiers (React components, imported classes), wherever
+	# used outside a JSX tag -- e.g. "const Foo = () => ..." definitions
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

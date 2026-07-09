@@ -3,12 +3,15 @@ fn Highlighter initialize_highlighter(string ext)
     macro_run use_consts
     const string DEOR = "deor"
     const string CSHARP = "cs"
+    const string JSX = "jsx"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
 		macro_run highlights_deor
 	else if ext is CSHARP
 		macro_run highlights_csharp
+	else if ext is JSX
+		macro_run highlights_jsx
 	else
 		highlighter = xs_from_extension(ext, TAB_WIDTH)
 
