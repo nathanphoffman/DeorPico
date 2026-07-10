@@ -1,0 +1,16 @@
+
+# Same shape as write_create_entry_to_disk (../create/) and
+# write_rename_to_disk (../rename/) -- refuses to clobber an existing
+# entry, then performs the move on disk. `moved` stays false (with
+# `error` set) on either failure path, so confirm_move_request knows to
+# stop before finalizing anything.
+macro write_move_to_disk
+	bool moved = false
+	if f_exists(dest_full_path)
+		notice = "Something with that name already exists there"
+		error = true
+	else
+		moved = f_move(source_path, create_parent_dir)
+		if not moved
+			notice = "Could not move"
+			error = true

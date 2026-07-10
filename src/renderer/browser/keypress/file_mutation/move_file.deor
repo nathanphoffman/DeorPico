@@ -6,18 +6,28 @@
 # the caller. X is matched case-insensitively against every file/
 # directory's root-relative path anywhere in the project (see
 # x_find_entries_matching), so a bare name, a partial name, or a partial/
-# full path all work. Candidate resolution/filtering starts below with
-# resolve_move_candidates and continues in move/collect_valid_move_candidates.deor
-# onward, match-count routing in move/dispatch_move_candidate.deor, the
-# actual disk move in move/move_selected_candidate.deor, and browse-tree
-# bookkeeping in move/finalize_moved_entry.deor onward.
+# full path all work.
+#
+# Flat by design, same shape as confirm_create_file (../create_file.deor):
+# every macro_run below is a single leaf step (see move/*.deor), gated by
+# plain ifs rather than nested inside one another -- read top to bottom.
 macro confirm_move_request
 	if len(move_query) is 0
 		notice = "Name can't be empty"
 		error = true
 	else
 		macro_run resolve_move_candidates
-		macro_run dispatch_move_candidate
+		int match_count = len(valid_matches)
+		if match_count is 0
+			macro_run report_no_move_match
+		else if match_count > 1
+			notice = "Multiple matches -- be more specific"
+			error = true
+		else
+			macro_run resolve_move_destination
+			macro_run write_move_to_disk
+			if not error
+				macro_run finalize_moved_entry
 
 # Only called from confirm_move_request above -- kept in the same file
 # rather than its own, since it's a single-caller wrapper. Resolves
