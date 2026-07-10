@@ -7,11 +7,11 @@
 # ones that do.
 fn string editor_status_shortcuts(bool has_selection, bool sidebar_focused)
 	if sidebar_focused
-		return "^A stage/unstage  ^R new file  ^K delete  ^U discard changes  : filter"
+		return "^A stage/unstage  ^F new file or dir (dir X) or move (mv X)  ^R Rename  ^K delete  ^U discard changes  : filter"
 
 	string selection_hint = ""
 	if has_selection
-		selection_hint = "SELECTION: space = comment/uncomment  tab = indent  |  "
+		selection_hint = "SELECTION: space = comment/uncomment  tab = indent  shift+tab = remove indent |  "
 
 	string shortcuts = "^S save  ^Q quit  ^D diff  ^F search  F1 sidebar  F5 refresh  ^N line#  ^E errors/log  ^Z undo  ^Y redo  ^X cut  ^C copy  ^V paste"
 	return s_join([selection_hint, shortcuts])
