@@ -10,13 +10,42 @@
 #
 # Flat by design, same shape as confirm_create_file (../create_file.deor):
 # every macro_run below is a single leaf step (see move/*.deor), gated by
-# plain ifs rather than nested inside one another -- read top to bottom.
+# plain ifs and for-loops living here rather than spread across further
+# macros nested inside move/ -- read top to bottom.
 macro confirm_move_request
 	if len(move_query) is 0
 		notice = "Name can't be empty"
 		error = true
 	else
-		macro_run resolve_move_candidates
+		# finds every file/directory matching move_query and filters out
+		# candidates that are already where they'd be moved to, or that the
+		# destination sits inside of (pulling a folder into its own
+		# descendant is filesystem-invalid).
+		entryMatchList raw_matches = x_find_entries_matching(browse_dir, move_query)
+		slash as "/"
+		string dest_prefix = s_join([create_parent_dir, slash])
+
+		entryMatchList valid_matches = empty
+		for candidate in raw_matches
+			(full_path) in candidate
+			macro_run is_excluded_move_candidate
+			if not is_excluded
+				valid_matches at end = candidate
+
+		# "mv src/lib" would otherwise match the src/lib directory AND every
+		# file inside it (matching is a plain substring check -- see
+		# x_find_entries_matching). A query shaped like a directory path
+		# (has a "/", no extension) that narrows to exactly one directory
+		# among the candidates is assumed to mean that directory, not its
+		# contents.
+		bool has_slash = s_contains(move_query, slash)
+		bool has_no_extension = len(f_extension(move_query)) is 0
+		bool looks_like_dir_path = has_slash and has_no_extension
+		if looks_like_dir_path
+			macro_run collect_directory_only_matches
+			if len(dir_only_matches) is 1
+				valid_matches = dir_only_matches
+
 		int match_count = len(valid_matches)
 		if match_count is 0
 			macro_run report_no_move_match
@@ -27,13 +56,25 @@ macro confirm_move_request
 			macro_run resolve_move_destination
 			macro_run write_move_to_disk
 			if not error
-				macro_run finalize_moved_entry
+				# Updates browse_entries in place so the tree reflects the
+				# move without a full rescan: drops the source row (and its
+				# children, if it was a directory), then re-inserts it
+				# under the destination if the destination is expanded.
+				macro_run remove_move_source_entry
 
-# Only called from confirm_move_request above -- kept in the same file
-# rather than its own, since it's a single-caller wrapper. Resolves
-# move_query into the final candidate list: finds every match, then
-# narrows to directory-only matches if the query looks like a directory
-# path.
-macro resolve_move_candidates
-	macro_run collect_valid_move_candidates
-	macro_run narrow_move_candidates_to_directory
+				EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
+				(found, index, depth, expanded) in dest_lookup
+				if found and expanded
+					macro_run build_moved_entry
+					entryList one_entry = empty
+					one_entry at end = moved_entry
+					browse_entries = e_insert_children(browse_entries, index, one_entry)
+
+				macro_run clamp_browse_selection_after_move
+
+				creating_file = false
+				new_file_name = ""
+				create_parent_dir = ""
+
+				macro_run refresh_all_git_status
+				macro_run report_move_success
