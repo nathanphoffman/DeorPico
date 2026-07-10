@@ -22,6 +22,8 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: rename feature added
 - Done: tons of organization
 
+- Splitting out sidebar.deor into macros
+
 - We should make file search more obvious that it is enabled, the inner file alt search with a reminder to press tab to cancel.  Maybe a red bar over the 
 status bar?  is that a hard add?
 

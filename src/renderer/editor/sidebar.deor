@@ -33,16 +33,10 @@ macro use_sidebar_border_colors
 	macro_run use_ansi_codes
 	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])
 
-# Renders one row of the sidebar: the <GIT> section (header, "clean"
-# placeholder, or a flat changed-file row) followed by the Files tree
-# (indentation, expand/collapse marker, "+" edit prefix, git-status color,
-# selection highlight) -- reusing browser.deor's row-rendering helpers
-# directly. `idx`/`selected_idx` are screen-row positions spanning the whole
-# sidebar (see sidebar_git_section_rows), not raw list indices. Blank (just
-# padding) once `idx` runs past the end of the Files tree.
-fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
-
+# One-time flags/geometry sidebar_row_piece's branches below all read from --
+# split out purely because it's the setup every branch needs, not a case of
+# its own. See each flag's own comment for why it exists.
+macro compute_sidebar_row_layout
 	int git_count = len(git_changes)
 	bool has_git_section = git_section_rows > 0
 
@@ -78,141 +72,194 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 	# the border entirely while filtering instead.
 	bool show_top_border = sidebar_focused and is_top_row and not filter_active and not top_row_is_first_entry
 	bool show_bottom_border = sidebar_focused and is_bottom_row and not filter_active and not bottom_row_is_last_entry
-	if show_top_border or show_bottom_border
-		macro_run use_sidebar_border_colors
-		string corner = "+"
-		string dash = "-"
-		int rule_len = sidebar_width - 2
-		if rule_len < 0
-			rule_len = 0
-		string rule = s_repeat(dash, rule_len)
-		string border_line = s_join([corner, rule, corner])
-		return s_join([ANSI_SIDEBAR_BORDER_ON, border_line, ANSI_RESET])
 
 	int content_width = sidebar_width - 1
 	if sidebar_focused
 		content_width = sidebar_width - 3
 
+# Builds the horizontal-rule row swapped in for the top/bottom row of a
+# focused sidebar (see show_top_border/show_bottom_border above). Sets
+# border_row_text rather than returning directly -- see the note on
+# macro-vs-fn `return` in sidebar_row_piece below.
+macro build_sidebar_border_row
+	macro_run use_sidebar_border_colors
+	string corner = "+"
+	string dash = "-"
+	int rule_len = sidebar_width - 2
+	if rule_len < 0
+		rule_len = 0
+	string rule = s_repeat(dash, rule_len)
+	string border_line = s_join([corner, rule, corner])
+	string border_row_text = s_join([ANSI_SIDEBAR_BORDER_ON, border_line, ANSI_RESET])
+
+# filter_active row: one filter_matches entry (bold if it's a name match, vs
+# a plain "path (instances: N)" for a content match), or blank once idx runs
+# past the last match.
+macro render_sidebar_filter_row
+	int filter_total = len(filter_matches)
+	if idx < filter_total
+		FilterMatch entry = filter_matches at idx
+		(display_path, is_name_match, instance_count) in entry
+
+		string label = display_path
+		if not is_name_match
+			string count_str = c_int_to_string(instance_count)
+			label = s_join([display_path, " (instances: ", count_str, ")"])
+
+		FitResult fit = browser_fit(label, content_width)
+		(text, visible_len) in fit
+
+		string styled = text
+		if is_name_match
+			styled = browser_bold_wrap(text)
+
+		bool selected = idx is selected_idx
+		string filter_text = browser_select_wrap(styled, selected)
+		string gutter = browser_gutter(visible_len, content_width)
+		body = s_join([filter_text, gutter])
+	else
+		int zero_len = 0
+		string blank_gutter = browser_gutter(zero_len, content_width)
+		string empty_text = ""
+		body = s_join([empty_text, blank_gutter])
+
+# The <GIT> header row itself (top_row_is_header) -- bold, with a v/> marker
+# reflecting git_section_collapsed.
+macro render_sidebar_git_header_row
+	string git_marker = "v "
+	if git_section_collapsed
+		git_marker = "> "
+	string git_header_text = s_join([git_marker, "<GIT>"])
+	FitResult fit = browser_fit(git_header_text, content_width)
+	(text, visible_len) in fit
+	string colored = browser_bold_wrap(text)
+	bool selected = idx is selected_idx
+	string header_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([header_text, gutter])
+
+# The <GIT> section's "clean" placeholder row -- shown instead of any entry
+# rows when git_count is 0.
+macro render_sidebar_git_clean_row
+	string git_indent = "    "
+	string git_clean_text = s_join([git_indent, "clean"])
+	FitResult fit = browser_fit(git_clean_text, content_width)
+	(text, visible_len) in fit
+	string colored = browser_dim_wrap(text)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([colored, gutter])
+
+# One changed-file row inside the <GIT> section.
+macro render_sidebar_git_changed_row
+	int git_idx = idx - 1
+	FileEntry entry = git_changes at git_idx
+	(name, git_status) in entry
+
+	# Indented one level, same as a plain (non-directory) file sitting
+	# at depth 1 in the Files tree below -- makes the git-changed files
+	# read as nested under the <GIT> header the same way real tree
+	# children nest under their parent directory.
+	string git_indent = "    "
+	string edit_prefix = browser_edit_prefix(git_status)
+	string plain = s_join([git_indent, edit_prefix, name])
+	FitResult fit = browser_fit(plain, content_width)
+	(text, visible_len) in fit
+
+	string colored = browser_colorize(text, git_status)
+	bool selected = idx is selected_idx
+	string git_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([git_text, gutter])
+
+# Fallback case: one Files-tree row (indentation, expand/collapse marker,
+# "+" edit prefix, git-status color, selection highlight), including the
+# in-progress create/rename cursor-block row, or blank once tree_idx runs
+# past the end of browse_entries.
+macro render_sidebar_tree_row
+	int tree_idx = idx - git_section_rows
+	if tree_idx >= 0 and tree_idx < len(browse_entries)
+		FileEntry entry = browse_entries at tree_idx
+		(name, is_dir, depth, expanded, git_status) in entry
+
+		bool is_creating_row = creating_file and idx is selected_idx
+
+		string two_spaces = "  "
+		string indent = s_repeat(two_spaces, depth)
+
+		string marker = "  "
+		if is_dir
+			marker = "> "
+			if expanded
+				marker = "v "
+
+		string suffix = ""
+		if is_dir
+			suffix = "/"
+
+		string edit_prefix = browser_edit_prefix(git_status)
+		string plain = s_join([indent, marker, edit_prefix, name, suffix])
+		if is_creating_row
+			plain = s_join([indent, marker, new_file_name])
+
+		int fit_width = content_width
+		if is_creating_row
+			fit_width = content_width - 1
+			if fit_width < 0
+				fit_width = 0
+		FitResult fit = browser_fit(plain, fit_width)
+		(text, visible_len) in fit
+
+		string tree_text = ""
+		if is_creating_row
+			macro_run use_sidebar_border_colors
+			string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
+			tree_text = s_join([text, cursor_block])
+			visible_len = visible_len + 1
+		else
+			string colored = browser_colorize(text, git_status)
+			bool selected = idx is selected_idx
+			tree_text = browser_select_wrap(colored, selected)
+
+		string gutter = browser_gutter(visible_len, content_width)
+		body = s_join([tree_text, gutter])
+	else
+		int zero_len = 0
+		string blank_gutter = browser_gutter(zero_len, content_width)
+		string empty_text = ""
+		body = s_join([empty_text, blank_gutter])
+
+# Renders one row of the sidebar: the <GIT> section (header, "clean"
+# placeholder, or a flat changed-file row) followed by the Files tree
+# (indentation, expand/collapse marker, "+" edit prefix, git-status color,
+# selection highlight) -- reusing browser.deor's row-rendering helpers
+# directly. `idx`/`selected_idx` are screen-row positions spanning the whole
+# sidebar (see sidebar_git_section_rows), not raw list indices. Blank (just
+# padding) once `idx` runs past the end of the Files tree.
+#
+# Each row case above only ever *sets* `body` (or `border_row_text`) rather
+# than returning it directly -- `return` only appears here, in the actual
+# fn, since it's untested whether a `return` inside a plain macro correctly
+# exits the fn it gets inlined into.
+fn string sidebar_row_piece(SidebarRowInput row_input)
+	(browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
+
+	macro_run compute_sidebar_row_layout
+
+	if show_top_border or show_bottom_border
+		macro_run build_sidebar_border_row
+		return border_row_text
+
 	string body = ""
 	if filter_active
-		int filter_total = len(filter_matches)
-		if idx < filter_total
-			FilterMatch entry = filter_matches at idx
-			(display_path, is_name_match, instance_count) in entry
-
-			string label = display_path
-			if not is_name_match
-				string count_str = c_int_to_string(instance_count)
-				label = s_join([display_path, " (instances: ", count_str, ")"])
-
-			FitResult fit = browser_fit(label, content_width)
-			(text, visible_len) in fit
-
-			string styled = text
-			if is_name_match
-				styled = browser_bold_wrap(text)
-
-			bool selected = idx is selected_idx
-			string filter_text = browser_select_wrap(styled, selected)
-			string gutter = browser_gutter(visible_len, content_width)
-			body = s_join([filter_text, gutter])
-		else
-			int zero_len = 0
-			string blank_gutter = browser_gutter(zero_len, content_width)
-			string empty_text = ""
-			body = s_join([empty_text, blank_gutter])
+		macro_run render_sidebar_filter_row
 	else if top_row_is_header
-		string git_marker = "v "
-		if git_section_collapsed
-			git_marker = "> "
-		string git_header_text = s_join([git_marker, "<GIT>"])
-		FitResult fit = browser_fit(git_header_text, content_width)
-		(text, visible_len) in fit
-		string colored = browser_bold_wrap(text)
-		bool selected = idx is selected_idx
-		string header_text = browser_select_wrap(colored, selected)
-		string gutter = browser_gutter(visible_len, content_width)
-		body = s_join([header_text, gutter])
+		macro_run render_sidebar_git_header_row
 	else if has_git_section and idx < git_section_rows and git_count is 0
-		string git_indent = "    "
-		string git_clean_text = s_join([git_indent, "clean"])
-		FitResult fit = browser_fit(git_clean_text, content_width)
-		(text, visible_len) in fit
-		string colored = browser_dim_wrap(text)
-		string gutter = browser_gutter(visible_len, content_width)
-		body = s_join([colored, gutter])
+		macro_run render_sidebar_git_clean_row
 	else if has_git_section and idx < git_section_rows
-		int git_idx = idx - 1
-		FileEntry entry = git_changes at git_idx
-		(name, git_status) in entry
-
-		# Indented one level, same as a plain (non-directory) file sitting
-		# at depth 1 in the Files tree below -- makes the git-changed files
-		# read as nested under the <GIT> header the same way real tree
-		# children nest under their parent directory.
-		string git_indent = "    "
-		string edit_prefix = browser_edit_prefix(git_status)
-		string plain = s_join([git_indent, edit_prefix, name])
-		FitResult fit = browser_fit(plain, content_width)
-		(text, visible_len) in fit
-
-		string colored = browser_colorize(text, git_status)
-		bool selected = idx is selected_idx
-		string git_text = browser_select_wrap(colored, selected)
-		string gutter = browser_gutter(visible_len, content_width)
-		body = s_join([git_text, gutter])
+		macro_run render_sidebar_git_changed_row
 	else
-		int tree_idx = idx - git_section_rows
-		if tree_idx >= 0 and tree_idx < len(browse_entries)
-			FileEntry entry = browse_entries at tree_idx
-			(name, is_dir, depth, expanded, git_status) in entry
-
-			bool is_creating_row = creating_file and idx is selected_idx
-
-			string two_spaces = "  "
-			string indent = s_repeat(two_spaces, depth)
-
-			string marker = "  "
-			if is_dir
-				marker = "> "
-				if expanded
-					marker = "v "
-
-			string suffix = ""
-			if is_dir
-				suffix = "/"
-
-			string edit_prefix = browser_edit_prefix(git_status)
-			string plain = s_join([indent, marker, edit_prefix, name, suffix])
-			if is_creating_row
-				plain = s_join([indent, marker, new_file_name])
-
-			int fit_width = content_width
-			if is_creating_row
-				fit_width = content_width - 1
-				if fit_width < 0
-					fit_width = 0
-			FitResult fit = browser_fit(plain, fit_width)
-			(text, visible_len) in fit
-
-			string tree_text = ""
-			if is_creating_row
-				macro_run use_sidebar_border_colors
-				string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
-				tree_text = s_join([text, cursor_block])
-				visible_len = visible_len + 1
-			else
-				string colored = browser_colorize(text, git_status)
-				bool selected = idx is selected_idx
-				tree_text = browser_select_wrap(colored, selected)
-
-			string gutter = browser_gutter(visible_len, content_width)
-			body = s_join([tree_text, gutter])
-		else
-			int zero_len = 0
-			string blank_gutter = browser_gutter(zero_len, content_width)
-			string empty_text = ""
-			body = s_join([empty_text, blank_gutter])
+		macro_run render_sidebar_tree_row
 
 	if sidebar_focused
 		macro_run use_sidebar_border_colors
