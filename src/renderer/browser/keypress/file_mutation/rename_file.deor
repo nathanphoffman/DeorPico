@@ -1,25 +1,4 @@
 
-# Rename's own version of resolve_placeholder_target (see ../mutate.deor)
-# -- deliberately not reused. That one computes where to insert a new row
-# adjacent to/inside the selection (depth+1 and a forced browse_right
-# expand for a directory). A rename edits the selected entry itself, in
-# place -- own depth, own parent directory, no expand.
-macro resolve_rename_target
-	int insert_index = 0
-	int insert_depth = 0
-	string parent_dir = browse_dir
-	bool has_target = false
-
-	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
-		FileEntry selected = browse_entries at browse_selected
-		(path, depth) in selected
-		rename_original_entry = selected
-
-		has_target = true
-		insert_index = browse_selected + 1
-		insert_depth = depth
-		parent_dir = f_dirname(path)
-
 # rename_file key -- opens the inline rename prompt over the highlighted
 # row. rename_original_entry captures the entry whole (so cancel can
 # restore it exactly, git_status/expanded included), the entry is pulled
@@ -27,6 +6,9 @@ macro resolve_rename_target
 # same enter_placeholder_edit_mode/insert_placeholder_entry machinery
 # create/move use. new_file_name is pre-filled with the current name so
 # Enter with no edits is a no-op rename, not an empty-name error.
+#
+# Leaf macros live in rename/*.deor (see resolve_rename_target.deor
+# onward), same flat shape as create/move -- read top to bottom.
 macro_block start_file_rename
 	macro_run resolve_rename_target
 	if has_target
@@ -41,19 +23,13 @@ macro_block start_file_rename
 		new_file_name = name
 		notice = "Enter new name and ENTER; Esc to cancel"
 
-# Rename's counterpart to remove_placeholder_entry (../mutate.deor) --
-# reached only from cancel_placeholder when renaming_file is true.
-# browse_selected can't move while creating_file is open (sidebar.deor's
-# handle_sidebar_focus_mode only routes escape/enter/backspace/char while
-# the prompt is open), so the placeholder still sits at the exact slot
-# the original was removed from -- cancel just puts it back.
-macro restore_renamed_entry
-	browse_entries at browse_selected = rename_original_entry
-
 # Enter while the rename prompt is open -- mirrors confirm_create_file's
 # shape (../create_file.deor): validate the name isn't empty, resolve the
 # destination inside the entry's own parent directory, refuse to clobber
 # an existing entry, then call f_rename instead of writing a new file.
+#
+# Leaf macros live in rename/*.deor (resolve_rename_destination.deor
+# onward), same flat shape as create/move.
 macro_block confirm_file_rename
 	int name_len = len(new_file_name)
 	if name_len is 0
@@ -65,50 +41,3 @@ macro_block confirm_file_rename
 		if renamed
 			macro_run apply_renamed_placeholder_entry
 			macro_run report_renamed_entry_result
-
-macro resolve_rename_destination
-	(path, is_dir) in rename_original_entry
-	string source_path = path
-	string rename_parent_dir = f_dirname(path)
-	string dest_path = f_join_path(rename_parent_dir, new_file_name)
-
-# Typing the same name back (dest_path is source_path) is a no-op success,
-# not a false "already exists" clobber warning.
-macro write_rename_to_disk
-	bool renamed = false
-	if dest_path is source_path
-		renamed = true
-	else if f_exists(dest_path)
-		notice = "Something with that name already exists"
-		error = true
-	else
-		renamed = f_rename(source_path, dest_path)
-		if not renamed
-			notice = "Could not rename"
-			error = true
-
-# Same shape as apply_created_placeholder_entry (../create/) -- is_dir
-# comes from rename_original_entry rather than defaulting, since
-# build_placeholder_entry's blank placeholder always starts is_dir=false.
-macro apply_renamed_placeholder_entry
-	FileEntry placeholder_entry = browse_entries at browse_selected
-	string name = new_file_name
-	string path = dest_path
-	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
-	browse_entries at browse_selected = real_entry
-
-	macro_run reset_placeholder_state
-	macro_run refresh_all_git_status
-
-	# Keeps the open buffer's save target pointed at the renamed path --
-	# otherwise a later ^S would write back to (and recreate) the old
-	# path instead of following the rename.
-	if filename is source_path
-		filename = dest_path
-
-macro report_renamed_entry_result
-	if is_dir
-		notice = "Renamed directory"
-	else
-		notice = "Renamed file"
-	error = false

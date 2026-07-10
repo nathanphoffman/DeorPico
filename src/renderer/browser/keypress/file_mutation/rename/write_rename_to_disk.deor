@@ -1,0 +1,15 @@
+
+# Typing the same name back (dest_path is source_path) is a no-op success,
+# not a false "already exists" clobber warning.
+macro write_rename_to_disk
+	bool renamed = false
+	if dest_path is source_path
+		renamed = true
+	else if f_exists(dest_path)
+		notice = "Something with that name already exists"
+		error = true
+	else
+		renamed = f_rename(source_path, dest_path)
+		if not renamed
+			notice = "Could not rename"
+			error = true

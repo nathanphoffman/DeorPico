@@ -83,8 +83,8 @@ macro placeholder_backspace
 # placeholder row with nothing behind it -- just drop it
 # (remove_placeholder_entry). Rename already removed the ORIGINAL entry to
 # make room for the placeholder, so there's no "drop", there's a "put
-# back" -- restore_renamed_entry (see ../rename_file.deor) is reached
-# instead, kept as a macro_run rather than duplicated here.
+# back" -- restore_renamed_entry (see ../rename/restore_renamed_entry.deor)
+# is reached instead, kept as a macro_run rather than duplicated here.
 macro cancel_placeholder
 	if renaming_file
 		macro_run restore_renamed_entry

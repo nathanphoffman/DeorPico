@@ -1,0 +1,7 @@
+
+macro report_renamed_entry_result
+	if is_dir
+		notice = "Renamed directory"
+	else
+		notice = "Renamed file"
+	error = false

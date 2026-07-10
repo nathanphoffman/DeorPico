@@ -1,0 +1,19 @@
+
+# Same shape as apply_created_placeholder_entry (../create/) -- is_dir
+# comes from rename_original_entry rather than defaulting, since
+# build_placeholder_entry's blank placeholder always starts is_dir=false.
+macro apply_renamed_placeholder_entry
+	FileEntry placeholder_entry = browse_entries at browse_selected
+	string name = new_file_name
+	string path = dest_path
+	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
+	browse_entries at browse_selected = real_entry
+
+	macro_run reset_placeholder_state
+	macro_run refresh_all_git_status
+
+	# Keeps the open buffer's save target pointed at the renamed path --
+	# otherwise a later ^S would write back to (and recreate) the old
+	# path instead of following the rename.
+	if filename is source_path
+		filename = dest_path

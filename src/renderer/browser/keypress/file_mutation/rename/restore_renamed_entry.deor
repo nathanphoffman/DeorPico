@@ -1,0 +1,9 @@
+
+# Rename's counterpart to remove_placeholder_entry (../mutate.deor) --
+# reached only from cancel_placeholder when renaming_file is true.
+# browse_selected can't move while creating_file is open (sidebar.deor's
+# handle_sidebar_focus_mode only routes escape/enter/backspace/char while
+# the prompt is open), so the placeholder still sits at the exact slot
+# the original was removed from -- cancel just puts it back.
+macro restore_renamed_entry
+	browse_entries at browse_selected = rename_original_entry

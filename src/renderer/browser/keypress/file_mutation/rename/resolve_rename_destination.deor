@@ -1,0 +1,6 @@
+
+macro resolve_rename_destination
+	(path, is_dir) in rename_original_entry
+	string source_path = path
+	string rename_parent_dir = f_dirname(path)
+	string dest_path = f_join_path(rename_parent_dir, new_file_name)

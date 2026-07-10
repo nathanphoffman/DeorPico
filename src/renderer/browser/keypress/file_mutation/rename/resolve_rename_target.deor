@@ -1,0 +1,21 @@
+
+# Rename's own version of resolve_placeholder_target (see ../mutate.deor)
+# -- deliberately not reused. That one computes where to insert a new row
+# adjacent to/inside the selection (depth+1 and a forced browse_right
+# expand for a directory). A rename edits the selected entry itself, in
+# place -- own depth, own parent directory, no expand.
+macro resolve_rename_target
+	int insert_index = 0
+	int insert_depth = 0
+	string parent_dir = browse_dir
+	bool has_target = false
+
+	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+		FileEntry selected = browse_entries at browse_selected
+		(path, depth) in selected
+		rename_original_entry = selected
+
+		has_target = true
+		insert_index = browse_selected + 1
+		insert_depth = depth
+		parent_dir = f_dirname(path)
