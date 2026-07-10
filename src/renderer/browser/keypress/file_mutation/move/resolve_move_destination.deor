@@ -1,0 +1,8 @@
+
+macro resolve_move_destination
+	zero as 0
+	EntryMatch chosen = valid_matches at zero
+	(full_path, display_path, is_dir) in chosen
+	string source_path = full_path
+	string moved_name = f_basename(source_path)
+	string dest_full_path = f_join_path(create_parent_dir, moved_name)

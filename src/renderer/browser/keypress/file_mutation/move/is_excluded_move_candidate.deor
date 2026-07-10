@@ -1,0 +1,8 @@
+
+macro is_excluded_move_candidate
+	string candidate_parent = f_dirname(full_path)
+	bool is_already_here = candidate_parent is create_parent_dir
+	bool is_self = full_path is create_parent_dir
+	string candidate_prefix = s_join([full_path, slash])
+	bool dest_is_inside_candidate = s_starts_with(create_parent_dir, candidate_prefix)
+	bool is_excluded = is_already_here or is_self or dest_is_inside_candidate

@@ -1,0 +1,9 @@
+
+macro_block insert_move_dest_entry
+	EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
+	(found, index, depth, expanded) in dest_lookup
+	if found and expanded
+		macro_run build_moved_entry
+		entryList one_entry = empty
+		one_entry at end = moved_entry
+		browse_entries = e_insert_children(browse_entries, index, one_entry)

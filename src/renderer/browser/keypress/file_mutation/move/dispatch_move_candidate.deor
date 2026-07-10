@@ -1,6 +1,6 @@
 
 # Downstream of confirm_move_request (see ../move_file.deor), after
-# resolve_move_candidates.deor narrows valid_matches -- routes on how many
+# resolve_move_candidates narrows valid_matches -- routes on how many
 # candidates matched.
 macro_block dispatch_move_candidate
 	int match_count = len(valid_matches)
@@ -11,10 +11,3 @@ macro_block dispatch_move_candidate
 		error = true
 	else
 		macro_run move_selected_candidate
-
-macro_block report_no_move_match
-	no_match_prefix as "No file or directory matches '"
-	no_match_suffix as "'"
-	stringList no_match_parts = [no_match_prefix, move_query, no_match_suffix]
-	notice = s_join(no_match_parts)
-	error = true

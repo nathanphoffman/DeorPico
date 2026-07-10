@@ -6,11 +6,11 @@
 # the caller. X is matched case-insensitively against every file/
 # directory's root-relative path anywhere in the project (see
 # x_find_entries_matching), so a bare name, a partial name, or a partial/
-# full path all work. Candidate resolution/filtering lives in
-# move/resolve_move_candidates.deor, match-count routing in
-# move/dispatch_move_candidate.deor, the actual disk move in
-# move/move_selected_candidate.deor, and browse-tree bookkeeping in
-# move/relocate_browse_tree_entry.deor.
+# full path all work. Candidate resolution/filtering starts below with
+# resolve_move_candidates and continues in move/collect_valid_move_candidates.deor
+# onward, match-count routing in move/dispatch_move_candidate.deor, the
+# actual disk move in move/move_selected_candidate.deor, and browse-tree
+# bookkeeping in move/finalize_moved_entry.deor onward.
 macro confirm_move_request
 	if len(move_query) is 0
 		notice = "Name can't be empty"
@@ -18,3 +18,12 @@ macro confirm_move_request
 	else
 		macro_run resolve_move_candidates
 		macro_run dispatch_move_candidate
+
+# Only called from confirm_move_request above -- kept in the same file
+# rather than its own, since it's a single-caller wrapper. Resolves
+# move_query into the final candidate list: finds every match, then
+# narrows to directory-only matches if the query looks like a directory
+# path.
+macro resolve_move_candidates
+	macro_run collect_valid_move_candidates
+	macro_run narrow_move_candidates_to_directory

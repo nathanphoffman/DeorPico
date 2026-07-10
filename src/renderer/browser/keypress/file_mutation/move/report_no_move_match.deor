@@ -1,0 +1,7 @@
+
+macro_block report_no_move_match
+	no_match_prefix as "No file or directory matches '"
+	no_match_suffix as "'"
+	stringList no_match_parts = [no_match_prefix, move_query, no_match_suffix]
+	notice = s_join(no_match_parts)
+	error = true

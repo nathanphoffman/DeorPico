@@ -1,0 +1,10 @@
+
+macro_block remove_move_source_entry
+	browse_entries = e_remove_at(browse_entries, browse_selected)
+
+	EntryLookup source_lookup = e_find_by_path(browse_entries, source_path)
+	(found, index, depth) in source_lookup
+	if found
+		if is_dir
+			browse_entries = e_remove_children(browse_entries, index, depth)
+		browse_entries = e_remove_by_path(browse_entries, source_path)

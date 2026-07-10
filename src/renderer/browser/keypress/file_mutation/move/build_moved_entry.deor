@@ -1,0 +1,8 @@
+
+macro build_moved_entry
+	string name = moved_name
+	string path = dest_full_path
+	depth = depth + 1
+	expanded = false
+	string git_status = ""
+	FileEntry moved_entry = (name, path, is_dir, depth, expanded, git_status)

@@ -1,0 +1,14 @@
+
+# "mv src/lib" would otherwise match the src/lib directory AND every file
+# inside it (matching is a plain substring check -- see
+# x_find_entries_matching). A query shaped like a directory path (has a "/",
+# no extension) that narrows to exactly one directory among the candidates
+# is assumed to mean that directory, not its contents.
+macro_block narrow_move_candidates_to_directory
+	bool has_slash = s_contains(move_query, slash)
+	bool has_no_extension = len(f_extension(move_query)) is 0
+	bool looks_like_dir_path = has_slash and has_no_extension
+	if looks_like_dir_path
+		macro_run collect_directory_only_matches
+		if len(dir_only_matches) is 1
+			valid_matches = dir_only_matches

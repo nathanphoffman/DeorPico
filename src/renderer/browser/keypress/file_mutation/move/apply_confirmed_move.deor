@@ -1,0 +1,8 @@
+
+macro_block apply_confirmed_move
+	bool moved = f_move(source_path, create_parent_dir)
+	if moved
+		macro_run finalize_moved_entry
+	else
+		notice = "Could not move"
+		error = true
