@@ -35,20 +35,11 @@ Nate thing tomorrow
 
 - Implement back-indentation shift + tab
 
-- Add paste event for better windows support
-  - Fix worth considering: enable crossterm's bracketed-paste mode (EnableBracketedPaste in xt_raw_on,
-  handle crossterm::event::Event::Paste(String) in xt_read_key) — many terminals (including Windows
-  Terminal) route native paste through that protocol as one atomic blob regardless of the Ctrl+V
-  interception, so you'd get one clean paste event instead of N keystrokes. term.deor doesn't handle
-  Event::Paste at all right now, so it's currently silently dropped by the _ => continue fallback if a
-  terminal does send it.
-
 
 ---
 Lower Priority
 ---
 
-- Refresh should perhaps capture directory changes too like folder and file renames from outside not just git changes?
 
 - If I delete a file with k-k and then hit crtl + s to save it it gets added back into the GIT list, rare but odd behavior
 

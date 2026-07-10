@@ -79,6 +79,7 @@ macro placeholder_backspace
 macro cancel_placeholder
 	macro_run remove_placeholder_entry
 	macro_run reset_placeholder_state
+    macro_run if_rename_add_entry_back
 
 macro remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)

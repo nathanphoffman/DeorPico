@@ -575,4 +575,3 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 		return s_join([colored_bar, body, colored_bar])
 
 	return body
-
