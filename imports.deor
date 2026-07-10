@@ -124,6 +124,7 @@ import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"
 import "src/renderer/highlighting/highlights_jsx.deor"
+import "src/renderer/highlighting/highlights_typescript.deor"
 import "src/renderer/highlighting/highlighting.deor"
 
 # Builds the initial EditorState at startup

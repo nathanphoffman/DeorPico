@@ -1,0 +1,72 @@
+macro highlights_typescript
+	# block comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# double/single/template-literal strings -- template ${} interpolation
+	# isn't separately colored, the whole literal is just one string token.
+	#
+	# Deliberately NO regex-literal rule (/pattern/) here -- that's exactly
+	# what breaks synoptic's stock ts/js highlighter (see highlighting.deor):
+	# it can't tell a regex-literal "/" from a division "/", so something
+	# like `a/b` misreads as an unterminated regex and paints everything
+	# for the rest of the file as a string. Leaving "/" untagged (plain)
+	# means real regex literals don't get colored, but that's a much
+	# smaller loss than the whole-file cascade this rule caused.
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec tstr_spec = (name, start, stop)
+	tstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
+
+	# call sites: name immediately followed by "(" -- registered before the
+	# keyword/type rules below so conventional camelCase/PascalCase call
+	# sites win the tokenizer's first-atom-registered tiebreak (same
+	# reasoning as highlights_csharp's call_pattern)
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_$][A-Za-z0-9_$]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|as|asserts|async|await|break|case|catch|class|const|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|infer|instanceof|interface|is|keyof|let|module|namespace|new|null|of|out|override|private|protected|public|readonly|return|satisfies|set|static|super|switch|this|throw|true|try|type|typeof|undefined|unique|var|void|while|with|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin primitive/utility types
+	builtin_name as "type"
+	builtin_pattern as "\\b(string|number|boolean|any|unknown|never|object|symbol|bigint)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase identifiers (classes, interfaces, type aliases, generics),
+	# wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

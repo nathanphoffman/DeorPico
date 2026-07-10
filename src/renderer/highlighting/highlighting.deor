@@ -9,6 +9,7 @@ fn Highlighter initialize_highlighter(string ext)
     const string DEOR = "deor"
     const string CSHARP = "cs"
     const string JSX = "jsx"
+    const string TYPESCRIPT = "ts"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
@@ -17,6 +18,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_csharp
 	else if ext is JSX
 		macro_run highlights_jsx
+	else if ext is TYPESCRIPT
+		macro_run highlights_typescript
 	else
 		highlighter = xs_from_extension(ext, TAB_WIDTH)
 
