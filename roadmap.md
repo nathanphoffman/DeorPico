@@ -25,24 +25,17 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
     - Still working on this, working on organizing creation so I understand the underlying concepts better
 
-- Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
-that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
----
-Nate thing tomorrow
----
-- Extract Sidebar into its own folder
-
-- Implement back-indentation shift + tab
+    - Implement back-indentation shift + tab
 
 
 ---
 Lower Priority
 ---
 
+- Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
+that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
 
 - If I delete a file with k-k and then hit crtl + s to save it it gets added back into the GIT list, rare but odd behavior
-
 
 - Allow arrow keys to work in ctrl + r
 

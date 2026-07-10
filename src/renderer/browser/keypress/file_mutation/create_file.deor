@@ -7,13 +7,13 @@
 # placeholder as its first child; a highlighted file's parent directory
 # is used instead, with the placeholder as its next sibling.
 #
-# Flat by design: every macro_run below is a single leaf step (see
-# create/*.deor) that shares this macro's own scope instead of nesting
-# further create-specific macro calls -- read top to bottom.
+# Flat by design: every macro_run below is a single leaf step (shared with
+# move, see ../mutate.deor) that shares this macro's own scope instead of
+# nesting further create-specific macro calls -- read top to bottom.
 macro_block start_create_file
-	macro_run resolve_create_insert_target
-	macro_run insert_create_placeholder_row
-	macro_run enter_create_edit_mode
+	macro_run resolve_placeholder_target
+	macro_run insert_placeholder_entry
+	macro_run enter_placeholder_edit_mode
 	notice = "Enter New File Name and ENTER; Esc to cancel OR: Enter 'dir X' or 'mv X' to create a directory of X or move"
 
 # Enter while the create-file prompt is open -- validates the name isn't

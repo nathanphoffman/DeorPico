@@ -40,7 +40,10 @@ macro handle_sidebar_focus_mode
 			if kind is "escape"
 				macro_run cancel_placeholder
 			else if kind is "enter"
-				macro_run confirm_create_file
+				if renaming_file
+					macro_run confirm_file_rename
+				else
+					macro_run confirm_create_file
 			else if kind is "backspace"
 				macro_run placeholder_backspace
 			else if kind is "char"

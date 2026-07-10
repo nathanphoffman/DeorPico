@@ -32,11 +32,19 @@ macro initialize_browser
 	creating_file as false
 	new_file_name as ""
 	create_parent_dir as ""
+	renaming_file as false
+	string name = ""
+	string path = ""
+	bool is_dir = false
+	int depth = 0
+	bool expanded = false
+	string git_status = ""
+	FileEntry rename_original_entry = (name, path, is_dir, depth, expanded, git_status)
 	pending_delete_path as ""
 	pending_discard_path as ""
 	sidebar_locked as false
 
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path, sidebar_locked)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 
 macro initialize_diff
 	diffing as false

@@ -56,6 +56,23 @@ struct BrowserState
 	# until Enter confirms.
 	string create_parent_dir
 
+	# True while creating_file's inline prompt is open specifically because
+	# start_file_rename opened it, rather than create/move -- lets
+	# sidebar.deor's Enter-while-creating_file handler pick
+	# confirm_file_rename over confirm_create_file, and lets
+	# cancel_placeholder restore rename_original_entry instead of just
+	# dropping the placeholder row. Meaningless whenever creating_file is
+	# false.
+	bool renaming_file
+
+	# The FileEntry start_file_rename pulled out of browse_entries to make
+	# room for the placeholder that replaces it in place -- captured whole
+	# (git_status/expanded included) so cancel_placeholder can restore it
+	# unchanged on Esc, and so confirm_file_rename can resolve f_rename's
+	# source path and is_dir from it. Only meaningful while renaming_file
+	# is true.
+	FileEntry rename_original_entry
+
 	# ^K delete / ^U discard-git-changes both require a second confirming
 	# keypress on the *same* path before actually doing anything, since
 	# neither is reliably recoverable (discard has no history to fall back

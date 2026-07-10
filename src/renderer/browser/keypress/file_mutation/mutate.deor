@@ -4,9 +4,14 @@
 # typing/cancel while it's open. Independent of what the name is *for* --
 # create_file.deor drives this to build a new entry and sets its own notice
 # text after enter_placeholder_edit_mode runs; move_file.deor reuses the
-# same open prompt for "mv X"; rename will drive it too. State lives on
-# BrowserState (creating_file/new_file_name/create_parent_dir) since it's
-# shared across all three, not create-specific.
+# same open prompt for "mv X". State lives on BrowserState (creating_file/
+# new_file_name/create_parent_dir) since it's shared across both.
+#
+# rename_file.deor only reuses the tail of this (enter_placeholder_edit_mode/
+# insert_placeholder_entry) -- resolving where the prompt goes and
+# confirming it are rename-specific (own depth/parent, calls f_rename
+# instead of writing a new file), so those live in rename_file.deor instead
+# of resolve_placeholder_target/confirm_create_file here.
 
 # Defaults to appending at the root, then overridden by
 # apply_placeholder_target_from_selection if something's highlighted.
@@ -74,12 +79,18 @@ macro placeholder_backspace
 		int new_len = name_len - 1
 		new_file_name = s_substring(new_file_name, zero, new_len)
 
-# Esc while the name-entry prompt is open -- drops the placeholder row and
-# restores the selection to wherever it lands once that row is gone.
+# Esc while the name-entry prompt is open. Create/move have a fresh
+# placeholder row with nothing behind it -- just drop it
+# (remove_placeholder_entry). Rename already removed the ORIGINAL entry to
+# make room for the placeholder, so there's no "drop", there's a "put
+# back" -- restore_renamed_entry (see ../rename_file.deor) is reached
+# instead, kept as a macro_run rather than duplicated here.
 macro cancel_placeholder
-	macro_run remove_placeholder_entry
+	if renaming_file
+		macro_run restore_renamed_entry
+	else
+		macro_run remove_placeholder_entry
 	macro_run reset_placeholder_state
-    macro_run if_rename_add_entry_back
 
 macro remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
@@ -91,6 +102,7 @@ macro remove_placeholder_entry
 
 macro reset_placeholder_state
 	creating_file = false
+	renaming_file = false
 	new_file_name = ""
 	create_parent_dir = ""
 	notice = ""

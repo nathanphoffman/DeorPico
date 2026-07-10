@@ -45,7 +45,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	(core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
 
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content) in core
-	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path, sidebar_locked) in browser
+	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
@@ -101,7 +101,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
         macro_run register_events
 
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, show_line_numbers, synced_content)
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, pending_delete_path, pending_discard_path, sidebar_locked)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
