@@ -1,9 +1,15 @@
 
-# Editing mode: tab/shift-tab, doubling as search-match cycling while searching
+# Editing mode: tab/shift-tab, doubling as search-match cycling while
+# searching. Tab and Shift-Tab arrive as distinct kinds ("tab" vs
+# "shift_tab"), not one "tab" kind plus a shift modifier flag -- terminals
+# report Shift+Tab as the separate BackTab keycode and don't reliably set
+# the SHIFT modifier bit alongside it (see lib/term.deor). key_tab_impl and
+# everything it calls treat `kind is "shift_tab"` as the one source of
+# truth for "this is a de-indent", never the `shift` field.
 macro handle_tab_and_search
 	if kind is "tab" and search_active
 		macro_run search_next_impl
 	else if kind is "shift_tab" and search_active
 		macro_run search_prev_impl
-	else if kind is "tab"
+	else if kind is "tab" or kind is "shift_tab"
 		macro_run key_tab_impl

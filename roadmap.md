@@ -2,18 +2,6 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 # Roadmap
 
-- Done: alt + click selection in
-- Done: Add ctrl + a To Select All
-- Done: alt search is fixed
-- Done: Fixed Slow Git Diff Scroll
-- Done: Large Files now process correctly
-- Done: Sidebar now defaulted
-- Done:  Alt needs to support underscores
-- Done: Auto close sidebar on page up or page down
-- Done: ctrl + s refreshes the git file browser
-- Done: Git Bar not being solid
-- Done: File search results should have proper mouse support
-- Done: auto-set alt text search based on file search
 - Done: clicking on a file when there is a save prompt in progress should lock out
 - Done: Text wrap bug should be fixed
 - Done: other lang syntax highlighting added
@@ -21,7 +9,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: more organization
 - Done: rename feature added
 - Done: tons of organization
-            
+   
+
+- Flatten and simplify the events at the top level, it might be the most confusing part of the code right now.
+
+        
             - I would like to talk about changing the search, I think ctrl + f should open the search not alt, and rather than holding it in we should open 
             a search prompt just above the grey status bar on a new bar across that stands out in blue.  Users can type into it and then hit enter.  The search works 
             otherwise the same as today, with tabbing and esc.  However, esc now closes the bar, the blue bar remains until esc is hit to reminds users that their 

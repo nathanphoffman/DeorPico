@@ -1,6 +1,15 @@
+# Tab/Shift-Tab outside search (see handle_tab_and_search.deor). With a
+# selection, indent/de-indent every selected line (tab_selection). Without
+# one, plain Tab just inserts 4 spaces like any other typed character;
+# Shift-Tab instead strips one tab-width of leading whitespace from the
+# current line (remove_tab_from_line), same rule tab_selection applies
+# per-line.
 macro key_tab_impl
 	if has_selection
 		macro_run tab_selection
+		dirty = true
+	else if kind is "shift_tab"
+		macro_run remove_tab_from_line
 		dirty = true
 	else
 		macro_run input_key
