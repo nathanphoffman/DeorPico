@@ -1,0 +1,57 @@
+
+# Fallback case: one Files-tree row (indentation, expand/collapse marker,
+# "+" edit prefix, git-status color, selection highlight), including the
+# in-progress create/rename cursor-block row, or blank once tree_idx runs
+# past the end of browse_entries.
+macro render_sidebar_tree_row
+	int tree_idx = idx - git_section_rows
+	if tree_idx >= 0 and tree_idx < len(browse_entries)
+		FileEntry entry = browse_entries at tree_idx
+		(name, is_dir, depth, expanded, git_status) in entry
+
+		bool is_creating_row = creating_file and idx is selected_idx
+
+		string two_spaces = "  "
+		string indent = s_repeat(two_spaces, depth)
+
+		string marker = "  "
+		if is_dir
+			marker = "> "
+			if expanded
+				marker = "v "
+
+		string suffix = ""
+		if is_dir
+			suffix = "/"
+
+		string edit_prefix = browser_edit_prefix(git_status)
+		string plain = s_join([indent, marker, edit_prefix, name, suffix])
+		if is_creating_row
+			plain = s_join([indent, marker, new_file_name])
+
+		int fit_width = content_width
+		if is_creating_row
+			fit_width = content_width - 1
+			if fit_width < 0
+				fit_width = 0
+		FitResult fit = browser_fit(plain, fit_width)
+		(text, visible_len) in fit
+
+		string tree_text = ""
+		if is_creating_row
+			macro_run use_sidebar_border_colors
+			string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
+			tree_text = s_join([text, cursor_block])
+			visible_len = visible_len + 1
+		else
+			string colored = browser_colorize(text, git_status)
+			bool selected = idx is selected_idx
+			tree_text = browser_select_wrap(colored, selected)
+
+		string gutter = browser_gutter(visible_len, content_width)
+		body = s_join([tree_text, gutter])
+	else
+		int zero_len = 0
+		string blank_gutter = browser_gutter(zero_len, content_width)
+		string empty_text = ""
+		body = s_join([empty_text, blank_gutter])

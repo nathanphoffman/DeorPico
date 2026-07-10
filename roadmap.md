@@ -21,13 +21,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: more organization
 - Done: rename feature added
 - Done: tons of organization
-
-- Splitting out sidebar.deor into macros
-
-- We should make file search more obvious that it is enabled, the inner file alt search with a reminder to press tab to cancel.  Maybe a red bar over the 
-status bar?  is that a hard add?
-
-- Implement back-indentation shift + tab
+            
+            - I would like to talk about changing the search, I think ctrl + f should open the search not alt, and rather than holding it in we should open 
+            a search prompt just above the grey status bar on a new bar across that stands out in blue.  Users can type into it and then hit enter.  The search works 
+            otherwise the same as today, with tabbing and esc.  However, esc now closes the bar, the blue bar remains until esc is hit to reminds users that their 
+        tab functionality is hijacked
 
 ---
 ## Lower Priority

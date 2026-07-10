@@ -1,0 +1,65 @@
+
+import "src/consts.deor"
+import "src/renderer/browser/browser.deor"
+import "src/renderer/editor/layout.deor"
+
+
+# Bundled since sidebar_row_piece would otherwise need more than 3
+# parameters -- functions here are capped at 3.
+struct SidebarRowInput
+	entryList browse_entries
+	entryList git_changes
+	int git_section_rows
+	bool git_section_collapsed
+	int idx
+	int selected_idx
+	int sidebar_width
+	bool sidebar_focused
+	bool is_top_row
+	bool is_bottom_row
+	bool creating_file
+	string new_file_name
+	bool filter_active
+	filterMatchList filter_matches
+
+
+# Renders one row of the sidebar: the <GIT> section (header, "clean"
+# placeholder, or a flat changed-file row) followed by the Files tree
+# (indentation, expand/collapse marker, "+" edit prefix, git-status color,
+# selection highlight) -- reusing browser.deor's row-rendering helpers
+# directly. `idx`/`selected_idx` are screen-row positions spanning the whole
+# sidebar (see sidebar_git_section_rows), not raw list indices. Blank (just
+# padding) once `idx` runs past the end of the Files tree.
+#
+# Each row case above only ever *sets* `body` (or `border_row_text`) rather
+# than returning it directly -- `return` only appears here, in the actual
+# fn, since it's untested whether a `return` inside a plain macro correctly
+# exits the fn it gets inlined into.
+fn string sidebar_row_piece(SidebarRowInput row_input)
+	(browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
+
+	macro_run compute_sidebar_row_layout
+
+	if show_top_border or show_bottom_border
+		macro_run build_sidebar_border_row
+		return border_row_text
+
+	string body = ""
+	if filter_active
+		macro_run render_sidebar_filter_row
+	else if top_row_is_header
+		macro_run render_sidebar_git_header_row
+	else if has_git_section and idx < git_section_rows and git_count is 0
+		macro_run render_sidebar_git_clean_row
+	else if has_git_section and idx < git_section_rows
+		macro_run render_sidebar_git_changed_row
+	else
+		macro_run render_sidebar_tree_row
+
+	if sidebar_focused
+		macro_run use_sidebar_border_colors
+		string bar = "|"
+		string colored_bar = s_join([ANSI_SIDEBAR_BORDER_ON, bar, ANSI_RESET])
+		return s_join([colored_bar, body, colored_bar])
+
+	return body

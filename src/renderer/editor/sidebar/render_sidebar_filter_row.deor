@@ -1,0 +1,31 @@
+
+# filter_active row: one filter_matches entry (bold if it's a name match, vs
+# a plain "path (instances: N)" for a content match), or blank once idx runs
+# past the last match.
+macro render_sidebar_filter_row
+	int filter_total = len(filter_matches)
+	if idx < filter_total
+		FilterMatch entry = filter_matches at idx
+		(display_path, is_name_match, instance_count) in entry
+
+		string label = display_path
+		if not is_name_match
+			string count_str = c_int_to_string(instance_count)
+			label = s_join([display_path, " (instances: ", count_str, ")"])
+
+		FitResult fit = browser_fit(label, content_width)
+		(text, visible_len) in fit
+
+		string styled = text
+		if is_name_match
+			styled = browser_bold_wrap(text)
+
+		bool selected = idx is selected_idx
+		string filter_text = browser_select_wrap(styled, selected)
+		string gutter = browser_gutter(visible_len, content_width)
+		body = s_join([filter_text, gutter])
+	else
+		int zero_len = 0
+		string blank_gutter = browser_gutter(zero_len, content_width)
+		string empty_text = ""
+		body = s_join([empty_text, blank_gutter])

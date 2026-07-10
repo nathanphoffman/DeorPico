@@ -1,0 +1,22 @@
+
+# One changed-file row inside the <GIT> section.
+macro render_sidebar_git_changed_row
+	int git_idx = idx - 1
+	FileEntry entry = git_changes at git_idx
+	(name, git_status) in entry
+
+	# Indented one level, same as a plain (non-directory) file sitting
+	# at depth 1 in the Files tree below -- makes the git-changed files
+	# read as nested under the <GIT> header the same way real tree
+	# children nest under their parent directory.
+	string git_indent = "    "
+	string edit_prefix = browser_edit_prefix(git_status)
+	string plain = s_join([git_indent, edit_prefix, name])
+	FitResult fit = browser_fit(plain, content_width)
+	(text, visible_len) in fit
+
+	string colored = browser_colorize(text, git_status)
+	bool selected = idx is selected_idx
+	string git_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([git_text, gutter])

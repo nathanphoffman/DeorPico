@@ -1,0 +1,10 @@
+
+# Red thin-line box drawn around the sidebar while it has keyboard focus --
+# the widened width (see SIDEBAR_WIDTH_FOCUSED) is subtle on its own, so
+# mouse users get an explicit cue that F1 just changed something rather than
+# the tree spontaneously growing. Two columns of the normal content width
+# are given up to the left/right bars; the top/bottom rows are replaced
+# outright by a horizontal rule (see is_top_row/is_bottom_row below).
+macro use_sidebar_border_colors
+	macro_run use_ansi_codes
+	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])

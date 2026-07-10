@@ -84,7 +84,6 @@ macro key_space_comment_selection_impl
 
 	dirty = true
 
-
 macro add_tab_to_selection
     for row_id in range(start_row, end_row)
 		string line = lines at row_id
@@ -92,10 +91,15 @@ macro add_tab_to_selection
 		lines at row_id = line
 
 macro remove_tab_from_selection
+    notice = "removing tab"
     for row_id in range(start_row, end_row)
 		string line = lines at row_id
-		line = s_join([TAB_STRING, line])
-		lines at row_id = line
+
+        const int AFTER_TAB = 4
+        const int LENGTH_OF_LINE = len(line)
+        if s_starts_with(line, TAB_STRING)
+            line = s_substring(line, AFTER_TAB, LENGTH_OF_LINE) 
+            lines at row_id = line
     
 macro tab_selection
     macro_run use_consts
@@ -104,6 +108,7 @@ macro tab_selection
 	if start_row < end_row
 		macro_run push_undo_snapshot
 
+    print(s_join(["shift is ", c_bool_to_string(shift)]))
     if shift
         macro_run remove_tab_from_selection
     else

@@ -1,0 +1,15 @@
+
+# The <GIT> header row itself (top_row_is_header) -- bold, with a v/> marker
+# reflecting git_section_collapsed.
+macro render_sidebar_git_header_row
+	string git_marker = "v "
+	if git_section_collapsed
+		git_marker = "> "
+	string git_header_text = s_join([git_marker, "<GIT>"])
+	FitResult fit = browser_fit(git_header_text, content_width)
+	(text, visible_len) in fit
+	string colored = browser_bold_wrap(text)
+	bool selected = idx is selected_idx
+	string header_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([header_text, gutter])

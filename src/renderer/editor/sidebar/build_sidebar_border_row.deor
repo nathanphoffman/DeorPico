@@ -1,0 +1,15 @@
+
+# Builds the horizontal-rule row swapped in for the top/bottom row of a
+# focused sidebar (see show_top_border/show_bottom_border above). Sets
+# border_row_text rather than returning directly -- see the note on
+# macro-vs-fn `return` in sidebar_row_piece below.
+macro build_sidebar_border_row
+	macro_run use_sidebar_border_colors
+	string corner = "+"
+	string dash = "-"
+	int rule_len = sidebar_width - 2
+	if rule_len < 0
+		rule_len = 0
+	string rule = s_repeat(dash, rule_len)
+	string border_line = s_join([corner, rule, corner])
+	string border_row_text = s_join([ANSI_SIDEBAR_BORDER_ON, border_line, ANSI_RESET])

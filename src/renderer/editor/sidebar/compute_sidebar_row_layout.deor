@@ -1,0 +1,44 @@
+
+# One-time flags/geometry sidebar_row_piece's branches below all read from --
+# split out purely because it's the setup every branch needs, not a case of
+# its own. See each flag's own comment for why it exists.
+macro compute_sidebar_row_layout
+	int git_count = len(git_changes)
+	bool has_git_section = git_section_rows > 0
+
+	# The <GIT> header always wants screen row 0 -- when it's also the
+	# viewport's physical top row (nothing scrolled past it yet), let it win
+	# over the focus border rather than being silently hidden behind it, or
+	# the section would render with no label at all any time the sidebar has
+	# keyboard focus.
+	bool top_row_is_header = has_git_section and idx is 0
+
+	# Border-only version of the same idea, covering the case with no git
+	# section too (idx 0 is then just the first Files-tree entry). Either
+	# way there's no way to scroll further up to compensate -- browse_scroll_row
+	# is already 0 -- so without this the very first row would be permanently
+	# unreachable while the sidebar has keyboard focus, not just briefly
+	# scrolled out of sight.
+	bool top_row_is_first_entry = idx is 0
+
+	# Mirrors top_row_is_first_entry at the other end: the very last row of
+	# the whole list has nothing below it to scroll further into view either,
+	# so losing it to the border would make it permanently unreachable
+	# (mousing below it still activated it, since sidebar_activate_index
+	# never knew the border was there -- this was reported as "the bottom
+	# file gets dropped off the git browser").
+	int total_row_count = git_section_rows + len(browse_entries)
+	bool bottom_row_is_last_entry = idx is (total_row_count - 1)
+
+	# The border normally sacrifices whatever would be at the very top/
+	# bottom of the viewport (an accepted quirk for the git/tree rows below
+	# it, since there's usually plenty more to see). Filter results are
+	# often just a handful of matches, so losing one to the border --
+	# possibly the *only* one -- reads as a bug rather than a quirk; drop
+	# the border entirely while filtering instead.
+	bool show_top_border = sidebar_focused and is_top_row and not filter_active and not top_row_is_first_entry
+	bool show_bottom_border = sidebar_focused and is_bottom_row and not filter_active and not bottom_row_is_last_entry
+
+	int content_width = sidebar_width - 1
+	if sidebar_focused
+		content_width = sidebar_width - 3
