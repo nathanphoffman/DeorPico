@@ -19,17 +19,16 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: other lang syntax highlighting added
 - Done: built windows client
 - Done: more organization
+- Done: rename feature added
+- Done: tons of organization
 
-- Add rename feature, we need an ability to select a row in the side bar, and use shift + r to rename the file, should allow typing just like the new file/dir logic does but typing over the name 
-  (clearing it out) on esc it should put it back, on enter it should rename it
+- We should make file search more obvious that it is enabled, the inner file alt search with a reminder to press tab to cancel.  Maybe a red bar over the 
+status bar?  is that a hard add?
 
-    - Still working on this, working on organizing creation so I understand the underlying concepts better
-
-    - Implement back-indentation shift + tab
-
+- Implement back-indentation shift + tab
 
 ---
-Lower Priority
+## Lower Priority
 ---
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
@@ -58,9 +57,3 @@ file as is and update the cursor to that path
 in the directory (the normal file). In the directory listing the file should show twice as well in two different colors. 
 Make sure the unstaged one is the only one that can be marked for deletion, I think that makes sense?  Then when staged 
 it will update accordingly to show a deletion is staged.
-
-
-## V2 Longer Term:
-working on: final pass to make sure rust is in deor
-working on: more organization
-Do: Support better rust highlighting in deor?

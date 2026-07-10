@@ -129,6 +129,9 @@ import "src/renderer/browser/browser.deor"
 
 # persistent Files-tree sidebar (F1) -- the only file browser
 import "src/renderer/editor/sidebar.deor"
+import "src/renderer/editor/keypress/sidebar.deor"
+import "src/renderer/editor/keypress/sidebar_nav.deor"
+import "src/renderer/editor/keypress/sidebar_git_actions.deor"
 
 import "src/renderer/editor/rust_diff.deor"
 

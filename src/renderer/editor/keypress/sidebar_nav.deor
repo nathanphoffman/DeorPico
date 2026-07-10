@@ -1,0 +1,120 @@
+
+# Up from the <GIT> header, or from the Files tree with no <GIT> section
+# above it, just clamps in place -- there's nothing further up. Up from the
+# Files tree's top row crosses into the <GIT> section (if there is one),
+# landing on its last entry if expanded and non-empty, or the header itself
+# otherwise, so the whole sidebar reads as one continuous list.
+macro sidebar_nav_up
+	if sidebar_on_git
+		if git_selected > (0 - 1)
+			git_selected = git_selected - 1
+	else
+		browse_selected = browse_selected - 1
+		if browse_selected < 0
+			# browse_selected must stay a valid Files-tree index even while
+			# crossing into the <GIT> section -- browse_left/browse_right/
+			# start_create_file read it directly without checking
+			# sidebar_on_git, and previously this left it at -1, crashing
+			# the first time one of those ran.
+			browse_selected = 0
+			if is_git_repo
+				sidebar_on_git = true
+				git_selected = 0 - 1
+				if not git_section_collapsed and len(git_changes) > 0
+					git_selected = len(git_changes) - 1
+
+	macro_run sidebar_scroll_follow
+
+# Down from the <GIT> header moves into its first entry if expanded and
+# non-empty, or straight into the Files tree otherwise. Down from the <GIT>
+# section's last entry also crosses into the Files tree's first row (see
+# sidebar_nav_up for the reverse). Clamped against the same view_rows the
+# sidebar actually renders, same as sidebar_scroll_down.
+macro sidebar_nav_down
+	if sidebar_on_git
+		if git_selected is (0 - 1)
+			if not git_section_collapsed and len(git_changes) > 0
+				git_selected = 0
+			else
+				sidebar_on_git = false
+				browse_selected = 0
+		else
+			int last_git = len(git_changes) - 1
+			git_selected = git_selected + 1
+			if git_selected > last_git
+				sidebar_on_git = false
+				browse_selected = 0
+	else
+		int last_entry = len(browse_entries) - 1
+		browse_selected = browse_selected + 1
+		if browse_selected > last_entry
+			browse_selected = last_entry
+
+	macro_run sidebar_scroll_follow
+
+# Shared by sidebar_nav_up/down -- scrolls the sidebar just enough to keep
+# the current selection on screen, in screen-row terms (see
+# sidebar_git_section_rows: the <GIT> section shifts every Files-tree row
+# down by however many rows it occupies). git_selected of -1 (the header)
+# resolves to screen row 0 the same way any other entry resolves to
+# 1 + git_selected, so it needs no special case here.
+macro sidebar_scroll_follow
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+	int screen_row = git_section_rows + browse_selected
+	if sidebar_on_git
+		screen_row = 1 + git_selected
+
+	if screen_row < browse_scroll_row
+		browse_scroll_row = screen_row
+	else if screen_row >= browse_scroll_row + view_rows
+		browse_scroll_row = screen_row - view_rows + 1
+
+macro sidebar_scroll_up
+	if filter_active
+		filter_scroll_row = filter_scroll_row - 1
+		if filter_scroll_row < 0
+			filter_scroll_row = 0
+	else
+		browse_scroll_row = browse_scroll_row - 1
+		if browse_scroll_row < 0
+			browse_scroll_row = 0
+
+# Clamped against the same view_rows the sidebar actually renders (see
+# render_buffer_rows) -- without this the sidebar could scroll past its last
+# entry into blank padding.
+macro sidebar_scroll_down
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	if filter_active
+		int last_match_row = len(filter_matches) - 1
+		int max_filter_scroll = last_match_row - view_rows + 1
+		if max_filter_scroll < 0
+			max_filter_scroll = 0
+
+		filter_scroll_row = filter_scroll_row + 1
+		if filter_scroll_row > max_filter_scroll
+			filter_scroll_row = max_filter_scroll
+	else
+		int git_count = len(git_changes)
+		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+		int last_row = git_section_rows + len(browse_entries) - 1
+		int max_scroll = last_row - view_rows + 1
+		if max_scroll < 0
+			max_scroll = 0
+
+		browse_scroll_row = browse_scroll_row + 1
+		if browse_scroll_row > max_scroll
+			browse_scroll_row = max_scroll
