@@ -77,9 +77,10 @@ macro initialize_undo
 macro initialize_search
 	search_buffer as ""
 	search_active as false
+	search_editing as false
 	matchList search_matches = empty
 	search_match_index as 0
-	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
+	SearchState search = (search_buffer, search_active, search_editing, search_matches, search_match_index)
 
 macro initialize_filter
 	filter_active as false

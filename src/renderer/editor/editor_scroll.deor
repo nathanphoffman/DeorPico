@@ -1,9 +1,10 @@
 fn EditorState editor_scroll(EditorState state)
-	(core, browser, diff, lint) in state
+	(core, browser, diff, lint, search) in state
 	(lines, cursor_row, scroll_row, wheel_scrolled, show_line_numbers) in core
 	(sidebar_focused) in browser
 	(diff_lines) in diff
 	(lint_output_visible) in lint
+	(search_active) in search
 	TermSize size = xt_size()
 	(cols, rows) in size
 
@@ -12,7 +13,7 @@ fn EditorState editor_scroll(EditorState state)
 	# actually drawn, and the cursor/selection highlight ends up rendered a
 	# line off.
 	int total_line_count = len(lines)
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 

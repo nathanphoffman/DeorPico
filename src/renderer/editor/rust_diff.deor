@@ -24,6 +24,7 @@ fn void editor_render_diff(EditorState state)
 			lint_output_visible: false,
 			diff_lines: Vec::new(),
 			sidebar_focused,
+			search_active: false,
 		};
 
 		let layout = compute_editor_layout(layout_input);
@@ -53,7 +54,7 @@ fn void editor_render_diff(EditorState state)
 			// Same reserved-row formula every other scroll-clamp/render path
 			// in the app uses (see editor_view_rows in consts.deor) -- the
 			// diff view never shows the lint popup, hence `false`.
-			let view_rows = editor_view_rows(rows as i64, has_minimap, false) as usize;
+			let view_rows = editor_view_rows(rows as i64, editor_reserved_rows(has_minimap, false, false)) as usize;
 			let mut out = String::new();
 			out.push_str("\x1b[H\x1b[2J");
 

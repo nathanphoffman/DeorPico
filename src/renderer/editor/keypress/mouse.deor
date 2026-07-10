@@ -9,7 +9,7 @@ macro locate_mouse_in_buffer
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(gutter_width, minimap_offset) in layout
 
@@ -42,7 +42,7 @@ macro mouse_down_editor_impl
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(lines)
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(sidebar_width, minimap_offset) in layout
 
@@ -109,7 +109,7 @@ macro mouse_down_diff_impl
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(diff_lines)
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(sidebar_width) in layout
 

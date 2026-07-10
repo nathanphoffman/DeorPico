@@ -126,7 +126,9 @@ macro clamp_diff_scroll
 	# way, so that's hardcoded false rather than read from lint_output_visible.
 	bool has_minimap = editor_diff_has_minimap(diff_lines, cols)
 	bool lint_never_shown_in_diff = false
-	int view_rows = editor_view_rows(rows, has_minimap, lint_never_shown_in_diff)
+	bool search_never_shown_in_diff = false
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_never_shown_in_diff, search_never_shown_in_diff)
+	int view_rows = editor_view_rows(rows, reserved_rows)
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0
 		max_scroll = 0

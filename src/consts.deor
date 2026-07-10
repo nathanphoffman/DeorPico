@@ -27,15 +27,18 @@ macro use_consts
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
-# the lint output popup) -- any mismatch lets the cursor scroll past what's
-# actually drawn and the cursor/selection render a line off from reality.
-fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible)
+# the lint output popup, the Ctrl+F search bar) -- any mismatch lets the
+# cursor scroll past what's actually drawn and the cursor/selection render a
+# line off from reality.
+fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible, bool search_active)
 	macro_run use_consts
 	int reserved_rows = 2
 	if has_minimap
 		reserved_rows = reserved_rows + 1
 	if lint_output_visible
 		reserved_rows = reserved_rows + LINT_POPUP_HEIGHT
+	if search_active
+		reserved_rows = reserved_rows + 1
 	return reserved_rows
 
 # The one shared "how many buffer rows fit on screen" formula -- every
@@ -43,9 +46,11 @@ fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible)
 # in both the main editor and the git-diff view) must call this instead of
 # recomputing rows - reserved_rows by hand, or they drift out of sync (the
 # wheel-scroll and diff-view clamps used to each hardcode their own,
-# slightly wrong, reserved-row count).
-fn int editor_view_rows(int rows, bool has_minimap, bool lint_output_visible)
-	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible)
+# slightly wrong, reserved-row count). Takes reserved_rows already computed
+# (see editor_reserved_rows) rather than the individual chrome flags --
+# functions cap out at 3 parameters, and rows plus all of has_minimap/
+# lint_output_visible/search_active would be 4.
+fn int editor_view_rows(int rows, int reserved_rows)
 	int view_rows = rows - reserved_rows
 	if view_rows < 1
 		view_rows = 1

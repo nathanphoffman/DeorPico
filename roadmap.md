@@ -11,22 +11,14 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: tons of organization
    
 
-- Flatten and simplify the events at the top level, it might be the most confusing part of the code right now.
-
-        
-            - I would like to talk about changing the search, I think ctrl + f should open the search not alt, and rather than holding it in we should open 
-            a search prompt just above the grey status bar on a new bar across that stands out in blue.  Users can type into it and then hit enter.  The search works 
-            otherwise the same as today, with tabbing and esc.  However, esc now closes the bar, the blue bar remains until esc is hit to reminds users that their 
-        tab functionality is hijacked
-
 ---
 ## Lower Priority
 ---
 
+- Flatten and simplify the events at the top level, it might be the most confusing part of the code right now.
+
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
 that allows matching on F12 inputs.  On any word the cursor is on, the whole word should be compared to the regex to see if it matches any word in any directory with <50 files (ignore directories with more than 50 files), if it does -- the first match will immediately load that file, with our cursor highlight bar (we use for searches) sitting on that line, and the screen moved to it (I think the file search allows this today, and this whole functionality is really similar to how the syntax highlighting works so we should consider extracting some shared logic)
-
-- If I delete a file with k-k and then hit crtl + s to save it it gets added back into the GIT list, rare but odd behavior
 
 - Allow arrow keys to work in ctrl + r
 

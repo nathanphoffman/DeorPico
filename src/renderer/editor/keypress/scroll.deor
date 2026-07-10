@@ -11,7 +11,7 @@ macro clamp_scroll
 	TermSize size = xt_size()
 	(cols, rows) in size
 
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
@@ -29,7 +29,7 @@ macro compute_scroll_sidebar_width
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(sidebar_width) in layout
 

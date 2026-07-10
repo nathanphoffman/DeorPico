@@ -35,6 +35,7 @@ macro back_stop
 
 macro register_events
     macro_run handle_global_actions
+	macro_run handle_search_trigger
 	macro_run handle_arrow_nav
 	macro_run handle_text_edit
 	macro_run handle_tab_and_search
@@ -49,7 +50,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
 	(has_selection, sel_anchor_row, sel_anchor_col) in selection
 	(undo_stack, redo_stack) in undo
-	(search_buffer, search_active, search_matches, search_match_index) in search
+	(search_buffer, search_active, search_editing, search_matches, search_match_index) in search
 	(filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
 	(lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible) in lint
 	(kind, chr, shift, col, row) in key
@@ -57,15 +58,6 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	# Non-blocking; runs every call (real key or synthetic tick) so a
 	# finished background lint job is picked up as soon as possible.
 	macro_run apply_lint_poll_impl
-
-	# A key that isn't a continuation of an alt+letter chord ends whatever
-	# chord was in progress -- the next alt+letter starts counting from
-	# scratch instead of picking up the old one. "tick" is excluded because
-	# it's a synthetic idle poll (every 150ms, see xt_read_key), not a real
-	# key release -- without this, pausing between alt+letters for longer
-	# than one poll interval would wipe the buffer mid-chord.
-	if kind is not "alt_char" and kind is not "tick"
-		search_buffer = ""
 
 	# Only a real cursor-moving/editing key re-engages cursor-follow scroll --
 	# not a lint-poll "tick" (see xt_read_key) and not a further wheel notch,
@@ -95,6 +87,8 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 		macro_run handle_diff_mode
 	else if lint_output_visible
 		macro_run handle_lint_output_mode_impl
+	else if search_editing
+		macro_run handle_search_edit_mode
 
 	# this is the main view
 	else
@@ -105,7 +99,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
 	UndoState undo = (undo_stack, redo_stack)
-	SearchState search = (search_buffer, search_active, search_matches, search_match_index)
+	SearchState search = (search_buffer, search_active, search_editing, search_matches, search_match_index)
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 	EditorState next_state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)

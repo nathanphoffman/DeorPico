@@ -62,7 +62,7 @@ macro sidebar_scroll_follow
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
@@ -94,7 +94,7 @@ macro sidebar_scroll_down
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 

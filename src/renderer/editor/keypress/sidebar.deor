@@ -69,7 +69,7 @@ macro handle_sidebar_focus_mode
 			macro_run sidebar_discard_git_changes
         else if kind is "rename_file"
             macro_run start_file_rename
-		else if kind is "create_file" and not sidebar_on_git
+		else if kind is "ctrl_f" and not sidebar_on_git
 			macro_run start_create_file
 		else if kind is "escape"
 			sidebar_focused = false

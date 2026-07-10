@@ -1,7 +1,16 @@
 struct SearchState
-	# Alt+<letter> "quick search" buffer -- cleared on any non-alt keypress,
-	# but the highlight it produced (below) persists until Esc
+	# Ctrl+F "quick search" buffer -- typed into the blue search bar (see
+	# build_and_render_status_bar.deor); the highlight it produces persists
+	# until Esc, same as search_active below.
 	string search_buffer
 	bool search_active
+
+	# True only while the search bar has keyboard focus (right after Ctrl+F,
+	# until Enter or Esc) -- gates whether typed characters/backspace go into
+	# search_buffer instead of the document (see search.deor's
+	# handle_search_edit_mode). search_active can be true with this false: the
+	# bar and highlight both stay up after Enter, but keystrokes go back to
+	# editing the document.
+	bool search_editing
 	matchList search_matches
 	int search_match_index

@@ -1,5 +1,5 @@
 
-# Alt+letter quick-search tints the whole row a match falls on, rather than
+# Ctrl+F quick-search tints the whole row a match falls on, rather than
 # highlighting individual matched columns -- padded out to the full text
 # width so the tint isn't cut short by lines shorter than the terminal.
 # Syntax highlighting embeds a full reset after every colored token, which

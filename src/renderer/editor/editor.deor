@@ -22,7 +22,7 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name) in browser
 	(is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed) in browser
 	(diff_lines) in diff
-	(search_active, search_matches) in search
+	(search_active, search_editing, search_buffer, search_matches) in search
 	(filter_active, filter_matches, filter_selected, filter_scroll_row) in filter
 	(issue_matches, lint_output, lint_output_visible) in lint
 
@@ -33,6 +33,7 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	macro_run render_buffer_rows
 	macro_run render_lint_output_section
 	macro_run render_minimap_bar
+	macro_run render_search_bar
 	macro_run build_and_render_status_bar
 	macro_run position_and_output_cursor
 

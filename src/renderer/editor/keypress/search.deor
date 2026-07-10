@@ -1,27 +1,82 @@
-# Alt+<letter> "quick search" -- each letter typed while alt is held extends
-# the search term and re-highlights every matching row. The highlight
-# persists after alt is released (only Esc clears it, see search_clear);
-# releasing alt only clears search_buffer (see events.deor) so the next
-# alt+letter starts a brand new term instead of extending the old one.
-macro alt_search_char_impl
-	has_selection = clear_selection_impl()
+# Ctrl+F -- opens the blue search bar (see build_and_render_status_bar.deor)
+# and gives it keyboard focus. Re-pressing Ctrl+F while a search is already
+# up (search_active but no longer search_editing, e.g. after Enter) just
+# resumes editing the existing query instead of clearing it -- only a fresh
+# open (search wasn't active at all) starts from an empty buffer.
+macro search_open_impl
+	if not search_active
+		has_selection = clear_selection_impl()
+		search_buffer = ""
+		matchList cleared_matches = empty
+		search_matches = cleared_matches
+		search_match_index = 0 - 1
+	search_active = true
+	search_editing = true
+
+# Only reached while search_editing (see events.deor) -- every keystroke here
+# is either consumed as search-bar input or forwarded to handle_global_actions
+# for the app-wide shortcuts (^S, ^Q, ...) that still need to work while the
+# bar has focus, same reasoning as handle_sidebar_focus_mode running it first.
+# Tab/Shift-Tab go through handle_tab_and_search unconditionally at the end so
+# they cycle matches even mid-edit, exactly like Ctrl+F re-opening onto an
+# in-progress query does.
+macro handle_search_edit_mode
+	macro_run handle_global_actions
+	if kind is "enter"
+		macro_run search_confirm_impl
+	else if kind is "backspace"
+		macro_run search_backspace_impl
+	else if kind is "char"
+		macro_run search_type_char_impl
+	# Clicking the buffer while still typing a query acts like Enter -- hands
+	# keyboard focus back to the document (search_editing = false) -- but
+	# also runs the click itself, same as any other mouse_down, so the
+	# cursor lands where the user actually clicked instead of jumping to a
+	# match first. Tab from there still finds the nearest match at/after the
+	# clicked position (see search_jump), so a click-then-Tab reads the
+	# results starting from wherever was clicked.
+	else if kind is "mouse_down"
+		search_editing = false
+		macro_run mouse_down_editor_impl
+	macro_run handle_tab_and_search
+	macro_run back_stop
+
+# Ctrl+F in the main editor view (see keymap.deor -- the same raw chord means
+# "new file" instead when the sidebar has focus, see sidebar.deor).
+macro handle_search_trigger
+	if kind is "ctrl_f"
+		macro_run search_open_impl
+
+macro search_type_char_impl
 	stringList extended_search_parts = [search_buffer, chr]
 	search_buffer = s_join(extended_search_parts)
 	search_matches = x_find_matches(lines, search_buffer)
-	search_active = true
 	search_match_index = 0 - 1
-	match_count as len(search_matches)
-	count_str as c_int_to_string(match_count)
-	prefix as "Search: "
-	mid as " ("
-	suffix as " matches)"
-	stringList notice_parts = [prefix, search_buffer, mid, count_str, suffix]
-	notice = s_join(notice_parts)
-	error = false
 
-# Esc -- unhighlights the search and drops its state entirely.
+macro search_backspace_impl
+	int buffer_len = len(search_buffer)
+	if buffer_len > 0
+		zero as 0
+		int new_len = buffer_len - 1
+		search_buffer = s_substring(search_buffer, zero, new_len)
+		search_matches = x_find_matches(lines, search_buffer)
+		search_match_index = 0 - 1
+
+# Enter -- stops capturing keystrokes into the bar and hands focus back to
+# the document, same as releasing alt used to. Also jumps to the nearest
+# match right away (same jump Tab would do next), so hitting Enter on a
+# freshly typed query both confirms it and moves the cursor in one step.
+macro search_confirm_impl
+	search_editing = false
+	macro_run search_next_impl
+
+# Esc -- unhighlights the search, closes the bar, and drops its state
+# entirely. Reached via handle_global_actions' "escape and search_active"
+# branch, from both handle_search_edit_mode (still typing) and register_events
+# (bar up but focus already back on the document).
 macro search_clear_impl
 	search_active = false
+	search_editing = false
 	search_buffer = ""
 	matchList search_matches = empty
 	search_match_index = 0 - 1

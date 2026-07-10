@@ -13,5 +13,5 @@ fn string editor_status_shortcuts(bool has_selection, bool sidebar_focused)
 	if has_selection
 		selection_hint = "SELECTION: space = comment/uncomment  tab = indent  |  "
 
-	string shortcuts = "^S save  ^Q quit  ^D diff  F1 sidebar  F5 refresh  ^N line#  ^E errors/log  ^Z undo  ^Y redo  ^X cut  ^C copy  ^V paste"
+	string shortcuts = "^S save  ^Q quit  ^D diff  ^F search  F1 sidebar  F5 refresh  ^N line#  ^E errors/log  ^Z undo  ^Y redo  ^X cut  ^C copy  ^V paste"
 	return s_join([selection_hint, shortcuts])

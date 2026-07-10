@@ -29,8 +29,12 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "stage_toggle"
 		else if chr is "a"
 			kind = "select_all"
+		# Context-dependent: opens the search bar in the main editor view
+		# (see search.deor's handle_search_trigger), or creates a file when
+		# the sidebar has keyboard focus (see sidebar.deor) -- the two never
+		# overlap since only one of those views handles keys at a time.
 		else if chr is "f"
-			kind = "create_file"
+			kind = "ctrl_f"
         else if chr is "r"
             kind = "rename_file"
 		else if chr is "k"
