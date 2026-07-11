@@ -14,7 +14,7 @@ macro_block start_create_file
 	macro_run resolve_placeholder_target
 	macro_run insert_placeholder_entry
 	macro_run enter_placeholder_edit_mode
-	notice = "Enter New File Name and ENTER; Esc to cancel OR: Enter 'dir X' or 'mv X' to create a directory of X or move"
+	notice = "Enter New File Name and ENTER; Esc cancels OR: Enter 'dir X' or 'mv X' to create a X dir or move X dir/file here"
 
 # Enter while the create-file prompt is open -- validates the name isn't
 # empty, then walks straight through the create/dir/mv flow: parsing the
