@@ -9,6 +9,8 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: more organization
 - Done: rename feature added
 - Done: tons of organization
+
+We should talk about having the lines be a ref and do more moves for better performance.
    
 
 ---
