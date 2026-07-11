@@ -9,7 +9,7 @@ macro sidebar_stage_toggle
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
 			macro_run git_stage_toggle
-	else if len(browse_entries) > 0
+	else if not sidebar_on_root and len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, git_status) in selected
 		macro_run git_stage_toggle
@@ -22,7 +22,7 @@ macro sidebar_delete_entry
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir) in selected
 			macro_run file_delete_entry
-	else if len(browse_entries) > 0
+	else if not sidebar_on_root and len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir) in selected
 		macro_run file_delete_entry
@@ -35,7 +35,7 @@ macro sidebar_discard_git_changes
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
 			macro_run discard_git_changes_entry
-	else if len(browse_entries) > 0
+	else if not sidebar_on_root and len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, git_status) in selected
 		macro_run discard_git_changes_entry

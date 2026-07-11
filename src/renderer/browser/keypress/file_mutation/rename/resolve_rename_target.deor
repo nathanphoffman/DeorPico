@@ -10,7 +10,7 @@ macro resolve_rename_target
 	string parent_dir = browse_dir
 	bool has_target = false
 
-	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+	if not sidebar_on_root and len(browse_entries) > 0 and browse_selected < len(browse_entries)
 		FileEntry selected = browse_entries at browse_selected
 		(path, depth) in selected
 		rename_original_entry = selected

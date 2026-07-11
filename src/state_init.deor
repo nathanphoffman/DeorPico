@@ -21,6 +21,12 @@ macro initialize_browser
 	string browse_dir = initial_dir
 	bool is_git_repo = g_is_repo(browse_dir)
 	sidebar_on_git as false
+	# A brand new/empty directory has no Files-tree row to land the initial
+	# highlight on -- start on the root row instead of a phantom tree index,
+	# so ':' and ^F have something selected to work from immediately.
+	bool sidebar_on_root = false
+	if len(browse_entries) is 0
+		sidebar_on_root = true
 	git_selected as 0
 	git_section_collapsed as false
 
@@ -45,7 +51,7 @@ macro initialize_browser
 	pending_discard_path as ""
 	sidebar_locked as false
 
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 
 macro initialize_diff
 	diffing as false

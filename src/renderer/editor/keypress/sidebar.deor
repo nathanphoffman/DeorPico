@@ -51,9 +51,9 @@ macro handle_sidebar_focus_mode
 			git_section_collapsed = sidebar_collapse_git()
 		else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
 			git_section_collapsed = sidebar_expand_git()
-		else if kind is "left" and not sidebar_on_git
+		else if kind is "left" and not sidebar_on_git and not sidebar_on_root
 			macro_run browse_left
-		else if kind is "right" and not sidebar_on_git
+		else if kind is "right" and not sidebar_on_git and not sidebar_on_root
 			macro_run browse_right
 		else if kind is "char" and chr is ":" and not sidebar_on_git
 			macro_run start_browse_filter
@@ -110,6 +110,11 @@ macro sidebar_key_activate
 			else
 				macro_run load_file_into_buffer
 				sidebar_focused = false
+	else if sidebar_on_root
+		# Nothing to open/toggle -- the root row is just a fixed anchor
+		# above the Files tree, unlike a directory it has no expanded
+		# state of its own (its "children" are already always shown).
+		error = false
 	else if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, expanded) in selected
@@ -146,6 +151,7 @@ macro sidebar_activate_index
 	else
 		int git_count = len(git_changes)
 		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+		int root_section_rows = sidebar_root_section_rows()
 
 		if git_section_rows > 0 and idx is 0
 			sidebar_on_git = true
@@ -162,8 +168,12 @@ macro sidebar_activate_index
 				sidebar_on_git = true
 				git_selected = git_idx
 				macro_run sidebar_key_activate
-		else if idx >= git_section_rows
-			int tree_idx = idx - git_section_rows
+		else if idx is git_section_rows
+			sidebar_on_git = false
+			sidebar_on_root = true
+			macro_run sidebar_key_activate
+		else if idx >= git_section_rows + root_section_rows
+			int tree_idx = idx - git_section_rows - root_section_rows
 			if tree_idx >= 0 and tree_idx < len(browse_entries)
 				FileEntry clicked = browse_entries at tree_idx
 				(is_dir) in clicked
@@ -174,6 +184,7 @@ macro sidebar_activate_index
 					macro_run notify_unsaved_changes
 				else
 					sidebar_on_git = false
+					sidebar_on_root = false
 					browse_selected = tree_idx
 					macro_run sidebar_key_activate
 

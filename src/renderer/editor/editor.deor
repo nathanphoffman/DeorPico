@@ -20,7 +20,7 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	(core, browser, diff, search, filter, lint, notice, error) in state
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name) in browser
-	(is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed) in browser
+	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(diff_lines) in diff
 	(search_active, search_editing, search_buffer, search_matches) in search
 	(filter_active, filter_matches, filter_selected, filter_scroll_row) in filter

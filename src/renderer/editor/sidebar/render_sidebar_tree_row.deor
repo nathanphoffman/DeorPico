@@ -4,7 +4,7 @@
 # in-progress create/rename cursor-block row, or blank once tree_idx runs
 # past the end of browse_entries.
 macro render_sidebar_tree_row
-	int tree_idx = idx - git_section_rows
+	int tree_idx = idx - git_section_rows - root_section_rows
 	if tree_idx >= 0 and tree_idx < len(browse_entries)
 		FileEntry entry = browse_entries at tree_idx
 		(name, is_dir, depth, expanded, git_status) in entry

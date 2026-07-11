@@ -75,3 +75,12 @@ fn int sidebar_git_section_rows(bool is_git_repo, int git_count, bool git_collap
 	if git_count is 0
 		return 2
 	return 1 + git_count
+
+# The sidebar's root-directory row, pinned directly below the <GIT> section
+# (or right at the very top if this isn't a git repo) -- always exactly one
+# row. Gives ':' filter and ^F create-file something to target even when the
+# Files tree itself is completely empty (a brand new directory with nothing
+# in it yet). Shared by the sidebar's renderer and its nav/scroll/mouse
+# macros, same reasoning as sidebar_git_section_rows.
+fn int sidebar_root_section_rows()
+	return 1

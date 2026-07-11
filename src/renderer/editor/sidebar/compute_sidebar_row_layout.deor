@@ -27,7 +27,7 @@ macro compute_sidebar_row_layout
 	# (mousing below it still activated it, since sidebar_activate_index
 	# never knew the border was there -- this was reported as "the bottom
 	# file gets dropped off the git browser").
-	int total_row_count = git_section_rows + len(browse_entries)
+	int total_row_count = git_section_rows + root_section_rows + len(browse_entries)
 	bool bottom_row_is_last_entry = idx is (total_row_count - 1)
 
 	# The border normally sacrifices whatever would be at the very top/

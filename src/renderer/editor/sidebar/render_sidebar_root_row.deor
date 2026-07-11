@@ -1,0 +1,21 @@
+
+# The root-directory row, pinned directly below the <GIT> section (or right
+# at the top if this isn't a git repo) -- see sidebar_root_section_rows.
+# Selecting it and pressing ':' scopes the filter to browse_dir itself, and
+# ^F creates a file/directory right at browse_dir -- both otherwise
+# unreachable in a brand new, completely empty directory with nothing in
+# the Files tree to select.
+macro render_sidebar_root_row
+	root_dir_copy as browse_dir
+	string root_name = f_basename(browse_dir)
+	if len(root_name) is 0
+		root_name = root_dir_copy
+	string marker = "/ "
+	string root_text = s_join([marker, root_name])
+	FitResult fit = browser_fit(root_text, content_width)
+	(text, visible_len) in fit
+	string colored = browser_bold_wrap(text)
+	bool selected = idx is selected_idx
+	string row_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([row_text, gutter])

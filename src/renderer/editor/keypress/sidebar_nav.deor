@@ -8,20 +8,23 @@ macro sidebar_nav_up
 	if sidebar_on_git
 		if git_selected > (0 - 1)
 			git_selected = git_selected - 1
+	else if sidebar_on_root
+		if is_git_repo
+			sidebar_on_root = false
+			sidebar_on_git = true
+			git_selected = 0 - 1
+			if not git_section_collapsed and len(git_changes) > 0
+				git_selected = len(git_changes) - 1
 	else
 		browse_selected = browse_selected - 1
 		if browse_selected < 0
 			# browse_selected must stay a valid Files-tree index even while
-			# crossing into the <GIT> section -- browse_left/browse_right/
-			# start_create_file read it directly without checking
-			# sidebar_on_git, and previously this left it at -1, crashing
-			# the first time one of those ran.
+			# crossing into the <GIT>/root rows above it -- browse_left/
+			# browse_right/start_create_file read it directly without
+			# checking sidebar_on_git/sidebar_on_root, and previously this
+			# left it at -1, crashing the first time one of those ran.
 			browse_selected = 0
-			if is_git_repo
-				sidebar_on_git = true
-				git_selected = 0 - 1
-				if not git_section_collapsed and len(git_changes) > 0
-					git_selected = len(git_changes) - 1
+			sidebar_on_root = true
 
 	macro_run sidebar_scroll_follow
 
@@ -37,13 +40,17 @@ macro sidebar_nav_down
 				git_selected = 0
 			else
 				sidebar_on_git = false
-				browse_selected = 0
+				sidebar_on_root = true
 		else
 			int last_git = len(git_changes) - 1
 			git_selected = git_selected + 1
 			if git_selected > last_git
 				sidebar_on_git = false
-				browse_selected = 0
+				sidebar_on_root = true
+	else if sidebar_on_root
+		if len(browse_entries) > 0
+			sidebar_on_root = false
+			browse_selected = 0
 	else
 		int last_entry = len(browse_entries) - 1
 		browse_selected = browse_selected + 1
@@ -68,9 +75,12 @@ macro sidebar_scroll_follow
 
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
-	int screen_row = git_section_rows + browse_selected
+	int root_section_rows = sidebar_root_section_rows()
+	int screen_row = git_section_rows + root_section_rows + browse_selected
 	if sidebar_on_git
 		screen_row = 1 + git_selected
+	else if sidebar_on_root
+		screen_row = git_section_rows
 
 	if screen_row < browse_scroll_row
 		browse_scroll_row = screen_row
@@ -110,7 +120,8 @@ macro sidebar_scroll_down
 	else
 		int git_count = len(git_changes)
 		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
-		int last_row = git_section_rows + len(browse_entries) - 1
+		int root_section_rows = sidebar_root_section_rows()
+		int last_row = git_section_rows + root_section_rows + len(browse_entries) - 1
 		int max_scroll = last_row - view_rows + 1
 		if max_scroll < 0
 			max_scroll = 0

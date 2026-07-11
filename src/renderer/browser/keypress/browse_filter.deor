@@ -1,19 +1,29 @@
 # ':' on a selected directory -- starts a name/content filter scoped to that
 # directory (see events.deor). No-op if the selected entry is a file.
 macro start_browse_filter
-	if len(browse_entries) > 0
+	string target_dir = ""
+	bool can_filter = false
+	if sidebar_on_root
+		root_dir_copy as browse_dir
+		target_dir = root_dir_copy
+		can_filter = true
+	else if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir) in selected
 		if is_dir
-			filter_active = true
-			filter_dir = path
-			filter_query = ""
-			filterMatchList filter_matches = empty
-			filter_selected = 0
-			filter_scroll_row = 0
-			filter_truncated_count = 0
-			notice = "Filter: "
-			error = false
+			target_dir = path
+			can_filter = true
+
+	if can_filter
+		filter_active = true
+		filter_dir = target_dir
+		filter_query = ""
+		filterMatchList filter_matches = empty
+		filter_selected = 0
+		filter_scroll_row = 0
+		filter_truncated_count = 0
+		notice = "Filter: "
+		error = false
 
 # Esc -- drops the filter and returns to the normal directory tree, which
 # was never touched while filtering.

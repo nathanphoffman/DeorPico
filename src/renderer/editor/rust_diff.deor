@@ -3,7 +3,7 @@ fn void editor_render_diff(EditorState state)
 
     (browser) in state
     (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-    (new_file_name, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed) in browser
+    (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
     
 	rust
 		use std::io::Write;
@@ -59,10 +59,13 @@ fn void editor_render_diff(EditorState state)
 			out.push_str("\x1b[H\x1b[2J");
 
 			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64, git_section_collapsed);
+			let root_section_rows = sidebar_root_section_rows();
 			let selected_idx = if sidebar_on_git {
 				1 + git_selected
+			} else if sidebar_on_root {
+				git_section_rows
 			} else {
-				git_section_rows + browse_selected
+				git_section_rows + root_section_rows + browse_selected
 			};
 
 			let total = state.diff.diff_lines.len();
@@ -73,6 +76,8 @@ fn void editor_render_diff(EditorState state)
 					browse_entries: browse_entries.clone(),
 					git_changes: git_changes.clone(),
 					git_section_rows,
+					root_section_rows,
+					browse_dir: browse_dir.clone(),
 					git_section_collapsed,
 					idx: browse_scroll_row + i as i64,
 					selected_idx,

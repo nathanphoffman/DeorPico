@@ -10,6 +10,8 @@ struct SidebarRowInput
 	entryList browse_entries
 	entryList git_changes
 	int git_section_rows
+	int root_section_rows
+	string browse_dir
 	bool git_section_collapsed
 	int idx
 	int selected_idx
@@ -36,7 +38,7 @@ struct SidebarRowInput
 # fn, since it's untested whether a `return` inside a plain macro correctly
 # exits the fn it gets inlined into.
 fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, git_changes, git_section_rows, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
+	(browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
 
 	macro_run compute_sidebar_row_layout
 
@@ -53,6 +55,8 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 		macro_run render_sidebar_git_clean_row
 	else if has_git_section and idx < git_section_rows
 		macro_run render_sidebar_git_changed_row
+	else if idx >= git_section_rows and idx < git_section_rows + root_section_rows
+		macro_run render_sidebar_root_row
 	else
 		macro_run render_sidebar_tree_row
 

@@ -22,7 +22,7 @@ macro resolve_placeholder_target
 	int insert_depth = 0
 	string parent_dir = browse_dir
 
-	if len(browse_entries) > 0 and browse_selected < len(browse_entries)
+	if not sidebar_on_root and len(browse_entries) > 0 and browse_selected < len(browse_entries)
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, depth, expanded) in selected
 		macro_run apply_placeholder_target_from_selection
@@ -59,6 +59,7 @@ macro build_placeholder_entry
 # its own hint text right after this runs, since that copy is specific to
 # whichever flow (create/move/rename) is driving the prompt.
 macro_block enter_placeholder_edit_mode
+	sidebar_on_root = false
 	browse_selected = insert_index
 	if browse_selected < browse_scroll_row
 		browse_scroll_row = browse_selected

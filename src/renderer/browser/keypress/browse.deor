@@ -67,7 +67,8 @@ macro clamp_sidebar_selection
 
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
-	int last_row = git_section_rows + len(browse_entries) - 1
+	int root_section_rows = sidebar_root_section_rows()
+	int last_row = git_section_rows + root_section_rows + len(browse_entries) - 1
 	int max_scroll = last_row - view_rows + 1
 	if max_scroll < 0
 		max_scroll = 0

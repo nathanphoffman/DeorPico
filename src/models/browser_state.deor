@@ -34,6 +34,14 @@ struct BrowserState
 	# exists.
 	bool sidebar_on_git
 
+	# True while the sidebar's highlighted row is the root-directory row
+	# (pinned directly below the <GIT> section, or right at the top if this
+	# isn't a git repo) rather than the <GIT> section or the Files tree.
+	# Gives ':' and ^F something to target even when the Files tree is
+	# completely empty (e.g. a brand new directory) -- see
+	# sidebar_root_section_rows.
+	bool sidebar_on_root
+
 	# -1 means the <GIT> header itself is highlighted (Enter/Space/Left/
 	# Right there toggles git_section_collapsed, same as a directory);
 	# 0..N-1 indexes into git_changes. Only meaningful while sidebar_on_git.
