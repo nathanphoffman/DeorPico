@@ -52,35 +52,64 @@ fn LintRunner lr_make()
 fn void lr_run(LintRunner runner, string command, string working_dir)
 	rust
 		{
-			use std::os::unix::process::CommandExt;
-
 			let mut state = runner.0.lock().unwrap();
 			if let Some(mut child) = state.child.take() {
-				// `sh -c "command"` forks a child to actually run `command`
-				// rather than exec'ing in place (e.g. when the command is
-				// itself a script) -- killing just this tracked PID would
-				// leave that grandchild (and anything it forked, like its
-				// own `sleep`) running as an orphan. Spawning into its own
-				// process group below (process_group(0)) makes the child's
-				// own PID double as the group ID, so killing -pid here
-				// reaches the whole tree in one signal.
-				let pid = child.id() as i32;
-				unsafe { libc::kill(-pid, libc::SIGKILL); }
+				// The shell (`sh -c`/`cmd /C`) forks a child to actually run
+				// `command` rather than exec'ing in place (e.g. when the
+				// command is itself a script) -- killing just this tracked
+				// PID would leave that grandchild (and anything it forked,
+				// like its own `sleep`) running as an orphan. Unix: spawning
+				// into its own process group below (process_group(0)) makes
+				// the child's own PID double as the group ID, so killing
+				// -pid here reaches the whole tree in one signal. Windows
+				// has no such group-kill primitive -- `taskkill /T` walks
+				// the process tree by PID instead, same end result.
+				let pid = child.id();
+				#[cfg(unix)]
+				{
+					unsafe { libc::kill(-(pid as i32), libc::SIGKILL); }
+				}
+				#[cfg(windows)]
+				{
+					let _ = std::process::Command::new("taskkill")
+						.args(["/PID", &pid.to_string(), "/T", "/F"])
+						.stdin(std::process::Stdio::null())
+						.stdout(std::process::Stdio::null())
+						.stderr(std::process::Stdio::null())
+						.status();
+				}
 				let _ = child.wait();
 			}
 			if command.trim().is_empty() {
 				return;
 			}
 			let shell_cmd = format!("{} 2>&1", command);
-			let spawned = std::process::Command::new("sh")
-				.arg("-c")
-				.arg(&shell_cmd)
-				.current_dir(&working_dir)
-				.stdin(std::process::Stdio::null())
-				.stdout(std::process::Stdio::piped())
-				.stderr(std::process::Stdio::null())
-				.process_group(0)
-				.spawn();
+
+			let spawned;
+			#[cfg(unix)]
+			{
+				use std::os::unix::process::CommandExt as _;
+				spawned = std::process::Command::new("sh")
+					.arg("-c")
+					.arg(&shell_cmd)
+					.current_dir(&working_dir)
+					.stdin(std::process::Stdio::null())
+					.stdout(std::process::Stdio::piped())
+					.stderr(std::process::Stdio::null())
+					.process_group(0)
+					.spawn();
+			}
+			#[cfg(windows)]
+			{
+				spawned = std::process::Command::new("cmd")
+					.arg("/C")
+					.arg(&shell_cmd)
+					.current_dir(&working_dir)
+					.stdin(std::process::Stdio::null())
+					.stdout(std::process::Stdio::piped())
+					.stderr(std::process::Stdio::null())
+					.spawn();
+			}
 			if let Ok(child) = spawned {
 				state.child = Some(child);
 			}

@@ -16,6 +16,16 @@ build:
     DEOR_LIB=lib deor main.deor build/main.rs
     cargo build
 
+# Wipes build/ (deor's transpiled output) and target/ (cargo's incremental
+# cache) first -- `build` on its own always regenerates build/main.rs fresh
+# but reuses target/ incrementally, so this is the one to reach for when
+# ruling out a stale Cargo cache as a variable.
+rebuild:
+    rm -rf build target
+    mkdir -p build
+    DEOR_LIB=lib deor main.deor build/main.rs
+    cargo build
+
 # Builds a release binary and installs it as `dpico` on your PATH --
 # usage: dpico [filename] [working_folder]
 install:
