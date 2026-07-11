@@ -25,6 +25,10 @@ macro use_consts
     # long file/directory names more room to display without truncation.
     const int SIDEBAR_WIDTH_FOCUSED = 46
 
+    # One column reserved at the right edge of the text area for the
+    # vertical scrollbar (see scrollbar.deor).
+    const int SCROLLBAR_WIDTH = 1
+
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
 # the lint output popup, the Ctrl+F search bar) -- any mismatch lets the

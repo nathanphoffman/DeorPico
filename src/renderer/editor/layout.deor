@@ -80,7 +80,7 @@ fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
 		sidebar_width = SIDEBAR_WIDTH_FOCUSED
 
 	int gutter_width = editor_gutter_width(total_line_count, show_line_numbers)
-	int text_visible_columns = cols - sidebar_width - gutter_width
+	int text_visible_columns = cols - sidebar_width - gutter_width - SCROLLBAR_WIDTH
 	if text_visible_columns < 1
 		text_visible_columns = 1
 

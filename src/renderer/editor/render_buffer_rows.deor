@@ -9,10 +9,29 @@ macro render_gutter_column
 	string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
 	screen = s_join([screen, gutter_piece])
 
+macro render_scrollbar_column
+	string scrollbar_piece = editor_scrollbar_piece(row_offset, thumb_top, thumb_height)
+	screen = s_join([screen, scrollbar_piece])
+
+# Untinted rows (and rows past end-of-file) never got padded out to
+# text_visible_columns the way editor_tint_search_row/editor_tint_issue_row
+# already do -- without this, the scrollbar column landed immediately after
+# wherever a short line's text happened to end instead of at the fixed
+# right-hand column, so it looked glued to the text instead of forming a
+# vertical bar.
+macro render_row_fill
+	int fill_width = text_visible_columns - row_visible_cols
+	if fill_width > 0
+		string space = " "
+		string fill = s_repeat(space, fill_width)
+		screen = s_join([screen, fill])
+
 # Main rendering loop: iterate through visible rows and render each line
 macro render_buffer_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+	ScrollbarThumb thumb = compute_scrollbar_thumb(view_rows, total_line_count, scroll_row)
+	(thumb_top, thumb_height) in thumb
 
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
@@ -28,21 +47,27 @@ macro render_buffer_rows
         macro_run render_sidebar_column        
         macro_run render_gutter_column
 
+		int row_visible_cols = 0
 		if buffer_row_index < total_line_count
 			string line = lines at buffer_row_index
 			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
 			RenderedLine rendered = render_visible_line(line, text_visible_columns, highlight)
 			(text, visible_cols) in rendered
+			row_visible_cols = visible_cols
 
 			bool row_matches = search_active and editor_row_has_match(search_matches, buffer_row_index)
 			bool row_has_issue = editor_row_has_match(issue_matches, buffer_row_index)
 			if row_matches
 				string tinted_text = editor_tint_search_row(text, text_visible_columns, visible_cols)
 				screen = s_join([screen, tinted_text])
+				row_visible_cols = text_visible_columns
 			else if row_has_issue
 				string tinted_text = editor_tint_issue_row(text, text_visible_columns, visible_cols)
 				screen = s_join([screen, tinted_text])
+				row_visible_cols = text_visible_columns
 			else
 				screen = s_join([screen, text])
 
+		macro_run render_row_fill
+		macro_run render_scrollbar_column
 		screen = s_join([screen, ANSI_CRLF])

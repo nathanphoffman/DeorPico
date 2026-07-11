@@ -1,0 +1,38 @@
+struct ScrollbarThumb
+	int thumb_top
+	int thumb_height
+
+# Computes where the scrollbar thumb sits within the view, once per frame --
+# thumb_height is the view's proportion of the total file (never smaller than
+# 1 row), thumb_top is scroll_row mapped from [0, total_line_count - view_rows]
+# onto [0, view_rows - thumb_height]. When the whole file already fits on
+# screen the thumb fills the entire track, signaling "nothing to scroll".
+fn ScrollbarThumb compute_scrollbar_thumb(int view_rows, int total_line_count, int scroll_row)
+	if total_line_count <= 0
+		int thumb_top = 0
+		int thumb_height = view_rows
+		ScrollbarThumb no_scroll_thumb = (thumb_top, thumb_height)
+		return no_scroll_thumb
+
+	int min_thumb_height = 1
+	int thumb_height = view_rows * view_rows / total_line_count
+	thumb_height = m_max(thumb_height, min_thumb_height)
+	thumb_height = m_min(thumb_height, view_rows)
+
+	int scrollable_rows = total_line_count - view_rows
+	int thumb_top = 0
+	if scrollable_rows > 0
+		int track_slack = view_rows - thumb_height
+		int track_top = 0
+		thumb_top = track_slack * scroll_row / scrollable_rows
+		thumb_top = m_clamp(thumb_top, track_top, track_slack)
+
+	ScrollbarThumb thumb = (thumb_top, thumb_height)
+	return thumb
+
+# One row's worth of the scrollbar: a solid block on rows the thumb covers,
+# a thin rail everywhere else in the track.
+fn string editor_scrollbar_piece(int row_offset, int thumb_top, int thumb_height)
+	if row_offset >= thumb_top and row_offset < thumb_top + thumb_height
+		return "█"
+	return "│"
