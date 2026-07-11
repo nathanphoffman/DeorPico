@@ -37,6 +37,36 @@ macro locate_mouse_in_buffer
 # A click also moves keyboard focus to whichever side it landed on, and
 # reassigns `col` before falling through to mouse_down_main so its own
 # gutter-relative math doesn't need to know the sidebar exists at all.
+# Given `row` (the mouse event's raw terminal row, from `key`), jumps
+# scroll_row proportionally to where that row falls within the track --
+# top of the track maps to the top of the file, bottom of the track to the
+# furthest the file can scroll, linearly in between. Shared by the scrollbar's
+# mouse_down (jump-to-click) and every mouse_drag while scrollbar_dragging is
+# set, so dragging continuously re-jumps to wherever the mouse is now. Doesn't
+# account for where within the thumb the drag was grabbed -- simpler, and the
+# thumb still tracks the mouse 1:1 since the mapping is linear.
+macro scrollbar_jump_to_row
+	macro_run use_consts
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows, minimap_offset) in layout
+
+	int track_top = 0
+	int track_bottom = view_rows - 1
+	int track_row = row - minimap_offset
+	track_row = m_clamp(track_row, track_top, track_bottom)
+
+	int scrollable_rows = total_line_count - view_rows
+	if scrollable_rows > 0 and track_bottom > 0
+		int min_scroll = 0
+		scroll_row = track_row * scrollable_rows / track_bottom
+		scroll_row = m_clamp(scroll_row, min_scroll, scrollable_rows)
+	else
+		scroll_row = 0
+
 macro mouse_down_editor_impl
 	macro_run use_consts
 	TermSize term_size = xt_size()
@@ -45,6 +75,7 @@ macro mouse_down_editor_impl
 	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(sidebar_width, minimap_offset) in layout
+	int scrollbar_col = cols - SCROLLBAR_WIDTH
 
 	if col < sidebar_width
 		int idx = browse_scroll_row + row - minimap_offset
@@ -58,6 +89,10 @@ macro mouse_down_editor_impl
 		# behave like F1 plus a selection: it stays focused so ^A/^K/^U can
 		# act on whatever was just clicked without a second click to refocus.
 		sidebar_focused = true
+	else if col is scrollbar_col
+		sidebar_focused = false
+		scrollbar_dragging = true
+		macro_run scrollbar_jump_to_row
 	else
 		col = col - sidebar_width
 		sidebar_focused = false

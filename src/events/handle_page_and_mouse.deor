@@ -7,8 +7,9 @@ macro handle_page_and_mouse
 		cursor_row = page_down_impl(cursor_row)
 	else if kind is "mouse_down"
 		macro_run mouse_down_editor_impl
-	#else if kind is "mouse_drag"
-	#	macro_run mouse_drag_main_impl
+	else if kind is "mouse_drag"
+		if scrollbar_dragging
+			macro_run scrollbar_jump_to_row
 	else if kind is "mouse_scroll_up"
 		macro_run scroll_up_impl
 	else if kind is "mouse_scroll_down"

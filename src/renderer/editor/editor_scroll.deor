@@ -1,6 +1,6 @@
 fn EditorState editor_scroll(EditorState state)
 	(core, browser, diff, lint, search) in state
-	(lines, cursor_row, scroll_row, wheel_scrolled, show_line_numbers) in core
+	(lines, cursor_row, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers) in core
 	(sidebar_focused) in browser
 	(diff_lines) in diff
 	(lint_output_visible) in lint
@@ -17,11 +17,11 @@ fn EditorState editor_scroll(EditorState state)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
-	# wheel_scrolled is cleared in editor_handle_key, not here -- clearing it
-	# here would let a lint-poll "tick" frame (see xt_read_key) consume it
-	# before the user's next real wheel notch arrives, snapping the view
-	# back to the cursor mid-scroll.
-	if not wheel_scrolled
+	# wheel_scrolled/scrollbar_dragging are cleared in editor_handle_key, not
+	# here -- clearing them here would let a lint-poll "tick" frame (see
+	# xt_read_key) consume the flag before the user's next real wheel notch
+	# or drag frame arrives, snapping the view back to the cursor mid-gesture.
+	if not wheel_scrolled and not scrollbar_dragging
 		if cursor_row < scroll_row
 			scroll_row = cursor_row
 		else if cursor_row >= scroll_row + view_rows
