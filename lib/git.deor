@@ -214,7 +214,7 @@ fn string g_render_minimap_bar(intList status, int cols)
 			stop = start + 1
 
 		int bucket_code = 0
-		for row in (start, stop)
+		for row in range(start, stop)
 			int row_status = status at row
 			bucket_code = g_merge_status(bucket_code, row_status)
 
