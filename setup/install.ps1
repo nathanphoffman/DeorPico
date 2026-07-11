@@ -52,7 +52,7 @@ Push-Location $CloneDir
 try {
     New-Item -ItemType Directory -Force -Path "build" | Out-Null
 
-    $env:DEOR_LIB = "src\lib"
+    $env:DEOR_LIB = "lib"
     & deor main.deor build\main.rs
     if ($LASTEXITCODE -ne 0) { throw "deor transpile failed" }
 
