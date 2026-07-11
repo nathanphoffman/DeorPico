@@ -108,28 +108,38 @@ macro mouse_down_main
     cursor_clicked_is_not_anchor as is_not_anchor_row or is_not_anchor_col
 
     (alt) in key
-    
+
     if alt is false
 	    sel_anchor_row = clicked_row
 	    sel_anchor_col = clicked_col
         has_selection = false
     else if cursor_clicked_is_not_anchor
         has_selection = true
-        notice = "should have rendered" 
+        notice = "should have rendered"
 
-    # selection is always reset otherwise as people expect clicking most areas to deselect    
+    # selection is always reset otherwise as people expect clicking most areas to deselect
     else if alt is true
 	    has_selection = true
-    else 
+    else
         has_selection = false
 
-# macro mouse_drag_main_impl
-	# macro_run locate_mouse_in_buffer
-	# if not has_selection
-		# if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
-			# has_selection = true
-	# cursor_row = clicked_row
-	# cursor_col = clicked_col
+    # Arms drag-to-select for every mouse_drag until the matching mouse_up
+    # (or any other real interaction) clears it -- see text_dragging's
+    # declaration in selection_state.deor.
+    text_dragging = true
+
+# Called on every mouse_drag while text_dragging is set (see
+# handle_page_and_mouse.deor). Mirrors mouse_down_main's click-to-buffer-
+# coordinate mapping, but only flips has_selection on once the drag has
+# actually moved off the anchor -- a down+up with no movement in between
+# should stay a plain cursor placement, not a zero-width selection.
+macro mouse_drag_main_impl
+	macro_run locate_mouse_in_buffer
+	if not has_selection
+		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
+			has_selection = true
+	cursor_row = clicked_row
+	cursor_col = clicked_col
 
 # Routes a mouse_down while the git-diff view is open to the sidebar (open
 # file / expand-collapse, same as mouse_down_editor) if the click landed

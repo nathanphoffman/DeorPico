@@ -20,6 +20,15 @@ fn TermSize xt_size()
 			TermSize { cols: c as i64, rows: r as i64 }
 		}
 
+# Non-blocking -- true if another input event is already waiting to be read.
+# Lets the main loop skip a render when it already knows there's more input
+# to process right behind the one it just handled, instead of paying for a
+# full frame per queued event (see main.deor) -- e.g. a fast mouse drag or a
+# burst of keystrokes collapses into one render for the whole backlog.
+fn bool xt_has_pending_input()
+	rust
+		crossterm::event::poll(std::time::Duration::from_millis(0)).unwrap_or(false)
+
 fn void xt_raw_on()
 	rust
 		{

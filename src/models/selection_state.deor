@@ -3,3 +3,9 @@ struct SelectionState
 	bool has_selection
 	int sel_anchor_row
 	int sel_anchor_col
+
+	# True from a mouse_down in the text buffer through the matching
+	# mouse_up -- tells handle_page_and_mouse to route mouse_drag events
+	# into extending the selection instead of ignoring them (mirrors
+	# scrollbar_dragging in buffer_state.deor).
+	bool text_dragging

@@ -1,5 +1,60 @@
 import "imports.deor"
 
+# Recomputes scroll, re-highlights if the buffer changed, and draws the
+# current frame. Pulled out of main()'s loop so it can be called once before
+# the first key is read (initial paint) and again only once per drained
+# batch of input inside the loop, rather than once per individual event.
+macro render_frame
+	state = editor_scroll(state)
+
+	(core, diff, selection) in state
+	(filename, lines, cursor_row, cursor_col, scroll_row) in core
+	(diffing) in diff
+	(sel_anchor_row, sel_anchor_col) in selection
+	if filename is not current_file
+		current_file = filename
+		ext = f_extension(current_file)
+		highlighter = initialize_highlighter(ext)
+		stringList cleared_highlighted_lines = empty
+		last_highlighted_lines = cleared_highlighted_lines
+
+	# Raw lines, before tab-expansion, so the on-screen cursor/selection
+	# columns can be derived to match what synoptic does to the displayed
+	# text below.
+	string raw_cursor_line = lines at cursor_row
+	macro_run use_consts
+	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
+
+	string raw_anchor_line = lines at sel_anchor_row
+	int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
+
+	# Re-tokenizing the whole file on every keystroke (including plain
+	# cursor movement) is what made big files crawl -- only redo it when
+	# the content actually changed since the last frame.
+	if lines is not last_highlighted_lines
+		highlighter = xs_run(highlighter, lines)
+		stringList lines_snapshot = lines
+		last_highlighted_lines = move lines_snapshot
+
+	if diffing
+		editor_render_diff(state)
+	else
+		# Only color the rows that can actually be on screen this frame
+		# (an over-estimate of view_rows, cheap and always safe) instead
+		# of the whole file.
+		TermSize term_size = xt_size()
+		(rows) in term_size
+		int total_line_count = len(lines)
+		int start_row = scroll_row
+		int end_row = scroll_row + rows
+		if end_row > total_line_count
+			end_row = total_line_count
+		HighlightRange highlight_bounds = (start_row, end_row)
+		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
+		BufferState core = core with (lines)
+		EditorState render_state_with_colors = state with (core)
+		editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
+
 fn void main()
 
 	(first, second, third, input_list) in args()
@@ -29,62 +84,23 @@ fn void main()
 	Highlighter highlighter = initialize_highlighter(ext)
 	stringList last_highlighted_lines = empty
 
+	macro_run render_frame
+
 	for if true
-		state = editor_scroll(state)
-
-		(core, diff, selection) in state
-		(filename, lines, cursor_row, cursor_col, scroll_row) in core
-		(diffing) in diff
-		(sel_anchor_row, sel_anchor_col) in selection
-		if filename is not current_file
-			current_file = filename
-			ext = f_extension(current_file)
-			highlighter = initialize_highlighter(ext)
-			stringList cleared_highlighted_lines = empty
-			last_highlighted_lines = cleared_highlighted_lines
-
-		# Raw lines, before tab-expansion, so the on-screen cursor/selection
-		# columns can be derived to match what synoptic does to the displayed
-		# text below.
-		string raw_cursor_line = lines at cursor_row
-		macro_run use_consts
-		int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
-
-		string raw_anchor_line = lines at sel_anchor_row
-		int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
-
-		# Re-tokenizing the whole file on every keystroke (including plain
-		# cursor movement) is what made big files crawl -- only redo it when
-		# the content actually changed since the last frame.
-		if lines is not last_highlighted_lines
-			highlighter = xs_run(highlighter, lines)
-			stringList lines_snapshot = lines
-			last_highlighted_lines = move lines_snapshot
-
-		if diffing
-			editor_render_diff(state)
-		else
-			# Only color the rows that can actually be on screen this frame
-			# (an over-estimate of view_rows, cheap and always safe) instead
-			# of the whole file.
-			TermSize term_size = xt_size()
-			(rows) in term_size
-			int total_line_count = len(lines)
-			int start_row = scroll_row
-			int end_row = scroll_row + rows
-			if end_row > total_line_count
-				end_row = total_line_count
-			HighlightRange highlight_bounds = (start_row, end_row)
-			lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
-			BufferState core = core with (lines)
-			EditorState render_state_with_colors = state with (core)
-			editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
-
 		KeyEvent raw_key = xt_read_key()
 		KeyEvent key = editor_translate_key(raw_key)
 		state = editor_handle_key_for_events(state, key)
 		(done) in state
 		if done
 			break
+
+		# Another event is already waiting -- handle it too before paying
+		# for a render, so a burst of input (fast typing, a fast mouse
+		# drag) collapses into one render for the whole backlog instead of
+		# one per event (see xt_has_pending_input).
+		if xt_has_pending_input()
+			continue
+
+		macro_run render_frame
 
 	xt_raw_off()

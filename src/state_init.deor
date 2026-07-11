@@ -68,7 +68,8 @@ macro initialize_selection
 	has_selection as false
 	sel_anchor_row as 0
 	sel_anchor_col as 0
-	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
+	text_dragging as false
+	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 
 macro initialize_undo
 	undoList undo_stack = empty

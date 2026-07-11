@@ -48,7 +48,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	(filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content) in core
 	(browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
 	(diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
-	(has_selection, sel_anchor_row, sel_anchor_col) in selection
+	(has_selection, sel_anchor_row, sel_anchor_col, text_dragging) in selection
 	(undo_stack, redo_stack) in undo
 	(search_buffer, search_active, search_editing, search_matches, search_match_index) in search
 	(filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
@@ -66,12 +66,14 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	if kind is not "tick" and kind is not "mouse_scroll_up" and kind is not "mouse_scroll_down"
 		wheel_scrolled = false
 
-	# Held through the whole scrollbar drag gesture, including the mouse_up
-	# that ends it (see scrollbar_dragging's declaration in buffer_state.deor)
-	# -- only a genuinely different interaction afterward re-engages
-	# cursor-follow scroll.
+	# Held through the whole scrollbar/text drag gesture, including the
+	# mouse_up that ends it (see scrollbar_dragging's declaration in
+	# buffer_state.deor and text_dragging's in selection_state.deor) -- only
+	# a genuinely different interaction afterward re-engages cursor-follow
+	# scroll and stops routing mouse_drag into selection.
 	if kind is not "tick" and kind is not "mouse_drag" and kind is not "mouse_up"
 		scrollbar_dragging = false
+		text_dragging = false
 
 	# ^K/^U's confirm-on-second-press only counts the *very next* matching
 	# press on the same path -- any other real key in between (navigating
@@ -104,7 +106,7 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 	BufferState core = (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content)
 	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
-	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col)
+	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 	UndoState undo = (undo_stack, redo_stack)
 	SearchState search = (search_buffer, search_active, search_editing, search_matches, search_match_index)
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
