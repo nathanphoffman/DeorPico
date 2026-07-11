@@ -55,8 +55,14 @@ fn void editor_render_diff(EditorState state)
 			// in the app uses (see editor_view_rows in consts.deor) -- the
 			// diff view never shows the lint popup, hence `false`.
 			let view_rows = editor_view_rows(rows as i64, editor_reserved_rows(has_minimap, false, false)) as usize;
+			let cols_usize = cols as usize;
 			let mut out = String::new();
-			out.push_str("\x1b[H\x1b[2J");
+			// No full-screen erase here -- every row/status line below is
+			// padded out to the full width, and exactly `rows` lines are
+			// always emitted, so homing the cursor and overwriting is
+			// enough (see initialize_screen_buffer_with_minimap for why
+			// this avoids a flicker on erase-then-redraw terminals).
+			out.push_str("\x1b[H");
 
 			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64, git_section_collapsed);
 			let root_section_rows = sidebar_root_section_rows();
@@ -103,6 +109,9 @@ fn void editor_render_diff(EditorState state)
 					};
 					if line.len() > diff_content_width {
 						line.truncate(diff_content_width);
+					} else if line.len() < diff_content_width {
+						let pad = diff_content_width - line.len();
+						line.push_str(&" ".repeat(pad));
 					}
 					line = match marker {
 						'+' => format!("\x1b[32m{}\x1b[39m", line),
@@ -110,6 +119,8 @@ fn void editor_render_diff(EditorState state)
 						_ => line,
 					};
 					out.push_str(&line);
+				} else {
+					out.push_str(&" ".repeat(diff_content_width));
 				}
 				out.push_str("\r\n");
 			}
@@ -120,14 +131,25 @@ fn void editor_render_diff(EditorState state)
 				out.push_str(&minimap_bar);
 				out.push_str("\r\n");
 			}
-			let status = if state.diff.diff_preview {
+			let mut status = if state.diff.diff_preview {
 				format!("-- {} (deleted, diff, read-only) -- Esc/^Q back", state.diff.diff_preview_path)
 			} else {
 				format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename)
 			};
+			if status.len() > cols_usize {
+				status.truncate(cols_usize);
+			} else {
+				status.push_str(&" ".repeat(cols_usize - status.len()));
+			}
 			out.push_str(&status);
 			out.push_str("\r\n");
-			out.push_str(&state.notice);
+			let mut notice = state.notice;
+			if notice.len() > cols_usize {
+				notice.truncate(cols_usize);
+			} else {
+				notice.push_str(&" ".repeat(cols_usize - notice.len()));
+			}
+			out.push_str(&notice);
 
 			print!("{}", out);
 			std::io::stdout().flush().unwrap();
