@@ -133,7 +133,21 @@ macro mouse_down_main
 # coordinate mapping, but only flips has_selection on once the drag has
 # actually moved off the anchor -- a down+up with no movement in between
 # should stay a plain cursor placement, not a zero-width selection.
+# locate_mouse_in_buffer expects `col` already sidebar-relative (see
+# mouse_down_editor_impl, which subtracts sidebar_width before calling into
+# mouse_down_main) -- mouse_drag events arrive with the raw terminal column
+# instead, so do that same subtraction here or every dragged selection lands
+# sidebar_width columns too far right.
 macro mouse_drag_main_impl
+	macro_run use_consts
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(sidebar_width) in layout
+	col = col - sidebar_width
+
 	macro_run locate_mouse_in_buffer
 	if not has_selection
 		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
