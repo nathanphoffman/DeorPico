@@ -107,10 +107,11 @@ fn void editor_render_diff(EditorState state)
 					} else {
 						String::new()
 					};
-					if line.len() > diff_content_width {
-						line.truncate(diff_content_width);
-					} else if line.len() < diff_content_width {
-						let pad = diff_content_width - line.len();
+					let line_char_count = line.chars().count();
+					if line_char_count > diff_content_width {
+						line = line.chars().take(diff_content_width).collect();
+					} else if line_char_count < diff_content_width {
+						let pad = diff_content_width - line_char_count;
 						line.push_str(&" ".repeat(pad));
 					}
 					line = match marker {

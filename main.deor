@@ -77,6 +77,19 @@ fn void main()
 	LaunchArgs launch = (filename, initial_dir, lint_command, lint_regex)
 	EditorState state = editor_open(launch)
 
+	# Without this, a panic mid-render (e.g. a bad byte index into a UTF-8
+	# line) kills the process while the terminal is still in raw/alt-screen
+	# mode, which looks like a full lockup instead of a crash with a
+	# visible message.
+	rust
+		{
+			let default_hook = std::panic::take_hook();
+			std::panic::set_hook(Box::new(move |info| {
+				xt_raw_off();
+				default_hook(info);
+			}));
+		}
+
 	xt_raw_on()
 
 	string current_file = filename
