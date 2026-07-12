@@ -94,11 +94,12 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
 
 	if kind is "sidebar_toggle"
 		sidebar_focused = toggle_sidebar(sidebar_focused)
-	# Checked before diffing/lint_output_visible so the sidebar stays fully
-	# navigable while a diff is showing (see rust_diff.deor) -- F1 still
-	# works to focus/unfocus it regardless (see the sidebar_toggle branch
-	# above), and handle_diff_mode/handle_lint_output_mode resume once focus
-	# moves back to the editor.
+	# Checked before diffing/lint_output_visible so that if the sidebar is
+	# focused (e.g. via F1 while a diff/lint popup is already showing -- see
+	# the sidebar_toggle branch above and toggle_diff_impl, which drops
+	# focus automatically on entry), it still takes priority for
+	# Up/Down/Enter/etc.; handle_diff_mode/handle_lint_output_mode resume
+	# once focus moves back to the editor.
 	else if sidebar_focused
 		macro_run handle_sidebar_focus_mode
 	else if diffing

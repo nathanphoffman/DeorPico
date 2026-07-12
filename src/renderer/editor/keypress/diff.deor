@@ -39,6 +39,12 @@ macro toggle_diff_impl
 		if change_count > 0
 			diff_lines = raw_diff
 			diffing = true
+			# The sidebar panel stays visible in diff mode (see
+			# rust_diff.deor) but shouldn't keep keyboard focus -- without
+			# this, Up/Down/PageUp/PageDown after ^D from a focused sidebar
+			# (the default on launch) silently scroll the file list instead
+			# of the diff, which looks like the diff pane is frozen/broken.
+			sidebar_focused = false
 			macro_run align_diff_scroll
 			count_str as c_int_to_string(change_count)
 			suffix as " changes"

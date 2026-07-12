@@ -4,7 +4,8 @@ fn void editor_render_diff(EditorState state)
     (browser) in state
     (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
     (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-    
+    macro_run use_consts
+
 	rust
 		use std::io::Write;
 		let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
@@ -107,6 +108,17 @@ fn void editor_render_diff(EditorState state)
 					} else {
 						String::new()
 					};
+					// Diff lines come straight from git output and can contain
+					// raw tab bytes (unlike buffer lines, which synoptic
+					// already tab-expands before display -- see main.deor's
+					// render_frame). An un-expanded '\t' hits the terminal as
+					// its own multi-column jump that the char-count-based
+					// padding below doesn't account for, under-filling the
+					// row and leaving a previous frame's characters showing
+					// through at the tail.
+					if line.contains('\t') {
+						line = line.replace('\t', &TAB_STRING);
+					}
 					let line_char_count = line.chars().count();
 					if line_char_count > diff_content_width {
 						line = line.chars().take(diff_content_width).collect();
