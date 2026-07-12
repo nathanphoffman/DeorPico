@@ -203,6 +203,11 @@ macro do_copy_impl
 		string selection_text = ""
 		macro_run copy_selection_text
 		bool copied = cp_set(selection_text)
+	else
+		string current_line = lines at cursor_row
+		string word_text = s_word_at(current_line, cursor_col)
+		if len(word_text) > 0
+			bool copied = cp_set(word_text)
 
 macro do_cut_impl
 	if has_selection

@@ -40,21 +40,21 @@ function get_difficulty_message(difficulty: number): string {
 
 function compute_lines(lines: number, quality: number, workers: number, teams: number, subsystems: number, subsystems_k: number, inner_team_k: number, outer_team_k: number): void {
 
-    const clarity_to_randomness: number = Math.pow(Math.E,(1-quality))
+    //const clarity_to_randomness: number = Math.pow(Math.E,(1-quality))
     const workers_per_team = workers / teams
 
     if(teams === 0) teams = 1
  
     const worker_efficiency: number = brookes_law_efficiency(inner_team_k, workers_per_team)
     const efficiency_of_teams: number = brookes_law_efficiency(outer_team_k, teams)
-    const efficiency_of_subsystems: number = brookes_law_efficiency(subsystems_k, subsystems)
+    const efficiency_of_subsystems: number = brookes_law_efficiency(Math.pow(subsystems,(1/Math.E)), subsystems)
 
     console.log("\n--- Total Efficiency Multiplier: ---")
     console.log(`inner team efficiency: ${worker_efficiency.toFixed(1)}x`)
     console.log(`outer team efficiency: ${efficiency_of_teams.toFixed(1)}x`)
     console.log(`subsys efficiency: ${efficiency_of_subsystems.toFixed(1)}x`)
     
-    const line_difficulty = clarity_to_randomness * lines
+    const line_difficulty = Math.pow(lines, (1+(100-quality))  ) 
     
     const net_efficiency = worker_efficiency * efficiency_of_teams * efficiency_of_subsystems
     console.log(` -> NET Eff.: ${net_efficiency.toFixed(1)}x`)
@@ -65,7 +65,7 @@ function compute_lines(lines: number, quality: number, workers: number, teams: n
     
     const msg = get_difficulty_message(difficulty)
     const msg_with_ai = get_difficulty_message(difficulty - 1)
-    console.log(`${difficulty.toFixed(1)}/6 - ${msg}`)
+    console.log(`${difficulty.toFixed(2)}/6 - ${msg}`)
     console.log("With AI: "+ msg_with_ai)
 
   
@@ -74,9 +74,25 @@ function compute_lines(lines: number, quality: number, workers: number, teams: n
     //console.log(worker_efficiency)
 }
 
+
+function cleanliness(lines: number, workers: number, worker_k: number, dirtyness: number, projects: number = 1): number {
+ 
+    const effective_difficulty = Math.pow(lines, 1 + dirtyness/100 * Math.E)
+    console.log("effective difficulty is ", effective_difficulty)
+
+    return effective_difficulty
+   
+}
+
+
+// tsc test.ts && node test.js
+//cleanliness(20000,1,1,10,1)
+
+
 const MINIMUM_COMPREHENSION: number = 1/Math.pow(6,6)
 console.log(MINIMUM_COMPREHENSION)
-compute_lines(16_000, 0.66, 1, 1, 1, 0, 0, 0)
-compute_lines(16_000, 1, 9, 3, 1, 0.001, 0, 0)
-compute_lines(40_000_000, 1, 2000, 200, 1700, 0.01, 0.125, 0.05)
+compute_lines(19_000, 0.66, 1, 1, 1, 0, 0, 0)
+compute_lines(19_000, 0.66, 1, 1, 2, 0.10, 0, 0)
 
+//compute_lines(16_000, 1, 9, 3, 1, 0.001, 0, 0)
+//compute_lines(40_000_000, 1, 2000, 200, 35, 0.01, 0.01, 0.01)

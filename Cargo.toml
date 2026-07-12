@@ -10,6 +10,7 @@ path = "build/main.rs"
 [dependencies]
 arboard = "3.6.1"
 crossterm = "0.29.0"
+ignore = "0.4"
 libc = "0.2"
 regex = "1.12.4"
 synoptic = "2.2.9"

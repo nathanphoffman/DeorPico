@@ -34,18 +34,18 @@ function get_difficulty_message(difficulty) {
     return mapping[get_difficulty_index()];
 }
 function compute_lines(lines, quality, workers, teams, subsystems, subsystems_k, inner_team_k, outer_team_k) {
-    var clarity_to_randomness = Math.pow(Math.E, (1 - quality));
+    //const clarity_to_randomness: number = Math.pow(Math.E,(1-quality))
     var workers_per_team = workers / teams;
     if (teams === 0)
         teams = 1;
     var worker_efficiency = brookes_law_efficiency(inner_team_k, workers_per_team);
     var efficiency_of_teams = brookes_law_efficiency(outer_team_k, teams);
-    var efficiency_of_subsystems = brookes_law_efficiency(subsystems_k, subsystems);
+    var efficiency_of_subsystems = brookes_law_efficiency(Math.pow(subsystems, (1 / Math.E)), subsystems);
     console.log("\n--- Total Efficiency Multiplier: ---");
     console.log("inner team efficiency: ".concat(worker_efficiency.toFixed(1), "x"));
     console.log("outer team efficiency: ".concat(efficiency_of_teams.toFixed(1), "x"));
     console.log("subsys efficiency: ".concat(efficiency_of_subsystems.toFixed(1), "x"));
-    var line_difficulty = clarity_to_randomness * lines;
+    var line_difficulty = Math.pow(lines);
     var net_efficiency = worker_efficiency * efficiency_of_teams * efficiency_of_subsystems;
     console.log(" -> NET Eff.: ".concat(net_efficiency.toFixed(1), "x"));
     console.log(" -> Line Difficulty: ".concat(line_difficulty, " due to Quality ").concat(quality));
@@ -53,13 +53,22 @@ function compute_lines(lines, quality, workers, teams, subsystems, subsystems_k,
     var difficulty = Math.pow((line_difficulty / net_efficiency), inverse_miller_cowan);
     var msg = get_difficulty_message(difficulty);
     var msg_with_ai = get_difficulty_message(difficulty - 1);
-    console.log("".concat(difficulty.toFixed(1), "/6 - ").concat(msg));
+    console.log("".concat(difficulty.toFixed(2), "/6 - ").concat(msg));
     console.log("With AI: " + msg_with_ai);
     //console.log(clarity_to_randomness)
     //console.log(worker_efficiency)
 }
+function cleanliness(lines, workers, worker_k, dirtyness, projects) {
+    if (projects === void 0) { projects = 1; }
+    var effective_difficulty = Math.pow(lines, 1 + dirtyness / 100 * Math.E);
+    console.log("effective difficulty is ", effective_difficulty);
+    return effective_difficulty;
+}
+// tsc test.ts && node test.js
+//cleanliness(20000,1,1,10,1)
 var MINIMUM_COMPREHENSION = 1 / Math.pow(6, 6);
 console.log(MINIMUM_COMPREHENSION);
-compute_lines(16000, 0.66, 1, 1, 1, 0, 0, 0);
-compute_lines(16000, 1, 9, 3, 1, 0.001, 0, 0);
-compute_lines(40000000, 1, 2000, 200, 1700, 0.01, 0.125, 0.05);
+compute_lines(19000, 0.66, 1, 1, 1, 0, 0, 0);
+compute_lines(19000, 0.66, 1, 1, 2, 0.10, 0, 0);
+//compute_lines(16_000, 1, 9, 3, 1, 0.001, 0, 0)
+//compute_lines(40_000_000, 1, 2000, 200, 35, 0.01, 0.01, 0.01)

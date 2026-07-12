@@ -64,7 +64,8 @@ fn entryMatchList x_find_entries_matching(string dir, string query)
 
 # Non-recursive: direct children of `dir` only, matched by case-insensitive
 # substring in the file name -- used while the filter query is under 5
-# characters (see renderer/browser/keypress/browse_filter.deor).
+# characters (see renderer/browser/keypress/browse_filter.deor). Entries
+# covered by a `.gitignore` at `dir`'s root, if one exists, are skipped.
 fn filterMatchList x_filter_shallow(string dir, string query)
 	rust
 		{
@@ -73,6 +74,13 @@ fn filterMatchList x_filter_shallow(string dir, string query)
 			if needle.is_empty() {
 				return matches;
 			}
+			let root_path = std::path::Path::new(&dir).to_path_buf();
+			let gitignore_path = root_path.join(".gitignore");
+			let ignore_matcher = if gitignore_path.is_file() {
+				Some(ignore::gitignore::Gitignore::new(&gitignore_path).0)
+			} else {
+				None
+			};
 			if let Ok(read_dir) = std::fs::read_dir(&dir) {
 				let mut entries: Vec<std::fs::DirEntry> = read_dir.flatten().collect();
 				entries.sort_by_key(|e| e.file_name());
@@ -80,6 +88,11 @@ fn filterMatchList x_filter_shallow(string dir, string query)
 					let path = entry.path();
 					if path.is_dir() {
 						continue;
+					}
+					if let Some(m) = &ignore_matcher {
+						if m.matched(&path, false).is_ignore() {
+							continue;
+						}
 					}
 					let name = entry.file_name().to_string_lossy().to_string();
 					if name.to_lowercase().contains(&needle) {
@@ -105,6 +118,8 @@ fn filterMatchList x_filter_shallow(string dir, string query)
 # time that happens increments the returned truncated_count so the caller
 # can let the user know some files were skipped. Results come back name
 # matches first, then content matches ordered by instance count descending.
+# Entries covered by a `.gitignore` at `dir`'s root, if one exists, are
+# skipped entirely -- ignored directories are pruned rather than descended into.
 fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
 	rust
 		{
@@ -113,6 +128,7 @@ fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
 				root: &std::path::Path,
 				needle: &str,
 				per_dir_cap: usize,
+				ignore_matcher: &Option<ignore::gitignore::Gitignore>,
 				truncated_count: &mut i64,
 				name_matches: &mut Vec<FilterMatch>,
 				content_matches: &mut Vec<FilterMatch>,
@@ -125,7 +141,13 @@ fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
 				let mut files: Vec<std::fs::DirEntry> = Vec::new();
 				let mut subdirs: Vec<std::fs::DirEntry> = Vec::new();
 				for entry in entries {
-					if entry.path().is_dir() {
+					let path = entry.path();
+					if let Some(m) = ignore_matcher {
+						if m.matched(&path, path.is_dir()).is_ignore() {
+							continue;
+						}
+					}
+					if path.is_dir() {
 						subdirs.push(entry);
 					} else {
 						files.push(entry);
@@ -168,7 +190,7 @@ fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
 				}
 
 				for entry in subdirs {
-					walk(&entry.path(), root, needle, per_dir_cap, truncated_count, name_matches, content_matches);
+					walk(&entry.path(), root, needle, per_dir_cap, ignore_matcher, truncated_count, name_matches, content_matches);
 				}
 			}
 
@@ -180,7 +202,13 @@ fn FilterOutcome x_filter_tree(string dir, string query, int per_dir_cap)
 			if !needle.is_empty() {
 				let root_path = std::path::Path::new(&dir).to_path_buf();
 				let cap = if per_dir_cap > 0 { per_dir_cap as usize } else { 0 };
-				walk(&root_path, &root_path, &needle, cap, &mut truncated_count, &mut name_matches, &mut content_matches);
+				let gitignore_path = root_path.join(".gitignore");
+				let ignore_matcher = if gitignore_path.is_file() {
+					Some(ignore::gitignore::Gitignore::new(&gitignore_path).0)
+				} else {
+					None
+				};
+				walk(&root_path, &root_path, &needle, cap, &ignore_matcher, &mut truncated_count, &mut name_matches, &mut content_matches);
 			}
 
 			content_matches.sort_by(|a, b| b.instance_count.cmp(&a.instance_count));

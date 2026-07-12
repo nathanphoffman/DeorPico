@@ -102,10 +102,26 @@ fn void main()
 	for if true
 		KeyEvent raw_key = xt_read_key()
 		KeyEvent key = editor_translate_key(raw_key)
+		(kind) in key
+
+		# Only a lint job in flight can make a synthetic "tick" (see
+		# xt_read_key's poll timeout) change anything visible -- it may
+		# finish and post a notice (see apply_lint_poll_impl). An idle tick
+		# with nothing running is a guaranteed no-op, so skip paying for a
+		# render on it instead of redrawing the whole screen 6-7x/second
+		# while the user isn't typing.
+		(lint) in state
+		(lint_running) in lint
+		bool was_lint_running = lint_running
+
 		state = editor_handle_key_for_events(state, key)
 		(done) in state
 		if done
 			break
+
+		if kind is "tick"
+			if was_lint_running is false
+				continue
 
 		# Another event is already waiting -- handle it too before paying
 		# for a render, so a burst of input (fast typing, a fast mouse
