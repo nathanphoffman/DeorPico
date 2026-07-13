@@ -1,0 +1,256 @@
+raw Highlighter
+
+rust
+	// A rule is tried in registration order. At any given scan position the
+	// match with the earliest start wins; ties go to whichever rule was
+	// registered first (see hl_tokenize_line) -- this is what lets a rule
+	// like "call site" beat a later, broader "type" rule on the same text.
+	#[derive(Clone)]
+	enum HlRule {
+		Keyword(String, regex::Regex),
+		Bounded(String, regex::Regex, regex::Regex, bool),
+	}
+
+	struct HighlighterInner {
+		rules: Vec<HlRule>,
+		// line_state[row] is the rule index (if any) of the bounded region
+		// still open at the START of that row -- populated by a full-file
+		// scan in xs_run so xs_line can color an arbitrary row on its own
+		// without re-scanning everything before it.
+		line_state: Vec<Option<usize>>,
+		tab_width: usize,
+	}
+
+	#[derive(Clone)]
+	struct Highlighter(std::sync::Arc<std::sync::Mutex<HighlighterInner>>);
+
+	// Matches VS Code's default "Dark+" theme token colors (truecolor, not the
+	// 16-color ANSI palette) so highlighting looks the same as the VS Code editor.
+	fn xs_color_code(name: &str) -> &'static str {
+		match name {
+			"keyword" => "\x1b[38;2;198;120;221m",        // #C586C0
+			"string" => "\x1b[38;2;206;145;120m",         // #CE9178
+			"comment" => "\x1b[38;2;106;153;85m",         // #6A9955
+			"number" => "\x1b[38;2;181;206;168m",         // #B5CEA8
+			"type" => "\x1b[38;2;78;201;176m",            // #4EC9B0
+			"function" => "\x1b[38;2;156;220;254m",       // #9CDCFE pale blue
+			"macro_name" => "\x1b[38;2;125;176;203m",     // #7DB0CB steel blue, darker than function
+			"invalid" => "\x1b[38;2;244;71;71m",          // #F44747
+			"heading" => "\x1b[1;38;2;86;156;214m",       // #569CD6 bold
+			"quote" => "\x1b[3;38;2;106;153;85m",         // comment green, italic
+			"bold" => "\x1b[1m",
+			"italic" => "\x1b[3m",
+			"strikethrough" => "\x1b[9m",
+			"image" => "\x1b[38;2;78;201;176m",           // type teal
+			"link" => "\x1b[4;38;2;86;156;214m",          // #569CD6 underlined
+			"math" => "\x1b[38;2;181;206;168m",           // number pale green
+			"block" => "\x1b[38;2;206;145;120m",          // string orange
+			"linebreak" => "\x1b[38;2;106;153;85m",       // comment green
+			"list" => "\x1b[38;2;198;120;221m",           // keyword purple
+			_ => "",
+		}
+	}
+
+	// Tabs are expanded to real tab stops (not a flat N spaces) so the
+	// highlighted output stays in the same column space s_visual_col assumes
+	// when it maps cursor/click positions -- see src/consts.deor's TAB_WIDTH.
+	fn hl_expand_tabs(line: &str, tab_width: usize) -> String {
+		let mut out = String::with_capacity(line.len());
+		let mut col: usize = 0;
+		for ch in line.chars() {
+			if ch == '\t' {
+				let next_col = (col / tab_width + 1) * tab_width;
+				for _ in col..next_col {
+					out.push(' ');
+				}
+				col = next_col;
+			} else {
+				out.push(ch);
+				col += 1;
+			}
+		}
+		out
+	}
+
+	fn hl_is_escaped(line: &str, pos: usize) -> bool {
+		let bytes = line.as_bytes();
+		let mut count = 0;
+		let mut i = pos;
+		while i > 0 && bytes[i - 1] == b'\\' {
+			count += 1;
+			i -= 1;
+		}
+		count % 2 == 1
+	}
+
+	// Earliest non-escaped occurrence of `stop` at or after `from`. Escaped
+	// occurrences (odd number of backslashes immediately before the match)
+	// are skipped over, same convention as backslash-escaped string literals.
+	fn hl_find_stop(line: &str, stop: &regex::Regex, escapable: bool, from: usize) -> Option<(usize, usize)> {
+		let mut pos = from;
+		loop {
+			if pos > line.len() {
+				return None;
+			}
+			match stop.find_at(line, pos) {
+				None => return None,
+				Some(m) => {
+					if escapable && hl_is_escaped(line, m.start()) {
+						pos = m.start() + 1;
+						continue;
+					}
+					return Some((m.start(), m.end()));
+				}
+			}
+		}
+	}
+
+	// Tokenizes one already-tab-expanded line, given whatever bounded region
+	// (if any) was left open by the previous line. Returns the colored spans
+	// plus the region left open at the end of this line, if any.
+	fn hl_tokenize_line(rules: &[HlRule], line: &str, start_state: Option<usize>) -> (Vec<(String, Option<String>)>, Option<usize>) {
+		let mut tokens: Vec<(String, Option<String>)> = Vec::new();
+		let mut pos = 0usize;
+		let mut state = start_state;
+
+		if let Some(rule_idx) = state {
+			if let HlRule::Bounded(name, _start, stop, escapable) = &rules[rule_idx] {
+				match hl_find_stop(line, stop, *escapable, 0) {
+					Some((_, end)) => {
+						tokens.push((line[0..end].to_string(), Some(name.clone())));
+						pos = end;
+						state = None;
+					}
+					None => {
+						tokens.push((line.to_string(), Some(name.clone())));
+						return (tokens, Some(rule_idx));
+					}
+				}
+			}
+		}
+
+		while pos < line.len() {
+			let mut best_start: Option<usize> = None;
+			let mut best_end = 0usize;
+			let mut best_rule: Option<usize> = None;
+			let mut best_is_bounded = false;
+
+			for (idx, rule) in rules.iter().enumerate() {
+				let candidate = match rule {
+					HlRule::Keyword(_name, re) => re.find_at(line, pos),
+					HlRule::Bounded(_name, start_re, _stop, _escapable) => start_re.find_at(line, pos),
+				};
+				if let Some(m) = candidate {
+					if best_start.is_none() || m.start() < best_start.unwrap() {
+						best_start = Some(m.start());
+						best_end = m.end();
+						best_rule = Some(idx);
+						best_is_bounded = matches!(rule, HlRule::Bounded(..));
+					}
+				}
+			}
+
+			let start = match best_start {
+				None => {
+					tokens.push((line[pos..].to_string(), None));
+					break;
+				}
+				Some(start) => start,
+			};
+			if start > pos {
+				tokens.push((line[pos..start].to_string(), None));
+			}
+			let idx = best_rule.unwrap();
+			if best_is_bounded {
+				if let HlRule::Bounded(name, _start_re, stop, escapable) = &rules[idx] {
+					match hl_find_stop(line, stop, *escapable, best_end) {
+						Some((_, stop_end)) => {
+							tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
+							pos = stop_end;
+						}
+						None => {
+							tokens.push((line[start..].to_string(), Some(name.clone())));
+							state = Some(idx);
+							pos = line.len();
+						}
+					}
+				}
+			} else {
+				if let HlRule::Keyword(name, _re) = &rules[idx] {
+					tokens.push((line[start..best_end].to_string(), Some(name.clone())));
+				}
+				pos = best_end;
+			}
+		}
+
+		(tokens, state)
+	}
+
+struct BoundedSpec
+	string name
+	string start
+	string stop
+
+fn Highlighter xs_make(int tab_width)
+	rust
+		Highlighter(std::sync::Arc::new(std::sync::Mutex::new(HighlighterInner {
+			rules: Vec::new(),
+			line_state: Vec::new(),
+			tab_width: tab_width as usize,
+		})))
+
+fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
+	rust
+		{
+			let re = regex::Regex::new(pattern.as_str()).unwrap();
+			hlt.0.lock().unwrap().rules.push(HlRule::Keyword(name.clone(), re));
+			hlt
+		}
+
+fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
+	rust
+		{
+			let start = regex::Regex::new(spec.start.as_str()).unwrap();
+			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
+			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable));
+			hlt
+		}
+
+fn Highlighter xs_run(Highlighter hlt, stringList lines)
+	rust
+		{
+			let mut inner = hlt.0.lock().unwrap();
+			let tab_width = inner.tab_width;
+			let mut state: Option<usize> = None;
+			let mut line_state: Vec<Option<usize>> = Vec::with_capacity(lines.len());
+			for line in &lines {
+				line_state.push(state);
+				let expanded = hl_expand_tabs(line.as_str(), tab_width);
+				let (_tokens, next_state) = hl_tokenize_line(&inner.rules, expanded.as_str(), state);
+				state = next_state;
+			}
+			inner.line_state = line_state;
+			drop(inner);
+			hlt
+		}
+
+fn string xs_line(Highlighter hlt, int row, string line)
+	rust
+		{
+			let inner = hlt.0.lock().unwrap();
+			let expanded = hl_expand_tabs(line.as_str(), inner.tab_width);
+			let start_state = inner.line_state.get(row as usize).cloned().flatten();
+			let (tokens, _end_state) = hl_tokenize_line(&inner.rules, expanded.as_str(), start_state);
+			let mut out = String::new();
+			for (text, kind) in tokens {
+				match kind {
+					Some(k) => {
+						out.push_str(xs_color_code(&k));
+						out.push_str(&text);
+						out.push_str("\x1b[0m");
+					}
+					None => out.push_str(&text),
+				}
+			}
+			out
+		}

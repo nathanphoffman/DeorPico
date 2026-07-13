@@ -1,0 +1,39 @@
+macro highlights_html
+	# comments
+	name as "comment"
+	start as "<!--"
+	stop as "-->"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# attribute values
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# tag names -- the "<"/"</" is swallowed into the match, no lookahead
+	# support in the regex crate
+	tag_name as "type"
+	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
+	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+
+	# attribute names tight against "=" -- same lookahead workaround
+	attr_name as "function"
+	attr_pattern as "\\b[a-zA-Z_:][a-zA-Z0-9_:.-]*="
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+	# entities
+	entity_name as "macro_name"
+	entity_pattern as "&[A-Za-z#0-9]+;"
+	highlighter = xs_add_keyword(highlighter, entity_name, entity_pattern)

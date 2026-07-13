@@ -1,0 +1,40 @@
+macro highlights_asm
+	# comments -- ";" is the near-universal comment marker across
+	# NASM/MASM/GAS-with-semicolons
+	comment_name as "comment"
+	comment_pattern as ";.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# strings (db "...")
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec str_spec = (name, start, stop)
+	str_escapable as true
+	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+
+	# labels -- "^" anchors to the start of the current line, which is
+	# exactly what the highlighter tokenizes one row at a time anyway
+	label_name as "function"
+	label_pattern as "^[A-Za-z_.][A-Za-z0-9_]*:"
+	highlighter = xs_add_keyword(highlighter, label_name, label_pattern)
+
+	# registers (x86 flavor)
+	reg_name as "type"
+	reg_pattern as "(?i)\\b(e?[abcd]x|e?[sd]i|e?[sb]p|r[0-9]+[dwb]?|r[abcd]x|rsi|rdi|rsp|rbp|[abcd][lh])\\b"
+	highlighter = xs_add_keyword(highlighter, reg_name, reg_pattern)
+
+	# common x86 mnemonics and assembler directives
+	kw_name as "keyword"
+	kw_pattern as "(?i)\\b(mov|add|sub|mul|imul|div|idiv|inc|dec|push|pop|call|ret|jmp|je|jne|jg|jl|jge|jle|jz|jnz|cmp|test|lea|nop|and|or|xor|not|shl|shr|int|syscall|section|global|extern|db|dw|dd|dq|equ|times|resb|resw|resd)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# hex literals
+	hex_name as "number"
+	hex_pattern as "\\b0[xX][0-9a-fA-F]+\\b"
+	highlighter = xs_add_keyword(highlighter, hex_name, hex_pattern)
+
+	# decimal literals, optional trailing h for hex in Intel syntax
+	num_name as "number"
+	num_pattern as "\\b\\d[\\da-fA-F]*[hH]?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

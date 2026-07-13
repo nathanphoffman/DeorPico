@@ -1,0 +1,66 @@
+macro highlights_python
+	# line comments -- Python has no block comment
+	comment_name as "comment"
+	comment_pattern as "#.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# triple-quoted strings/docstrings -- registered before the plain
+	# single/double-quote rules below so they win the tokenizer's
+	# first-atom-registered tiebreak at the same opening-quote position
+	name as "string"
+	start as "\"\"\""
+	stop as "\"\"\""
+	BoundedSpec dtstr_spec = (name, start, stop)
+	dtstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dtstr_spec, dtstr_escapable)
+
+	name as "string"
+	start as "'''"
+	stop as "'''"
+	BoundedSpec ststr_spec = (name, start, stop)
+	ststr_escapable as true
+	highlighter = xs_add_bounded(highlighter, ststr_spec, ststr_escapable)
+
+	# plain strings
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# decorators
+	deco_name as "macro_name"
+	deco_pattern as "@[A-Za-z_][A-Za-z0-9_.]*"
+	highlighter = xs_add_keyword(highlighter, deco_name, deco_pattern)
+
+	# call sites
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|match|case)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin types/constants
+	builtin_name as "type"
+	builtin_pattern as "\\b(int|float|str|bool|list|dict|set|tuple|bytes|complex|frozenset|object|None|True|False|self|cls)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase class names, wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

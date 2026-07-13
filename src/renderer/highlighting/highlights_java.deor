@@ -1,0 +1,57 @@
+macro highlights_java
+	# block comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# annotations
+	anno_name as "macro_name"
+	anno_pattern as "@[A-Za-z_][A-Za-z0-9_.]*"
+	highlighter = xs_add_keyword(highlighter, anno_name, anno_pattern)
+
+	# strings and char literals
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec str_spec = (name, start, stop)
+	str_escapable as true
+	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec chr_spec = (name, start, stop)
+	chr_escapable as true
+	highlighter = xs_add_bounded(highlighter, chr_spec, chr_escapable)
+
+	# call sites
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|assert|break|case|catch|class|const|continue|default|do|else|enum|extends|final|finally|for|goto|if|implements|import|instanceof|interface|native|new|package|private|protected|public|record|return|sealed|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|volatile|while|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin primitive types and common boxed/core types
+	builtin_name as "type"
+	builtin_pattern as "\\b(boolean|byte|char|double|float|int|long|short|void|String|Object|Integer|Long|Double|Float|Boolean|Character)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase class/interface names, wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?[fFdDlL]?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

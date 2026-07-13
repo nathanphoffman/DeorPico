@@ -1,0 +1,39 @@
+macro highlights_cmm
+	# "C--" isn't one standardized language -- several unrelated toy
+	# languages share the name (compiler-course subsets of C, and the
+	# Peyton Jones/Ramsey portable IL). This covers the common subset
+	# nearly all of them share: C-style comments/strings/control-flow,
+	# with no preprocessor, structs, or pointers.
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec str_spec = (name, start, stop)
+	str_escapable as true
+	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(if|else|while|for|return|break|continue)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	builtin_name as "type"
+	builtin_pattern as "\\b(int|float|char|void|bool)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

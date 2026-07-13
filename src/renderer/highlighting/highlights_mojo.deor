@@ -1,0 +1,13 @@
+macro highlights_mojo
+	# Mojo is a static-typing superset of Python's syntax -- reuse Python's
+	# comments/strings/decorators/call-sites/keywords/numbers, then layer
+	# Mojo's own struct/ownership keywords and types on top.
+	macro_run highlights_python
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(fn|struct|var|let|alias|borrowed|inout|owned|trait|raises|capturing|comptime)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	builtin_name as "type"
+	builtin_pattern as "\\b(Int|Int8|Int16|Int32|Int64|UInt|Float16|Float32|Float64|Bool|String|SIMD|Tensor|DType)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)

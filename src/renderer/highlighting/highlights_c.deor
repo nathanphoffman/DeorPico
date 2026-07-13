@@ -1,0 +1,62 @@
+macro highlights_c
+	# block comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# preprocessor directives (#include, #define, ...)
+	pp_name as "macro_name"
+	pp_pattern as "#\\s*[a-zA-Z_]+"
+	highlighter = xs_add_keyword(highlighter, pp_name, pp_pattern)
+
+	# strings and char literals
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec str_spec = (name, start, stop)
+	str_escapable as true
+	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec chr_spec = (name, start, stop)
+	chr_escapable as true
+	highlighter = xs_add_bounded(highlighter, chr_spec, chr_escapable)
+
+	# call sites -- registered before the type/keyword rules so conventional
+	# call names win the tokenizer's first-atom-registered tiebreak
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(auto|break|case|const|continue|default|do|else|enum|extern|for|goto|if|inline|register|restrict|return|sizeof|static|struct|switch|typedef|union|volatile|while|_Bool|_Complex|_Imaginary)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin primitive types
+	builtin_name as "type"
+	builtin_pattern as "\\b(char|double|float|int|long|short|signed|unsigned|void)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase typedef'd type names, wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, hex, underscores as separators
+	hex_name as "number"
+	hex_pattern as "\\b0[xX][0-9a-fA-F]+\\b"
+	highlighter = xs_add_keyword(highlighter, hex_name, hex_pattern)
+
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?[fFlLuU]*\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

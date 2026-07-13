@@ -1,0 +1,61 @@
+macro highlights_php
+	# block comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments -- both // and # styles are valid PHP
+	line_comment_name as "comment"
+	line_comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, line_comment_name, line_comment_pattern)
+
+	hash_comment_name as "comment"
+	hash_comment_pattern as "#.*"
+	highlighter = xs_add_keyword(highlighter, hash_comment_name, hash_comment_pattern)
+
+	# strings
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# variables
+	var_name as "type"
+	var_pattern as "\\$[A-Za-z_][A-Za-z0-9_]*"
+	highlighter = xs_add_keyword(highlighter, var_name, var_pattern)
+
+	# call sites
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|and|array|as|break|callable|case|catch|class|clone|const|continue|declare|default|do|echo|else|elseif|empty|enddeclare|endfor|endforeach|endif|endswitch|endwhile|extends|final|finally|fn|for|foreach|function|global|goto|if|implements|include|include_once|instanceof|insteadof|interface|isset|list|match|namespace|new|or|print|private|protected|public|require|require_once|return|static|switch|throw|trait|try|unset|use|var|while|xor|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin types
+	builtin_name as "type"
+	builtin_pattern as "\\b(int|float|string|bool|array|object|callable|iterable|void|mixed|null|self|parent)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase class names, wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

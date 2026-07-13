@@ -1,0 +1,13 @@
+macro highlights_cpp
+	# C++ is a strict-ish superset of C for highlighting purposes -- reuse
+	# comments/strings/call-sites/C-keywords/C-builtins/numbers from
+	# highlights_c, then layer the C++-only keywords and types on top.
+	macro_run highlights_c
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(catch|class|const_cast|constexpr|decltype|delete|dynamic_cast|explicit|export|final|friend|mutable|namespace|new|noexcept|operator|override|private|protected|public|reinterpret_cast|static_assert|static_cast|template|this|throw|try|typename|using|virtual)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	builtin_name as "type"
+	builtin_pattern as "\\b(bool|nullptr|wchar_t|char8_t|char16_t|char32_t)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)

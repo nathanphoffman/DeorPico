@@ -10,6 +10,32 @@ fn Highlighter initialize_highlighter(string ext)
     const string CSHARP = "cs"
     const string JSX = "jsx"
     const string TYPESCRIPT = "ts"
+    const string JAVASCRIPT = "js"
+    const string HTML = "html"
+    const string HTM = "htm"
+    const string CSS = "css"
+    const string PYTHON = "py"
+    const string RUST = "rs"
+    const string C_SRC = "c"
+    const string C_HEADER = "h"
+    const string CPP1 = "cpp"
+    const string CPP2 = "cc"
+    const string CPP3 = "cxx"
+    const string CPP_HEADER1 = "hpp"
+    const string CPP_HEADER2 = "hh"
+    const string FORTRAN90 = "f90"
+    const string REXX1 = "rexx"
+    const string REXX2 = "rex"
+    const string CMM = "cmm"
+    const string MOJO = "mojo"
+    const string GOLANG = "go"
+    const string ASM1 = "asm"
+    const string ASM2 = "s"
+    const string BASH1 = "sh"
+    const string BASH2 = "bash"
+    const string PHP = "php"
+    const string JAVA = "java"
+    const string POWERSHELL = "ps1"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
@@ -20,8 +46,45 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_jsx
 	else if ext is TYPESCRIPT
 		macro_run highlights_typescript
+	else if ext is JAVASCRIPT
+		# JS is a subset of JSX's grammar -- the JSX tag rule simply never
+		# matches in plain JS source, so the same rules serve both.
+		macro_run highlights_jsx
+	else if ext is HTML or ext is HTM
+		macro_run highlights_html
+	else if ext is CSS
+		macro_run highlights_css
+	else if ext is PYTHON
+		macro_run highlights_python
+	else if ext is RUST
+		macro_run highlights_rust
+	else if ext is CPP1 or ext is CPP2 or ext is CPP3 or ext is CPP_HEADER1 or ext is CPP_HEADER2
+		macro_run highlights_cpp
+	else if ext is C_SRC or ext is C_HEADER
+		macro_run highlights_c
+	else if ext is FORTRAN90
+		macro_run highlights_fortran90
+	else if ext is REXX1 or ext is REXX2
+		macro_run highlights_rexx
+	else if ext is CMM
+		macro_run highlights_cmm
+	else if ext is MOJO
+		macro_run highlights_mojo
+	else if ext is GOLANG
+		macro_run highlights_go
+	else if ext is ASM1 or ext is ASM2
+		macro_run highlights_asm
+	else if ext is BASH1 or ext is BASH2
+		macro_run highlights_bash
+	else if ext is PHP
+		macro_run highlights_php
+	else if ext is JAVA
+		macro_run highlights_java
+	else if ext is POWERSHELL
+		macro_run highlights_powershell
 	else
-		highlighter = xs_from_extension(ext, TAB_WIDTH)
+		# No custom rules for this extension yet -- plain, uncolored text.
+		highlighter = xs_make(TAB_WIDTH)
 
     return highlighter
 

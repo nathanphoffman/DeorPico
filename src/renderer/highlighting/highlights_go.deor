@@ -1,0 +1,53 @@
+macro highlights_go
+	# block comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# raw strings (backtick-delimited) -- no escape sequences at all
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec rstr_spec = (name, start, stop)
+	rstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, rstr_spec, rstr_escapable)
+
+	# interpreted strings
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	# call sites
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin primitive types
+	builtin_name as "type"
+	builtin_pattern as "\\b(any|bool|byte|complex64|complex128|error|float32|float64|int|int8|int16|int32|int64|rune|string|uint|uint8|uint16|uint32|uint64|uintptr)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase (exported) identifiers, wherever used
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

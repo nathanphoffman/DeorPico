@@ -1,0 +1,53 @@
+macro highlights_css
+	# comments
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# strings
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# hex colors -- registered before the id-selector rule below so a color
+	# like #fff wins the tiebreak over being read as an id selector
+	hex_name as "number"
+	hex_pattern as "#[0-9a-fA-F]{3,8}\\b"
+	highlighter = xs_add_keyword(highlighter, hex_name, hex_pattern)
+
+	# at-rules (@media, @import, ...)
+	at_name as "macro_name"
+	at_pattern as "@[a-zA-Z-]+"
+	highlighter = xs_add_keyword(highlighter, at_name, at_pattern)
+
+	# class and id selectors
+	class_name as "type"
+	class_pattern as "\\.[a-zA-Z_-][a-zA-Z0-9_-]*"
+	highlighter = xs_add_keyword(highlighter, class_name, class_pattern)
+
+	id_name as "type"
+	id_pattern as "#[a-zA-Z_-][a-zA-Z0-9_-]*"
+	highlighter = xs_add_keyword(highlighter, id_name, id_pattern)
+
+	# common property names
+	prop_name as "keyword"
+	prop_pattern as "\\b(color|background|background-color|background-image|background-size|background-position|margin|margin-top|margin-right|margin-bottom|margin-left|padding|padding-top|padding-right|padding-bottom|padding-left|border|border-radius|border-color|border-width|display|position|top|left|right|bottom|width|height|max-width|max-height|min-width|min-height|font|font-size|font-family|font-weight|font-style|text-align|text-decoration|line-height|overflow|opacity|transform|transition|animation|flex|flex-direction|justify-content|align-items|grid|grid-template-columns|z-index|cursor|box-shadow|content)\\b"
+	highlighter = xs_add_keyword(highlighter, prop_name, prop_pattern)
+
+	# numeric literals with common units
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d.]*(px|em|rem|%|vh|vw|vmin|vmax|s|ms|deg|fr)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

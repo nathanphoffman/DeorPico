@@ -11,7 +11,7 @@ import "lib/list.deor" where T = string
 
 # these are external (x) libs x*_ functions
 import "lib/term.deor"
-import "lib/syntax.deor"
+import "lib/syntax_highlighter.deor"
 
 import "lib/map.deor"
 import "lib/git.deor"
@@ -149,6 +149,22 @@ import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"
 import "src/renderer/highlighting/highlights_jsx.deor"
 import "src/renderer/highlighting/highlights_typescript.deor"
+import "src/renderer/highlighting/highlights_html.deor"
+import "src/renderer/highlighting/highlights_css.deor"
+import "src/renderer/highlighting/highlights_python.deor"
+import "src/renderer/highlighting/highlights_mojo.deor"
+import "src/renderer/highlighting/highlights_c.deor"
+import "src/renderer/highlighting/highlights_cpp.deor"
+import "src/renderer/highlighting/highlights_rust.deor"
+import "src/renderer/highlighting/highlights_go.deor"
+import "src/renderer/highlighting/highlights_java.deor"
+import "src/renderer/highlighting/highlights_php.deor"
+import "src/renderer/highlighting/highlights_bash.deor"
+import "src/renderer/highlighting/highlights_powershell.deor"
+import "src/renderer/highlighting/highlights_fortran90.deor"
+import "src/renderer/highlighting/highlights_rexx.deor"
+import "src/renderer/highlighting/highlights_cmm.deor"
+import "src/renderer/highlighting/highlights_asm.deor"
 import "src/renderer/highlighting/highlighting.deor"
 
 # Builds the initial EditorState at startup

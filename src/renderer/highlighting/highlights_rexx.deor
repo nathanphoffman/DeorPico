@@ -1,0 +1,38 @@
+macro highlights_rexx
+	# block comments -- classic REXX has no line-comment form
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# strings -- REXX escapes a quote by doubling it, not with a backslash
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# call sites
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	# REXX is case-insensitive
+	kw_name as "keyword"
+	kw_pattern as "(?i)\\b(address|arg|by|call|do|drop|else|end|exit|expose|for|if|interpret|iterate|leave|nop|numeric|options|otherwise|parse|procedure|pull|push|queue|return|say|select|signal|then|to|trace|until|upper|while|with)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# numeric literals
+	num_name as "number"
+	num_pattern as "\\b\\d+(\\.\\d+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
