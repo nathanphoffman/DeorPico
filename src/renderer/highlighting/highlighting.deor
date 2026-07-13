@@ -38,6 +38,8 @@ fn Highlighter initialize_highlighter(string ext)
     const string POWERSHELL = "ps1"
     const string MARKDOWN1 = "md"
     const string MARKDOWN2 = "markdown"
+    const string JSON = "json"
+    const string TOML = "toml"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
@@ -86,6 +88,10 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_powershell
 	else if ext is MARKDOWN1 or ext is MARKDOWN2
 		macro_run highlights_markdown
+	else if ext is JSON
+		macro_run highlights_json
+	else if ext is TOML
+		macro_run highlights_toml
 	else
 		# No custom rules for this extension yet -- plain, uncolored text.
 		highlighter = xs_make(TAB_WIDTH)

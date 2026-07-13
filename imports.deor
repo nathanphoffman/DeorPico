@@ -166,6 +166,8 @@ import "src/renderer/highlighting/highlights_rexx.deor"
 import "src/renderer/highlighting/highlights_cmm.deor"
 import "src/renderer/highlighting/highlights_asm.deor"
 import "src/renderer/highlighting/highlights_markdown.deor"
+import "src/renderer/highlighting/highlights_json.deor"
+import "src/renderer/highlighting/highlights_toml.deor"
 import "src/renderer/highlighting/highlighting.deor"
 
 # Builds the initial EditorState at startup

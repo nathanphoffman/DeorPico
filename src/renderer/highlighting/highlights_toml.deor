@@ -1,0 +1,72 @@
+macro highlights_toml
+	# comments
+	comment_name as "comment"
+	comment_pattern as "#.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# table headers -- [section] and [[array of tables]], anchored to the
+	# start of the line so a "[" inside an inline array value never matches
+	table_name as "type"
+	table_pattern as "^\\s*\\[\\[?[^\\]]*\\]\\]?"
+	highlighter = xs_add_keyword(highlighter, table_name, table_pattern)
+
+	# triple-quoted multi-line strings -- registered before the plain
+	# single/double-quote rules below so they win the tokenizer's
+	# first-atom-registered tiebreak at the same opening-quote position
+	name as "string"
+	start as "\"\"\""
+	stop as "\"\"\""
+	BoundedSpec mstr_spec = (name, start, stop)
+	mstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, mstr_spec, mstr_escapable)
+
+	name as "string"
+	start as "'''"
+	stop as "'''"
+	BoundedSpec mlstr_spec = (name, start, stop)
+	mlstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, mlstr_spec, mlstr_escapable)
+
+	# keys tight against "=" -- trailing "=" swallowed into the match since
+	# the regex crate has no lookahead (same trick as the JSON key rule).
+	# Registered before the plain-string rule so a quoted key still wins
+	# the tiebreak at its opening quote.
+	key_name as "function"
+	key_pattern as "(\"[^\"]*\"|'[^']*'|[A-Za-z0-9_-]+)\\s*="
+	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
+
+	# basic strings (escapable) and literal strings (not escapable, TOML
+	# has no backslash-escapes inside single quotes)
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# booleans
+	kw_name as "keyword"
+	kw_pattern as "\\b(true|false)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# dates and datetimes (RFC 3339 / local date or time)
+	date_name as "number"
+	date_pattern as "\\b\\d{4}-\\d{2}-\\d{2}([Tt ]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})?)?\\b"
+	highlighter = xs_add_keyword(highlighter, date_name, date_pattern)
+
+	# hex/octal/binary literals
+	radix_name as "number"
+	radix_pattern as "\\b0[xX][0-9a-fA-F_]+\\b|\\b0[oO][0-7_]+\\b|\\b0[bB][01_]+\\b"
+	highlighter = xs_add_keyword(highlighter, radix_name, radix_pattern)
+
+	# decimal/float literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "[+-]?\\b\\d[\\d_]*(\\.[\\d_]+)?([eE][+-]?\\d+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
