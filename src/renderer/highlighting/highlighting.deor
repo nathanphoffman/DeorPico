@@ -36,6 +36,8 @@ fn Highlighter initialize_highlighter(string ext)
     const string PHP = "php"
     const string JAVA = "java"
     const string POWERSHELL = "ps1"
+    const string MARKDOWN1 = "md"
+    const string MARKDOWN2 = "markdown"
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
@@ -82,6 +84,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_java
 	else if ext is POWERSHELL
 		macro_run highlights_powershell
+	else if ext is MARKDOWN1 or ext is MARKDOWN2
+		macro_run highlights_markdown
 	else
 		# No custom rules for this extension yet -- plain, uncolored text.
 		highlighter = xs_make(TAB_WIDTH)

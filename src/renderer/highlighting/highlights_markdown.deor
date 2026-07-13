@@ -1,0 +1,63 @@
+macro highlights_markdown
+	# fenced code blocks -- registered before the inline single-backtick
+	# rule below so a real ``` fence wins the tokenizer's
+	# first-atom-registered tiebreak at the same opening backtick
+	name as "block"
+	start as "```"
+	stop as "```"
+	BoundedSpec fence_spec = (name, start, stop)
+	fence_escapable as false
+	highlighter = xs_add_bounded(highlighter, fence_spec, fence_escapable)
+
+	# inline code
+	name as "block"
+	start as "`"
+	stop as "`"
+	BoundedSpec code_spec = (name, start, stop)
+	code_escapable as false
+	highlighter = xs_add_bounded(highlighter, code_spec, code_escapable)
+
+	# headings, blockquotes, list items -- anchored to the start of the
+	# line, registered before the inline emphasis rules below so a line
+	# like "* some *emphasis*" reads its leading "*" as a list marker
+	# rather than the opening of an italic span
+	heading_name as "heading"
+	heading_pattern as "^#{1,6} .*"
+	highlighter = xs_add_keyword(highlighter, heading_name, heading_pattern)
+
+	quote_name as "quote"
+	quote_pattern as "^>\\s?.*"
+	highlighter = xs_add_keyword(highlighter, quote_name, quote_pattern)
+
+	list_name as "list"
+	list_pattern as "^\\s*([-*+]|\\d+\\.) "
+	highlighter = xs_add_keyword(highlighter, list_name, list_pattern)
+
+	# images -- registered before links since "![...]" starts one
+	# character earlier than the "[...]" a link rule would also match
+	image_name as "image"
+	image_pattern as "!\\[[^\\]]*\\]\\([^)]*\\)"
+	highlighter = xs_add_keyword(highlighter, image_name, image_pattern)
+
+	link_name as "link"
+	link_pattern as "\\[[^\\]]*\\]\\([^)]*\\)"
+	highlighter = xs_add_keyword(highlighter, link_name, link_pattern)
+
+	# bold before italic -- both start matching at the same leading "*",
+	# and the tokenizer's tiebreak is by registration order
+	bold_name as "bold"
+	bold_pattern as "(\\*\\*[^*]+\\*\\*|__[^_]+__)"
+	highlighter = xs_add_keyword(highlighter, bold_name, bold_pattern)
+
+	italic_name as "italic"
+	italic_pattern as "(\\*[^*]+\\*|_[^_]+_)"
+	highlighter = xs_add_keyword(highlighter, italic_name, italic_pattern)
+
+	strike_name as "strikethrough"
+	strike_pattern as "~~[^~]+~~"
+	highlighter = xs_add_keyword(highlighter, strike_name, strike_pattern)
+
+	# inline math ($...$)
+	math_name as "math"
+	math_pattern as "\\$[^$]+\\$"
+	highlighter = xs_add_keyword(highlighter, math_name, math_pattern)
