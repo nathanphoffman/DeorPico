@@ -45,6 +45,18 @@ fn void xt_raw_on()
 			// in the sidebar's columns and look like corruption.
 			use std::io::Write;
 			print!("\x1b[?7l");
+			// EnableMouseCapture above also turns on mode 1003 (report every
+			// mouse move, button or not) -- we only ever act on
+			// down/up/drag/scroll (see mouse.deor), never plain hover. Left on,
+			// idle mouse drift floods xt_read_key with Moved events that get
+			// silently discarded there but still register as "pending input"
+			// to xt_has_pending_input's render-skip check in main.deor, which
+			// can defer a keystroke's render indefinitely (an idle tick with
+			// nothing pending doesn't render either -- see main.deor) until
+			// some other real key/click happens to flush it. Turning 1003 back
+			// off keeps click/drag/scroll (1000/1002/1006) working and stops
+			// the terminal from ever sending the moves we'd just drop anyway.
+			print!("\x1b[?1003l");
 			std::io::stdout().flush().unwrap();
 		}
 

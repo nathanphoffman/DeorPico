@@ -2,24 +2,14 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 # Roadmap
 
-- Done: clicking on a file when there is a save prompt in progress should lock out
-- Done: Text wrap bug should be fixed
-- Done: other lang syntax highlighting added
-- Done: built windows client
-- Done: more organization
-- Done: rename feature added
-- Done: tons of organization
-
-Make comments variable depending on language, not every language should use #
+Wroking on: Make comments variable depending on language, not every language should use #
 
 We should talk about having the lines be a ref and do more moves for better performance.
-
-Should we make a custom syntax highlighter?
 
 ---
 ## Lower Priority
 ---
-
+ ddddd
 - Flatten and simplify the events at the top level, it might be the most confusing part of the code right now.
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 
@@ -28,6 +18,8 @@ that allows matching on F12 inputs.  On any word the cursor is on, the whole wor
 - Allow arrow keys to work in ctrl + r
 
 - Add word select / copy
+
+
 
 - There is perhaps an odd issue with searching where if not cleared tab might call a highlight while holding shift?  It is 
 a very specific bug has to be a search filter, I am guessing the tab moves the cursor hence the highlight
