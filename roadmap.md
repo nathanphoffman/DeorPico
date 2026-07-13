@@ -10,8 +10,11 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 - Done: rename feature added
 - Done: tons of organization
 
+Make comments variable depending on language, not every language should use #
+
 We should talk about having the lines be a ref and do more moves for better performance.
-   
+
+Should we make a custom syntax highlighter?
 
 ---
 ## Lower Priority
