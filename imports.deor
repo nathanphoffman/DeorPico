@@ -3,6 +3,7 @@ import "lib/file.deor"
 import "lib/file_extension.deor"
 
 import "lib/file_extension.deor"
+import "lib/comment_prefix.deor"
 import "lib/string.deor"
 import "lib/string_extension.deor"
 import "lib/math.deor"

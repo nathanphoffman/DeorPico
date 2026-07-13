@@ -39,50 +39,60 @@ macro key_select_all_impl
 macro key_space_comment_selection_impl
 	macro_run normalize_selection
 
-	if start_row < end_row
-		macro_run push_undo_snapshot
+	string ext = f_extension(filename)
+	string prefix = comment_prefix_for_ext(ext)
 
-	for row_id in range(start_row, end_row)
-		string line = lines at row_id
+	# No known line-comment token for this file type (block-comment-only
+	# languages like CSS/HTML, or an unrecognized extension) -- leave the
+	# selection untouched rather than guessing at a comment syntax.
+	if prefix is not ""
+		if start_row < end_row
+			macro_run push_undo_snapshot
 
-		string line_trimmed = s_trim(line)
+		int prefix_len = len(prefix)
 
-		# no point commenting out empty lines
-		if(line_trimmed is "")
-			continue
+		for row_id in range(start_row, end_row)
+			string line = lines at row_id
 
-		int first_position = 0
-		string first_character = s_char_at(line_trimmed, first_position)
-		bool is_comment = first_character is "#"
+			string line_trimmed = s_trim(line)
 
-		if is_comment
-			# Toggling a comment on only ever adds one literal "#" right
-			# after the line's existing indentation (see the else branch
-			# below) -- so undoing it just means removing that first "#"
-			# and leaving everything else (including any "#" that was
-			# already part of the code, like an inline comment) exactly
-			# as it was.
-			string hash_char = "#"
-			int hash_index = s_index_of(line, hash_char)
-			string before_hash = s_substring(line, first_position, hash_index)
-			int after_hash_start = hash_index + 1
-			int line_len = len(line)
-			string after_hash = s_substring(line, after_hash_start, line_len)
-			line = s_join([before_hash, after_hash])
-		else
-			# Keep the line's leading whitespace in front of the new "#"
-			# rather than pushing it after -- a commented-out indented
-			# block should still line up with its surrounding code.
+			# no point commenting out empty lines
+			if(line_trimmed is "")
+				continue
+
+			int first_position = 0
 			string rest = s_trim_start(line)
 			int rest_len = len(rest)
 			int line_len = len(line)
 			int leading_ws_len = line_len - rest_len
 			string leading_ws = s_substring(line, first_position, leading_ws_len)
-			line = s_join([leading_ws, "# ", rest])
 
-		lines at row_id = line
+			bool is_comment = s_starts_with(line_trimmed, prefix)
 
-	dirty = true
+			if is_comment
+				# Toggling a comment on only ever adds one literal prefix
+				# plus a single space right after the line's existing
+				# indentation (see the else branch below) -- so undoing it
+				# just means removing that same prefix and following space
+				# again, and leaving everything else exactly as it was.
+				string after_prefix = s_substring(rest, prefix_len, rest_len)
+				string new_rest = after_prefix
+				string single_space = " "
+				if s_starts_with(after_prefix, single_space)
+					int after_prefix_len = len(after_prefix)
+					int space_len = 1
+					new_rest = s_substring(after_prefix, space_len, after_prefix_len)
+				line = s_join([leading_ws, new_rest])
+			else
+				# Keep the line's leading whitespace in front of the new
+				# prefix rather than pushing it after -- a commented-out
+				# indented block should still line up with its surrounding
+				# code.
+				line = s_join([leading_ws, prefix, " ", rest])
+
+			lines at row_id = line
+
+		dirty = true
 
 # Strips one tab-width of leading whitespace from `line` if present (no-op
 # otherwise). The one place that decides what counts as "a tab" to remove --

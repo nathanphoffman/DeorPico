@@ -2,14 +2,15 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 # Roadmap
 
-Wroking on: Make comments variable depending on language, not every language should use #
-
 We should talk about having the lines be a ref and do more moves for better performance.
+
+Bug Fix: line colors and line styles can sometimes bleed into the sidebar, I have noticed this specifically while doing a file search :, comment green colors and salmon string colors were leaking in 
+and one markdown blue underline leaked as well, is something not being closed or a whole line being highlighted for some of these which should exclude the sidebar?
 
 ---
 ## Lower Priority
 ---
- ddddd
+
 - Flatten and simplify the events at the top level, it might be the most confusing part of the code right now.
 
 - Similar to how we provided a regex to match console output messages to syntax highlight and extract aspects of the message, we should have a regex 

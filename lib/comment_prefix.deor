@@ -1,0 +1,55 @@
+# Shared extension -> language constants, used by both the syntax
+# highlighter (highlighting.deor) and comment_prefix_for_ext below, so the
+# two stay in agreement about which extension means which language without
+# coupling their actual behavior together.
+macro language_ext_consts
+    const string DEOR = "deor"
+    const string CSHARP = "cs"
+    const string JSX = "jsx"
+    const string TYPESCRIPT = "ts"
+    const string JAVASCRIPT = "js"
+    const string HTML = "html"
+    const string HTM = "htm"
+    const string CSS = "css"
+    const string PYTHON = "py"
+    const string RUST = "rs"
+    const string C_SRC = "c"
+    const string C_HEADER = "h"
+    const string CPP1 = "cpp"
+    const string CPP2 = "cc"
+    const string CPP3 = "cxx"
+    const string CPP_HEADER1 = "hpp"
+    const string CPP_HEADER2 = "hh"
+    const string FORTRAN90 = "f90"
+    const string REXX1 = "rexx"
+    const string REXX2 = "rex"
+    const string CMM = "cmm"
+    const string MOJO = "mojo"
+    const string GOLANG = "go"
+    const string ASM1 = "asm"
+    const string ASM2 = "s"
+    const string BASH1 = "sh"
+    const string BASH2 = "bash"
+    const string PHP = "php"
+    const string JAVA = "java"
+    const string POWERSHELL = "ps1"
+    const string MARKDOWN1 = "md"
+    const string MARKDOWN2 = "markdown"
+    const string JSON = "json"
+    const string TOML = "toml"
+
+# Returns the line-comment prefix for a file extension (e.g. "//" for "rs"),
+# or "" if the language has no single-line comment form (or is unrecognized).
+fn string comment_prefix_for_ext(string ext)
+    macro_run language_ext_consts
+
+    if ext is DEOR or ext is PYTHON or ext is MOJO or ext is BASH1 or ext is BASH2 or ext is POWERSHELL or ext is TOML
+        return "#"
+    else if ext is CSHARP or ext is JSX or ext is TYPESCRIPT or ext is JAVASCRIPT or ext is RUST or ext is C_SRC or ext is C_HEADER or ext is CPP1 or ext is CPP2 or ext is CPP3 or ext is CPP_HEADER1 or ext is CPP_HEADER2 or ext is GOLANG or ext is JAVA or ext is PHP or ext is CMM
+        return "//"
+    else if ext is ASM1 or ext is ASM2
+        return ";"
+    else if ext is FORTRAN90
+        return "!"
+    else
+        return ""
