@@ -52,9 +52,15 @@ macro confirm_create_file
 			macro_run confirm_move_request
 
 		if not is_move_request
-			unsafe_macro_run resolve_create_entry_name
+            string entry_name = new_file_name
+
+            macro_run resolve_create_entry_name
+
 			if not error
-				unsafe_macro_run write_create_entry_to_disk
+                string full_path = f_join_path(create_parent_dir, entry_name)
+	            bool created = false
+
+				macro_run write_create_entry_to_disk
 				if created
 					unsafe_macro_run apply_created_placeholder_entry
 					macro_run refresh_all_git_status

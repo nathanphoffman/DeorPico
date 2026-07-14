@@ -4,6 +4,9 @@
 # adjacent to/inside the selection (depth+1 and a forced browse_right
 # expand for a directory). A rename edits the selected entry itself, in
 # place -- own depth, own parent directory, no expand.
+
+# !! consider safetying this macro
+
 unsafe_macro resolve_rename_target
 	int insert_index = 0
 	int insert_depth = 0

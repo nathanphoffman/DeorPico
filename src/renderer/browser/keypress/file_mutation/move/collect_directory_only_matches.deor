@@ -1,4 +1,5 @@
 
+# !! consider safetying this macro
 unsafe_macro collect_directory_only_matches
 	entryMatchList dir_only_matches = empty
 	for candidate in valid_matches
