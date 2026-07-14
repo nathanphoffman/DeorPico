@@ -1,0 +1,25 @@
+
+# Which file extensions open into the spreadsheet view instead of the
+# normal text editor -- checked both at launch (state_init.deor) and on
+# every mid-session file open (browse.deor's load_file_into_buffer).
+fn bool f_is_spreadsheet_ext(string ext)
+	if ext is "csv"
+		return true
+	return false
+
+# Placeholder cell extraction -- just the first comma-separated field of
+# the first line, no quoting/escaping support yet. Good enough to prove the
+# spreadsheet view is wired up; a real grid parse replaces this later.
+fn string csv_first_cell(string path)
+	stringList file_lines = f_lines(path)
+	if len(file_lines) is 0
+		return ""
+
+	int first_index = 0
+	string first_line = file_lines at first_index
+	string comma = ","
+	stringList cells = s_split(first_line, comma)
+	if len(cells) is 0
+		return ""
+
+	return cells at first_index

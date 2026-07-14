@@ -83,6 +83,8 @@ macro rehighlight_if_dirty
 macro draw_frame
 	if diffing
 		editor_render_diff(state)
+	else if spreadsheet_active
+		spreadsheet_render(state)
 	else
 		# Only color the rows that can actually be on screen this frame
 		# (an over-estimate of view_rows, cheap and always safe) instead
@@ -110,11 +112,12 @@ macro render_frame
 
 	state = editor_scroll(move state)
 
-	(main_panel) in state
+	(main_panel, spreadsheet) in state
 	(core, diff, selection) in main_panel
 	(filename, lines, cursor_row, cursor_col, scroll_row) in core
 	(diffing) in diff
 	(sel_anchor_row, sel_anchor_col) in selection
+	(spreadsheet_active) in spreadsheet
 
 	macro_run refresh_highlighter_for_file_change
 	unsafe_macro_run compute_cursor_visual_columns

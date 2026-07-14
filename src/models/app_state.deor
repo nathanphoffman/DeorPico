@@ -5,6 +5,7 @@
 struct AppState
 	SidebarState browser
 	EditorState main_panel
+	SpreadsheetState spreadsheet
 	bool done
 
 	# Persists until replaced by another notice

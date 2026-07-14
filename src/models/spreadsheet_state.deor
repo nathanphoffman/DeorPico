@@ -1,0 +1,12 @@
+
+# The "Spreadsheet" main-panel branch (see AppState/EditorState) -- sits
+# alongside EditorState rather than replacing it, since Deor has no
+# tagged unions: spreadsheet_active picks which one draw_frame renders,
+# same as DiffState's own diffing flag does for the diff view. Fields are
+# spreadsheet_-prefixed rather than reusing e.g. `filename` to avoid
+# colliding with BufferState's own field of that name once both structs'
+# fields land in the same flattened event-handling scope.
+struct SpreadsheetState
+	string spreadsheet_path
+	string spreadsheet_first_cell
+	bool spreadsheet_active

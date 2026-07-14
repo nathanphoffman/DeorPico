@@ -22,6 +22,7 @@ import "lib/lint.deor"
 import "lib/dirsearch.deor"
 
 import "src/rust_helper.deor"
+import "src/spreadsheet.deor"
 
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"
@@ -34,6 +35,7 @@ import "src/models/search_state.deor"
 import "src/models/filter_state.deor"
 import "src/models/undo_snapshot.deor"
 import "src/models/undo_state.deor"
+import "src/models/spreadsheet_state.deor"
 import "src/models/editor_state.deor"
 import "src/models/app_state.deor"
 
@@ -145,6 +147,7 @@ import "src/renderer/editor/keypress/sidebar_nav.deor"
 import "src/renderer/editor/keypress/sidebar_git_actions.deor"
 
 import "src/renderer/editor/rust_diff.deor"
+import "src/renderer/spreadsheet/spreadsheet.deor"
 
 import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"

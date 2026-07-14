@@ -48,8 +48,9 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	# no later use of the originals to preserve. `move` here (and on the
 	# reconstruction below) skips cloning the whole editor state -- including
 	# `lines`, the file's full contents -- on every single event.
-	move (browser, main_panel, done, notice, error) in state
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
+	move (spreadsheet_path, spreadsheet_first_cell, spreadsheet_active) in spreadsheet
 
 	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content) in core
 	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
@@ -123,5 +124,6 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	FilterState filter = move (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 	LintState lint = move (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
-	AppState next_state = move (browser, main_panel, done, notice, error)
+	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_first_cell, spreadsheet_active)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
 	return next_state

@@ -1,0 +1,97 @@
+
+# Placeholder spreadsheet view (opened for .csv files, see
+# f_is_spreadsheet_ext) -- renders the sidebar exactly like the normal
+# editor view, but shows only the file's first cell in the main content
+# area instead of a real grid. Owns a full self-contained render path
+# rather than sharing render_buffer_rows' fused loop, same as the diff
+# view does (see editor_render_diff in rust_diff.deor) -- the two views
+# only ever differ in what goes in the content column, and duplicating
+# that column's handful of lines is cheaper than threading a third render
+# mode through the already-fragile row-fusion loop.
+unsafe_macro setup_spreadsheet_view_layout
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+
+	bool show_line_numbers = false
+	bool lint_output_visible = false
+	bool search_active = false
+	int total_line_count = 0
+	stringList diff_lines = empty
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(sidebar_width) in layout
+	int content_width = cols - sidebar_width
+	if content_width < 1
+		content_width = 1
+
+	string screen = ANSI_HOME
+
+# Sidebar column (identical to the normal editor/diff views) + a single
+# content cell on the very first row, blank-padded everywhere else.
+macro render_spreadsheet_rows
+	bool has_minimap = false
+	bool lint_output_visible = false
+	bool search_active = false
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible, search_active)
+	int view_rows = editor_view_rows(rows, reserved_rows)
+
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+	int root_section_rows = sidebar_root_section_rows()
+	int selected_idx = git_section_rows + root_section_rows + browse_selected
+	if sidebar_on_git
+		selected_idx = 1 + git_selected
+	else if sidebar_on_root
+		selected_idx = git_section_rows
+
+	bool filter_active = false
+	filterMatchList filter_matches = empty
+
+	for row_offset in range(view_rows)
+		bool is_top_row = row_offset is 0
+		bool is_bottom_row = row_offset is (view_rows - 1)
+		int idx = browse_scroll_row + row_offset
+		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
+		screen = s_join([screen, sidebar_row_piece(row_input)])
+
+		string content = ""
+		if is_top_row
+			content = s_join([spreadsheet_first_cell])
+		if len(content) > content_width
+			int trunc_start = 0
+			content = s_substring(content, trunc_start, content_width)
+		content = s_pad_right(content, content_width)
+		screen = s_join([screen, content])
+
+		screen = s_join([screen, ANSI_CRLF])
+
+macro render_spreadsheet_status_and_notice
+	string status_line = s_join(["-- ", spreadsheet_path, " (spreadsheet, placeholder) --"])
+	if len(status_line) > cols
+		int status_trunc_start = 0
+		status_line = s_substring(status_line, status_trunc_start, cols)
+	string status_padded = s_pad_right(status_line, cols)
+	screen = s_join([screen, status_padded, ANSI_CRLF])
+
+	string notice_text = notice
+	if len(notice_text) > cols
+		int notice_trunc_start = 0
+		notice_text = s_substring(notice_text, notice_trunc_start, cols)
+	string notice_padded = s_pad_right(notice_text, cols)
+	screen = s_join([screen, notice_padded])
+
+fn void spreadsheet_render(AppState state)
+	(browser) in state
+	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
+	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+	(spreadsheet) in state
+	(spreadsheet_path, spreadsheet_first_cell) in spreadsheet
+	(notice) in state
+	unsafe_macro_run use_consts
+	unsafe_macro_run use_ansi_codes
+
+	unsafe_macro_run setup_spreadsheet_view_layout
+	macro_run render_spreadsheet_rows
+	macro_run render_spreadsheet_status_and_notice
+
+	xt_flush_print(screen)
