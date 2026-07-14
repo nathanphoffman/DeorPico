@@ -5,7 +5,13 @@
 # the tree spontaneously growing. Two columns of the normal content width
 # are given up to the left/right bars; the top/bottom rows are replaced
 # outright by a horizontal rule (see is_top_row/is_bottom_row below).
-# these are very unsafe macros and should be updated
+# Defines its own esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than calling
+# use_ansi_codes, so this stays a leaf macro -- these four are the only
+# ones its callers actually read (build_sidebar_border_row.deor,
+# sidebar.deor, render_sidebar_tree_row.deor).
 macro use_sidebar_border_colors
-	macro_run use_ansi_codes
+	string esc = xt_esc()
+	const string ANSI_RESET = s_join([esc, "[0m"])
+	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])
+	const string ANSI_REVERSE_OFF = s_join([esc, "[27m"])
 	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])
