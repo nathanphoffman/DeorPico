@@ -1,4 +1,33 @@
 
+
+macro reset_file_create
+	creating_file = false
+	new_file_name = ""
+	create_parent_dir = ""
+
+macro perform_move
+    unsafe_macro_run resolve_move_destination
+	macro_run write_move_to_disk
+	if not error
+        # Updates browse_entries in place so the tree reflects the    
+        # move without a full rescan: drops the source row (and its
+		# children, if it was a directory), then re-inserts it
+		# under the destination if the destination is expanded.
+		macro_run remove_move_source_entry
+
+		EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
+		(found, index, depth, expanded) in dest_lookup
+		if found and expanded
+			unsafe_macro_run build_moved_entry
+			entryList one_entry = empty
+			one_entry at end = moved_entry
+			browse_entries = e_insert_children(browse_entries, index, one_entry)
+
+		macro_run clamp_browse_selection_after_move
+        macro_run reset_file_create
+		macro_run refresh_all_git_status
+		macro_run report_move_success
+
 # Handles the "mv X" form of confirm_create_file -- a genuinely different
 # operation (pull an existing file or directory into create_parent_dir,
 # i.e. wherever ^R was pressed) from the create-file/create-dir paths in
@@ -12,6 +41,7 @@
 # every macro_run below is a single leaf step (see move/*.deor), gated by
 # plain ifs and for-loops living here rather than spread across further
 # macros nested inside move/ -- read top to bottom.
+
 macro confirm_move_request
 	if len(move_query) is 0
 		notice = "Name can't be empty"
@@ -53,28 +83,9 @@ macro confirm_move_request
 			notice = "Multiple matches -- be more specific"
 			error = true
 		else
-			unsafe_macro_run resolve_move_destination
-			macro_run write_move_to_disk
-			if not error
-				# Updates browse_entries in place so the tree reflects the
-				# move without a full rescan: drops the source row (and its
-				# children, if it was a directory), then re-inserts it
-				# under the destination if the destination is expanded.
-				macro_run remove_move_source_entry
+            macro_run perform_move
 
-				EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
-				(found, index, depth, expanded) in dest_lookup
-				if found and expanded
-					unsafe_macro_run build_moved_entry
-					entryList one_entry = empty
-					one_entry at end = moved_entry
-					browse_entries = e_insert_children(browse_entries, index, one_entry)
 
-				macro_run clamp_browse_selection_after_move
 
-				creating_file = false
-				new_file_name = ""
-				create_parent_dir = ""
 
-				macro_run refresh_all_git_status
-				macro_run report_move_success
+			

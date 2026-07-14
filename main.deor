@@ -1,63 +1,9 @@
 import "imports.deor"
 
-# Recomputes scroll, re-highlights if the buffer changed, and draws the
-# current frame. Pulled out of main()'s loop so it can be called once before
-# the first key is read (initial paint) and again only once per drained
-# batch of input inside the loop, rather than once per individual event.
-macro render_frame
-    unsafe_macro_run use_consts
-
-	state = editor_scroll(move state)
-
-	(core, diff, selection) in state
-	(filename, lines, cursor_row, cursor_col, scroll_row) in core
-	(diffing) in diff
-	(sel_anchor_row, sel_anchor_col) in selection
-	if filename is not current_file
-		current_file = filename
-		ext = f_extension(current_file)
-		highlighter = initialize_highlighter(ext)
-		stringList cleared_highlighted_lines = empty
-		last_highlighted_lines = cleared_highlighted_lines
-
-	# Raw lines, before tab-expansion, so the on-screen cursor/selection
-	# columns can be derived to match what synoptic does to the displayed
-	# text below.
-	string raw_cursor_line = lines at cursor_row
-	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
-
-	string raw_anchor_line = lines at sel_anchor_row
-	int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
-
-	# Re-tokenizing the whole file on every keystroke (including plain
-	# cursor movement) is what made big files crawl -- only redo it when
-	# the content actually changed since the last frame.
-	if lines is not last_highlighted_lines
-		highlighter = xs_run(highlighter, lines)
-		stringList lines_snapshot = lines
-		last_highlighted_lines = move lines_snapshot
-
-	if diffing
-		editor_render_diff(state)
-	else
-		# Only color the rows that can actually be on screen this frame
-		# (an over-estimate of view_rows, cheap and always safe) instead
-		# of the whole file.
-		TermSize term_size = xt_size()
-		(rows) in term_size
-		int total_line_count = len(lines)
-		int start_row = scroll_row
-		int end_row = scroll_row + rows
-		if end_row > total_line_count
-			end_row = total_line_count
-		HighlightRange highlight_bounds = (start_row, end_row)
-		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
-		BufferState core = core with (lines)
-		EditorState render_state_with_colors = state with (core)
-		editor_render(move render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
-
-fn void main()
-
+# Parses argv into a LaunchArgs (filename/initial_dir/lint_command/lint_regex)
+# and opens the editor, producing the initial `state`. unsafe_macro because
+# `filename` and `state` need to outlive this call for main() to use.
+unsafe_macro parse_launch_args
 	(first, second, third, input_list) in args()
 	string filename = ""
 	string initial_dir = "."
@@ -78,10 +24,11 @@ fn void main()
 	LaunchArgs launch = (filename, initial_dir, lint_command, lint_regex)
 	EditorState state = editor_open(launch)
 
-	# Without this, a panic mid-render (e.g. a bad byte index into a UTF-8
-	# line) kills the process while the terminal is still in raw/alt-screen
-	# mode, which looks like a full lockup instead of a crash with a
-	# visible message.
+# Without this, a panic mid-render (e.g. a bad byte index into a UTF-8
+# line) kills the process while the terminal is still in raw/alt-screen
+# mode, which looks like a full lockup instead of a crash with a
+# visible message.
+macro install_panic_crash_handler
 	rust
 		{
 			let default_hook = std::panic::take_hook();
@@ -93,10 +40,90 @@ fn void main()
 
 	xt_raw_on()
 
+# Seeds the highlighter state that render_frame's "did the file change"
+# check compares against on the first frame. unsafe_macro because these
+# four variables need to outlive this call for render_frame to mutate.
+unsafe_macro init_highlight_state
 	string current_file = filename
 	string ext = f_extension(current_file)
 	Highlighter highlighter = initialize_highlighter(ext)
 	stringList last_highlighted_lines = empty
+
+# Resets the highlighter (and its cache of already-colored lines) when the
+# active file changes, so render_frame's re-tokenize step below re-runs
+# against the new file instead of comparing it to the old one's cache.
+macro refresh_highlighter_for_file_change
+	if filename is not current_file
+		current_file = filename
+		ext = f_extension(current_file)
+		highlighter = initialize_highlighter(ext)
+		stringList cleared_highlighted_lines = empty
+		last_highlighted_lines = cleared_highlighted_lines
+
+# Raw lines, before tab-expansion, so the on-screen cursor/selection columns
+# can be derived to match what synoptic does to the displayed text below.
+# unsafe_macro because cursor_visual_col/sel_anchor_visual_col need to
+# outlive this call for draw_frame to use.
+unsafe_macro compute_cursor_visual_columns
+	string raw_cursor_line = lines at cursor_row
+	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
+
+	string raw_anchor_line = lines at sel_anchor_row
+	int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
+
+# Re-tokenizing the whole file on every keystroke (including plain cursor
+# movement) is what made big files crawl -- only redo it when the content
+# actually changed since the last frame.
+macro rehighlight_if_dirty
+	if lines is not last_highlighted_lines
+		highlighter = xs_run(highlighter, lines)
+		stringList lines_snapshot = lines
+		last_highlighted_lines = move lines_snapshot
+
+macro draw_frame
+	if diffing
+		editor_render_diff(state)
+	else
+		# Only color the rows that can actually be on screen this frame
+		# (an over-estimate of view_rows, cheap and always safe) instead
+		# of the whole file.
+		TermSize term_size = xt_size()
+		(rows) in term_size
+		int total_line_count = len(lines)
+		int start_row = scroll_row
+		int end_row = scroll_row + rows
+		if end_row > total_line_count
+			end_row = total_line_count
+		HighlightRange highlight_bounds = (start_row, end_row)
+		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
+		BufferState core = core with (lines)
+		EditorState render_state_with_colors = state with (core)
+		editor_render(move render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
+
+# Recomputes scroll, re-highlights if the buffer changed, and draws the
+# current frame. Pulled out of main()'s loop so it can be called once before
+# the first key is read (initial paint) and again only once per drained
+# batch of input inside the loop, rather than once per individual event.
+macro render_frame
+    unsafe_macro_run use_consts
+
+	state = editor_scroll(move state)
+
+	(core, diff, selection) in state
+	(filename, lines, cursor_row, cursor_col, scroll_row) in core
+	(diffing) in diff
+	(sel_anchor_row, sel_anchor_col) in selection
+
+	macro_run refresh_highlighter_for_file_change
+	unsafe_macro_run compute_cursor_visual_columns
+	macro_run rehighlight_if_dirty
+	macro_run draw_frame
+
+fn void main()
+
+	unsafe_macro_run parse_launch_args
+	macro_run install_panic_crash_handler
+	unsafe_macro_run init_highlight_state
 
 	macro_run render_frame
 
