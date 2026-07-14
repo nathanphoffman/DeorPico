@@ -1,13 +1,16 @@
 
-# Placeholder spreadsheet view (opened for .csv files, see
-# f_is_spreadsheet_ext) -- renders the sidebar exactly like the normal
-# editor view, but shows only the file's first cell in the main content
-# area instead of a real grid. Owns a full self-contained render path
-# rather than sharing render_buffer_rows' fused loop, same as the diff
-# view does (see editor_render_diff in rust_diff.deor) -- the two views
-# only ever differ in what goes in the content column, and duplicating
-# that column's handful of lines is cheaper than threading a third render
-# mode through the already-fragile row-fusion loop.
+# Spreadsheet view (opened for .csv files, see f_is_spreadsheet_ext) --
+# renders the sidebar exactly like the normal editor view, and one
+# spreadsheet_rows row per screen row in the content area, each row's
+# cells joined with " | " rather than laid out in real fixed-width
+# columns (no per-column width computation yet, no scrolling within the
+# sheet either -- row_offset maps straight onto spreadsheet_rows). Owns a
+# full self-contained render path rather than sharing render_buffer_rows'
+# fused loop, same as the diff view does (see editor_render_diff in
+# rust_diff.deor) -- the two views only ever differ in what goes in the
+# content column, and duplicating that column's handful of lines is
+# cheaper than threading a third render mode through the already-fragile
+# row-fusion loop.
 unsafe_macro setup_spreadsheet_view_layout
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
@@ -33,12 +36,15 @@ macro render_spreadsheet_sidebar_column
 	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 	screen = s_join([screen, sidebar_row_piece(row_input)])
 
-# Content column piece for the current row_offset -- the file's first cell
-# on the very first row, blank-padded everywhere else.
+# Content column piece for the current row_offset -- that row's cells
+# (spreadsheet_rows at row_offset) joined with " | ", blank-padded once
+# row_offset runs past the sheet's last row.
 macro render_spreadsheet_row
 	string content = ""
-	if is_top_row
-		content = s_join([spreadsheet_first_cell])
+	if row_offset < spreadsheet_row_count
+		stringList row_cells = spreadsheet_rows at row_offset
+		string separator = " | "
+		content = s_join_with(row_cells, separator)
 	if len(content) > content_width
 		int trunc_start = 0
 		content = s_substring(content, trunc_start, content_width)
@@ -65,6 +71,8 @@ macro render_spreadsheet_rows
 
 	bool filter_active = false
 	filterMatchList filter_matches = empty
+
+	int spreadsheet_row_count = len(spreadsheet_rows)
 
 	for row_offset in range(view_rows)
 		bool is_top_row = row_offset is 0
@@ -96,7 +104,7 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_first_cell) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows) in spreadsheet
 	(notice) in state
 	unsafe_macro_run use_consts
 	unsafe_macro_run use_ansi_codes

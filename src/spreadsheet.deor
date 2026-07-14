@@ -6,27 +6,6 @@ macro toggle_spreadsheet_view_impl
 	if spreadsheet_active
 		spreadsheet_view_active = not spreadsheet_view_active
 
-# Reads `path`'s first line, if it has one. unsafe_macro because
-# has_first_line/first_line need to outlive this call for csv_first_cell to
-# branch on and split below.
-unsafe_macro read_csv_first_line
-	stringList file_lines = f_lines(path)
-	bool has_first_line = len(file_lines) > 0
-	string first_line = ""
-	if has_first_line
-		first_line = file_lines at 0
-
-# Splits the already-read first_line on commas and pulls out its first
-# field. unsafe_macro because has_first_cell/first_cell need to outlive
-# this call for csv_first_cell to return.
-unsafe_macro split_first_csv_cell
-	string comma = ","
-	stringList cells = s_split(first_line, comma)
-	bool has_first_cell = len(cells) > 0
-	string first_cell = ""
-	if has_first_cell
-		first_cell = cells at 0
-
 # Which file extensions open into the spreadsheet view instead of the
 # normal text editor -- checked both at launch (state_init.deor) and on
 # every mid-session file open (browse.deor's load_file_into_buffer).
@@ -35,16 +14,15 @@ fn bool f_is_spreadsheet_ext(string ext)
 		return true
 	return false
 
-# Placeholder cell extraction -- just the first comma-separated field of
-# the first line, no quoting/escaping support yet. Good enough to prove the
-# spreadsheet view is wired up; a real grid parse replaces this later.
-fn string csv_first_cell(string path)
-	unsafe_macro_run read_csv_first_line
-	if not has_first_line
-		return ""
-
-	unsafe_macro_run split_first_csv_cell
-	if not has_first_cell
-		return ""
-
-	return first_cell
+# Naive whole-file parse -- splits every line on commas, no quoting/
+# escaping support yet (a quoted field containing a comma splits wrong).
+# Good enough to prove the spreadsheet view is wired up; a real parser
+# replaces this later.
+fn csvRowList csv_parse_rows(string path)
+	stringList file_lines = f_lines(path)
+	csvRowList rows = empty
+	string comma = ","
+	for line in file_lines
+		stringList cells = s_split(line, comma)
+		rows at end = cells
+	return rows

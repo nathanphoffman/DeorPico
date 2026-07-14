@@ -1,4 +1,9 @@
 
+# One row of a parsed .csv -- each element is a cell, split naively on
+# commas (see csv_parse_rows). Nesting stringList as a shape's element
+# type is fine; Deor just needs a named type, not a primitive.
+shape csvRowList = list of stringList
+
 # The "Spreadsheet" main-panel branch (see AppState/EditorState) -- sits
 # alongside EditorState rather than replacing it, since Deor has no
 # tagged unions: draw_frame renders it instead of the normal editor
@@ -9,7 +14,7 @@
 # fields land in the same flattened event-handling scope.
 struct SpreadsheetState
 	string spreadsheet_path
-	string spreadsheet_first_cell
+	csvRowList spreadsheet_rows
 
 	# True whenever the currently open file is spreadsheet-capable (a
 	# .csv) -- recomputed on every open, never touched by ^T.

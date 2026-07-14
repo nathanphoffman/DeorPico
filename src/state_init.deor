@@ -93,13 +93,13 @@ unsafe_macro initialize_search
 unsafe_macro initialize_spreadsheet
 	string spreadsheet_ext = f_extension(filename)
 	bool spreadsheet_active = false
-	string spreadsheet_first_cell = ""
+	csvRowList spreadsheet_rows = empty
 	if f_is_spreadsheet_ext(spreadsheet_ext)
 		spreadsheet_active = true
-		spreadsheet_first_cell = csv_first_cell(filename)
+		spreadsheet_rows = csv_parse_rows(filename)
 	string spreadsheet_path = s_join([filename])
 	bool spreadsheet_view_active = spreadsheet_active
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_first_cell, spreadsheet_active, spreadsheet_view_active)
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active)
 
 unsafe_macro initialize_filter
 	filter_active as false
