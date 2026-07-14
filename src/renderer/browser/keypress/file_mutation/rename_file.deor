@@ -9,8 +9,8 @@
 #
 # Leaf macros live in rename/*.deor (see resolve_rename_target.deor
 # onward), same flat shape as create/move -- read top to bottom.
-macro_block start_file_rename
-	macro_run resolve_rename_target
+macro start_file_rename
+	unsafe_macro_run resolve_rename_target
 	if has_target
 		insert_index = insert_index - 1
 		browse_entries = e_remove_at(browse_entries, insert_index)
@@ -30,14 +30,14 @@ macro_block start_file_rename
 #
 # Leaf macros live in rename/*.deor (resolve_rename_destination.deor
 # onward), same flat shape as create/move.
-macro_block confirm_file_rename
+macro confirm_file_rename
 	int name_len = len(new_file_name)
 	if name_len is 0
 		notice = "File name can't be empty"
 		error = true
 	else
-		macro_run resolve_rename_destination
-		macro_run write_rename_to_disk
+		unsafe_macro_run resolve_rename_destination
+		unsafe_macro_run write_rename_to_disk
 		if renamed
 			macro_run apply_renamed_placeholder_entry
 			macro_run report_renamed_entry_result

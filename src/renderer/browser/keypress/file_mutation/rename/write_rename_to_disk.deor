@@ -1,7 +1,7 @@
 
 # Typing the same name back (dest_path is source_path) is a no-op success,
 # not a false "already exists" clobber warning.
-macro write_rename_to_disk
+unsafe_macro write_rename_to_disk
 	bool renamed = false
 	if dest_path is source_path
 		renamed = true

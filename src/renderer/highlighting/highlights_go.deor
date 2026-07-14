@@ -1,4 +1,4 @@
-macro_block highlights_go
+macro highlights_go
 	# block comments
 	name as "comment"
 	start as "/\\*"

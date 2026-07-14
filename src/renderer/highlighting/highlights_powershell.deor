@@ -1,4 +1,4 @@
-macro_block highlights_powershell
+macro highlights_powershell
 	# block comments
 	name as "comment"
 	start as "<#"

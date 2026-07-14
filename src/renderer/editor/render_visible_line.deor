@@ -13,7 +13,7 @@ struct RenderedLine
 # re-assert it right after so the selection survives every syntax-colored
 # token it spans.
 fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHighlight highlight)
-	macro_run use_ansi_codes
+	unsafe_macro_run use_ansi_codes
 	(hl_start, hl_end) in highlight
 
     const string ANSI_ESCAPE_CHARACTER = "m"

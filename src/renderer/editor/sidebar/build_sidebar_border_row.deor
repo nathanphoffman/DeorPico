@@ -3,7 +3,7 @@
 # focused sidebar (see show_top_border/show_bottom_border above). Sets
 # border_row_text rather than returning directly -- see the note on
 # macro-vs-fn `return` in sidebar_row_piece below.
-macro build_sidebar_border_row
+unsafe_macro build_sidebar_border_row
 	SidebarBorderColors colors = use_sidebar_border_colors()
 	(ansi_reset, ansi_sidebar_border_on) in colors
 	string corner = "+"

@@ -2,7 +2,7 @@
 # xt_esc() is the one piece of these that Deor genuinely can't spell as a
 # string literal (no \x1b escape) -- everything built from it here is
 # ordinary string concatenation.
-macro use_ansi_codes
+unsafe_macro use_ansi_codes
 	string esc = xt_esc()
 	const string ANSI_CRLF = xt_crlf()
 	const string ANSI_HOME = s_join([esc, "[H"])

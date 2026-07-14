@@ -1,4 +1,4 @@
-macro_block highlights_jsx
+macro highlights_jsx
 	# block comments (also covers JSX's {/* ... */} form -- the braces
 	# aren't part of the comment syntax so this matches inside them fine)
 	name as "comment"

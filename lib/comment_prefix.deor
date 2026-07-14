@@ -2,7 +2,7 @@
 # highlighter (highlighting.deor) and comment_prefix_for_ext below, so the
 # two stay in agreement about which extension means which language without
 # coupling their actual behavior together.
-macro language_ext_consts
+unsafe_macro language_ext_consts
     const string DEOR = "deor"
     const string CSHARP = "cs"
     const string JSX = "jsx"
@@ -41,7 +41,7 @@ macro language_ext_consts
 # Returns the line-comment prefix for a file extension (e.g. "//" for "rs"),
 # or "" if the language has no single-line comment form (or is unrecognized).
 fn string comment_prefix_for_ext(string ext)
-    macro_run language_ext_consts
+    unsafe_macro_run language_ext_consts
 
     if ext is DEOR or ext is PYTHON or ext is MOJO or ext is BASH1 or ext is BASH2 or ext is POWERSHELL or ext is TOML
         return "#"

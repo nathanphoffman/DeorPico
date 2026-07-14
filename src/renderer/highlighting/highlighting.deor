@@ -5,8 +5,8 @@ struct HighlightRange
 
 
 fn Highlighter initialize_highlighter(string ext)
-    macro_run use_consts
-    macro_run language_ext_consts
+    unsafe_macro_run use_consts
+    unsafe_macro_run language_ext_consts
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR

@@ -1,5 +1,5 @@
 
-macro_block clamp_browse_selection_after_move
+macro clamp_browse_selection_after_move
 	int last_browse_entry = len(browse_entries) - 1
 	if browse_selected > last_browse_entry
 		browse_selected = last_browse_entry

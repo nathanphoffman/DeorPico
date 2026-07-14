@@ -2,8 +2,8 @@
 # completed lint run (ctrl+e) -- output beyond LINT_POPUP_HEIGHT lines, or
 # wider than the terminal, is simply cut off rather than made scrollable.
 fn string editor_render_lint_output(stringList lint_output, int max_visible_columns)
-	macro_run use_ansi_codes
-	macro_run use_consts
+	unsafe_macro_run use_ansi_codes
+	unsafe_macro_run use_consts
 
 	int output_line_count = len(lint_output)
 	string popup = ""

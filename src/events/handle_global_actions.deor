@@ -1,6 +1,6 @@
 
 # Editing mode: app-wide actions -- quit/save/diff/search/history/undo-redo/clipboard
-macro_block handle_global_actions
+macro handle_global_actions
 	if kind is "quit"
 		macro_run key_quit_impl
 	else if kind is "diff_toggle"

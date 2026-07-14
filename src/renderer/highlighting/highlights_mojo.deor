@@ -1,4 +1,4 @@
-macro_block highlights_mojo
+macro highlights_mojo
 	# Mojo is a static-typing superset of Python's syntax -- reuse Python's
 	# comments/strings/decorators/call-sites/keywords/numbers, then layer
 	# Mojo's own struct/ownership keywords and types on top.

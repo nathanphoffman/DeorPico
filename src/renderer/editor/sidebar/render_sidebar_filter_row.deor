@@ -2,7 +2,7 @@
 # filter_active row: one filter_matches entry (bold if it's a name match, vs
 # a plain "path (instances: N)" for a content match), or blank once idx runs
 # past the last match.
-macro_block render_sidebar_filter_row
+macro render_sidebar_filter_row
 	int filter_total = len(filter_matches)
 	if idx < filter_total
 		FilterMatch entry = filter_matches at idx

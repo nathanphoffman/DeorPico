@@ -6,7 +6,7 @@
 # gate, with a note appended when the file also changed on disk, since
 # that's a real conflict (^S would clobber the other change, ^Del would
 # clobber the local one) rather than the usual "you forgot to save" case.
-macro_block key_refresh_impl
+macro key_refresh_impl
 	macro_run refresh_browse_tree_impl
 
 	if filename is not ""

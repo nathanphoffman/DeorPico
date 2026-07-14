@@ -1,9 +1,9 @@
 
-macro look_behind_cursor
+unsafe_macro look_behind_cursor
 	int before_end = cursor_col - 1
 	string before = s_substring(cur_line, start, before_end)
 
-macro_block key_backspace_impl
+macro key_backspace_impl
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
@@ -13,7 +13,7 @@ macro_block key_backspace_impl
 		int line_len = len(cur_line)
 
 		# defines before vars
-		macro_run look_behind_cursor
+		unsafe_macro_run look_behind_cursor
 
 		# Find out if it is a tab to delete
 		string without_white_space = s_trim(before)

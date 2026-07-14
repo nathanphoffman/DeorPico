@@ -2,7 +2,7 @@
 # uses the exact same EditorLayout view_rows as editor_scroll and the
 # renderer (see layout.deor), so the wheel never scrolls further than the
 # cursor-follow logic or the drawn screen itself would allow.
-macro_block clamp_scroll
+macro clamp_scroll
 	if scroll_row < 0
 		scroll_row = 0
 
@@ -25,7 +25,7 @@ macro_block clamp_scroll
 # Shared by scroll_up/scroll_down to find this frame's actual sidebar_width
 # (wider while sidebar_focused, see layout.deor) -- so a wheel scroll over
 # the sidebar's columns is detected correctly even while it's widened.
-macro compute_scroll_sidebar_width
+unsafe_macro compute_scroll_sidebar_width
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
@@ -42,9 +42,9 @@ macro compute_scroll_sidebar_width
 # here a wheel scroll over the diff pane while the sidebar is focused moved
 # the (currently invisible) text-buffer scroll_row instead of diff_scroll_row,
 # and the diff view never appeared to move.
-macro_block scroll_up_impl
-	macro_run use_consts
-	macro_run compute_scroll_sidebar_width
+macro scroll_up_impl
+	unsafe_macro_run use_consts
+	unsafe_macro_run compute_scroll_sidebar_width
 	if col < sidebar_width
 		macro_run sidebar_scroll_up
 	else if diffing
@@ -54,9 +54,9 @@ macro_block scroll_up_impl
 		macro_run clamp_scroll
 	wheel_scrolled = true
 
-macro_block scroll_down_impl
-	macro_run use_consts
-	macro_run compute_scroll_sidebar_width
+macro scroll_down_impl
+	unsafe_macro_run use_consts
+	unsafe_macro_run compute_scroll_sidebar_width
 	if col < sidebar_width
 		macro_run sidebar_scroll_down
 	else if diffing

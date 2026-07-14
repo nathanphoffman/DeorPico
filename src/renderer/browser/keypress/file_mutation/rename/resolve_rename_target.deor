@@ -4,7 +4,7 @@
 # adjacent to/inside the selection (depth+1 and a forced browse_right
 # expand for a directory). A rename edits the selected entry itself, in
 # place -- own depth, own parent directory, no expand.
-macro resolve_rename_target
+unsafe_macro resolve_rename_target
 	int insert_index = 0
 	int insert_depth = 0
 	string parent_dir = browse_dir

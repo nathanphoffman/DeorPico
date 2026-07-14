@@ -25,13 +25,13 @@ struct PlaceholderResetState
 # (set by the caller, start_create_file) if something's highlighted --
 # reassigns rather than declares them, so this stays macro_block-safe even
 # though it calls apply_placeholder_target_from_selection.
-macro_block resolve_placeholder_target
+macro resolve_placeholder_target
 	if not sidebar_on_root and len(browse_entries) > 0 and browse_selected < len(browse_entries)
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, depth, expanded) in selected
 		macro_run apply_placeholder_target_from_selection
 
-macro_block apply_placeholder_target_from_selection
+macro apply_placeholder_target_from_selection
 	if is_dir
 		if not expanded
 			macro_run browse_right
@@ -43,13 +43,13 @@ macro_block apply_placeholder_target_from_selection
 		insert_depth = depth
 		parent_dir = f_dirname(path)
 
-macro_block insert_placeholder_entry
-	macro_run build_placeholder_entry
+macro insert_placeholder_entry
+	unsafe_macro_run build_placeholder_entry
 	entryList one_entry = [placeholder]
 	int insert_at = insert_index - 1
 	browse_entries = e_insert_children(browse_entries, insert_at, one_entry)
 
-macro build_placeholder_entry
+unsafe_macro build_placeholder_entry
 	string name = ""
 	string path = ""
 	bool is_dir = false
@@ -62,7 +62,7 @@ macro build_placeholder_entry
 # input over to the name buffer. Leaves `notice` alone -- the caller sets
 # its own hint text right after this runs, since that copy is specific to
 # whichever flow (create/move/rename) is driving the prompt.
-macro_block enter_placeholder_edit_mode
+macro enter_placeholder_edit_mode
 	sidebar_on_root = false
 	browse_selected = insert_index
 	if browse_selected < browse_scroll_row
@@ -73,11 +73,11 @@ macro_block enter_placeholder_edit_mode
 	create_parent_dir = parent_dir
 	error = false
 
-macro_block placeholder_char
+macro placeholder_char
 	stringList extended_name_parts = [new_file_name, chr]
 	new_file_name = s_join(extended_name_parts)
 
-macro_block placeholder_backspace
+macro placeholder_backspace
 	int name_len = len(new_file_name)
 	if name_len > 0
 		zero as 0
@@ -90,7 +90,7 @@ macro_block placeholder_backspace
 # make room for the placeholder, so there's no "drop", there's a "put
 # back" -- restore_renamed_entry (see ../rename/restore_renamed_entry.deor)
 # is reached instead, kept as a macro_run rather than duplicated here.
-macro_block cancel_placeholder
+macro cancel_placeholder
 	if renaming_file
 		macro_run restore_renamed_entry
 	else
@@ -98,7 +98,7 @@ macro_block cancel_placeholder
 	PlaceholderResetState reset = reset_placeholder_state()
 	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
 
-macro_block remove_placeholder_entry
+macro remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
 	int last_entry = len(browse_entries) - 1
 	if browse_selected > last_entry

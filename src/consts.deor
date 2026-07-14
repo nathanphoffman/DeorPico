@@ -1,4 +1,4 @@
-macro use_consts
+unsafe_macro use_consts
     const int PAGE_DOWN_UP_AMOUNT = 30
 
     # Must match the tab width synoptic expands tabs to when producing
@@ -35,7 +35,7 @@ macro use_consts
 # cursor scroll past what's actually drawn and the cursor/selection render a
 # line off from reality.
 fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible, bool search_active)
-	macro_run use_consts
+	unsafe_macro_run use_consts
 	int reserved_rows = 2
 	if has_minimap
 		reserved_rows = reserved_rows + 1

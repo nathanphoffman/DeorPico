@@ -1,5 +1,5 @@
 
-macro initialize_core
+unsafe_macro initialize_core
 	stringList lines = f_lines(filename)
 	if len(lines) is 0
 		lines at end = ""
@@ -14,7 +14,7 @@ macro initialize_core
 	string synced_content = s_join_with(lines, nls)
 	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content)
 
-macro initialize_browser
+unsafe_macro initialize_browser
 	entryList browse_entries = f_list_dir(initial_dir)
 	browse_selected as 0
 	browse_scroll_row as 0
@@ -53,7 +53,7 @@ macro initialize_browser
 
 	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 
-macro initialize_diff
+unsafe_macro initialize_diff
 	diffing as false
 	stringList diff_lines = g_diff(filename)
 	diff_scroll_row as 0
@@ -61,7 +61,7 @@ macro initialize_diff
 	diff_preview_path as ""
 	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 
-macro initialize_lint
+unsafe_macro initialize_lint
 	LintRunner lint_runner = lr_make()
 	lint_running as false
 	matchList issue_matches = empty
@@ -70,19 +70,19 @@ macro initialize_lint
 	lint_output_visible as false
 	LintState lint = (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 
-macro initialize_selection
+unsafe_macro initialize_selection
 	has_selection as false
 	sel_anchor_row as 0
 	sel_anchor_col as 0
 	text_dragging as false
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 
-macro initialize_undo
+unsafe_macro initialize_undo
 	undoList undo_stack = empty
 	undoList redo_stack = empty
 	UndoState undo = (undo_stack, redo_stack)
 
-macro initialize_search
+unsafe_macro initialize_search
 	search_buffer as ""
 	search_active as false
 	search_editing as false
@@ -90,7 +90,7 @@ macro initialize_search
 	search_match_index as 0
 	SearchState search = (search_buffer, search_active, search_editing, search_matches, search_match_index)
 
-macro initialize_filter
+unsafe_macro initialize_filter
 	filter_active as false
 	filter_query as ""
 	filter_dir as ""
@@ -103,14 +103,14 @@ macro initialize_filter
 fn EditorState editor_open(LaunchArgs launch)
 	(filename, initial_dir, lint_command, lint_regex) in launch
 
-	macro_run initialize_core
-	macro_run initialize_browser
-	macro_run initialize_diff
-	macro_run initialize_selection
-	macro_run initialize_undo
-	macro_run initialize_search
-	macro_run initialize_filter
-	macro_run initialize_lint
+	unsafe_macro_run initialize_core
+	unsafe_macro_run initialize_browser
+	unsafe_macro_run initialize_diff
+	unsafe_macro_run initialize_selection
+	unsafe_macro_run initialize_undo
+	unsafe_macro_run initialize_search
+	unsafe_macro_run initialize_filter
+	unsafe_macro_run initialize_lint
 
 	done as false
 	notice as ""

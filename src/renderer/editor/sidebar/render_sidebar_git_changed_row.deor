@@ -1,6 +1,6 @@
 
 # One changed-file row inside the <GIT> section.
-macro_block render_sidebar_git_changed_row
+macro render_sidebar_git_changed_row
 	int git_idx = idx - 1
 	FileEntry entry = git_changes at git_idx
 	(name, git_status) in entry

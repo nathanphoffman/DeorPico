@@ -3,7 +3,7 @@
 # existing file/dir, then writes the new empty file (or directory) to
 # disk. `created` stays false (with `error` set) on either failure path,
 # so confirm_create_file knows to stop before finalizing anything.
-macro write_create_entry_to_disk
+unsafe_macro write_create_entry_to_disk
 	string full_path = f_join_path(create_parent_dir, entry_name)
 	bool created = false
 	if f_exists(full_path)

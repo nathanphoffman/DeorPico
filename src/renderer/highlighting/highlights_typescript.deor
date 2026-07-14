@@ -1,4 +1,4 @@
-macro_block highlights_typescript
+macro highlights_typescript
 	# block comments
 	name as "comment"
 	start as "/\\*"

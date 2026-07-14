@@ -1,6 +1,6 @@
 # Normalizes sel_anchor vs cursor into start_row/start_col/end_row/end_col
 # so start is always at or before end. Shared by delete/copy/paste below.
-macro normalize_selection
+unsafe_macro normalize_selection
 	start_row as sel_anchor_row
 	start_col as sel_anchor_col
 	end_row as cursor_row
@@ -20,13 +20,13 @@ macro normalize_selection
 		end_row = tmp_row
 		end_col = tmp_col
 
-macro_block start_or_extend_selection_impl
+macro start_or_extend_selection_impl
 	if not has_selection
 		sel_anchor_row = cursor_row
 		sel_anchor_col = cursor_col
 		has_selection = true
 
-macro_block key_select_all_impl
+macro key_select_all_impl
     cursor_row = 0
     cursor_col = 0
     has_selection = true
@@ -36,8 +36,8 @@ macro_block key_select_all_impl
     last_line as lines at (total_line_count - 1)
     sel_anchor_col = len(last_line)
 
-macro_block key_space_comment_selection_impl
-	macro_run normalize_selection
+macro key_space_comment_selection_impl
+	unsafe_macro_run normalize_selection
 
 	string ext = f_extension(filename)
 	string prefix = comment_prefix_for_ext(ext)
@@ -99,19 +99,19 @@ macro_block key_space_comment_selection_impl
 # shared by remove_tab_from_selection (per selected row) and
 # remove_tab_from_line (single row, no selection) so there's only one
 # de-indent rule instead of two copies drifting apart.
-macro_block dedent_line
+macro dedent_line
 	if s_starts_with(line, TAB_STRING)
 		int line_len = len(line)
 		int tab_len = len(TAB_STRING)
 		line = s_substring(line, tab_len, line_len)
 
-macro_block add_tab_to_selection
+macro add_tab_to_selection
 	for row_id in range(start_row, end_row)
 		string line = lines at row_id
 		line = s_join([TAB_STRING, line])
 		lines at row_id = line
 
-macro_block remove_tab_from_selection
+macro remove_tab_from_selection
 	for row_id in range(start_row, end_row)
 		string line = lines at row_id
 		macro_run dedent_line
@@ -120,8 +120,8 @@ macro_block remove_tab_from_selection
 # Shift-Tab with no selection (see key_tab_impl) -- de-indents just the
 # current line and walks the cursor back by however much was actually
 # removed (0 if the line had no leading tab to strip).
-macro_block remove_tab_from_line
-	macro_run use_consts
+macro remove_tab_from_line
+	unsafe_macro_run use_consts
 	string line = lines at cursor_row
 	int before_len = len(line)
 	macro_run dedent_line
@@ -135,9 +135,9 @@ macro_block remove_tab_from_line
 # Tab/Shift-Tab with a selection (see key_tab_impl). `kind is "shift_tab"`
 # is the one signal for which direction -- see handle_tab_and_search.deor
 # for why the `shift` modifier field isn't used here.
-macro_block tab_selection
-	macro_run use_consts
-	macro_run normalize_selection
+macro tab_selection
+	unsafe_macro_run use_consts
+	unsafe_macro_run normalize_selection
 
 	if start_row < end_row
 		macro_run push_undo_snapshot
@@ -148,8 +148,8 @@ macro_block tab_selection
 		macro_run add_tab_to_selection
 
 
-macro_block delete_selection
-	macro_run normalize_selection
+macro delete_selection
+	unsafe_macro_run normalize_selection
 	zero as 0
 
 	if start_row is end_row
@@ -181,8 +181,8 @@ macro_block delete_selection
 	has_selection = false
 
 # Caller must declare `string selection_text = ""` before calling this.
-macro_block copy_selection_text
-	macro_run normalize_selection
+macro copy_selection_text
+	unsafe_macro_run normalize_selection
 	zero as 0
 
 	if start_row is end_row
@@ -208,7 +208,7 @@ macro_block copy_selection_text
 		nls as "\n"
 		selection_text = s_join_with(collected, nls)
 
-macro_block do_copy_impl
+macro do_copy_impl
 	if has_selection
 		string selection_text = ""
 		macro_run copy_selection_text
@@ -219,7 +219,7 @@ macro_block do_copy_impl
 		if len(word_text) > 0
 			bool copied = cp_set(word_text)
 
-macro_block do_cut_impl
+macro do_cut_impl
 	if has_selection
 		macro_run push_undo_snapshot
 		string selection_text = ""
@@ -227,7 +227,7 @@ macro_block do_cut_impl
 		bool copied = cp_set(selection_text)
 		macro_run delete_selection
 
-macro_block do_paste_impl
+macro do_paste_impl
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection

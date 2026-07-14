@@ -5,7 +5,7 @@ import "imports.deor"
 # the first key is read (initial paint) and again only once per drained
 # batch of input inside the loop, rather than once per individual event.
 macro render_frame
-    macro_run use_consts
+    unsafe_macro_run use_consts
 
 	state = editor_scroll(move state)
 

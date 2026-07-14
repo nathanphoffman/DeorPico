@@ -1,7 +1,7 @@
 
 # The <GIT> header row itself (top_row_is_header) -- bold, with a v/> marker
 # reflecting git_section_collapsed.
-macro_block render_sidebar_git_header_row
+macro render_sidebar_git_header_row
 	string git_marker = "v "
 	if git_section_collapsed
 		git_marker = "> "

@@ -12,7 +12,7 @@
 # nesting further create-specific macro calls -- read top to bottom.
 # Defaults to appending at the root -- resolve_placeholder_target
 # conditionally overrides these three if something's highlighted.
-macro_block start_create_file
+macro start_create_file
 	int insert_index = 0
 	int insert_depth = 0
 	string parent_dir = browse_dir
@@ -35,7 +35,7 @@ macro_block start_create_file
 # directly here since this was its only caller, and confirm_create_file is
 # already macro_block so calling confirm_move_request from in here costs
 # nothing.
-macro_block confirm_create_file
+macro confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
 		notice = "File name can't be empty"
@@ -52,10 +52,10 @@ macro_block confirm_create_file
 			macro_run confirm_move_request
 
 		if not is_move_request
-			macro_run resolve_create_entry_name
+			unsafe_macro_run resolve_create_entry_name
 			if not error
-				macro_run write_create_entry_to_disk
+				unsafe_macro_run write_create_entry_to_disk
 				if created
-					macro_run apply_created_placeholder_entry
+					unsafe_macro_run apply_created_placeholder_entry
 					macro_run refresh_all_git_status
 					macro_run report_created_entry_result

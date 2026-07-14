@@ -1,4 +1,4 @@
-macro_block highlights_toml
+macro highlights_toml
 	# comments
 	comment_name as "comment"
 	comment_pattern as "#.*"

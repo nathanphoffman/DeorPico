@@ -1,4 +1,4 @@
-macro_block highlights_java
+macro highlights_java
 	# block comments
 	name as "comment"
 	start as "/\\*"

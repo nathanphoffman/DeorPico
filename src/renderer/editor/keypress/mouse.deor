@@ -5,7 +5,7 @@
 # itself for TAB_WIDTH (below) -- both callers (mouse_down_editor_impl via
 # mouse_down_main, and mouse_drag_main_impl directly) already call it
 # before reaching here, so this stays a leaf macro without duplicating it.
-macro locate_mouse_in_buffer
+unsafe_macro locate_mouse_in_buffer
 	int total_line_count = len(lines)
 
 	TermSize term_size = xt_size()
@@ -47,8 +47,8 @@ macro locate_mouse_in_buffer
 # set, so dragging continuously re-jumps to wherever the mouse is now. Doesn't
 # account for where within the thumb the drag was grabbed -- simpler, and the
 # thumb still tracks the mouse 1:1 since the mapping is linear.
-macro_block scrollbar_jump_to_row
-	macro_run use_consts
+macro scrollbar_jump_to_row
+	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(lines)
@@ -69,8 +69,8 @@ macro_block scrollbar_jump_to_row
 	else
 		scroll_row = 0
 
-macro_block mouse_down_editor_impl
-	macro_run use_consts
+macro mouse_down_editor_impl
+	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(lines)
@@ -100,8 +100,8 @@ macro_block mouse_down_editor_impl
 		sidebar_focused = false
 		macro_run mouse_down_main
 
-macro_block mouse_down_main
-	macro_run locate_mouse_in_buffer
+macro mouse_down_main
+	unsafe_macro_run locate_mouse_in_buffer
 	cursor_row = clicked_row
 	cursor_col = clicked_col
     
@@ -140,8 +140,8 @@ macro_block mouse_down_main
 # mouse_down_main) -- mouse_drag events arrive with the raw terminal column
 # instead, so do that same subtraction here or every dragged selection lands
 # sidebar_width columns too far right.
-macro_block mouse_drag_main_impl
-	macro_run use_consts
+macro mouse_drag_main_impl
+	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(lines)
@@ -150,7 +150,7 @@ macro_block mouse_drag_main_impl
 	(sidebar_width) in layout
 	col = col - sidebar_width
 
-	macro_run locate_mouse_in_buffer
+	unsafe_macro_run locate_mouse_in_buffer
 	if not has_selection
 		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
 			has_selection = true
@@ -165,8 +165,8 @@ macro_block mouse_drag_main_impl
 # show_line_numbers/lint_output_visible/diff_lines here don't need to match
 # what rust_diff.deor itself passes for its own has_minimap/view_rows math --
 # only sidebar_width is read out of `layout` below.
-macro_block mouse_down_diff_impl
-	macro_run use_consts
+macro mouse_down_diff_impl
+	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int total_line_count = len(diff_lines)

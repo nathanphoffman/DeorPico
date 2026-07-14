@@ -5,7 +5,7 @@
 # search.deor). Its own row is reserved by editor_reserved_rows in
 # consts.deor whenever search_active is true, so the buffer view shrinks by
 # one row while it's showing instead of the bar overlapping the last line.
-macro_block render_search_bar
+macro render_search_bar
 	if search_active
 		match_count as len(search_matches)
 		count_str as c_int_to_string(match_count)
@@ -18,7 +18,7 @@ macro_block render_search_bar
 		screen = s_join([screen, ANSI_SEARCH_BAR_BG, bar_padded, ANSI_RESET, ANSI_CRLF])
 
 # Construct status line with file info and append to screen
-macro_block build_and_render_status_bar
+macro build_and_render_status_bar
 	string modified_marker = ""
 	if dirty
 		modified_marker = " [modified]"

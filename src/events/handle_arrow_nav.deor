@@ -1,6 +1,6 @@
 
 # Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
-macro_block handle_arrow_nav
+macro handle_arrow_nav
 	if kind is "up"
 		if shift
 			macro_run start_or_extend_selection_impl

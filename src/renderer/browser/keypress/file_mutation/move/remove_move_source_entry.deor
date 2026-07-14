@@ -1,5 +1,5 @@
 
-macro_block remove_move_source_entry
+macro remove_move_source_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
 
 	EntryLookup source_lookup = e_find_by_path(browse_entries, source_path)

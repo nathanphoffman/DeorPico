@@ -7,7 +7,7 @@ struct DirGitSummary
 
 shape intList = list of int
 
-macro use_git_minimap_ansi
+unsafe_macro use_git_minimap_ansi
 	string esc = xt_esc()
 	const string ANSI_MAP_ADD = s_join([esc, "[42m"])
 	const string ANSI_MAP_DEL = s_join([esc, "[41m"])
@@ -181,7 +181,7 @@ fn string g_ansi_span(int color_code, int length)
 	if length is 0
 		return ""
 
-	macro_run use_git_minimap_ansi
+	unsafe_macro_run use_git_minimap_ansi
 	string space = " "
 	string fill = s_repeat(space, length)
 

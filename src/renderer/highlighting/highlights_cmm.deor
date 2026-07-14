@@ -1,4 +1,4 @@
-macro_block highlights_cmm
+macro highlights_cmm
 	# "C--" isn't one standardized language -- several unrelated toy
 	# languages share the name (compiler-course subsets of C, and the
 	# Peyton Jones/Ramsey portable IL). This covers the common subset

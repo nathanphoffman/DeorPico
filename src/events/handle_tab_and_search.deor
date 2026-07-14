@@ -6,7 +6,7 @@
 # the SHIFT modifier bit alongside it (see lib/term.deor). key_tab_impl and
 # everything it calls treat `kind is "shift_tab"` as the one source of
 # truth for "this is a de-indent", never the `shift` field.
-macro_block handle_tab_and_search
+macro handle_tab_and_search
 	if kind is "tab" and search_active
 		macro_run search_next_impl
 	else if kind is "shift_tab" and search_active

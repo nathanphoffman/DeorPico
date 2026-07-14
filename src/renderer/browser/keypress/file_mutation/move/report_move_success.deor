@@ -1,5 +1,5 @@
 
-macro_block report_move_success
+macro report_move_success
 	moved_prefix as "Moved "
 	moved_suffix as " here"
 	stringList moved_parts = [moved_prefix, display_path, moved_suffix]

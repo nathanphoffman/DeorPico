@@ -1,5 +1,5 @@
 
-macro build_moved_entry
+unsafe_macro build_moved_entry
 	string name = moved_name
 	string path = dest_full_path
 	depth = depth + 1

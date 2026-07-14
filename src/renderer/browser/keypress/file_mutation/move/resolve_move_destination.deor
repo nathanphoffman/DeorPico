@@ -1,5 +1,5 @@
 
-macro resolve_move_destination
+unsafe_macro resolve_move_destination
 	zero as 0
 	EntryMatch chosen = valid_matches at zero
 	(full_path, display_path, is_dir) in chosen

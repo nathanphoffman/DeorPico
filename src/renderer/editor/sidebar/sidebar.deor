@@ -40,10 +40,10 @@ struct SidebarRowInput
 fn string sidebar_row_piece(SidebarRowInput row_input)
 	(browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
 
-	macro_run compute_sidebar_row_layout
+	unsafe_macro_run compute_sidebar_row_layout
 
 	if show_top_border or show_bottom_border
-		macro_run build_sidebar_border_row
+		unsafe_macro_run build_sidebar_border_row
 		return border_row_text
 
 	string body = ""

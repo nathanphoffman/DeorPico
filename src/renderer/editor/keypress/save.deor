@@ -1,4 +1,4 @@
-macro_block key_save_impl
+macro key_save_impl
 	nls as "\n"
 	string content = s_join_with(lines, nls)
 	bool did_save = f_write(filename, content)

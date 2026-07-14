@@ -1,4 +1,4 @@
-macro_block highlights_cpp
+macro highlights_cpp
 	# C++ is a strict-ish superset of C for highlighting purposes -- reuse
 	# comments/strings/call-sites/C-keywords/C-builtins/numbers from
 	# highlights_c, then layer the C++-only keywords and types on top.

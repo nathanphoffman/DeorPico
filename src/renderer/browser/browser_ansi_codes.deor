@@ -3,7 +3,7 @@
 # its own `esc` rather than calling use_ansi_codes, so this stays a leaf
 # macro (nothing else here is actually shared with use_ansi_codes' other
 # consts -- see browser_colorize.deor/browser_wrap.deor, the only callers).
-macro use_browser_ansi_codes
+unsafe_macro use_browser_ansi_codes
 	string esc = xt_esc()
 	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
 	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])

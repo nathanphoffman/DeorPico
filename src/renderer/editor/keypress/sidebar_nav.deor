@@ -4,7 +4,7 @@
 # Files tree's top row crosses into the <GIT> section (if there is one),
 # landing on its last entry if expanded and non-empty, or the header itself
 # otherwise, so the whole sidebar reads as one continuous list.
-macro_block sidebar_nav_up
+macro sidebar_nav_up
 	if sidebar_on_git
 		if git_selected > (0 - 1)
 			git_selected = git_selected - 1
@@ -33,7 +33,7 @@ macro_block sidebar_nav_up
 # section's last entry also crosses into the Files tree's first row (see
 # sidebar_nav_up for the reverse). Clamped against the same view_rows the
 # sidebar actually renders, same as sidebar_scroll_down.
-macro_block sidebar_nav_down
+macro sidebar_nav_down
 	if sidebar_on_git
 		if git_selected is (0 - 1)
 			if not git_section_collapsed and len(git_changes) > 0
@@ -65,7 +65,7 @@ macro_block sidebar_nav_down
 # down by however many rows it occupies). git_selected of -1 (the header)
 # resolves to screen row 0 the same way any other entry resolves to
 # 1 + git_selected, so it needs no special case here.
-macro_block sidebar_scroll_follow
+macro sidebar_scroll_follow
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
@@ -87,7 +87,7 @@ macro_block sidebar_scroll_follow
 	else if screen_row >= browse_scroll_row + view_rows
 		browse_scroll_row = screen_row - view_rows + 1
 
-macro_block sidebar_scroll_up
+macro sidebar_scroll_up
 	if filter_active
 		filter_scroll_row = filter_scroll_row - 1
 		if filter_scroll_row < 0
@@ -100,7 +100,7 @@ macro_block sidebar_scroll_up
 # Clamped against the same view_rows the sidebar actually renders (see
 # render_buffer_rows) -- without this the sidebar could scroll past its last
 # entry into blank padding.
-macro_block sidebar_scroll_down
+macro sidebar_scroll_down
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size

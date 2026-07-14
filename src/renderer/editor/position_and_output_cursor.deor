@@ -1,23 +1,23 @@
 
 
-macro calculate_clamped_cursor_row
+unsafe_macro calculate_clamped_cursor_row
 	int raw_cursor_screen_row = cursor_row - scroll_row + 1 + minimap_offset
 	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, bottom_row)
 
-macro calculate_cursor_screen_column
+unsafe_macro calculate_cursor_screen_column
 	int cursor_screen_col = cursor_visual_col + sidebar_width + gutter_width + 1
 
 # Format cursor position as an ANSI escape code
-macro format_cursor_escape_code
+unsafe_macro format_cursor_escape_code
 	string row_str = c_int_to_string(cursor_screen_row)
 	string col_str = c_int_to_string(cursor_screen_col)
 	string cursor_escape = s_join([esc, "[", row_str, ";", col_str, "H"])
 
-macro_block append_cursor_and_output
+macro append_cursor_and_output
 	screen = s_join([screen, cursor_escape])
 	xt_flush_print(screen)
 
-macro_block position_and_output_cursor
+macro position_and_output_cursor
 
 	# Wheel-scrolling can leave the cursor outside the current view (it no
 	# longer follows the viewport), so this can land above or below the
@@ -25,11 +25,11 @@ macro_block position_and_output_cursor
 	# bottom_row from this frame's shared EditorLayout (see
 	# setup_minimap_and_gutters) before turning it into a terminal cursor
 	# position.
-    macro_run calculate_clamped_cursor_row
-    macro_run calculate_cursor_screen_column
+    unsafe_macro_run calculate_clamped_cursor_row
+    unsafe_macro_run calculate_cursor_screen_column
 
     # the cursor position is outputted to the terminal as a string
     #  effectively the entire output to the terminal needs to be a string 
     #  so cursor moves are a sequence on the end of that string
-    macro_run format_cursor_escape_code
+    unsafe_macro_run format_cursor_escape_code
 	macro_run append_cursor_and_output

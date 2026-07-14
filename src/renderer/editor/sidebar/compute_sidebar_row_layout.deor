@@ -2,7 +2,7 @@
 # One-time flags/geometry sidebar_row_piece's branches below all read from --
 # split out purely because it's the setup every branch needs, not a case of
 # its own. See each flag's own comment for why it exists.
-macro compute_sidebar_row_layout
+unsafe_macro compute_sidebar_row_layout
 	int git_count = len(git_changes)
 	bool has_git_section = git_section_rows > 0
 

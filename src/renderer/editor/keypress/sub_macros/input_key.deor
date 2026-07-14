@@ -1,8 +1,8 @@
-macro_block input_key
+macro input_key
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection
-	macro_run split_at_cursor
+	unsafe_macro_run split_at_cursor
 	stringList insert_parts = [before, chr, after]
 	string new_line = s_join(insert_parts)
 	lines at cursor_row = new_line

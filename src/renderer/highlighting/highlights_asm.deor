@@ -1,4 +1,4 @@
-macro_block highlights_asm
+macro highlights_asm
 	# comments -- ";" is the near-universal comment marker across
 	# NASM/MASM/GAS-with-semicolons
 	comment_name as "comment"

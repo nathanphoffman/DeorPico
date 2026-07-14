@@ -1,7 +1,7 @@
 # Snapshots the buffer just before a mutating action so it can be restored later.
 # Call this FIRST, before the action actually changes `lines`/cursor. Starting a
 # new edit always invalidates the old redo history, same as every other editor.
-macro_block push_undo_snapshot
+macro push_undo_snapshot
 	full_len as len(lines)
 	stringList saved_lines = l_string_take(lines, full_len)
 	int saved_cursor_row = cursor_row
@@ -16,7 +16,7 @@ macro_block push_undo_snapshot
 	undoList cleared_redo = empty
 	redo_stack = cleared_redo
 
-macro_block do_undo_impl
+macro do_undo_impl
 	if len(undo_stack) > 0
 		full_len as len(lines)
 		stringList saved_lines = l_string_take(lines, full_len)
@@ -37,7 +37,7 @@ macro_block do_undo_impl
 		notice = "Undo"
 		error = false
 
-macro_block do_redo_impl
+macro do_redo_impl
 	if len(redo_stack) > 0
 		full_len as len(lines)
 		stringList saved_lines = l_string_take(lines, full_len)
@@ -60,7 +60,7 @@ macro_block do_redo_impl
 
 # Called when switching to a different file (e.g. via the browser) so undo
 # history from the old file can't bleed into the new one.
-macro_block reset_undo_history
+macro reset_undo_history
 	undoList cleared_undo = empty
 	undoList cleared_redo = empty
 	undo_stack = cleared_undo

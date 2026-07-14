@@ -171,17 +171,14 @@ for item in items
 
 In trivial cases, like these inline is probably better anyhow, but in general:
 - When the code is small enough (like these examples since we have limited space): leave it inline
-- When organization is needed and logic separation isn't needed and you need to define new variables: use a ```macro```
-- When organization is needed and logic separation isn't needed and you don't need new variables: use a ```macro_block``` 
+- When organization is needed and logic separation isn't needed: use a ```macro``` — its body is contained on its own, so there's no extra decision to make about whether it declares new variables
 - When logic separation is logical: use a ```function```
+- When a macro genuinely needs to hand a *new* variable to its caller (not just assign into one the caller already declared) — a start/end pair sharing state being the main case — reach for ```unsafe_macro``` instead, see [Macros — `unsafe_macro`](docs/macros.md#unsafe_macro-deliberately-leaking-state)
 
 ---
 ## Reusable Consts — via Macros
 
-Deor has no global scope, so a `const` can't be declared once and shared across every function that needs it — it only exists inside the block 
-where it's declared. When the same constant values are needed in multiple functions, declare them once inside a `macro` or `macro_block` it 
-wherever they're needed. Because the macro body is inlined at each call site, every function gets its own copy of the same named consts — 
-nothing is shared at runtime, but the names and values stay consistent everywhere they're used.
+Deor has no global scope, so a `const` can't be shared across functions directly. Put shared constants in a `macro` and call it from each function — the macro is inlined, so every call site gets its own copy with the same names and values.
 
 ```deor
 macro use_log_consts
@@ -213,9 +210,7 @@ In the Deor creator's opinion: Smaller functions with well placed macros > Small
 ---
 ## Prefer `is not` Over `not ... is`
 
-When negating a comparison, use `is not` rather than wrapping the comparison in `not`. `val is not 5` is required for bare identifiers 
-(the transpiler rejects `not val is 5`), and the same preference applies even in the cases the transpiler doesn't catch, like `not (a > b) is y` 
-or `not some_func() is y` — reorder these to `(a > b) is not y` and `some_func() is not y` instead.
+The transpiler enforces `is not` over `not ... is` for bare identifiers — see [Operators — Logical](docs/operators.md#logical). The same preference applies even in cases the transpiler doesn't catch, like `not (a > b) is y` or `not some_func() is y` — reorder these to `(a > b) is not y` and `some_func() is not y` instead.
 
 **Recommended:**
 ```deor
@@ -227,15 +222,6 @@ if (a > b) is not y
 ```deor
 if not (a > b) is y
     ...
-```
-
-Reach for plain `not` only when there's no comparison to reorder around — negating a standalone boolean value or expression:
-
-```deor
-if not done
-    ...
-
-opposite as not original
 ```
 
 ---

@@ -2,7 +2,7 @@
 # Strips the "dir " prefix (if present) to get the bare entry name, and
 # catches the one create/dir-specific validation case: "dir " with
 # nothing after it.
-macro resolve_create_entry_name
+unsafe_macro resolve_create_entry_name
 	string entry_name = new_file_name
 	if is_dir_request
 		int prefix_len = len(dir_prefix)

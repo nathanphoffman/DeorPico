@@ -9,7 +9,7 @@
 # plus a strikethrough layered on top, rather than its own distinct color --
 # the strikethrough alone is enough to tell it apart from a plain edit.
 fn string browser_colorize(string line, string git_status)
-	macro_run use_browser_ansi_codes
+	unsafe_macro_run use_browser_ansi_codes
 
 	string result = line
 	if git_status is "staged"

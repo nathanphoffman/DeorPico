@@ -1,4 +1,4 @@
-macro_block highlights_fortran90
+macro highlights_fortran90
 	# line comments -- Fortran has no block comment
 	comment_name as "comment"
 	comment_pattern as "!.*"

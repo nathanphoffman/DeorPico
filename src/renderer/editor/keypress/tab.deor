@@ -4,7 +4,7 @@
 # Shift-Tab instead strips one tab-width of leading whitespace from the
 # current line (remove_tab_from_line), same rule tab_selection applies
 # per-line.
-macro_block key_tab_impl
+macro key_tab_impl
 	if has_selection
 		macro_run tab_selection
 		dirty = true

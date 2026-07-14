@@ -11,7 +11,7 @@
 # by the caller (confirm_create_file, ../create_file.deor) right after this
 # runs instead of from in here, for the same reason -- confirm_create_file
 # is macro_block so it can absorb that call for free.
-macro apply_created_placeholder_entry
+unsafe_macro apply_created_placeholder_entry
 	FileEntry placeholder_entry = browse_entries at browse_selected
 	string name = entry_name
 	string path = full_path

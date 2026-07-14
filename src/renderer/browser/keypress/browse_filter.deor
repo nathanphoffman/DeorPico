@@ -1,6 +1,6 @@
 # ':' on a selected directory -- starts a name/content filter scoped to that
 # directory (see events.deor). No-op if the selected entry is a file.
-macro_block start_browse_filter
+macro start_browse_filter
 	string target_dir = ""
 	bool can_filter = false
 	if sidebar_on_root
@@ -27,7 +27,7 @@ macro_block start_browse_filter
 
 # Esc -- drops the filter and returns to the normal directory tree, which
 # was never touched while filtering.
-macro_block close_browse_filter
+macro close_browse_filter
 	filter_active = false
 	filter_query = ""
 	filterMatchList filter_matches = empty
@@ -40,7 +40,7 @@ macro_block close_browse_filter
 # Under 5 characters: a plain name filter over the selected directory's
 # direct children. At 5+: flattens the whole subtree and adds a content
 # search, capped per-directory for performance (see lib/dirsearch.deor).
-macro_block recompute_browse_filter
+macro recompute_browse_filter
 	int query_len = len(filter_query)
 	filter_selected = 0
 	filter_scroll_row = 0
@@ -73,12 +73,12 @@ macro_block recompute_browse_filter
 	notice = s_join(notice_parts)
 	error = false
 
-macro_block browse_filter_char
+macro browse_filter_char
 	stringList extended_filter_parts = [filter_query, chr]
 	filter_query = s_join(extended_filter_parts)
 	macro_run recompute_browse_filter
 
-macro_block browse_filter_backspace
+macro browse_filter_backspace
 	int query_len = len(filter_query)
 	if query_len > 0
 		zero as 0
@@ -86,14 +86,14 @@ macro_block browse_filter_backspace
 		filter_query = s_substring(filter_query, zero, new_len)
 		macro_run recompute_browse_filter
 
-macro_block browse_filter_up
+macro browse_filter_up
 	filter_selected = filter_selected - 1
 	if filter_selected < 0
 		filter_selected = 0
 	if filter_selected < filter_scroll_row
 		filter_scroll_row = filter_selected
 
-macro_block browse_filter_down
+macro browse_filter_down
 	int last_entry = len(filter_matches) - 1
 	filter_selected = filter_selected + 1
 	if filter_selected > last_entry
@@ -118,7 +118,7 @@ macro_block browse_filter_down
 # quick-search highlight (see search.deor) with the filter query itself, so
 # the lines that matched are highlighted immediately and Tab cycles straight
 # to them instead of requiring the search to be retyped.
-macro_block browse_filter_enter
+macro browse_filter_enter
 	if len(filter_matches) > 0
 		FilterMatch selected_match = filter_matches at filter_selected
 		(full_path) in selected_match

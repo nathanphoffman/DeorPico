@@ -6,7 +6,7 @@
 # would otherwise cancel our background partway through the line -- re-assert
 # it after each one so the tint survives every syntax-colored segment.
 fn string editor_tint_search_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
-	macro_run use_ansi_codes
+	unsafe_macro_run use_ansi_codes
 
 	string tint_reset_combo = s_join([ANSI_RESET, ANSI_SEARCH_TINT])
 	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)
@@ -24,7 +24,7 @@ fn string editor_tint_search_row(string rendered_line, int text_visible_columns,
 # Same tint mechanism as editor_tint_search_row, dark orange instead --
 # tags a row flagged by the background lint/build job instead of a search hit.
 fn string editor_tint_issue_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
-	macro_run use_ansi_codes
+	unsafe_macro_run use_ansi_codes
 
 	string tint_reset_combo = s_join([ANSI_RESET, ANSI_ISSUE_TINT])
 	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)

@@ -1,6 +1,6 @@
 
 # Prevents the cursor from going too far to the right, left, bottom, or top
-macro_block back_stop
+macro back_stop
 
     if cursor_row < 0
         cursor_row = 0
@@ -33,7 +33,7 @@ macro_block back_stop
     else if sel_anchor_col > anchor_line_length - 1
         sel_anchor_col = anchor_line_length
 
-macro_block register_events
+macro register_events
     macro_run handle_global_actions
 	macro_run handle_search_trigger
 	macro_run handle_arrow_nav

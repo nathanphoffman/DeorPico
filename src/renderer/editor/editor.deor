@@ -1,6 +1,6 @@
 
 # Calculate terminal dimensions and visible row count
-macro calculate_viewport_dimensions
+unsafe_macro calculate_viewport_dimensions
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int max_visible_columns = cols
@@ -9,13 +9,13 @@ macro calculate_viewport_dimensions
 	(has_selection) in selection
 
 # Render lint output panel if visible
-macro_block render_lint_output_section
+macro render_lint_output_section
 	if lint_output_visible
 		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
 		screen = s_join([screen, lint_popup])
 
 fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
-	macro_run use_ansi_codes
+	unsafe_macro_run use_ansi_codes
 
 	(core, browser, diff, search, filter, lint, notice, error) in state
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
@@ -26,10 +26,10 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	(filter_active, filter_matches, filter_selected, filter_scroll_row) in filter
 	(issue_matches, lint_output, lint_output_visible) in lint
 
-	macro_run calculate_viewport_dimensions
+	unsafe_macro_run calculate_viewport_dimensions
 
     # main macros to setup editor:
-	macro_run setup_minimap_and_gutters
+	unsafe_macro_run setup_minimap_and_gutters
 	macro_run render_buffer_rows
 	macro_run render_lint_output_section
 	macro_run render_minimap_bar
