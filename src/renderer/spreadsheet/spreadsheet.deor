@@ -40,11 +40,29 @@ macro render_spreadsheet_sidebar_column
 # (spreadsheet_rows at row_offset) joined with " | ", blank-padded once
 # row_offset runs past the sheet's last row.
 macro render_spreadsheet_row
+
+    const int COLUMN_WIDTH = 20
+    const string SPACE = " "
+    const string PIPE = " | "
+    
 	string content = ""
 	if row_offset < spreadsheet_row_count
 		stringList row_cells = spreadsheet_rows at row_offset
-		string separator = " | "
-		content = s_join_with(row_cells, separator)
+	    
+        for cell in row_cells
+            string cell_content = cell
+            content_length as len(cell_content)
+            if content_length > COLUMN_WIDTH
+                cell_content = "empty"  # !! update this !!!
+
+            for idx in range(COLUMN_WIDTH - content_length)
+                cell_content = s_join([cell_content, SPACE])
+
+            content = s_join([content, cell_content, PIPE])
+
+        content = s_join([PIPE, content])
+
+        # content = s_join_with(row_cells, separator)
 	if len(content) > content_width
 		int trunc_start = 0
 		content = s_substring(content, trunc_start, content_width)
