@@ -27,6 +27,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "lint_output_toggle"
 		else if chr is "g"
 			kind = "stage_toggle"
+		else if chr is "t"
+			kind = "spreadsheet_view_toggle"
 		else if chr is "a"
 			kind = "select_all"
 		# Context-dependent: opens the search bar in the main editor view

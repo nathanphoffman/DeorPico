@@ -297,6 +297,7 @@ macro load_file_into_buffer
 	if f_is_spreadsheet_ext(opened_ext)
 		spreadsheet_active = true
 		spreadsheet_first_cell = csv_first_cell(filename)
+	spreadsheet_view_active = spreadsheet_active
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

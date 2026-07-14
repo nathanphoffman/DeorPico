@@ -1,7 +1,8 @@
 
 # The "Spreadsheet" main-panel branch (see AppState/EditorState) -- sits
 # alongside EditorState rather than replacing it, since Deor has no
-# tagged unions: spreadsheet_active picks which one draw_frame renders,
+# tagged unions: draw_frame renders it instead of the normal editor
+# whenever spreadsheet_active and spreadsheet_view_active are both true,
 # same as DiffState's own diffing flag does for the diff view. Fields are
 # spreadsheet_-prefixed rather than reusing e.g. `filename` to avoid
 # colliding with BufferState's own field of that name once both structs'
@@ -9,4 +10,14 @@
 struct SpreadsheetState
 	string spreadsheet_path
 	string spreadsheet_first_cell
+
+	# True whenever the currently open file is spreadsheet-capable (a
+	# .csv) -- recomputed on every open, never touched by ^T.
 	bool spreadsheet_active
+
+	# Which view is currently showing for a spreadsheet-capable file: true
+	# draws spreadsheet_render, false falls through to the normal editor.
+	# ^T (see toggle_spreadsheet_view_impl) is the only thing that flips
+	# this; opening any file resets it back to true (default to
+	# spreadsheet) regardless of what it was left at for the previous file.
+	bool spreadsheet_view_active

@@ -1,4 +1,11 @@
 
+# ^T -- swaps the main panel between the spreadsheet placeholder and the
+# normal text editor for the currently open .csv. No-op on a non-.csv file
+# (spreadsheet_active false) since there's nothing to swap to/from.
+macro toggle_spreadsheet_view_impl
+	if spreadsheet_active
+		spreadsheet_view_active = not spreadsheet_view_active
+
 # Which file extensions open into the spreadsheet view instead of the
 # normal text editor -- checked both at launch (state_init.deor) and on
 # every mid-session file open (browse.deor's load_file_into_buffer).
