@@ -1,4 +1,4 @@
-struct BrowserState
+struct SidebarState
 	# Persistent Files-tree sidebar -- the only file browser there is now,
 	# always shown and never takes over the whole screen.
 	entryList browse_entries

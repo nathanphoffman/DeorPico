@@ -22,7 +22,7 @@ unsafe_macro parse_launch_args
 		lint_regex = input_list at 3
 
 	LaunchArgs launch = (filename, initial_dir, lint_command, lint_regex)
-	EditorState state = editor_open(launch)
+	AppState state = editor_open(launch)
 
 # Without this, a panic mid-render (e.g. a bad byte index into a UTF-8
 # line) kills the process while the terminal is still in raw/alt-screen
@@ -97,7 +97,8 @@ macro draw_frame
 		HighlightRange highlight_bounds = (start_row, end_row)
 		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
 		BufferState core = core with (lines)
-		EditorState render_state_with_colors = state with (core)
+		EditorState main_panel = main_panel with (core)
+		AppState render_state_with_colors = state with (main_panel)
 		editor_render(move render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
 
 # Recomputes scroll, re-highlights if the buffer changed, and draws the
@@ -109,7 +110,8 @@ macro render_frame
 
 	state = editor_scroll(move state)
 
-	(core, diff, selection) in state
+	(main_panel) in state
+	(core, diff, selection) in main_panel
 	(filename, lines, cursor_row, cursor_col, scroll_row) in core
 	(diffing) in diff
 	(sel_anchor_row, sel_anchor_col) in selection
@@ -138,7 +140,8 @@ fn void main()
 		# with nothing running is a guaranteed no-op, so skip paying for a
 		# render on it instead of redrawing the whole screen 6-7x/second
 		# while the user isn't typing.
-		(lint) in state
+		(main_panel) in state
+		(lint) in main_panel
 		(lint_running) in lint
 		bool was_lint_running = lint_running
 

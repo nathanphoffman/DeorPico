@@ -42,13 +42,14 @@ macro register_events
 	macro_run handle_page_and_mouse
 	macro_run back_stop
 
-fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
+fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	# `state`/`core`/`browser`/etc. are only read here -- every field gets
 	# rebuilt fresh into next_state at the bottom of this function, so there's
 	# no later use of the originals to preserve. `move` here (and on the
 	# reconstruction below) skips cloning the whole editor state -- including
 	# `lines`, the file's full contents -- on every single event.
-	move (core, browser, diff, selection, undo, search, filter, lint, done, notice, error) in state
+	move (browser, main_panel, done, notice, error) in state
+	move (core, diff, selection, undo, search, filter, lint) in main_panel
 
 	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content) in core
 	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
@@ -114,12 +115,13 @@ fn EditorState editor_handle_key_for_events(EditorState state, KeyEvent key)
         macro_run register_events
 
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content)
-	BrowserState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 	DiffState diff = move (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
 	SelectionState selection = move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 	UndoState undo = move (undo_stack, redo_stack)
 	SearchState search = move (search_buffer, search_active, search_editing, search_matches, search_match_index)
 	FilterState filter = move (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 	LintState lint = move (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
-	EditorState next_state = move (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
+	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	AppState next_state = move (browser, main_panel, done, notice, error)
 	return next_state

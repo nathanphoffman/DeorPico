@@ -1,16 +1,15 @@
+
+# The "Editor" branch of the app: everything to do with the main content
+# panel (buffer text, diff view, selection, undo, search, filter, lint) as
+# opposed to SidebarState, which is the "Sidebar" branch. Splitting these
+# into two top-level AppState fields (see editor_state.deor) is what
+# would let a future alternate main panel (e.g. a spreadsheet view) sit
+# alongside BufferState here without touching the sidebar at all.
 struct EditorState
 	BufferState core
-	BrowserState browser
 	DiffState diff
 	SelectionState selection
 	UndoState undo
 	SearchState search
 	FilterState filter
 	LintState lint
-	bool done
-
-	# Persists until replaced by another notice
-	string notice
-
-	# True while notice is blocking a destructive action (unsaved changes) -- tints the status bar dark red
-	bool error

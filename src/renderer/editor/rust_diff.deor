@@ -159,14 +159,15 @@ fn int diff_view_sidebar_width(int rows, int cols, bool sidebar_focused)
 	(sidebar_width) in layout
 	return sidebar_width
 
-fn void editor_render_diff(EditorState state)
+fn void editor_render_diff(AppState state)
 
     (browser) in state
     (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
     (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-    (core) in state
+    (main_panel) in state
+    (core) in main_panel
     (filename) in core
-    (diff) in state
+    (diff) in main_panel
     (diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
     (notice) in state
     unsafe_macro_run use_consts

@@ -1,0 +1,14 @@
+# Root app state: two branches off the top -- browser (the Sidebar) and
+# main_panel (the Editor, see EditorState) -- plus a few flags that are
+# genuinely global regardless of which branch is focused or which kind of
+# main panel is active.
+struct AppState
+	SidebarState browser
+	EditorState main_panel
+	bool done
+
+	# Persists until replaced by another notice
+	string notice
+
+	# True while notice is blocking a destructive action (unsaved changes) -- tints the status bar dark red
+	bool error

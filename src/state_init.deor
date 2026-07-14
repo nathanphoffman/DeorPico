@@ -51,7 +51,7 @@ unsafe_macro initialize_browser
 	pending_discard_path as ""
 	sidebar_locked as false
 
-	BrowserState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 
 unsafe_macro initialize_diff
 	diffing as false
@@ -100,7 +100,7 @@ unsafe_macro initialize_filter
 	filter_truncated_count as 0
 	FilterState filter = (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 
-fn EditorState editor_open(LaunchArgs launch)
+fn AppState editor_open(LaunchArgs launch)
 	(filename, initial_dir, lint_command, lint_regex) in launch
 
 	unsafe_macro_run initialize_core
@@ -116,5 +116,6 @@ fn EditorState editor_open(LaunchArgs launch)
 	notice as ""
 	error as false
 
-	EditorState state = (core, browser, diff, selection, undo, search, filter, lint, done, notice, error)
+	EditorState main_panel = (core, diff, selection, undo, search, filter, lint)
+	AppState state = (browser, main_panel, done, notice, error)
 	return state

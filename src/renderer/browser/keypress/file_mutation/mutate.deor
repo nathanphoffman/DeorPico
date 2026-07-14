@@ -4,7 +4,7 @@
 # typing/cancel while it's open. Independent of what the name is *for* --
 # create_file.deor drives this to build a new entry and sets its own notice
 # text after enter_placeholder_edit_mode runs; move_file.deor reuses the
-# same open prompt for "mv X". State lives on BrowserState (creating_file/
+# same open prompt for "mv X". State lives on SidebarState (creating_file/
 # new_file_name/create_parent_dir) since it's shared across both.
 #
 # rename_file.deor only reuses the tail of this (enter_placeholder_edit_mode/

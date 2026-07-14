@@ -25,7 +25,7 @@ import "src/rust_helper.deor"
 
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"
-import "src/models/browser_state.deor"
+import "src/models/sidebar_state.deor"
 import "src/models/diff_state.deor"
 import "src/models/lint_state.deor"
 import "src/models/launch_args.deor"
@@ -35,6 +35,7 @@ import "src/models/filter_state.deor"
 import "src/models/undo_snapshot.deor"
 import "src/models/undo_state.deor"
 import "src/models/editor_state.deor"
+import "src/models/app_state.deor"
 
 # Macros must be loaded first
 import "src/consts.deor"

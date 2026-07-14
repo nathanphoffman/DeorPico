@@ -1,5 +1,6 @@
-fn EditorState editor_scroll(EditorState state)
-	(core, browser, diff, lint, search) in state
+fn AppState editor_scroll(AppState state)
+	(browser, main_panel) in state
+	(core, diff, lint, search) in main_panel
 	(lines, cursor_row, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers) in core
 	(sidebar_focused) in browser
 	(diff_lines) in diff
@@ -28,5 +29,6 @@ fn EditorState editor_scroll(EditorState state)
 			scroll_row = cursor_row - view_rows + 1
 
 	BufferState core = core with (scroll_row)
-	new_state as state with (core)
+	EditorState main_panel = main_panel with (core)
+	new_state as state with (main_panel)
 	return new_state

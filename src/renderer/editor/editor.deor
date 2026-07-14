@@ -14,10 +14,11 @@ macro render_lint_output_section
 		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
 		screen = s_join([screen, lint_popup])
 
-fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_visual_col)
+fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visual_col)
 	unsafe_macro_run use_ansi_codes
 
-	(core, browser, diff, search, filter, lint, notice, error) in state
+	(browser, main_panel, notice, error) in state
+	(core, diff, search, filter, lint) in main_panel
 	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name) in browser
 	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
