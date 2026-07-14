@@ -1,23 +1,8 @@
 
-# Homes the cursor instead of erasing the screen first -- every row below
-# is always repainted for the full terminal width/height (see
-# render_row_fill and the status/search bar padding), so an erase-then-
-# redraw on every frame bought nothing but a visible flash on terminals
-# that don't paint the two ANSI ops atomically (esp. Windows Terminal).
-# The minimap used to be prepended here, but that pushed the buffer down a
-# row the moment a file had git changes (and back up the moment it
-# didn't), which was jarring to look at. It's now appended at the bottom
-# instead (see render_minimap_bar), right above the status bar, so the
-# buffer's own rows never shift.
-macro initialize_screen_buffer_with_minimap
-	string screen = ANSI_HOME
-
-
 # Generate minimap bar and compute this frame's shared EditorLayout --
 # every macro after this reads gutter_width/text_visible_columns/
 # minimap_offset/view_rows/top_row/bottom_row from `layout` rather than
 # recomputing its own copy (see layout.deor).
-# these are very unsafe macros and should be updated
 macro setup_minimap_and_gutters
 	# One-row heat bar showing where git changes fall in the file, squashed
 	# proportionally across the terminal width -- hidden entirely (no
@@ -28,7 +13,17 @@ macro setup_minimap_and_gutters
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(gutter_width, text_visible_columns, has_minimap, minimap_offset, view_rows, top_row, bottom_row, sidebar_width) in layout
 
-	macro_run initialize_screen_buffer_with_minimap
+	# Homes the cursor instead of erasing the screen first -- every row
+	# below is always repainted for the full terminal width/height (see
+	# render_row_fill and the status/search bar padding), so an erase-
+	# then-redraw on every frame bought nothing but a visible flash on
+	# terminals that don't paint the two ANSI ops atomically (esp. Windows
+	# Terminal). The minimap used to be prepended here, but that pushed
+	# the buffer down a row the moment a file had git changes (and back
+	# up the moment it didn't), which was jarring to look at. It's now
+	# appended at the bottom instead (see render_minimap_bar), right
+	# above the status bar, so the buffer's own rows never shift.
+	string screen = ANSI_HOME
 
 # Appends the minimap bar just above the status bar -- called after the
 # buffer/lint-popup rows so it always lands directly above

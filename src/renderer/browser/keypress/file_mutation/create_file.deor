@@ -10,7 +10,12 @@
 # Flat by design: every macro_run below is a single leaf step (shared with
 # move, see ../mutate.deor) that shares this macro's own scope instead of
 # nesting further create-specific macro calls -- read top to bottom.
+# Defaults to appending at the root -- resolve_placeholder_target
+# conditionally overrides these three if something's highlighted.
 macro_block start_create_file
+	int insert_index = 0
+	int insert_depth = 0
+	string parent_dir = browse_dir
 	macro_run resolve_placeholder_target
 	macro_run insert_placeholder_entry
 	macro_run enter_placeholder_edit_mode
@@ -25,18 +30,32 @@ macro_block start_create_file
 # Flat by design, same as start_create_file above -- each macro_run is a
 # single leaf step (see create/*.deor), gated by plain ifs rather than
 # nested inside one another. Only "mv X" hands off elsewhere (to the
-# shared move feature, from inside parse_create_or_move_request).
+# shared move feature, confirm_move_request). The "dir X"/"mv X" prefix
+# split used to be its own macro (parse_create_or_move_request) -- inlined
+# directly here since this was its only caller, and confirm_create_file is
+# already macro_block so calling confirm_move_request from in here costs
+# nothing.
 macro_block confirm_create_file
 	int name_len = len(new_file_name)
 	if name_len is 0
 		notice = "File name can't be empty"
 		error = true
 	else
-		macro_run parse_create_or_move_request
+		dir_prefix as "dir "
+		mv_prefix as "mv "
+		bool is_dir_request = s_starts_with(new_file_name, dir_prefix)
+		bool is_move_request = s_starts_with(new_file_name, mv_prefix)
+
+		if is_move_request
+			int mv_prefix_len = len(mv_prefix)
+			string move_query = s_substring(new_file_name, mv_prefix_len, name_len)
+			macro_run confirm_move_request
+
 		if not is_move_request
 			macro_run resolve_create_entry_name
 			if not error
 				macro_run write_create_entry_to_disk
 				if created
 					macro_run apply_created_placeholder_entry
+					macro_run refresh_all_git_status
 					macro_run report_created_entry_result

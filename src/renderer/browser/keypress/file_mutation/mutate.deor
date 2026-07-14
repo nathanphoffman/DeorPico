@@ -21,16 +21,11 @@ struct PlaceholderResetState
 	string notice
 	bool error
 
-# Defaults to appending at the root, then overridden by
-# apply_placeholder_target_from_selection if something's highlighted.
-
-
-# these are very unsafe macros and should be updated
-macro resolve_placeholder_target
-	int insert_index = 0
-	int insert_depth = 0
-	string parent_dir = browse_dir
-
+# Conditionally overrides the insert_index/insert_depth/parent_dir defaults
+# (set by the caller, start_create_file) if something's highlighted --
+# reassigns rather than declares them, so this stays macro_block-safe even
+# though it calls apply_placeholder_target_from_selection.
+macro_block resolve_placeholder_target
 	if not sidebar_on_root and len(browse_entries) > 0 and browse_selected < len(browse_entries)
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, depth, expanded) in selected

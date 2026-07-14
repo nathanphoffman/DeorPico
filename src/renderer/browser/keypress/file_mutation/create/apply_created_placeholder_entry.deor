@@ -7,11 +7,10 @@
 #
 # reset_placeholder_state is a real fn (see ../mutate.deor) -- SHARED with
 # move and rename too, but calling it doesn't chain a leaking macro into a
-# leaking macro the way macro_run would.
-# macro_run refresh_all_git_status below is still SHARED machinery
-# (see ../browse.deor), reused by move and rename too -- left as macro_run
-# rather than duplicated.
-# these are very unsafe macros and should be updated
+# leaking macro the way macro_run would. refresh_all_git_status is called
+# by the caller (confirm_create_file, ../create_file.deor) right after this
+# runs instead of from in here, for the same reason -- confirm_create_file
+# is macro_block so it can absorb that call for free.
 macro apply_created_placeholder_entry
 	FileEntry placeholder_entry = browse_entries at browse_selected
 	string name = entry_name
@@ -22,4 +21,3 @@ macro apply_created_placeholder_entry
 
 	PlaceholderResetState reset = reset_placeholder_state()
 	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
-	macro_run refresh_all_git_status
