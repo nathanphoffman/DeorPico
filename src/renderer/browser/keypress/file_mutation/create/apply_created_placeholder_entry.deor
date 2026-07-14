@@ -5,9 +5,12 @@
 # purpose so report_created_entry_result can reuse it for
 # load_file_into_buffer right after.
 #
-# macro_run reset_placeholder_state and macro_run refresh_all_git_status
-# below are SHARED machinery (see ../mutate.deor / ../browse.deor), reused
-# by move and rename too -- left as macro_run rather than duplicated.
+# reset_placeholder_state is a real fn (see ../mutate.deor) -- SHARED with
+# move and rename too, but calling it doesn't chain a leaking macro into a
+# leaking macro the way macro_run would.
+# macro_run refresh_all_git_status below is still SHARED machinery
+# (see ../browse.deor), reused by move and rename too -- left as macro_run
+# rather than duplicated.
 # these are very unsafe macros and should be updated
 macro apply_created_placeholder_entry
 	FileEntry placeholder_entry = browse_entries at browse_selected
@@ -17,5 +20,6 @@ macro apply_created_placeholder_entry
 	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
 	browse_entries at browse_selected = real_entry
 
-	macro_run reset_placeholder_state
+	PlaceholderResetState reset = reset_placeholder_state()
+	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
 	macro_run refresh_all_git_status

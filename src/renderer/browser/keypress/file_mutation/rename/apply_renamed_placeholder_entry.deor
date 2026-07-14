@@ -9,7 +9,8 @@ macro_block apply_renamed_placeholder_entry
 	FileEntry real_entry = placeholder_entry with (name, path, is_dir)
 	browse_entries at browse_selected = real_entry
 
-	macro_run reset_placeholder_state
+	PlaceholderResetState reset = reset_placeholder_state()
+	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
 	macro_run refresh_all_git_status
 
 	# Keeps the open buffer's save target pointed at the renamed path --

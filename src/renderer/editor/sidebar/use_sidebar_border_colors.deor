@@ -5,13 +5,20 @@
 # the tree spontaneously growing. Two columns of the normal content width
 # are given up to the left/right bars; the top/bottom rows are replaced
 # outright by a horizontal rule (see is_top_row/is_bottom_row below).
-# Defines its own esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than calling
-# use_ansi_codes, so this stays a leaf macro -- these four are the only
-# ones its callers actually read (build_sidebar_border_row.deor,
-# sidebar.deor, render_sidebar_tree_row.deor).
-macro use_sidebar_border_colors
+# A real fn (not a macro) so its 3 callers (build_sidebar_border_row.deor,
+# sidebar.deor, render_sidebar_tree_row.deor) can pull these colors in
+# without chaining a leaking macro into a leaking macro -- defines its own
+# esc rather than calling use_ansi_codes too, same reasoning.
+struct SidebarBorderColors
+	string ansi_reset
+	string ansi_reverse_on
+	string ansi_reverse_off
+	string ansi_sidebar_border_on
+
+fn SidebarBorderColors use_sidebar_border_colors()
 	string esc = xt_esc()
-	const string ANSI_RESET = s_join([esc, "[0m"])
-	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])
-	const string ANSI_REVERSE_OFF = s_join([esc, "[27m"])
-	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])
+	string ansi_reset = s_join([esc, "[0m"])
+	string ansi_reverse_on = s_join([esc, "[7m"])
+	string ansi_reverse_off = s_join([esc, "[27m"])
+	string ansi_sidebar_border_on = s_join([esc, "[31m"])
+	return (ansi_reset, ansi_reverse_on, ansi_reverse_off, ansi_sidebar_border_on)

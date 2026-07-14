@@ -39,8 +39,9 @@ macro_block render_sidebar_tree_row
 
 		string tree_text = ""
 		if is_creating_row
-			macro_run use_sidebar_border_colors
-			string cursor_block = s_join([ANSI_REVERSE_ON, " ", ANSI_REVERSE_OFF])
+			SidebarBorderColors colors = use_sidebar_border_colors()
+			(ansi_reverse_on, ansi_reverse_off) in colors
+			string cursor_block = s_join([ansi_reverse_on, " ", ansi_reverse_off])
 			tree_text = s_join([text, cursor_block])
 			visible_len = visible_len + 1
 		else

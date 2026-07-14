@@ -13,6 +13,14 @@
 # instead of writing a new file), so those live in rename_file.deor instead
 # of resolve_placeholder_target/confirm_create_file here.
 
+struct PlaceholderResetState
+	bool creating_file
+	bool renaming_file
+	string new_file_name
+	string create_parent_dir
+	string notice
+	bool error
+
 # Defaults to appending at the root, then overridden by
 # apply_placeholder_target_from_selection if something's highlighted.
 
@@ -92,7 +100,8 @@ macro_block cancel_placeholder
 		macro_run restore_renamed_entry
 	else
 		macro_run remove_placeholder_entry
-	macro_run reset_placeholder_state
+	PlaceholderResetState reset = reset_placeholder_state()
+	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
 
 macro_block remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
@@ -102,10 +111,15 @@ macro_block remove_placeholder_entry
 	if browse_selected < 0
 		browse_selected = 0
 
-macro_block reset_placeholder_state
-	creating_file = false
-	renaming_file = false
-	new_file_name = ""
-	create_parent_dir = ""
-	notice = ""
-	error = false
+# A real fn (not a macro) -- reads nothing, so its 3 callers (this file's
+# cancel_placeholder, create/apply_created_placeholder_entry.deor,
+# rename/apply_renamed_placeholder_entry.deor) can call it without chaining
+# a leaking macro into a leaking macro.
+fn PlaceholderResetState reset_placeholder_state()
+	bool creating_file = false
+	bool renaming_file = false
+	string new_file_name = ""
+	string create_parent_dir = ""
+	string notice = ""
+	bool error = false
+	return (creating_file, renaming_file, new_file_name, create_parent_dir, notice, error)

@@ -3,9 +3,9 @@
 # focused sidebar (see show_top_border/show_bottom_border above). Sets
 # border_row_text rather than returning directly -- see the note on
 # macro-vs-fn `return` in sidebar_row_piece below.
-# these are very unsafe macros and should be updated
 macro build_sidebar_border_row
-	macro_run use_sidebar_border_colors
+	SidebarBorderColors colors = use_sidebar_border_colors()
+	(ansi_reset, ansi_sidebar_border_on) in colors
 	string corner = "+"
 	string dash = "-"
 	int rule_len = sidebar_width - 2
@@ -13,4 +13,4 @@ macro build_sidebar_border_row
 		rule_len = 0
 	string rule = s_repeat(dash, rule_len)
 	string border_line = s_join([corner, rule, corner])
-	string border_row_text = s_join([ANSI_SIDEBAR_BORDER_ON, border_line, ANSI_RESET])
+	string border_row_text = s_join([ansi_sidebar_border_on, border_line, ansi_reset])
