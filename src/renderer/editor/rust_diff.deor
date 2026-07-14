@@ -1,169 +1,181 @@
 
-fn void editor_render_diff(EditorState state)
+# Small set of ANSI codes specific to this view (+/- line coloring) --
+# not part of use_ansi_codes' shared set, so this stays its own leaf
+# macro with its own esc, same reasoning as use_git_minimap_ansi.
+unsafe_macro use_diff_marker_ansi
+	string esc = xt_esc()
+	const string ANSI_ADD_FG = s_join([esc, "[32m"])
+	const string ANSI_DEL_FG = s_join([esc, "[31m"])
+	const string ANSI_FG_RESET = s_join([esc, "[39m"])
 
-    (browser) in state
-    (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-    (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-    unsafe_macro_run use_consts
-
-	rust
-		use std::io::Write;
-		let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
-		let cols = cols as usize as i64;
-        
-
-    # Same sidebar width formula the normal editor view uses (widens
-	# while sidebar_focused, see layout.deor) -- diff_lines is left
-	# empty here since the layout's own has_minimap/minimap_offset
-	# aren't used below; this view reserves its own minimap row.
-    rust 
-		let layout_input = EditorLayoutInput {
-			rows: rows as i64,
-			cols: cols as i64,
-			total_line_count: state.diff.diff_lines.len() as i64,
-			show_line_numbers: false,
-			lint_output_visible: false,
-			diff_lines: Vec::new(),
-			sidebar_focused,
-			search_active: false,
-		};
-
-		let layout = compute_editor_layout(layout_input);
-		let sidebar_width = layout.sidebar_width;
-		let diff_content_width = (cols as i64 - sidebar_width).max(1) as usize;
-
+# Terminal size, the git-diff heat bar, and the resulting sidebar/content
+# column widths -- everything render_diff_rows/append_diff_minimap/
+# render_diff_status_and_notice below read from. Mirrors
+# setup_minimap_and_gutters in status/minimap_gutters.deor.
+unsafe_macro setup_diff_view_layout
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
 
 	# Same heat bar as the normal editor view (see g_diff_minimap in
 	# lib/git.deor), but rows here are diff_lines entries themselves --
 	# deleted lines get their own row instead of being folded onto a
 	# buffer row that doesn't exist in this view. Spans the full
 	# terminal width, same as the normal editor's own minimap bar
-    # (it doesn't reserve space for the sidebar either).
+	# (it doesn't reserve space for the sidebar either).
+	string minimap_bar = g_diff_minimap_raw(diff_lines, cols)
+	bool has_minimap = false
+	if minimap_bar is not empty
+		has_minimap = true
 
+	# Same sidebar width formula the normal editor view uses (widens
+	# while sidebar_focused, see layout.deor).
+	int sidebar_width = diff_view_sidebar_width(rows, cols, sidebar_focused)
+	int diff_content_width = cols - sidebar_width
+	if diff_content_width < 1
+		diff_content_width = 1
+
+	# No full-screen erase here -- every row/status line below is padded
+	# out to the full width, and exactly `rows` lines are always emitted,
+	# so homing the cursor and overwriting is enough (see
+	# initialize_screen_buffer_with_minimap for why this avoids a flicker
+	# on erase-then-redraw terminals).
+	string screen = ANSI_HOME
+
+# Sidebar column + colorized diff content for every visible row, blank-
+# padded past the end of diff_lines. Sidebar selection math mirrors
+# render_buffer_rows in render_buffer_rows.deor.
+macro render_diff_rows
+	bool lint_output_visible = false
+	bool search_active = false
+	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible, search_active)
+	int view_rows = editor_view_rows(rows, reserved_rows)
+
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+	int root_section_rows = sidebar_root_section_rows()
+	int selected_idx = git_section_rows + root_section_rows + browse_selected
+	if sidebar_on_git
+		selected_idx = 1 + git_selected
+	else if sidebar_on_root
+		selected_idx = git_section_rows
+
+	int total = len(diff_lines)
+	bool filter_active = false
+	filterMatchList filter_matches = empty
+	string tab_char = "\t"
+
+	for row_offset in range(view_rows)
+		bool is_top_row = row_offset is 0
+		bool is_bottom_row = row_offset is (view_rows - 1)
+		int idx = browse_scroll_row + row_offset
+		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
+		screen = s_join([screen, sidebar_row_piece(row_input)])
+
+		int diff_idx = diff_scroll_row + row_offset
+		if diff_idx < total
+			string raw_line = diff_lines at diff_idx
+			string marker = ""
+			string content = ""
+			int raw_len = len(raw_line)
+			if raw_len > 0
+				int marker_idx = 0
+				marker = s_char_at(raw_line, marker_idx)
+				int content_start = 1
+				content = s_substring(raw_line, content_start, raw_len)
+
+			# Diff lines come straight from git output and can contain raw
+			# tab bytes (unlike buffer lines, which synoptic already
+			# tab-expands before display -- see main.deor's render_frame).
+			# An un-expanded '\t' hits the terminal as its own multi-column
+			# jump that char-count-based padding below doesn't account
+			# for, under-filling the row and leaving a previous frame's
+			# characters showing through at the tail.
+			if s_contains(content, tab_char)
+				content = s_replace(content, tab_char, TAB_STRING)
+
+			stringList content_chars = s_chars(content)
+			int content_char_count = len(content_chars)
+			if content_char_count > diff_content_width
+				int trunc_start = 0
+				content = s_substring(content, trunc_start, diff_content_width)
+			else if content_char_count < diff_content_width
+				content = s_pad_right(content, diff_content_width)
+
+			if marker is "+"
+				content = s_join([ANSI_ADD_FG, content, ANSI_FG_RESET])
+			else if marker is "-"
+				content = s_join([ANSI_DEL_FG, content, ANSI_FG_RESET])
+			screen = s_join([screen, content])
+		else
+			string single_space = " "
+			string blank_row = s_repeat(single_space, diff_content_width)
+			screen = s_join([screen, blank_row])
+
+		screen = s_join([screen, ANSI_CRLF])
+
+# Appended here (just above the status line) rather than above the rows,
+# same as the normal editor view -- see render_minimap_bar in
+# status/minimap_gutters.deor.
+macro append_diff_minimap
+	if has_minimap
+		screen = s_join([screen, minimap_bar, ANSI_CRLF])
+
+macro render_diff_status_and_notice
+	string status_line = s_join(["-- ", filename, " (diff, read-only) -- ^D/Esc/^Q back"])
+	if diff_preview
+		status_line = s_join(["-- ", diff_preview_path, " (deleted, diff, read-only) -- Esc/^Q back"])
+	if len(status_line) > cols
+		int status_trunc_start = 0
+		status_line = s_substring(status_line, status_trunc_start, cols)
+	string status_padded = s_pad_right(status_line, cols)
+	screen = s_join([screen, status_padded, ANSI_CRLF])
+
+	string notice_text = notice
+	if len(notice_text) > cols
+		int notice_trunc_start = 0
+		notice_text = s_substring(notice_text, notice_trunc_start, cols)
+	string notice_padded = s_pad_right(notice_text, cols)
+	screen = s_join([screen, notice_padded])
+
+# Isolated in its own fn (rather than inlined into setup_diff_view_layout)
+# purely so its local `diff_lines` (the empty one EditorLayoutInput wants
+# -- see the comment below) can shadow-collide with nothing: a fn's
+# locals never leak into its caller, unlike a macro's, so there's no risk
+# of clobbering the real diff_lines destructured in editor_render_diff.
+# Only sidebar_width is ever read back out of the computed EditorLayout.
+fn int diff_view_sidebar_width(int rows, int cols, bool sidebar_focused)
+	bool show_line_numbers = false
+	bool lint_output_visible = false
+	bool search_active = false
+	int total_line_count = 0
+
+	# diff_lines is left empty here since the layout's own has_minimap/
+	# minimap_offset aren't used below; this view reserves its own
+	# minimap row (see setup_diff_view_layout).
+	stringList diff_lines = empty
+
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(sidebar_width) in layout
+	return sidebar_width
+
+fn void editor_render_diff(EditorState state)
+
+    (browser) in state
+    (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
+    (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+    (core) in state
+    (filename) in core
     (diff) in state
-    (diff_lines) in diff 
-    minimap_bar as g_diff_minimap_raw(diff_lines, cols)
+    (diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
+    (notice) in state
+    unsafe_macro_run use_consts
+    unsafe_macro_run use_ansi_codes
+    unsafe_macro_run use_diff_marker_ansi
 
-    has_minimap as false
-    if minimap_bar is not empty
-        has_minimap = true
+    unsafe_macro_run setup_diff_view_layout
+    macro_run render_diff_rows
+    macro_run append_diff_minimap
+    macro_run render_diff_status_and_notice
 
-    rust
-        {
-			//let minimap_bar = g_diff_minimap_raw(state.diff.diff_lines.clone(), cols as i64);
-			//let has_minimap = !minimap_bar.is_empty();
-			// Same reserved-row formula every other scroll-clamp/render path
-			// in the app uses (see editor_view_rows in consts.deor) -- the
-			// diff view never shows the lint popup, hence `false`.
-			let view_rows = editor_view_rows(rows as i64, editor_reserved_rows(has_minimap, false, false)) as usize;
-			let cols_usize = cols as usize;
-			let mut out = String::new();
-			// No full-screen erase here -- every row/status line below is
-			// padded out to the full width, and exactly `rows` lines are
-			// always emitted, so homing the cursor and overwriting is
-			// enough (see initialize_screen_buffer_with_minimap for why
-			// this avoids a flicker on erase-then-redraw terminals).
-			out.push_str("\x1b[H");
-
-			let git_section_rows = sidebar_git_section_rows(is_git_repo, git_changes.len() as i64, git_section_collapsed);
-			let root_section_rows = sidebar_root_section_rows();
-			let selected_idx = if sidebar_on_git {
-				1 + git_selected
-			} else if sidebar_on_root {
-				git_section_rows
-			} else {
-				git_section_rows + root_section_rows + browse_selected
-			};
-
-			let total = state.diff.diff_lines.len();
-			for i in 0..view_rows {
-				let is_top_row = i == 0;
-				let is_bottom_row = i == view_rows - 1;
-				let row_input = SidebarRowInput {
-					browse_entries: browse_entries.clone(),
-					git_changes: git_changes.clone(),
-					git_section_rows,
-					root_section_rows,
-					browse_dir: browse_dir.clone(),
-					git_section_collapsed,
-					idx: browse_scroll_row + i as i64,
-					selected_idx,
-					sidebar_width,
-					sidebar_focused,
-					is_top_row,
-					is_bottom_row,
-					creating_file,
-					new_file_name: new_file_name.clone(),
-					filter_active: false,
-					filter_matches: Vec::new(),
-				};
-				out.push_str(&sidebar_row_piece(row_input));
-
-				let idx = state.diff.diff_scroll_row as usize + i;
-				if idx < total {
-					let raw = &state.diff.diff_lines[idx];
-					let marker = raw.chars().next().unwrap_or(' ');
-					let mut line: String = if raw.len() > 0 {
-						raw[1..].to_string()
-					} else {
-						String::new()
-					};
-					// Diff lines come straight from git output and can contain
-					// raw tab bytes (unlike buffer lines, which synoptic
-					// already tab-expands before display -- see main.deor's
-					// render_frame). An un-expanded '\t' hits the terminal as
-					// its own multi-column jump that the char-count-based
-					// padding below doesn't account for, under-filling the
-					// row and leaving a previous frame's characters showing
-					// through at the tail.
-					if line.contains('\t') {
-						line = line.replace('\t', &TAB_STRING);
-					}
-					let line_char_count = line.chars().count();
-					if line_char_count > diff_content_width {
-						line = line.chars().take(diff_content_width).collect();
-					} else if line_char_count < diff_content_width {
-						let pad = diff_content_width - line_char_count;
-						line.push_str(&" ".repeat(pad));
-					}
-					line = match marker {
-						'+' => format!("\x1b[32m{}\x1b[39m", line),
-						'-' => format!("\x1b[31m{}\x1b[39m", line),
-						_ => line,
-					};
-					out.push_str(&line);
-				} else {
-					out.push_str(&" ".repeat(diff_content_width));
-				}
-				out.push_str("\r\n");
-			}
-			// Appended here (just above the status line) rather than above
-			// the rows, same as the normal editor view -- see
-			// render_minimap_bar in status/minimap_gutters.deor.
-			if has_minimap {
-				out.push_str(&minimap_bar);
-				out.push_str("\r\n");
-			}
-			let mut status = if state.diff.diff_preview {
-				format!("-- {} (deleted, diff, read-only) -- Esc/^Q back", state.diff.diff_preview_path)
-			} else {
-				format!("-- {} (diff, read-only) -- ^D/Esc/^Q back", state.core.filename)
-			};
-			if status.len() > cols_usize {
-				status.truncate(cols_usize);
-			} else {
-				status.push_str(&" ".repeat(cols_usize - status.len()));
-			}
-			out.push_str(&status);
-			out.push_str("\r\n");
-			let mut notice = state.notice;
-			if notice.len() > cols_usize {
-				notice.truncate(cols_usize);
-			} else {
-				notice.push_str(&" ".repeat(cols_usize - notice.len()));
-			}
-			out.push_str(&notice);
-
-			print!("{}", out);
-			std::io::stdout().flush().unwrap();
-		}
+    xt_flush_print(screen)
