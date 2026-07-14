@@ -26,8 +26,27 @@ unsafe_macro setup_spreadsheet_view_layout
 
 	string screen = ANSI_HOME
 
-# Sidebar column (identical to the normal editor/diff views) + a single
-# content cell on the very first row, blank-padded everywhere else.
+# Sidebar column piece for the current row_offset -- identical to the
+# normal editor/diff views (see render_sidebar_column in
+# render_buffer_rows.deor).
+macro render_spreadsheet_sidebar_column
+	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
+	screen = s_join([screen, sidebar_row_piece(row_input)])
+
+# Content column piece for the current row_offset -- the file's first cell
+# on the very first row, blank-padded everywhere else.
+macro render_spreadsheet_row
+	string content = ""
+	if is_top_row
+		content = s_join([spreadsheet_first_cell])
+	if len(content) > content_width
+		int trunc_start = 0
+		content = s_substring(content, trunc_start, content_width)
+	content = s_pad_right(content, content_width)
+	screen = s_join([screen, content])
+
+# Iterates every visible row, appending the sidebar column then the content
+# column, same shape as render_buffer_rows' main loop.
 macro render_spreadsheet_rows
 	bool has_minimap = false
 	bool lint_output_visible = false
@@ -51,17 +70,9 @@ macro render_spreadsheet_rows
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
 		int idx = browse_scroll_row + row_offset
-		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
-		screen = s_join([screen, sidebar_row_piece(row_input)])
 
-		string content = ""
-		if is_top_row
-			content = s_join([spreadsheet_first_cell])
-		if len(content) > content_width
-			int trunc_start = 0
-			content = s_substring(content, trunc_start, content_width)
-		content = s_pad_right(content, content_width)
-		screen = s_join([screen, content])
+		macro_run render_spreadsheet_sidebar_column
+		macro_run render_spreadsheet_row
 
 		screen = s_join([screen, ANSI_CRLF])
 
