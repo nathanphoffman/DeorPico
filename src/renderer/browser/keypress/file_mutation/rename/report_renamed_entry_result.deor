@@ -1,5 +1,5 @@
 
-macro report_renamed_entry_result
+macro_block report_renamed_entry_result
 	if is_dir
 		notice = "Renamed directory"
 	else

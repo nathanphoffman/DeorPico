@@ -1,5 +1,5 @@
 
-macro render_sidebar_column
+macro_block render_sidebar_column
 	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 	string sidebar_piece = sidebar_row_piece(row_input)
 	screen = s_join([screen, sidebar_piece])
@@ -9,7 +9,7 @@ macro render_gutter_column
 	string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
 	screen = s_join([screen, gutter_piece])
 
-macro render_scrollbar_column
+macro_block render_scrollbar_column
 	string scrollbar_piece = editor_scrollbar_piece(row_offset, thumb_top, thumb_height)
 	screen = s_join([screen, scrollbar_piece])
 
@@ -19,7 +19,7 @@ macro render_scrollbar_column
 # wherever a short line's text happened to end instead of at the fixed
 # right-hand column, so it looked glued to the text instead of forming a
 # vertical bar.
-macro render_row_fill
+macro_block render_row_fill
 	int fill_width = text_visible_columns - row_visible_cols
 	if fill_width > 0
 		string space = " "
@@ -27,7 +27,7 @@ macro render_row_fill
 		screen = s_join([screen, fill])
 
 # Main rendering loop: iterate through visible rows and render each line
-macro render_buffer_rows
+macro_block render_buffer_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()

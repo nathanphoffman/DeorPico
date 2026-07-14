@@ -2,14 +2,14 @@
 # open -- the git-change minimap (editor_render/editor_render_diff) reads
 # diff_lines every frame in both modes, so this must run on every file load
 # and every save, not just when diffing is toggled on.
-macro refresh_git_diff_lines
+macro_block refresh_git_diff_lines
 	stringList raw_diff = g_diff(filename)
 	diff_lines = raw_diff
 
 # Re-diffs whatever file was just loaded into the buffer so git diff mode
 # follows file-browser navigation instead of freezing on the file that was
 # active when diff mode was toggled on.
-macro refresh_diff_for_new_file
+macro_block refresh_diff_for_new_file
 	stringList raw_diff = g_diff(filename)
 	int change_count = g_diff_count(raw_diff)
 	if change_count > 0
@@ -25,7 +25,7 @@ macro refresh_diff_for_new_file
 		notice = "Opened (no changes to diff)"
 		error = false
 
-macro toggle_diff_impl
+macro_block toggle_diff_impl
 	if diffing
 		if diff_preview
 			diff_preview = false
@@ -63,7 +63,7 @@ macro toggle_diff_impl
 # off-screen entirely, producing an unrelated jump. Deleted ('-') lines
 # don't exist in the current buffer, so they are skipped while counting off
 # buffer rows to find the matching diff row.
-macro align_diff_scroll
+macro_block align_diff_scroll
 	int diff_idx = 0
 	int file_row = 0
 	int last = len(diff_lines)
@@ -92,7 +92,7 @@ macro align_diff_scroll
 # entered, so scrolling around inside the diff view (arrows, wheel, paging)
 # and then leaving snaps the editor back to the old position instead of
 # following you.
-macro align_editor_scroll_from_diff
+macro_block align_editor_scroll_from_diff
 	int diff_idx = 0
 	int file_row = 0
 	int last = len(diff_lines)
@@ -116,7 +116,7 @@ macro align_editor_scroll_from_diff
 	# scroll.deor rely on to decouple scroll_row from the cursor for a frame).
 	wheel_scrolled = true
 
-macro clamp_diff_scroll
+macro_block clamp_diff_scroll
 	if diff_scroll_row < 0
 		diff_scroll_row = 0
 
@@ -142,11 +142,11 @@ macro clamp_diff_scroll
 	if diff_scroll_row > max_scroll
 		diff_scroll_row = max_scroll
 
-macro diff_scroll_up_impl
+macro_block diff_scroll_up_impl
 	diff_scroll_row = diff_scroll_row - 1
 	macro_run clamp_diff_scroll
 
-macro diff_scroll_down_impl
+macro_block diff_scroll_down_impl
 	diff_scroll_row = diff_scroll_row + 1
 	macro_run clamp_diff_scroll
 
@@ -155,22 +155,22 @@ macro diff_scroll_down_impl
 # diff_scroll_up_impl/down_impl above stay 1-line-per-call since they're also
 # shared with the Up/Down arrow keys (see handle_diff_mode.deor), which
 # should keep moving a single line per press.
-macro diff_wheel_scroll_up_impl
+macro_block diff_wheel_scroll_up_impl
 	macro_run use_consts
 	diff_scroll_row = diff_scroll_row - SCROLL_WHEEL_AMOUNT
 	macro_run clamp_diff_scroll
 
-macro diff_wheel_scroll_down_impl
+macro_block diff_wheel_scroll_down_impl
 	macro_run use_consts
 	diff_scroll_row = diff_scroll_row + SCROLL_WHEEL_AMOUNT
 	macro_run clamp_diff_scroll
 
-macro diff_page_up_impl
+macro_block diff_page_up_impl
 	macro_run use_consts
 	diff_scroll_row = diff_scroll_row - PAGE_DOWN_UP_AMOUNT
 	macro_run clamp_diff_scroll
 
-macro diff_page_down_impl
+macro_block diff_page_down_impl
 	macro_run use_consts
 	diff_scroll_row = diff_scroll_row + PAGE_DOWN_UP_AMOUNT
 	macro_run clamp_diff_scroll

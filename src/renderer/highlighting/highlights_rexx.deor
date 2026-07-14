@@ -1,4 +1,4 @@
-macro highlights_rexx
+macro_block highlights_rexx
 	# block comments -- classic REXX has no line-comment form
 	name as "comment"
 	start as "/\\*"

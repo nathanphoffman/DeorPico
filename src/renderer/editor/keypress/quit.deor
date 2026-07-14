@@ -1,4 +1,4 @@
-macro key_quit_impl
+macro_block key_quit_impl
 	if dirty
 		macro_run notify_unsaved_changes
 	else
@@ -8,7 +8,7 @@ macro key_quit_impl
 
 # Shown when quitting or opening another file is blocked by unsaved changes --
 # ^Del (discard_unsaved_changes) clears dirty so the blocked action can proceed.
-macro notify_unsaved_changes
+macro_block notify_unsaved_changes
 	notice = "Unsaved changes -- ^S save or ^Del discard"
 	error = true
 	sidebar_locked = true

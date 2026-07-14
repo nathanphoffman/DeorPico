@@ -13,11 +13,11 @@ macro format_cursor_escape_code
 	string col_str = c_int_to_string(cursor_screen_col)
 	string cursor_escape = s_join([esc, "[", row_str, ";", col_str, "H"])
 
-macro append_cursor_and_output
+macro_block append_cursor_and_output
 	screen = s_join([screen, cursor_escape])
 	xt_flush_print(screen)
 
-macro position_and_output_cursor
+macro_block position_and_output_cursor
 
 	# Wheel-scrolling can leave the cursor outside the current view (it no
 	# longer follows the viewport), so this can land above or below the

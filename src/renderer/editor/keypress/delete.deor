@@ -1,4 +1,4 @@
-macro key_delete_impl
+macro_block key_delete_impl
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection

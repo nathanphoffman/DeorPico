@@ -8,6 +8,7 @@
 # macro_run reset_placeholder_state and macro_run refresh_all_git_status
 # below are SHARED machinery (see ../mutate.deor / ../browse.deor), reused
 # by move and rename too -- left as macro_run rather than duplicated.
+# these are very unsafe macros and should be updated
 macro apply_created_placeholder_entry
 	FileEntry placeholder_entry = browse_entries at browse_selected
 	string name = entry_name

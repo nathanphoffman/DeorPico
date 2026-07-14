@@ -1,4 +1,4 @@
-macro highlights_css
+macro_block highlights_css
 	# comments
 	name as "comment"
 	start as "/\\*"

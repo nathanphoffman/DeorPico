@@ -9,7 +9,7 @@ macro calculate_viewport_dimensions
 	(has_selection) in selection
 
 # Render lint output panel if visible
-macro render_lint_output_section
+macro_block render_lint_output_section
 	if lint_output_visible
 		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
 		screen = s_join([screen, lint_popup])
@@ -36,4 +36,3 @@ fn void editor_render(EditorState state, int cursor_visual_col, int sel_anchor_v
 	macro_run render_search_bar
 	macro_run build_and_render_status_bar
 	macro_run position_and_output_cursor
-

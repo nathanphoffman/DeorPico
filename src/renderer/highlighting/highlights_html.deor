@@ -1,4 +1,4 @@
-macro highlights_html
+macro_block highlights_html
 	# comments
 	name as "comment"
 	start as "<!--"

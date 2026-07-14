@@ -1,7 +1,7 @@
 
 # The <GIT> section's "clean" placeholder row -- shown instead of any entry
 # rows when git_count is 0.
-macro render_sidebar_git_clean_row
+macro_block render_sidebar_git_clean_row
 	string git_indent = "    "
 	string git_clean_text = s_join([git_indent, "clean"])
 	FitResult fit = browser_fit(git_clean_text, content_width)

@@ -2,7 +2,7 @@
 # structure -- depth/expanded/name/path are untouched). Run whenever the
 # displayed git state might be stale: after a ^A stage/unstage (see
 # git_stage_toggle) and after a file is created/deleted/discarded.
-macro refresh_all_git_status
+macro_block refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
 	git_changes = g_changed_entries(fresh_git_map)
@@ -16,7 +16,7 @@ macro refresh_all_git_status
 # refresh leaves the tree shape alone, and re-finds the previously selected
 # entry by path so the highlight doesn't jump if the rescan reordered or
 # shifted things around it.
-macro refresh_browse_tree_impl
+macro_block refresh_browse_tree_impl
 	string selected_path = ""
 	if len(browse_entries) > 0
 		FileEntry currently_selected = browse_entries at browse_selected
@@ -48,7 +48,7 @@ macro refresh_browse_tree_impl
 # collapsed or emptied out from under an entry selection, and reclamps
 # browse_scroll_row against the (possibly now shorter) total row count so
 # the sidebar can't stay scrolled past what it actually draws.
-macro clamp_sidebar_selection
+macro_block clamp_sidebar_selection
 	if sidebar_on_git
 		int last_git = len(git_changes) - 1
 		if git_section_collapsed or last_git < 0
@@ -83,7 +83,7 @@ macro clamp_sidebar_selection
 # (stage wins if anything underneath is still unstaged/new, so one ^A press
 # can finish staging a partially-staged directory before a second press
 # unstages it). A no-op if there's nothing to change either way.
-macro git_stage_toggle
+macro_block git_stage_toggle
 	string clean_path = g_relative_path(path)
 	if is_dir
 		DirGitSummary summary = g_dir_status_summary(browse_dir, clean_path)
@@ -114,7 +114,7 @@ macro git_stage_toggle
 # rather than leaving it dirty -- otherwise ^S (or ^Del's reload-from-disk)
 # would silently recreate the file, or an empty one, the moment you tried
 # to navigate away.
-macro file_delete_entry
+macro_block file_delete_entry
 	if is_dir
 		bool dir_empty = f_dir_is_empty(path)
 		if dir_empty
@@ -171,7 +171,7 @@ macro close_deleted_open_buffer
 # other). Anything else requires a second ^U on the same path first, since
 # unlike stage/unstage this can't be toggled back -- there's no git history
 # for uncommitted changes to fall back on.
-macro discard_git_changes_entry
+macro_block discard_git_changes_entry
 	if is_dir
 		notice = ""
 		error = false
@@ -211,7 +211,7 @@ macro discard_git_changes_entry
 		notice = "Press ^U again to discard changes to this file -- cannot be undone"
 		error = true
 
-macro browse_right
+macro_block browse_right
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, depth, expanded) in selected
@@ -234,7 +234,7 @@ macro browse_right
 			FileEntry updated_selected = selected with (expanded)
 			browse_entries at browse_selected = updated_selected
 
-macro browse_left
+macro_block browse_left
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(is_dir, depth, expanded) in selected
@@ -250,7 +250,7 @@ macro browse_left
 # deletion (against HEAD, via g_diff) instead, and leave the real buffer
 # (filename/lines) untouched so Esc/^D can hand control back to whatever was
 # open before rather than a phantom editor for a file that isn't there.
-macro preview_deleted_file
+macro_block preview_deleted_file
 	stringList preview_diff = g_diff(path)
 	diff_lines = preview_diff
 	diff_scroll_row = 0
@@ -262,7 +262,7 @@ macro preview_deleted_file
 
 # Loads `path` (already declared by the caller) into the active buffer,
 # discarding any unsaved state.
-macro load_file_into_buffer
+macro_block load_file_into_buffer
 	filename = path
 	stringList opened_lines = f_lines(filename)
 	if len(opened_lines) is 0
@@ -292,7 +292,7 @@ macro load_file_into_buffer
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.
-macro discard_unsaved_changes_impl
+macro_block discard_unsaved_changes_impl
 	if dirty
 		path as filename
 		macro_run load_file_into_buffer

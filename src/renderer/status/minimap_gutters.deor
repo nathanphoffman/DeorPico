@@ -17,6 +17,7 @@ macro initialize_screen_buffer_with_minimap
 # every macro after this reads gutter_width/text_visible_columns/
 # minimap_offset/view_rows/top_row/bottom_row from `layout` rather than
 # recomputing its own copy (see layout.deor).
+# these are very unsafe macros and should be updated
 macro setup_minimap_and_gutters
 	# One-row heat bar showing where git changes fall in the file, squashed
 	# proportionally across the terminal width -- hidden entirely (no
@@ -32,7 +33,7 @@ macro setup_minimap_and_gutters
 # Appends the minimap bar just above the status bar -- called after the
 # buffer/lint-popup rows so it always lands directly above
 # build_and_render_status_bar regardless of whether the lint popup is open.
-macro render_minimap_bar
+macro_block render_minimap_bar
 	if has_minimap
 		screen = s_join([screen, minimap_bar, ANSI_CRLF])
 

@@ -1,4 +1,4 @@
-macro move_right
+macro_block move_right
     for idx in range(HORIZONTAL_MOVE)
 		string cur_line = lines at cursor_row
 		int cur_len = len(cur_line)
@@ -9,11 +9,11 @@ macro move_right
 			cursor_row = cursor_row + 1
 			cursor_col = 0
 
-macro key_right_impl
+macro_block key_right_impl
 	const int HORIZONTAL_MOVE = 1
 	macro_run move_right
 
-macro key_right_ctrl_impl
+macro_block key_right_ctrl_impl
     macro_run use_consts
     const int HORIZONTAL_MOVE = CTRL_ARROW_X_AMOUNT
 	macro_run move_right

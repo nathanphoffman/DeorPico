@@ -1,6 +1,6 @@
 
 # Keys handled while the git diff view is open
-macro handle_diff_mode
+macro_block handle_diff_mode
 	if kind is "diff_toggle"
 		macro_run toggle_diff_impl
 	else if kind is "escape"

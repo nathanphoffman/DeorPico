@@ -5,7 +5,7 @@
 # ^F creates a file/directory right at browse_dir -- both otherwise
 # unreachable in a brand new, completely empty directory with nothing in
 # the Files tree to select.
-macro render_sidebar_root_row
+macro_block render_sidebar_root_row
 	root_dir_copy as browse_dir
 	string root_name = f_basename(browse_dir)
 	if len(root_name) is 0

@@ -2,7 +2,7 @@
 # Same shape as apply_created_placeholder_entry (../create/) -- is_dir
 # comes from rename_original_entry rather than defaulting, since
 # build_placeholder_entry's blank placeholder always starts is_dir=false.
-macro apply_renamed_placeholder_entry
+macro_block apply_renamed_placeholder_entry
 	FileEntry placeholder_entry = browse_entries at browse_selected
 	string name = new_file_name
 	string path = dest_path

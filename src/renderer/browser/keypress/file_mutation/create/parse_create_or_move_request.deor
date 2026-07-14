@@ -7,6 +7,7 @@
 # macro_run confirm_move_request below is SHARED machinery (the move
 # feature, see ../move_file.deor) -- left as a macro_run rather than
 # duplicated.
+# these are very unsafe macros and should be updated
 macro parse_create_or_move_request
 	dir_prefix as "dir "
 	mv_prefix as "mv "

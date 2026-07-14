@@ -1,4 +1,4 @@
-macro input_key
+macro_block input_key
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection

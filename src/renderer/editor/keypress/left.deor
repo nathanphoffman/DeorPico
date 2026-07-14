@@ -1,5 +1,5 @@
 
-macro move_left
+macro_block move_left
     for idx in range(HORIZONTAL_MOVE)
         if cursor_col > 0
                 cursor_col = cursor_col - 1
@@ -9,11 +9,11 @@ macro move_left
                 string new_line = lines at cursor_row
                 cursor_col = len(new_line)
 
-macro key_left_impl
+macro_block key_left_impl
     const int HORIZONTAL_MOVE = 1
     macro_run move_left
 
-macro key_left_ctrl_impl
+macro_block key_left_ctrl_impl
     macro_run use_consts
     const int HORIZONTAL_MOVE = CTRL_ARROW_X_AMOUNT
     macro_run move_left

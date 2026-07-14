@@ -3,7 +3,7 @@ macro look_behind_cursor
 	int before_end = cursor_col - 1
 	string before = s_substring(cur_line, start, before_end)
 
-macro key_backspace_impl
+macro_block key_backspace_impl
 	macro_run push_undo_snapshot
 	if has_selection
 		macro_run delete_selection

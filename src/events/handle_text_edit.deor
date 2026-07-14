@@ -1,6 +1,6 @@
 
 # Editing mode: text mutation -- backspace/delete/enter/typed characters
-macro handle_text_edit
+macro_block handle_text_edit
 	if kind is "backspace"
 		macro_run key_backspace_impl
 	else if kind is "delete"

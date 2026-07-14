@@ -1,4 +1,4 @@
-macro highlights_bash
+macro_block highlights_bash
 	# line comments -- Bash has no block comment
 	comment_name as "comment"
 	comment_pattern as "#.*"

@@ -2,6 +2,7 @@
 # Colors and highlight/dim toggles specific to the file browser -- reuses
 # use_ansi_codes for esc/ANSI_RESET/ANSI_REVERSE_ON/OFF rather than
 # redefining them.
+# these are very unsafe macros and should be updated
 macro use_browser_ansi_codes
 	macro_run use_ansi_codes
 	const string ANSI_BOLD_ON = s_join([esc, "[1m"])

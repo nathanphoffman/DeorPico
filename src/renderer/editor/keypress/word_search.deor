@@ -5,7 +5,7 @@
 # filter machinery (recompute_browse_filter), just scoped to the project
 # root (browse_dir) instead of a single directory, so results show in the
 # sidebar exactly like a ':' search.
-macro key_word_search_impl
+macro_block key_word_search_impl
 	string query = ""
 	if has_selection
 		string selection_text = ""

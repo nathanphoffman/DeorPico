@@ -1,4 +1,4 @@
-macro highlights_markdown
+macro_block highlights_markdown
 	# fenced code blocks -- registered before the inline single-backtick
 	# rule below so a real ``` fence wins the tokenizer's
 	# first-atom-registered tiebreak at the same opening backtick

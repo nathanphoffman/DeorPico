@@ -17,6 +17,7 @@
 # apply_placeholder_target_from_selection if something's highlighted.
 
 
+# these are very unsafe macros and should be updated
 macro resolve_placeholder_target
 	int insert_index = 0
 	int insert_depth = 0
@@ -27,7 +28,7 @@ macro resolve_placeholder_target
 		(path, is_dir, depth, expanded) in selected
 		macro_run apply_placeholder_target_from_selection
 
-macro apply_placeholder_target_from_selection
+macro_block apply_placeholder_target_from_selection
 	if is_dir
 		if not expanded
 			macro_run browse_right
@@ -39,7 +40,7 @@ macro apply_placeholder_target_from_selection
 		insert_depth = depth
 		parent_dir = f_dirname(path)
 
-macro insert_placeholder_entry
+macro_block insert_placeholder_entry
 	macro_run build_placeholder_entry
 	entryList one_entry = [placeholder]
 	int insert_at = insert_index - 1
@@ -69,11 +70,11 @@ macro_block enter_placeholder_edit_mode
 	create_parent_dir = parent_dir
 	error = false
 
-macro placeholder_char
+macro_block placeholder_char
 	stringList extended_name_parts = [new_file_name, chr]
 	new_file_name = s_join(extended_name_parts)
 
-macro placeholder_backspace
+macro_block placeholder_backspace
 	int name_len = len(new_file_name)
 	if name_len > 0
 		zero as 0
@@ -86,14 +87,14 @@ macro placeholder_backspace
 # make room for the placeholder, so there's no "drop", there's a "put
 # back" -- restore_renamed_entry (see ../rename/restore_renamed_entry.deor)
 # is reached instead, kept as a macro_run rather than duplicated here.
-macro cancel_placeholder
+macro_block cancel_placeholder
 	if renaming_file
 		macro_run restore_renamed_entry
 	else
 		macro_run remove_placeholder_entry
 	macro_run reset_placeholder_state
 
-macro remove_placeholder_entry
+macro_block remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
 	int last_entry = len(browse_entries) - 1
 	if browse_selected > last_entry
@@ -101,7 +102,7 @@ macro remove_placeholder_entry
 	if browse_selected < 0
 		browse_selected = 0
 
-macro reset_placeholder_state
+macro_block reset_placeholder_state
 	creating_file = false
 	renaming_file = false
 	new_file_name = ""

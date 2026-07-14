@@ -1,6 +1,6 @@
 
 # Editing mode: paging and mouse input
-macro handle_page_and_mouse
+macro_block handle_page_and_mouse
 	if kind is "page_up"
 		cursor_row = page_up_impl(cursor_row)
 	else if kind is "page_down"

@@ -5,7 +5,9 @@ import "imports.deor"
 # the first key is read (initial paint) and again only once per drained
 # batch of input inside the loop, rather than once per individual event.
 macro render_frame
-	state = editor_scroll(state)
+    macro_run use_consts
+
+	state = editor_scroll(move state)
 
 	(core, diff, selection) in state
 	(filename, lines, cursor_row, cursor_col, scroll_row) in core
@@ -22,7 +24,6 @@ macro render_frame
 	# columns can be derived to match what synoptic does to the displayed
 	# text below.
 	string raw_cursor_line = lines at cursor_row
-	macro_run use_consts
 	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
 
 	string raw_anchor_line = lines at sel_anchor_row
@@ -53,7 +54,7 @@ macro render_frame
 		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
 		BufferState core = core with (lines)
 		EditorState render_state_with_colors = state with (core)
-		editor_render(render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
+		editor_render(move render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
 
 fn void main()
 

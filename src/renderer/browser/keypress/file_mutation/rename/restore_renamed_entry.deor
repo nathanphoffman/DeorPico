@@ -5,5 +5,5 @@
 # handle_sidebar_focus_mode only routes escape/enter/backspace/char while
 # the prompt is open), so the placeholder still sits at the exact slot
 # the original was removed from -- cancel just puts it back.
-macro restore_renamed_entry
+macro_block restore_renamed_entry
 	browse_entries at browse_selected = rename_original_entry

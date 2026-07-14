@@ -1,4 +1,4 @@
-macro highlights_csharp
+macro_block highlights_csharp
 	# block comments
 	name as "comment"
 	start as "/\\*"

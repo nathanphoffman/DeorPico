@@ -1,4 +1,4 @@
-macro highlights_json
+macro_block highlights_json
 	# object keys -- a quoted string tight against ":", trailing colon
 	# swallowed into the match since the regex crate has no lookahead (same
 	# trick as the JSX/HTML attribute rules). Registered before the plain

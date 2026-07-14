@@ -1,4 +1,4 @@
-macro highlights_python
+macro_block highlights_python
 	# line comments -- Python has no block comment
 	comment_name as "comment"
 	comment_pattern as "#.*"

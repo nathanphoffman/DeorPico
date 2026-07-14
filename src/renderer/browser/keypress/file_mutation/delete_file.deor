@@ -9,7 +9,7 @@
 # recovery path. Deleting the file that's currently open in the editor is
 # allowed -- the in-memory buffer stays open and just gets marked dirty, so
 # ^S recreates it.
-macro file_delete_entry
+macro_block file_delete_entry
 	if is_dir
 		bool dir_empty = f_dir_is_empty(path)
 		if dir_empty
@@ -48,7 +48,7 @@ macro file_delete_entry
 # up immediately as "deleted" in the Git list rather than just disappearing,
 # while an untracked file naturally drops out since git has no record of it
 # either way.
-macro remove_deleted_entry
+macro_block remove_deleted_entry
 	browse_entries = e_remove_by_path(browse_entries, path)
 
 	int last_browse_entry = len(browse_entries) - 1

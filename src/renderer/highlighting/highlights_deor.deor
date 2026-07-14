@@ -1,4 +1,4 @@
-macro highlights_deor
+macro_block highlights_deor
 # macro definitions/invocations, name included since the regex crate has
 	# no lookbehind to highlight just the name after "macro"/"macro_run" --
 	# must be registered before the general "keyword" bucket below, since

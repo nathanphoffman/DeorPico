@@ -5,6 +5,7 @@
 # the tree spontaneously growing. Two columns of the normal content width
 # are given up to the left/right bars; the top/bottom rows are replaced
 # outright by a horizontal rule (see is_top_row/is_bottom_row below).
+# these are very unsafe macros and should be updated
 macro use_sidebar_border_colors
 	macro_run use_ansi_codes
 	const string ANSI_SIDEBAR_BORDER_ON = s_join([esc, "[31m"])

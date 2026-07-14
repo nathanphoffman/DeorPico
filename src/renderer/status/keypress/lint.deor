@@ -2,7 +2,7 @@
 # "tick" events (see xt_read_key's poll timeout), so a background lint job's
 # completion shows up on the very next loop iteration even if the user
 # hasn't pressed a key since saving.
-macro apply_lint_poll_impl
+macro_block apply_lint_poll_impl
 	LintPoll poll = lr_poll(lint_runner)
 	(running, just_finished, output_lines) in poll
 	if just_finished
@@ -30,7 +30,7 @@ macro apply_lint_poll_impl
 # Keys handled while the lint output popup is open -- locks out normal
 # editing the same way handle_diff_mode does, so a stray keypress doesn't
 # edit the buffer underneath the popup.
-macro handle_lint_output_mode_impl
+macro_block handle_lint_output_mode_impl
 	if kind is "escape"
 		lint_output_visible = close_lint_output()
 	else if kind is "lint_output_toggle"

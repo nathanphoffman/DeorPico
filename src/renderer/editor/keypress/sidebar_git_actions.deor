@@ -3,7 +3,7 @@
 # whichever entry is highlighted, in the <GIT> section or the Files tree
 # (see git_stage_toggle in browse.deor). A no-op on the <GIT> header itself
 # (git_selected is -1 there) -- there's no single file to stage.
-macro sidebar_stage_toggle
+macro_block sidebar_stage_toggle
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
@@ -16,7 +16,7 @@ macro sidebar_stage_toggle
 
 # ^K while the sidebar has keyboard focus -- see file_delete_entry
 # in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
-macro sidebar_delete_entry
+macro_block sidebar_delete_entry
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
@@ -29,7 +29,7 @@ macro sidebar_delete_entry
 
 # ^U while the sidebar has keyboard focus -- see discard_git_changes_entry
 # in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
-macro sidebar_discard_git_changes
+macro_block sidebar_discard_git_changes
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
