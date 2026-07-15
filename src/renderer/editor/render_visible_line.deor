@@ -62,5 +62,12 @@ fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHig
 	if highlight_open
 		text_parts at end = ANSI_REVERSE_OFF
 
+	# Truncating mid-token (a syntax-colored span running past the viewport
+	# edge) drops that token's own trailing reset along with the rest of it,
+	# leaving color/underline state open for whatever gets drawn next --
+	# always close it here rather than relying on the token to have closed
+	# itself.
+	text_parts at end = ANSI_RESET
+
 	string text = s_join(text_parts)
 	return (text, visible_cols)
