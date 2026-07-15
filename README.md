@@ -44,9 +44,3 @@ irm https://raw.githubusercontent.com/nathanphoffman/DeorPico/main/setup/install
 This only touches your user profile (no system-wide changes, nothing needs elevated permissions): it clones the repo to `%USERPROFILE%\.local\share\DeorPico` (override with the `DEOR_PICO_DIR` environment variable), installs `deor` if missing, and builds `dpico.exe` into `%USERPROFILE%\.local\bin`, adding that folder to your user `PATH`.
 
 Restart your terminal afterwards and run `dpico` to launch it.
-
-THIS FILE IS A WORK IN PROGRESS
-
-###
----
-How To Use
