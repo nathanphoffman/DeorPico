@@ -49,16 +49,18 @@ macro render_spreadsheet_row
 	if row_offset < spreadsheet_row_count
 		stringList row_cells = spreadsheet_rows at row_offset
 	    
+        int count_idx = 0
         for cell in row_cells
-            string cell_content = cell
+            string cell_content = format_cell(row_cells, cell, count_idx)
             content_length as len(cell_content)
             if content_length > COLUMN_WIDTH
-                cell_content = "empty"  # !! update this !!!
+                cell_content = "ERROR"
 
             for idx in range(COLUMN_WIDTH - content_length)
                 cell_content = s_join([cell_content, SPACE])
 
             content = s_join([content, cell_content, PIPE])
+            count_idx = count_idx + 1
 
         content = s_join([PIPE, content])
 

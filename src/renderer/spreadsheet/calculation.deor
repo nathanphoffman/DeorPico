@@ -1,0 +1,11 @@
+
+fn string format_cell(stringList row, string cell, int cell_row_position)
+    return cell
+
+
+# fn void get_row_calculation(listString rows)
+    # print("placeholder")    
+    
+
+# fn void get_column_calculation(listString columns)
+#    print("placeholder")

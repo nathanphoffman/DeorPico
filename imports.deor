@@ -147,6 +147,7 @@ import "src/renderer/editor/keypress/sidebar_nav.deor"
 import "src/renderer/editor/keypress/sidebar_git_actions.deor"
 
 import "src/renderer/editor/rust_diff.deor"
+import "src/renderer/spreadsheet/calculation.deor"
 import "src/renderer/spreadsheet/spreadsheet.deor"
 
 import "src/renderer/highlighting/highlights_deor.deor"
