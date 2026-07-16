@@ -10,6 +10,7 @@ unsafe_macro use_ansi_codes
 	const string ANSI_SEARCH_TINT = s_join([esc, "[48;5;236m"])
 	const string ANSI_ISSUE_TINT = s_join([esc, "[48;5;130m"])
 	const string ANSI_STATUS_BG = s_join([esc, "[48;5;240m"])
+	const string ANSI_EOF_PADDING_BG = s_join([esc, "[48;5;244m"])
 	const string ANSI_SEARCH_BAR_BG = s_join([esc, "[48;5;25m"])
 	const string ANSI_ERROR_BG = s_join([esc, "[48;5;52m"])
 	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])

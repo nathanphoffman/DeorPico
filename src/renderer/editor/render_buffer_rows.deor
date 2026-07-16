@@ -28,6 +28,12 @@ macro render_row_fill
 
 # Main rendering loop: iterate through visible rows and render each line
 macro render_buffer_rows
+	# Rows just past the last line of the file get tinted light grey instead
+	# of left blank -- gives the eye a buffer between the file's actual last
+	# line and the status bar so content doesn't look glued to the chrome
+	# below it.
+	const int EOF_PADDING_ROWS = 5
+
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
@@ -51,6 +57,7 @@ macro render_buffer_rows
         unsafe_macro_run render_gutter_column
 
 		int row_visible_cols = 0
+		bool is_eof_padding_row = false
 		if buffer_row_index < total_line_count
 			string line = lines at buffer_row_index
 			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
@@ -70,7 +77,13 @@ macro render_buffer_rows
 				row_visible_cols = text_visible_columns
 			else
 				screen = s_join([screen, text])
+		else if buffer_row_index < total_line_count + EOF_PADDING_ROWS
+			is_eof_padding_row = true
+			screen = s_join([screen, ANSI_EOF_PADDING_BG])
 
 		macro_run render_row_fill
+		if is_eof_padding_row
+			screen = s_join([screen, ANSI_RESET])
+
 		macro_run render_scrollbar_column
 		screen = s_join([screen, ANSI_CRLF])
