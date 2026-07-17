@@ -15,7 +15,12 @@ macro clamp_scroll
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows) in layout
 
-	int max_scroll = last_row - view_rows + 1
+	# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
+	# paints past the last line -- without this a long file's view always
+	# ends exactly on its last line and the padding (meant to keep text off
+	# the status bar) never becomes reachable.
+	const int EOF_PADDING_ROWS = 5
+	int max_scroll = last_row - view_rows + 1 + EOF_PADDING_ROWS
 	if max_scroll < 0
 		max_scroll = 0
 

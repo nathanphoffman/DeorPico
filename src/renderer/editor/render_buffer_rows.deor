@@ -28,12 +28,6 @@ macro render_row_fill
 
 # Main rendering loop: iterate through visible rows and render each line
 macro render_buffer_rows
-	# Rows just past the last line of the file get tinted light grey instead
-	# of left blank -- gives the eye a buffer between the file's actual last
-	# line and the status bar so content doesn't look glued to the chrome
-	# below it.
-	const int EOF_PADDING_ROWS = 5
-
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
@@ -77,7 +71,15 @@ macro render_buffer_rows
 				row_visible_cols = text_visible_columns
 			else
 				screen = s_join([screen, text])
-		else if buffer_row_index < total_line_count + EOF_PADDING_ROWS
+		else
+			# Every row below the last line of the file gets tinted, all the
+			# way to the bottom of the view -- not just a fixed handful --
+			# otherwise a short file's grey band stopped a few rows past EOF
+			# and plain untinted rows showed underneath it (see clamp_scroll
+			# and scrollbar_jump_to_row for the matching scroll-side half of
+			# this: they extend how far down you can scroll so a long file
+			# gets the same grey lip below its last line instead of the view
+			# always ending exactly on it).
 			is_eof_padding_row = true
 			screen = s_join([screen, ANSI_EOF_PADDING_BG])
 

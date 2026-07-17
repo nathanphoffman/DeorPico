@@ -19,7 +19,12 @@ fn ScrollbarThumb compute_scrollbar_thumb(int view_rows, int total_line_count, i
 	thumb_height = m_max(thumb_height, min_thumb_height)
 	thumb_height = m_min(thumb_height, view_rows)
 
-	int scrollable_rows = total_line_count - view_rows
+	# +EOF_PADDING_ROWS matches clamp_scroll's max_scroll (see scroll.deor) --
+	# keeps the thumb's range in sync with how far scroll_row can actually
+	# go, so it doesn't reach the bottom of the track while scrolling into
+	# the grey EOF band is still possible.
+	const int EOF_PADDING_ROWS = 5
+	int scrollable_rows = total_line_count - view_rows + EOF_PADDING_ROWS
 	int thumb_top = 0
 	if scrollable_rows > 0
 		int track_slack = view_rows - thumb_height

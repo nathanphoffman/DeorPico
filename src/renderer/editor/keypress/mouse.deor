@@ -61,7 +61,11 @@ macro scrollbar_jump_to_row
 	int track_row = row - minimap_offset
 	track_row = m_clamp(track_row, track_top, track_bottom)
 
-	int scrollable_rows = total_line_count - view_rows
+	# +EOF_PADDING_ROWS matches clamp_scroll's max_scroll (see scroll.deor) --
+	# otherwise dragging the thumb to the bottom of the track stops short of
+	# the wheel-scroll max and the grey EOF band never comes fully into view.
+	const int EOF_PADDING_ROWS = 5
+	int scrollable_rows = total_line_count - view_rows + EOF_PADDING_ROWS
 	if scrollable_rows > 0 and track_bottom > 0
 		int min_scroll = 0
 		scroll_row = track_row * scrollable_rows / track_bottom
