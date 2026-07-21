@@ -254,6 +254,7 @@ macro preview_deleted_file
 	stringList preview_diff = g_diff(path)
 	diff_lines = preview_diff
 	diff_scroll_row = 0
+	diff_scroll_wrap_seg = 0
 	diffing = true
 	diff_preview = true
 	diff_preview_path = path

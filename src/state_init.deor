@@ -58,9 +58,10 @@ unsafe_macro initialize_diff
 	diffing as false
 	stringList diff_lines = g_diff(filename)
 	diff_scroll_row as 0
+	diff_scroll_wrap_seg as 0
 	diff_preview as false
 	diff_preview_path as ""
-	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_preview, diff_preview_path)
+	DiffState diff = (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path)
 
 unsafe_macro initialize_lint
 	LintRunner lint_runner = lr_make()

@@ -84,6 +84,7 @@ macro align_diff_scroll
 				diff_idx = diff_idx + 1
 
 	diff_scroll_row = target_idx
+	diff_scroll_wrap_seg = 0
 	macro_run clamp_diff_scroll
 
 # Reverse of align_diff_scroll -- run when leaving diff mode so the buffer row
@@ -107,6 +108,7 @@ macro align_editor_scroll_from_diff
 			diff_idx = diff_idx + 1
 
 	scroll_row = file_row
+	scroll_wrap_seg = 0
 	macro_run clamp_scroll
 
 	# editor_scroll() runs every frame and snaps scroll_row back to wherever
@@ -119,8 +121,13 @@ macro align_editor_scroll_from_diff
 macro clamp_diff_scroll
 	if diff_scroll_row < 0
 		diff_scroll_row = 0
+		diff_scroll_wrap_seg = 0
 
 	int last_row = len(diff_lines) - 1
+	if diff_scroll_row > last_row
+		diff_scroll_row = last_row
+		diff_scroll_wrap_seg = 0
+
 	TermSize size = xt_size()
 	(cols, rows) in size
 
@@ -135,19 +142,63 @@ macro clamp_diff_scroll
 	bool search_never_shown_in_diff = false
 	int reserved_rows = editor_reserved_rows(has_minimap, lint_never_shown_in_diff, search_never_shown_in_diff)
 	int view_rows = editor_view_rows(rows, reserved_rows)
-	int max_scroll = last_row - view_rows + 1
-	if max_scroll < 0
-		max_scroll = 0
 
-	if diff_scroll_row > max_scroll
-		diff_scroll_row = max_scroll
+	# Bounds diff_scroll_row/diff_scroll_wrap_seg the same way the old flat
+	# `last_row - view_rows + 1` did, but in visual-row terms -- a long diff
+	# line wraps into several rows now, so bounding by raw line count alone
+	# could stop short of the true end and leave a wrapped tail unreachable.
+	int diff_content_width = diff_content_width_for(rows, cols, sidebar_focused)
+	stringList content_lines = diff_wrap_content_lines(diff_lines)
+	int total_visual_rows = wrap_total_visual_rows(content_lines, diff_content_width)
+	int max_scroll_visual_row = total_visual_rows - view_rows
+	if max_scroll_visual_row < 0
+		max_scroll_visual_row = 0
 
+	int buffer_row = diff_scroll_row
+	int seg_index = diff_scroll_wrap_seg
+	WrapPosition scroll_pos = (buffer_row, seg_index)
+	int scroll_visual_row = wrap_visual_row_position(scroll_pos, content_lines, diff_content_width)
+
+	if scroll_visual_row > max_scroll_visual_row
+		WrapPosition clamped_pos = wrap_position_for_visual_row(content_lines, max_scroll_visual_row, diff_content_width)
+		(buffer_row, seg_index) in clamped_pos
+		diff_scroll_row = buffer_row
+		diff_scroll_wrap_seg = seg_index
+
+# Steps exactly one visual row, same as the main editor's wrap-aware
+# Up/Down (see move_cursor_visual_row in handle_arrow_nav.deor) -- a long
+# diff line wraps into several rows, and Up/Down should walk through them
+# one at a time instead of jumping a whole diff line. Page/wheel scrolling
+# stay flat (see diff_page_up_impl/diff_wheel_scroll_up_impl below), same
+# scope cut as the main editor's Page Up/Down and Ctrl+Up/Down.
 macro diff_scroll_up_impl
-	diff_scroll_row = diff_scroll_row - 1
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int diff_content_width = diff_content_width_for(rows, cols, sidebar_focused)
+	stringList content_lines = diff_wrap_content_lines(diff_lines)
+
+	int buffer_row = diff_scroll_row
+	int seg_index = diff_scroll_wrap_seg
+	WrapPosition pos = (buffer_row, seg_index)
+	pos = wrap_step_backward(pos, content_lines, diff_content_width)
+	(buffer_row, seg_index) in pos
+	diff_scroll_row = buffer_row
+	diff_scroll_wrap_seg = seg_index
 	macro_run clamp_diff_scroll
 
 macro diff_scroll_down_impl
-	diff_scroll_row = diff_scroll_row + 1
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int diff_content_width = diff_content_width_for(rows, cols, sidebar_focused)
+	stringList content_lines = diff_wrap_content_lines(diff_lines)
+
+	int buffer_row = diff_scroll_row
+	int seg_index = diff_scroll_wrap_seg
+	WrapPosition pos = (buffer_row, seg_index)
+	pos = wrap_step_forward(pos, content_lines, diff_content_width)
+	(buffer_row, seg_index) in pos
+	diff_scroll_row = buffer_row
+	diff_scroll_wrap_seg = seg_index
 	macro_run clamp_diff_scroll
 
 # Mouse-wheel variants -- moves by SCROLL_WHEEL_AMOUNT per notch, same as the

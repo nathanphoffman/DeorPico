@@ -43,7 +43,12 @@ unsafe_macro setup_diff_view_layout
 
 # Sidebar column + colorized diff content for every visible row, blank-
 # padded past the end of diff_lines. Sidebar selection math mirrors
-# render_buffer_rows in render_buffer_rows.deor.
+# render_buffer_rows in render_buffer_rows.deor. Walks visual rows the
+# same way render_buffer_rows does -- one wrap segment of `diff_idx` per
+# iteration -- since a long diff line (a long code line with a single
+# char changed) should wrap instead of truncating same as the main
+# editor. No cursor/selection here (read-only view), so every
+# render_visible_line call passes an always-off RowHighlight.
 macro render_diff_rows
 	bool lint_output_visible = false
 	bool search_active = false
@@ -62,7 +67,13 @@ macro render_diff_rows
 	int total = len(diff_lines)
 	bool filter_active = false
 	filterMatchList filter_matches = empty
-	string tab_char = "\t"
+	stringList content_lines = diff_wrap_content_lines(diff_lines)
+	int hl_start = 0 - 1
+	int hl_end = 0 - 1
+	RowHighlight no_highlight = (hl_start, hl_end)
+
+	int diff_idx = diff_scroll_row
+	int diff_seg_index = diff_scroll_wrap_seg
 
 	for row_offset in range(view_rows)
 		bool is_top_row = row_offset is 0
@@ -71,41 +82,51 @@ macro render_diff_rows
 		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 		screen = s_join([screen, sidebar_row_piece(row_input)])
 
-		int diff_idx = diff_scroll_row + row_offset
 		if diff_idx < total
 			string raw_line = diff_lines at diff_idx
 			string marker = ""
-			string content = ""
 			int raw_len = len(raw_line)
 			if raw_len > 0
 				int marker_idx = 0
 				marker = s_char_at(raw_line, marker_idx)
-				int content_start = 1
-				content = s_substring(raw_line, content_start, raw_len)
+			string content = content_lines at diff_idx
 
-			# Diff lines come straight from git output and can contain raw
-			# tab bytes (unlike buffer lines, which synoptic already
-			# tab-expands before display -- see main.deor's render_frame).
-			# An un-expanded '\t' hits the terminal as its own multi-column
-			# jump that char-count-based padding below doesn't account
-			# for, under-filling the row and leaving a previous frame's
-			# characters showing through at the tail.
-			if s_contains(content, tab_char)
-				content = s_replace(content, tab_char, TAB_STRING)
+			intList breaks = wrap_break_visual_cols(content, diff_content_width, TAB_WIDTH)
+			int seg_start_col = wrap_segment_start_col(breaks, diff_seg_index)
+			int seg_count = wrap_segment_count(breaks)
 
-			stringList content_chars = s_chars(content)
-			int content_char_count = len(content_chars)
-			if content_char_count > diff_content_width
-				int trunc_start = 0
-				content = s_substring(content, trunc_start, diff_content_width)
-			else if content_char_count < diff_content_width
-				content = s_pad_right(content, diff_content_width)
+			# Same "actual next break, not the full width" fix as
+			# render_buffer_rows.deor -- a word-boundary break can land
+			# short of diff_content_width, and capping every segment at
+			# the full width re-renders that gap at the start of the next
+			# visual row.
+			int start_visible_col = seg_start_col
+			int end_visible_col = seg_start_col + diff_content_width
+			int next_seg_index = diff_seg_index + 1
+			if next_seg_index < seg_count
+				end_visible_col = wrap_segment_start_col(breaks, next_seg_index)
+			VisibleColRange visible_range = (start_visible_col, end_visible_col)
+
+			RenderedLine rendered = render_visible_line(content, visible_range, no_highlight)
+			(text, visible_cols) in rendered
+
+			int fill_width = diff_content_width - visible_cols
+			if fill_width > 0
+				string space = " "
+				string fill = s_repeat(space, fill_width)
+				text = s_join([text, fill])
 
 			if marker is "+"
-				content = s_join([ANSI_ADD_FG, content, ANSI_FG_RESET])
+				text = s_join([ANSI_ADD_FG, text, ANSI_FG_RESET])
 			else if marker is "-"
-				content = s_join([ANSI_DEL_FG, content, ANSI_FG_RESET])
-			screen = s_join([screen, content])
+				text = s_join([ANSI_DEL_FG, text, ANSI_FG_RESET])
+			screen = s_join([screen, text])
+
+			if next_seg_index < seg_count
+				diff_seg_index = next_seg_index
+			else
+				diff_idx = diff_idx + 1
+				diff_seg_index = 0
 		else
 			string single_space = " "
 			string blank_row = s_repeat(single_space, diff_content_width)
@@ -137,6 +158,31 @@ macro render_diff_status_and_notice
 	string notice_padded = s_pad_right(notice_text, cols)
 	screen = s_join([screen, notice_padded])
 
+# Strips the leading +/-/space marker byte and expands raw tabs (diff
+# lines come straight from git output, unlike buffer lines which synoptic
+# already tab-expands -- see main.deor's render_frame) from every diff
+# line, producing the plain content wrap_break_visual_cols/render_visible_line
+# expect. Shared by render_diff_rows and clamp_diff_scroll (diff.deor) so
+# both agree on exactly what's being wrapped.
+fn stringList diff_wrap_content_lines(stringList diff_lines)
+	unsafe_macro_run use_consts
+	int total = len(diff_lines)
+	int diff_idx = 0
+	string tab_char = "\t"
+	stringList content_lines = empty
+	for if diff_idx < total
+		string raw_line = diff_lines at diff_idx
+		string content = ""
+		int raw_len = len(raw_line)
+		if raw_len > 0
+			int content_start = 1
+			content = s_substring(raw_line, content_start, raw_len)
+		if s_contains(content, tab_char)
+			content = s_replace(content, tab_char, TAB_STRING)
+		content_lines at end = content
+		diff_idx = diff_idx + 1
+	return content_lines
+
 # Isolated in its own fn (rather than inlined into setup_diff_view_layout)
 # purely so its local `diff_lines` (the empty one EditorLayoutInput wants
 # -- see the comment below) can shadow-collide with nothing: a fn's
@@ -159,6 +205,16 @@ fn int diff_view_sidebar_width(int rows, int cols, bool sidebar_focused)
 	(sidebar_width) in layout
 	return sidebar_width
 
+# Shared by render_diff_rows (via setup_diff_view_layout) and diff.deor's
+# scroll/clamp macros, so every wrap-aware call site agrees on exactly how
+# wide a diff line gets to render before wrapping.
+fn int diff_content_width_for(int rows, int cols, bool sidebar_focused)
+	int sidebar_width = diff_view_sidebar_width(rows, cols, sidebar_focused)
+	int content_width = cols - sidebar_width
+	if content_width < 1
+		content_width = 1
+	return content_width
+
 fn void editor_render_diff(AppState state)
 
     (browser) in state
@@ -168,7 +224,7 @@ fn void editor_render_diff(AppState state)
     (core) in main_panel
     (filename) in core
     (diff) in main_panel
-    (diff_lines, diff_scroll_row, diff_preview, diff_preview_path) in diff
+    (diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
     (notice) in state
     unsafe_macro_run use_consts
     unsafe_macro_run use_ansi_codes
