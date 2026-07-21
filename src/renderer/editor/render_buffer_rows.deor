@@ -30,12 +30,8 @@ macro render_row_fill
 # Walks visual rows instead of raw buffer lines -- each iteration renders
 # one wrap segment of `buffer_row`, then advances to the next segment (or
 # the next line's first segment once the current line's segments are
-# exhausted). Starts from (scroll_row, 0) rather than a stored wrap
-# segment offset -- scroll_row can't yet land mid-line-wrap (that lands in
-# a later phase alongside scroll/cursor state), so today the walk always
-# starts a line's first segment; this still renders every wrapped line
-# correctly, it just can't yet scroll to a segment other than a line's
-# first.
+# exhausted). Starts from (scroll_row, scroll_wrap_seg), which editor_scroll
+# keeps in sync with what's actually drawn here (see editor_scroll.deor).
 macro render_buffer_rows
 	unsafe_macro_run use_consts
 	int git_count = len(git_changes)
@@ -45,7 +41,7 @@ macro render_buffer_rows
 	(thumb_top, thumb_height) in thumb
 
 	int buffer_row = scroll_row
-	int seg_index = 0
+	int seg_index = scroll_wrap_seg
 
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset

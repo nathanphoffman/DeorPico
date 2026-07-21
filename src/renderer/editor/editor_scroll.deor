@@ -1,7 +1,8 @@
 fn AppState editor_scroll(AppState state)
+	unsafe_macro_run use_consts
 	(browser, main_panel) in state
 	(core, diff, lint, search) in main_panel
-	(lines, cursor_row, scroll_row, wheel_scrolled, scrollbar_dragging, show_line_numbers) in core
+	(lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers) in core
 	(sidebar_focused) in browser
 	(diff_lines) in diff
 	(lint_output_visible) in lint
@@ -16,19 +17,54 @@ fn AppState editor_scroll(AppState state)
 	int total_line_count = len(lines)
 	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
-	(view_rows) in layout
+	(view_rows, text_visible_columns) in layout
 
 	# wheel_scrolled/scrollbar_dragging are cleared in editor_handle_key, not
 	# here -- clearing them here would let a lint-poll "tick" frame (see
 	# xt_read_key) consume the flag before the user's next real wheel notch
 	# or drag frame arrives, snapping the view back to the cursor mid-gesture.
 	if not wheel_scrolled and not scrollbar_dragging
-		if cursor_row < scroll_row
-			scroll_row = cursor_row
-		else if cursor_row >= scroll_row + view_rows
-			scroll_row = cursor_row - view_rows + 1
+		# Operates on raw BufferState.lines (real \t chars, no ANSI) -- this
+		# runs before the highlighted/tab-expanded lines exist for this
+		# frame (see draw_frame), same reasoning as compute_cursor_visual_columns.
+		string cursor_line = lines at cursor_row
+		int cursor_visual_col = s_visual_col(cursor_line, cursor_col, TAB_WIDTH)
+		intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, TAB_WIDTH)
+		int cursor_seg = wrap_segment_index_for_col(cursor_breaks, cursor_visual_col)
 
-	BufferState core = core with (scroll_row)
+		bool cursor_above = cursor_row < scroll_row or (cursor_row is scroll_row and cursor_seg < scroll_wrap_seg)
+		if cursor_above
+			scroll_row = cursor_row
+			scroll_wrap_seg = cursor_seg
+		else
+			# Same intent as the old flat `cursor_row >= scroll_row +
+			# view_rows`: find the last visual row the current scroll
+			# position can show, and only rescroll if the cursor is further
+			# forward than that.
+			int back_steps = view_rows - 1
+			int buffer_row = scroll_row
+			int seg_index = scroll_wrap_seg
+			WrapPosition last_visible_pos = (buffer_row, seg_index)
+			for in range(back_steps)
+				last_visible_pos = wrap_step_forward(last_visible_pos, lines, text_visible_columns)
+			(buffer_row, seg_index) in last_visible_pos
+
+			bool cursor_below = cursor_row > buffer_row or (cursor_row is buffer_row and cursor_seg > seg_index)
+			if cursor_below
+				# Walk backward from the cursor by the same number of steps
+				# so the cursor lands exactly on the window's last visible
+				# row -- same intent as the old `scroll_row = cursor_row -
+				# view_rows + 1`.
+				buffer_row = cursor_row
+				seg_index = cursor_seg
+				WrapPosition new_scroll_pos = (buffer_row, seg_index)
+				for in range(back_steps)
+					new_scroll_pos = wrap_step_backward(new_scroll_pos, lines, text_visible_columns)
+				(buffer_row, seg_index) in new_scroll_pos
+				scroll_row = buffer_row
+				scroll_wrap_seg = seg_index
+
+	BufferState core = core with (scroll_row, scroll_wrap_seg)
 	EditorState main_panel = main_panel with (core)
 	new_state as state with (main_panel)
 	return new_state

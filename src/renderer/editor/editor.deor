@@ -19,7 +19,7 @@ fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visu
 
 	(browser, main_panel, notice, error) in state
 	(core, diff, search, filter, lint) in main_panel
-	(filename, lines, cursor_row, scroll_row, dirty, show_line_numbers) in core
+	(filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, dirty, show_line_numbers) in core
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name) in browser
 	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(diff_lines) in diff

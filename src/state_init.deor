@@ -7,12 +7,13 @@ unsafe_macro initialize_core
 	cursor_col as 0
 	dirty as false
 	scroll_row as 0
+	scroll_wrap_seg as 0
 	wheel_scrolled as false
 	scrollbar_dragging as false
 	show_line_numbers as false
 	nls as "\n"
 	string synced_content = s_join_with(lines, nls)
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content)
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content)
 
 unsafe_macro initialize_browser
 	entryList browse_entries = f_list_dir(initial_dir)

@@ -5,6 +5,12 @@ struct BufferState
     int cursor_col
     int scroll_row
 
+	# Which wrap segment of `scroll_row` is topmost on screen -- 0 means the
+	# line's own first visual row. No goal-column field alongside it: kept
+	# stateless per key-press like the existing back_stop clamp, since plain
+	# (non-wrapped) up/down doesn't track a goal column today either.
+	int scroll_wrap_seg
+
 
 	# True for exactly one frame after a wheel-scroll event -- tells
 	# editor_scroll to skip its cursor-follow clamp that frame, so the

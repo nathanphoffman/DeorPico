@@ -1,11 +1,49 @@
 
-
 unsafe_macro calculate_clamped_cursor_row
-	int raw_cursor_screen_row = cursor_row - scroll_row + 1 + minimap_offset
-	int cursor_screen_row = m_clamp(raw_cursor_screen_row, top_row, bottom_row)
+	# Operates on the already-highlighted `lines` (tabs pre-expanded to
+	# spaces, ANSI-embedded) -- fine since wrap_break_visual_cols produces
+	# the same visual-column breaks either way (see wrap.deor), and this is
+	# the same `lines` render_buffer_rows already wrapped this frame.
+	string cursor_line = lines at cursor_row
+	intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, TAB_WIDTH)
+	int cursor_seg = wrap_segment_index_for_col(cursor_breaks, cursor_visual_col)
+
+	bool cursor_above = cursor_row < scroll_row or (cursor_row is scroll_row and cursor_seg < scroll_wrap_seg)
+
+	# Wheel-scrolling can leave the cursor outside the current view (it no
+	# longer follows the viewport), so this can land above or below the
+	# visible rows -- clamp back into range using minimap_offset/top_row/
+	# bottom_row from this frame's shared EditorLayout (see
+	# setup_minimap_and_gutters) before turning it into a terminal cursor
+	# position.
+	int cursor_screen_row = top_row
+	if not cursor_above
+		int buffer_row = scroll_row
+		int seg_index = scroll_wrap_seg
+		WrapPosition walk_pos = (buffer_row, seg_index)
+		int max_offset = bottom_row - top_row
+		int row_offset = 0
+		bool cursor_row_found = false
+		for if row_offset <= max_offset
+			(buffer_row, seg_index) in walk_pos
+			if buffer_row is cursor_row and seg_index is cursor_seg
+				cursor_row_found = true
+				break
+			walk_pos = wrap_step_forward(walk_pos, lines, text_visible_columns)
+			row_offset = row_offset + 1
+		if cursor_row_found
+			cursor_screen_row = top_row + row_offset
+		else
+			cursor_screen_row = bottom_row
 
 unsafe_macro calculate_cursor_screen_column
-	int cursor_screen_col = cursor_visual_col + sidebar_width + gutter_width + 1
+	# cursor_visual_col comes in whole-line-relative (same value
+	# editor_selection_range uses for highlight bounds) -- translate to
+	# within-segment here rather than upstream, since selection highlighting
+	# still needs the whole-line version untouched.
+	int segment_start_col = wrap_segment_start_col(cursor_breaks, cursor_seg)
+	int cursor_seg_visual_col = cursor_visual_col - segment_start_col
+	int cursor_screen_col = cursor_seg_visual_col + sidebar_width + gutter_width + 1
 
 # Format cursor position as an ANSI escape code
 unsafe_macro format_cursor_escape_code
@@ -18,18 +56,13 @@ macro append_cursor_and_output
 	xt_flush_print(screen)
 
 macro position_and_output_cursor
+	unsafe_macro_run use_consts
 
-	# Wheel-scrolling can leave the cursor outside the current view (it no
-	# longer follows the viewport), so this can land above or below the
-	# visible rows -- clamp back into range using minimap_offset/top_row/
-	# bottom_row from this frame's shared EditorLayout (see
-	# setup_minimap_and_gutters) before turning it into a terminal cursor
-	# position.
     unsafe_macro_run calculate_clamped_cursor_row
     unsafe_macro_run calculate_cursor_screen_column
 
     # the cursor position is outputted to the terminal as a string
-    #  effectively the entire output to the terminal needs to be a string 
+    #  effectively the entire output to the terminal needs to be a string
     #  so cursor moves are a sequence on the end of that string
     unsafe_macro_run format_cursor_escape_code
 	macro_run append_cursor_and_output
