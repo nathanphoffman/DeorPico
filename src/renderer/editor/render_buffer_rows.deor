@@ -37,7 +37,17 @@ macro render_buffer_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
-	ScrollbarThumb thumb = compute_scrollbar_thumb(view_rows, total_line_count, scroll_row)
+
+	int total_visual_rows = wrap_total_visual_rows(lines, text_visible_columns)
+	int scroll_visual_row = total_visual_rows
+	if scroll_row < total_line_count
+		int buffer_row = scroll_row
+		int seg_index = scroll_wrap_seg
+		WrapPosition scroll_pos = (buffer_row, seg_index)
+		scroll_visual_row = wrap_visual_row_position(scroll_pos, lines, text_visible_columns)
+	else
+		scroll_visual_row = total_visual_rows + (scroll_row - total_line_count)
+	ScrollbarThumb thumb = compute_scrollbar_thumb(view_rows, total_visual_rows, scroll_visual_row)
 	(thumb_top, thumb_height) in thumb
 
 	int buffer_row = scroll_row

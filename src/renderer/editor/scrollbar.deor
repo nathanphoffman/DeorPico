@@ -3,33 +3,37 @@ struct ScrollbarThumb
 	int thumb_height
 
 # Computes where the scrollbar thumb sits within the view, once per frame --
-# thumb_height is the view's proportion of the total file (never smaller than
-# 1 row), thumb_top is scroll_row mapped from [0, total_line_count - view_rows]
-# onto [0, view_rows - thumb_height]. When the whole file already fits on
-# screen the thumb fills the entire track, signaling "nothing to scroll".
-fn ScrollbarThumb compute_scrollbar_thumb(int view_rows, int total_line_count, int scroll_row)
-	if total_line_count <= 0
+# thumb_height is the view's proportion of the document (never smaller than
+# 1 row), thumb_top is the current visual row mapped from
+# [0, total_visual_rows - view_rows] onto [0, view_rows - thumb_height].
+# When the whole document already fits on screen the thumb fills the entire
+# track, signaling "nothing to scroll". Takes total/current in visual-row
+# terms (every line's own segment count, not 1-line-per-row) so the thumb's
+# proportions stay accurate once lines can wrap -- see wrap_total_visual_rows/
+# wrap_visual_row_position, which callers use to produce these.
+fn ScrollbarThumb compute_scrollbar_thumb(int view_rows, int total_visual_rows, int scroll_visual_row)
+	if total_visual_rows <= 0
 		int thumb_top = 0
 		int thumb_height = view_rows
 		ScrollbarThumb no_scroll_thumb = (thumb_top, thumb_height)
 		return no_scroll_thumb
 
 	int min_thumb_height = 1
-	int thumb_height = view_rows * view_rows / total_line_count
+	int thumb_height = view_rows * view_rows / total_visual_rows
 	thumb_height = m_max(thumb_height, min_thumb_height)
 	thumb_height = m_min(thumb_height, view_rows)
 
 	# +EOF_PADDING_ROWS matches clamp_scroll's max_scroll (see scroll.deor) --
-	# keeps the thumb's range in sync with how far scroll_row can actually
-	# go, so it doesn't reach the bottom of the track while scrolling into
-	# the grey EOF band is still possible.
+	# keeps the thumb's range in sync with how far the view can actually go,
+	# so it doesn't reach the bottom of the track while scrolling into the
+	# grey EOF band is still possible.
 	const int EOF_PADDING_ROWS = 5
-	int scrollable_rows = total_line_count - view_rows + EOF_PADDING_ROWS
+	int scrollable_rows = total_visual_rows - view_rows + EOF_PADDING_ROWS
 	int thumb_top = 0
 	if scrollable_rows > 0
 		int track_slack = view_rows - thumb_height
 		int track_top = 0
-		thumb_top = track_slack * scroll_row / scrollable_rows
+		thumb_top = track_slack * scroll_visual_row / scrollable_rows
 		thumb_top = m_clamp(thumb_top, track_top, track_slack)
 
 	ScrollbarThumb thumb = (thumb_top, thumb_height)

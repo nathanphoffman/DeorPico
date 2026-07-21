@@ -147,3 +147,68 @@ fn WrapPosition wrap_step_backward(WrapPosition pos, stringList lines, int width
 		return prev_pos
 
 	return pos
+
+# Total visual rows the whole document wraps into -- sum of every line's
+# own segment count. An O(total lines) pass, cheap next to per-frame
+# rendering, but the one place in the wrap module that walks the entire
+# document rather than a bounded number of rows -- used by the scrollbar,
+# which needs true proportions once lines can span multiple rows.
+fn int wrap_total_visual_rows(stringList lines, int width)
+	unsafe_macro_run use_consts
+	int total_line_count = len(lines)
+	int row_index = 0
+	int total_visual_rows = 0
+	for if row_index < total_line_count
+		string line = lines at row_index
+		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+		total_visual_rows = total_visual_rows + wrap_segment_count(breaks)
+		row_index = row_index + 1
+	return total_visual_rows
+
+# Converts `pos` into its absolute visual-row index from the top of the
+# document (sum of every earlier line's segment count, plus pos's own
+# segment index) -- the inverse of wrap_position_for_visual_row. Assumes
+# pos.buffer_row is a real, in-bounds line; callers scrolled into the
+# EOF-padding band (see render_buffer_rows.deor) handle that band's
+# "extended" rows themselves rather than passing an out-of-bounds pos here.
+fn int wrap_visual_row_position(WrapPosition pos, stringList lines, int width)
+	unsafe_macro_run use_consts
+	(buffer_row, seg_index) in pos
+	int row_index = 0
+	int total_visual_rows = 0
+	for if row_index < buffer_row
+		string line = lines at row_index
+		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+		total_visual_rows = total_visual_rows + wrap_segment_count(breaks)
+		row_index = row_index + 1
+	total_visual_rows = total_visual_rows + seg_index
+	return total_visual_rows
+
+# Inverse of wrap_visual_row_position -- finds which (buffer_row,
+# seg_index) the document's `target_visual_row`'th visual row falls in.
+# Clamps to the last segment of the last line if target_visual_row reaches
+# or exceeds wrap_total_visual_rows, the same "stays put at the end"
+# fallback wrap_step_forward uses.
+fn WrapPosition wrap_position_for_visual_row(stringList lines, int target_visual_row, int width)
+	unsafe_macro_run use_consts
+	int total_line_count = len(lines)
+	int buffer_row = 0
+	int consumed_rows = 0
+	for if buffer_row < total_line_count
+		string line = lines at buffer_row
+		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+		int seg_count = wrap_segment_count(breaks)
+		int next_consumed_rows = consumed_rows + seg_count
+		if target_visual_row < next_consumed_rows
+			int seg_index = target_visual_row - consumed_rows
+			WrapPosition pos = (buffer_row, seg_index)
+			return pos
+		consumed_rows = next_consumed_rows
+		buffer_row = buffer_row + 1
+
+	buffer_row = total_line_count - 1
+	string last_line = lines at buffer_row
+	intList last_breaks = wrap_break_visual_cols(last_line, width, TAB_WIDTH)
+	int seg_index = wrap_segment_count(last_breaks) - 1
+	WrapPosition pos = (buffer_row, seg_index)
+	return pos
