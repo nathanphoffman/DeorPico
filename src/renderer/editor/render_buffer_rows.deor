@@ -4,9 +4,9 @@ macro render_sidebar_column
 	string sidebar_piece = sidebar_row_piece(row_input)
 	screen = s_join([screen, sidebar_piece])
 
-unsafe_macro render_gutter_column
-	int buffer_row_index = scroll_row + row_offset
-	string gutter_piece = editor_gutter_piece(buffer_row_index, total_line_count, gutter_width)
+macro render_gutter_column
+	GutterRowInput gutter_row_input = (buffer_row_index, total_line_count, gutter_width, is_first_segment)
+	string gutter_piece = editor_gutter_piece(gutter_row_input)
 	screen = s_join([screen, gutter_piece])
 
 macro render_scrollbar_column
@@ -26,13 +26,26 @@ macro render_row_fill
 		string fill = s_repeat(space, fill_width)
 		screen = s_join([screen, fill])
 
-# Main rendering loop: iterate through visible rows and render each line
+# Main rendering loop: iterate through visible rows and render each one.
+# Walks visual rows instead of raw buffer lines -- each iteration renders
+# one wrap segment of `buffer_row`, then advances to the next segment (or
+# the next line's first segment once the current line's segments are
+# exhausted). Starts from (scroll_row, 0) rather than a stored wrap
+# segment offset -- scroll_row can't yet land mid-line-wrap (that lands in
+# a later phase alongside scroll/cursor state), so today the walk always
+# starts a line's first segment; this still renders every wrapped line
+# correctly, it just can't yet scroll to a segment other than a line's
+# first.
 macro render_buffer_rows
+	unsafe_macro_run use_consts
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
 	ScrollbarThumb thumb = compute_scrollbar_thumb(view_rows, total_line_count, scroll_row)
 	(thumb_top, thumb_height) in thumb
+
+	int buffer_row = scroll_row
+	int seg_index = 0
 
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
@@ -47,15 +60,26 @@ macro render_buffer_rows
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
 
-        macro_run render_sidebar_column        
-        unsafe_macro_run render_gutter_column
+        macro_run render_sidebar_column
+
+		int buffer_row_index = buffer_row
+		bool is_first_segment = seg_index is 0
+        macro_run render_gutter_column
 
 		int row_visible_cols = 0
 		bool is_eof_padding_row = false
 		if buffer_row_index < total_line_count
 			string line = lines at buffer_row_index
+			intList breaks = wrap_break_visual_cols(line, text_visible_columns, TAB_WIDTH)
+			int seg_start_col = wrap_segment_start_col(breaks, seg_index)
+			int seg_count = wrap_segment_count(breaks)
+
+			int start_visible_col = seg_start_col
+			int end_visible_col = seg_start_col + text_visible_columns
+			VisibleColRange visible_range = (start_visible_col, end_visible_col)
+
 			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
-			RenderedLine rendered = render_visible_line(line, text_visible_columns, highlight)
+			RenderedLine rendered = render_visible_line(line, visible_range, highlight)
 			(text, visible_cols) in rendered
 			row_visible_cols = visible_cols
 
@@ -71,6 +95,13 @@ macro render_buffer_rows
 				row_visible_cols = text_visible_columns
 			else
 				screen = s_join([screen, text])
+
+			int next_seg_index = seg_index + 1
+			if next_seg_index < seg_count
+				seg_index = next_seg_index
+			else
+				buffer_row = buffer_row + 1
+				seg_index = 0
 		else
 			# Every row below the last line of the file gets tinted, all the
 			# way to the bottom of the view -- not just a fixed handful --
@@ -79,8 +110,11 @@ macro render_buffer_rows
 			# and scrollbar_jump_to_row for the matching scroll-side half of
 			# this: they extend how far down you can scroll so a long file
 			# gets the same grey lip below its last line instead of the view
-			# always ending exactly on it).
+			# always ending exactly on it). Keep incrementing buffer_row
+			# (rather than calling the wrap helpers, which assume an
+			# in-bounds row) so every remaining row_offset also lands here.
 			is_eof_padding_row = true
+			buffer_row = buffer_row + 1
 			screen = s_join([screen, ANSI_EOF_PADDING_BG])
 
 		macro_run render_row_fill

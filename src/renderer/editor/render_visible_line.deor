@@ -2,19 +2,40 @@ struct RenderedLine
 	string text
 	int visible_cols
 
-# Renders one line to at most `max_visible_columns` on-screen columns,
-# wrapping the half-open range [highlight.hl_start, highlight.hl_end) (in
-# visible-column terms) in reverse video. Escape sequences already embedded
-# by syntax highlighting are copied through untouched and never counted as
-# visible columns, so both truncation and the highlight land on the correct
-# visual column instead of a raw byte offset. Syntax highlighting wraps each
-# colored token in its own "\x1b[0m" reset, which also cancels our
-# reverse-video selection if it was turned on earlier in the line --
-# re-assert it right after so the selection survives every syntax-colored
-# token it spans.
-fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHighlight highlight)
+# The [start_visible_col, end_visible_col) slice of a line to render as one
+# visual row -- bundled into its own struct rather than two extra params on
+# render_visible_line since functions cap out at 3 parameters (see
+# consts.deor's editor_view_rows for the same constraint hit elsewhere).
+struct VisibleColRange
+	int start_visible_col
+	int end_visible_col
+
+# Renders `line`'s [start_visible_col, end_visible_col) slice as one visual
+# row, wrapping the half-open range [highlight.hl_start, highlight.hl_end)
+# (in whole-line visible-column terms) in reverse video. Always walks the
+# whole line from column 0, even though characters before start_visible_col
+# never get emitted -- so that ANSI color state opened by syntax
+# highlighting before start_visible_col, and reverse-video state opened by
+# a selection that began before it, are both already active in the output
+# by the time real characters start printing. This is what lets a wrapped
+# line's second-and-later visual row pick up mid-token color/selection
+# correctly, with hl_start/hl_end staying whole-line-relative exactly as
+# editor_row_highlight already computes them -- no translation needed.
+# Old single-segment call sites pass start_visible_col = 0 and
+# end_visible_col = the old max_visible_columns, preserving today's
+# behavior exactly.
+#
+# Escape sequences already embedded by syntax highlighting are copied
+# through untouched and never counted as visible columns, so both the
+# slice bounds and the highlight land on the correct visual column instead
+# of a raw byte offset. Syntax highlighting wraps each colored token in its
+# own "\x1b[0m" reset, which also cancels our reverse-video selection if it
+# was turned on earlier in the line -- re-assert it right after so the
+# selection survives every syntax-colored token it spans.
+fn RenderedLine render_visible_line(string line, VisibleColRange visible_range, RowHighlight highlight)
 	unsafe_macro_run use_ansi_codes
 	(hl_start, hl_end) in highlight
+	(start_visible_col, end_visible_col) in visible_range
 
     const string ANSI_ESCAPE_CHARACTER = "m"
 
@@ -45,7 +66,7 @@ fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHig
 				text_parts at end = ANSI_REVERSE_ON
 			continue
 
-		if visible_cols >= max_visible_columns
+		if visible_cols >= end_visible_col
 			break
 
 		if hl_start is visible_cols and not highlight_open
@@ -55,7 +76,8 @@ fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHig
 			text_parts at end = ANSI_REVERSE_OFF
 			highlight_open = false
 
-		text_parts at end = current_char
+		if visible_cols >= start_visible_col
+			text_parts at end = current_char
 		visible_cols = visible_cols + 1
 		idx = idx + 1
 
@@ -70,4 +92,5 @@ fn RenderedLine render_visible_line(string line, int max_visible_columns, RowHig
 	text_parts at end = ANSI_RESET
 
 	string text = s_join(text_parts)
+	visible_cols = visible_cols - start_visible_col
 	return (text, visible_cols)

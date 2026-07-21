@@ -1,3 +1,11 @@
+# Bundled since editor_gutter_piece needs 4 inputs and functions cap out at
+# 3 parameters.
+struct GutterRowInput
+	int buffer_row_index
+	int total_line_count
+	int gutter_width
+	bool is_first_segment
+
 fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
 	if not show_line_numbers
 		return 0
@@ -7,12 +15,16 @@ fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
 
 
 # Gutter is wide enough for the largest line number plus one trailing space.
-fn string editor_gutter_piece(int buffer_row_index, int total_line_count, int gutter_width)
+# Only a wrapped line's first visual row prints its number -- continuation
+# rows (is_first_segment false) get the same blank gutter as a past-EOF
+# row, matching VSCode.
+fn string editor_gutter_piece(GutterRowInput row_input)
+	(buffer_row_index, total_line_count, gutter_width, is_first_segment) in row_input
 	if gutter_width is 0
 		return ""
 
 	string space = " "
-	if buffer_row_index < total_line_count
+	if buffer_row_index < total_line_count and is_first_segment
 		string row_number_str = c_int_to_string(buffer_row_index + 1)
 		int number_width = gutter_width - 1
 		string padded_number = s_pad_left(row_number_str, number_width)
