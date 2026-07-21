@@ -1,0 +1,65 @@
+# Deleted files no longer exist on disk, so they can't be loaded into the
+# normal editable buffer -- jump straight into a read-only diff of the
+# deletion (against HEAD, via g_diff) instead, and leave the real buffer
+# (filename/lines) untouched so Esc/^D can hand control back to whatever was
+# open before rather than a phantom editor for a file that isn't there.
+macro preview_deleted_file
+	stringList preview_diff = g_diff(path)
+	diff_lines = preview_diff
+	diff_scroll_row = 0
+	diff_scroll_wrap_seg = 0
+	diffing = true
+	diff_preview = true
+	diff_preview_path = path
+	notice = "Deleted file (diff, read-only)"
+	error = false
+
+# Loads `path` (already declared by the caller) into the active buffer,
+# discarding any unsaved state.
+macro load_file_into_buffer
+	filename = path
+	stringList opened_lines = f_lines(filename)
+	if len(opened_lines) is 0
+		opened_lines at end = ""
+	lines = opened_lines
+	nls as "\n"
+	synced_content = s_join_with(lines, nls)
+	cursor_row = 0
+	cursor_col = 0
+	dirty = false
+	scroll_row = 0
+	notice = "Opened"
+	error = false
+
+	# The old selection anchor can point past the end of the new file (e.g.
+	# a selection anchored at row 50 of a long file, then a 10-line file is
+	# opened) -- main()'s render loop indexes `lines` by sel_anchor_row every
+	# frame regardless of has_selection, so a stale anchor panics on the very
+	# next frame instead of just harmlessly persisting.
+	has_selection = false
+	sel_anchor_row = 0
+	sel_anchor_col = 0
+	macro_run reset_undo_history
+	macro_run refresh_git_diff_lines
+	if diffing
+		macro_run refresh_diff_for_new_file
+
+	spreadsheet_path = s_join([filename])
+	string opened_ext = f_extension(filename)
+	spreadsheet_active = false
+	csvRowList opened_rows = empty
+	if f_is_spreadsheet_ext(opened_ext)
+		spreadsheet_active = true
+		opened_rows = csv_parse_rows(filename)
+	spreadsheet_rows = opened_rows
+	spreadsheet_view_active = spreadsheet_active
+
+# Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
+# so a navigation blocked by notify_unsaved_changes can proceed afterward.
+macro discard_unsaved_changes_impl
+	if dirty
+		path as filename
+		macro_run load_file_into_buffer
+		notice = "Discarded unsaved changes"
+		error = false
+		sidebar_locked = false

@@ -1,0 +1,57 @@
+# ^K on `path`/`is_dir` (bound by the caller from whichever entry is
+# currently selected) -- sends it to the OS trash rather than a permanent
+# delete, so a wrong keypress is still recoverable. A non-empty directory is
+# refused outright (recursing here would be far too easy to trigger by
+# accident); an empty one needs no confirmation since there's nothing in it
+# to lose. A file requires a second ^K on the *same* path first (see
+# pending_delete_path/editor_handle_key) since the trash is the only
+# recovery path. Deleting the file that's currently open in the editor
+# detaches the buffer from it entirely (see close_deleted_open_buffer)
+# rather than leaving it dirty -- otherwise ^S (or ^Del's reload-from-disk)
+# would silently recreate the file, or an empty one, the moment you tried
+# to navigate away.
+macro file_delete_entry
+	if is_dir
+		bool dir_empty = f_dir_is_empty(path)
+		if dir_empty
+			bool trashed = f_trash(path)
+			if trashed
+				macro_run remove_deleted_entry
+				notice = "Moved to trash"
+				error = false
+			else
+				notice = "Could not delete (trash unavailable?)"
+				error = true
+		else
+			notice = "Directory not empty"
+			error = true
+	else if pending_delete_path is path
+		bool trashed = f_trash(path)
+		pending_delete_path = ""
+		if trashed
+			if path is filename
+				macro_run close_deleted_open_buffer
+			macro_run remove_deleted_entry
+			notice = "Moved to trash"
+			error = false
+		else
+			notice = "Could not delete (trash unavailable?)"
+			error = true
+	else
+		pending_delete_path = path
+		notice = "Press ^K again to move this file to trash -- cannot be undone"
+		error = true
+
+# Resets the buffer to a blank, unsaved-nothing state after its own file
+# got deleted out from under it -- `filename` is cleared along with it, so
+# neither ^S nor ^Del's reload-from-disk (see discard_unsaved_changes_impl)
+# has a path left to write/read against.
+macro close_deleted_open_buffer
+	filename = ""
+	lines = empty
+	lines at end = ""
+	synced_content = ""
+	cursor_row = 0
+	cursor_col = 0
+	scroll_row = 0
+	dirty = false

@@ -12,6 +12,7 @@ unsafe_macro language_ext_consts
     const string HTM = "htm"
     const string CSS = "css"
     const string PYTHON = "py"
+    const string PYX = "pyx"
     const string RUST = "rs"
     const string C_SRC = "c"
     const string C_HEADER = "h"
@@ -43,13 +44,38 @@ unsafe_macro language_ext_consts
 fn string comment_prefix_for_ext(string ext)
     unsafe_macro_run language_ext_consts
 
-    if ext is DEOR or ext is PYTHON or ext is MOJO or ext is BASH1 or ext is BASH2 or ext is POWERSHELL or ext is TOML
-        return "#"
-    else if ext is CSHARP or ext is JSX or ext is TYPESCRIPT or ext is JAVASCRIPT or ext is RUST or ext is C_SRC or ext is C_HEADER or ext is CPP1 or ext is CPP2 or ext is CPP3 or ext is CPP_HEADER1 or ext is CPP_HEADER2 or ext is GOLANG or ext is JAVA or ext is PHP or ext is CMM
-        return "//"
-    else if ext is ASM1 or ext is ASM2
-        return ";"
-    else if ext is FORTRAN90
-        return "!"
-    else
-        return ""
+    hash as "#"
+    slash as "//"
+    semi as ";"
+    bang as "!"
+
+    StringMap prefixes = h_make()
+    prefixes = h_set(prefixes, DEOR, hash)
+    prefixes = h_set(prefixes, PYTHON, hash)
+    prefixes = h_set(prefixes, PYX, hash)
+    prefixes = h_set(prefixes, MOJO, hash)
+    prefixes = h_set(prefixes, BASH1, hash)
+    prefixes = h_set(prefixes, BASH2, hash)
+    prefixes = h_set(prefixes, POWERSHELL, hash)
+    prefixes = h_set(prefixes, TOML, hash)
+    prefixes = h_set(prefixes, CSHARP, slash)
+    prefixes = h_set(prefixes, JSX, slash)
+    prefixes = h_set(prefixes, TYPESCRIPT, slash)
+    prefixes = h_set(prefixes, JAVASCRIPT, slash)
+    prefixes = h_set(prefixes, RUST, slash)
+    prefixes = h_set(prefixes, C_SRC, slash)
+    prefixes = h_set(prefixes, C_HEADER, slash)
+    prefixes = h_set(prefixes, CPP1, slash)
+    prefixes = h_set(prefixes, CPP2, slash)
+    prefixes = h_set(prefixes, CPP3, slash)
+    prefixes = h_set(prefixes, CPP_HEADER1, slash)
+    prefixes = h_set(prefixes, CPP_HEADER2, slash)
+    prefixes = h_set(prefixes, GOLANG, slash)
+    prefixes = h_set(prefixes, JAVA, slash)
+    prefixes = h_set(prefixes, PHP, slash)
+    prefixes = h_set(prefixes, CMM, slash)
+    prefixes = h_set(prefixes, ASM1, semi)
+    prefixes = h_set(prefixes, ASM2, semi)
+    prefixes = h_set(prefixes, FORTRAN90, bang)
+
+    return h_get(prefixes, ext)

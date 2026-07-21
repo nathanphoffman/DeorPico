@@ -1,0 +1,33 @@
+macro browse_right
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(path, is_dir, depth, expanded) in selected
+		if is_dir and not expanded
+			entryList raw_children = f_list_dir(path)
+			StringMap git_map = g_status(browse_dir)
+			entryList tagged_children = g_apply_status(raw_children, git_map)
+			int next_depth = depth + 1
+			entryList adjusted_children = empty
+			for raw_child in tagged_children
+				(name, path, is_dir, git_status) in raw_child
+				depth as next_depth
+				expanded as false
+				FileEntry adjusted = (name, path, is_dir, depth, expanded, git_status)
+				adjusted_children at end = adjusted
+
+			browse_entries = e_insert_children(browse_entries, browse_selected, adjusted_children)
+
+			expanded as true
+			FileEntry updated_selected = selected with (expanded)
+			browse_entries at browse_selected = updated_selected
+
+macro browse_left
+	if len(browse_entries) > 0
+		FileEntry selected = browse_entries at browse_selected
+		(is_dir, depth, expanded) in selected
+		if is_dir and expanded
+			browse_entries = e_remove_children(browse_entries, browse_selected, depth)
+
+			expanded as false
+			FileEntry updated_selected = selected with (expanded)
+			browse_entries at browse_selected = updated_selected

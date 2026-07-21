@@ -1,0 +1,77 @@
+# ^A on the currently selected entry (bound by the caller into path/is_dir/
+# git_status) -- unstages if it's already staged (with or without a further
+# edit on top), stages otherwise. A directory recurses over its whole
+# subtree: `git add`/`git restore --staged` already do that for a directory
+# pathspec, so g_dir_status_summary just decides which direction to go
+# (stage wins if anything underneath is still unstaged/new, so one ^A press
+# can finish staging a partially-staged directory before a second press
+# unstages it). A no-op if there's nothing to change either way.
+macro git_stage_toggle
+	string clean_path = g_relative_path(path)
+	if is_dir
+		DirGitSummary summary = g_dir_status_summary(browse_dir, clean_path)
+		(has_staged, has_unstaged) in summary
+		if has_unstaged
+			bool staged_ok = g_stage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+		else if has_staged
+			bool unstaged_ok = g_unstage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+	else
+		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted"
+			bool unstaged_ok = g_unstage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+		else if git_status is "edited" or git_status is "new" or git_status is "deleted"
+			bool staged_ok = g_stage(browse_dir, clean_path)
+			macro_run refresh_all_git_status
+
+# ^U on `path`/`is_dir`/`git_status` (bound by the caller from whichever
+# entry is currently selected) -- discards all git-tracked changes to the
+# file, reverting it to HEAD (see g_discard). A no-op on a directory (too
+# broad to confirm meaningfully in one shot) and on a clean file (nothing to
+# discard). An untracked "new" file has no HEAD version to fall back to, so
+# discarding it means deleting it instead -- same trash-not-permanent
+# treatment as ^K, just under pending_discard_path's own confirmation rather
+# than sharing pending_delete_path (so arming one doesn't silently arm the
+# other). Anything else requires a second ^U on the same path first, since
+# unlike stage/unstage this can't be toggled back -- there's no git history
+# for uncommitted changes to fall back on.
+macro discard_git_changes_entry
+	if is_dir
+		notice = ""
+		error = false
+	else if git_status is ""
+		notice = "No changes to discard"
+		error = false
+	else if git_status is "new"
+		if pending_discard_path is path
+			bool trashed = f_trash(path)
+			pending_discard_path = ""
+			if trashed
+				macro_run remove_deleted_entry
+				notice = "Deleted untracked file"
+				error = false
+			else
+				notice = "Could not delete (trash unavailable?)"
+				error = true
+		else
+			pending_discard_path = path
+			notice = "Press ^U again to delete this untracked file -- cannot be undone"
+			error = true
+	else if pending_discard_path is path
+		string clean_path = g_relative_path(path)
+		bool discarded_ok = g_discard(browse_dir, clean_path)
+		pending_discard_path = ""
+		if discarded_ok
+			if path is filename
+				macro_run load_file_into_buffer
+			macro_run refresh_all_git_status
+			notice = "Discarded changes"
+			error = false
+		else
+			notice = "Could not discard changes"
+			error = true
+	else
+		pending_discard_path = path
+		notice = "Press ^U again to discard changes to this file -- cannot be undone"
+		error = true

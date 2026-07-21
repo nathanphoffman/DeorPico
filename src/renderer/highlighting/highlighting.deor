@@ -27,6 +27,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_css
 	else if ext is PYTHON
 		macro_run highlights_python
+	else if ext is PYX
+		macro_run highlights_pyx
 	else if ext is RUST
 		macro_run highlights_rust
 	else if ext is CPP1 or ext is CPP2 or ext is CPP3 or ext is CPP_HEADER1 or ext is CPP_HEADER2

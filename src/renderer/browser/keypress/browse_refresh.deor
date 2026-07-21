@@ -1,0 +1,76 @@
+# Re-tags browse_entries/git_changes' git-status colors (not the tree
+# structure -- depth/expanded/name/path are untouched). Run whenever the
+# displayed git state might be stale: after a ^A stage/unstage (see
+# git_stage_toggle) and after a file is created/deleted/discarded.
+macro refresh_all_git_status
+	StringMap fresh_git_map = g_status(browse_dir)
+	browse_entries = g_apply_status(browse_entries, fresh_git_map)
+	git_changes = g_changed_entries(fresh_git_map)
+	macro_run clamp_sidebar_selection
+
+# F5 -- unlike refresh_all_git_status, this re-scans disk from scratch (see
+# e_rebuild_tree), so files/folders added or removed outside the app (an
+# external `mkdir`, a git checkout, etc.) actually show up instead of only
+# ever changing once the app itself creates/moves/deletes something.
+# Re-expands whatever was expanded before by path, same as the git-status
+# refresh leaves the tree shape alone, and re-finds the previously selected
+# entry by path so the highlight doesn't jump if the rescan reordered or
+# shifted things around it.
+macro refresh_browse_tree_impl
+	string selected_path = ""
+	if len(browse_entries) > 0
+		FileEntry currently_selected = browse_entries at browse_selected
+		(path) in currently_selected
+		selected_path = path
+
+	entryList rebuilt = e_rebuild_tree(browse_entries, browse_dir)
+	StringMap fresh_git_map = g_status(browse_dir)
+	browse_entries = g_apply_status(rebuilt, fresh_git_map)
+	git_changes = g_changed_entries(fresh_git_map)
+
+	if len(selected_path) > 0
+		EntryLookup lookup = e_find_by_path(browse_entries, selected_path)
+		(found, index) in lookup
+		if found
+			browse_selected = index
+
+	int last_entry = len(browse_entries) - 1
+	if browse_selected > last_entry
+		browse_selected = last_entry
+	if browse_selected < 0
+		browse_selected = 0
+
+	macro_run clamp_sidebar_selection
+
+# Keeps the sidebar's selection/scroll valid after git_changes changes size
+# (stage/unstage/delete/discard/create) -- falls back to the <GIT> header
+# (git_selected of -1, always valid whenever is_git_repo) if the section
+# collapsed or emptied out from under an entry selection, and reclamps
+# browse_scroll_row against the (possibly now shorter) total row count so
+# the sidebar can't stay scrolled past what it actually draws.
+macro clamp_sidebar_selection
+	if sidebar_on_git
+		int last_git = len(git_changes) - 1
+		if git_section_collapsed or last_git < 0
+			git_selected = 0 - 1
+		else if git_selected > last_git
+			git_selected = last_git
+		else if git_selected < (0 - 1)
+			git_selected = 0 - 1
+
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows) in layout
+
+	int git_count = len(git_changes)
+	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
+	int root_section_rows = sidebar_root_section_rows()
+	int last_row = git_section_rows + root_section_rows + len(browse_entries) - 1
+	int max_scroll = last_row - view_rows + 1
+	if max_scroll < 0
+		max_scroll = 0
+	if browse_scroll_row > max_scroll
+		browse_scroll_row = max_scroll
