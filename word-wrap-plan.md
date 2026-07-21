@@ -179,3 +179,71 @@ drift from what's drawn.
     wrapped lines.
   - Resizing the terminal (changing `text_visible_columns`) re-wraps
     correctly and doesn't leave the cursor/scroll position out of sync.
+
+## Phased implementation
+
+Each phase should build cleanly before moving to the next. Phases 2-3 leave
+the app in a visually broken state on purpose (rendering wraps before
+cursor/scroll catch up) — that's expected mid-sequence, not a regression to
+chase down.
+
+1. **`wrap.deor` core algorithm.** `wrap_break_visual_cols` plus the segment-
+   count/segment-index/step-one-visual-row helpers. No call sites touched
+   yet. Verify with direct calls against hand-picked strings (plain text,
+   tabs, one long unbroken token, ANSI-embedded highlighted text) before
+   wiring anything else to it.
+   **Why first:** every other phase (rendering, scroll, cursor, mouse,
+   scrollbar) calls into this same math. Getting the break/step logic right
+   in isolation, with cheap direct-call tests, is far cheaper than debugging
+   it live through five call sites at once — and a bug here would otherwise
+   surface as a confusing cursor/click/scroll glitch two phases later
+   instead of a wrong list of numbers today.
+2. **Rendering.** `render_visible_line`'s `start_visible_col` param,
+   `render_buffer_rows`'s visual-row walk, `gutter.deor`'s
+   `is_first_segment`. Checkpoint: long lines visually wrap and gutter
+   numbers only show on first segments. Cursor position and scroll will be
+   wrong on wrapped files until phase 3 — expected.
+   **Why second:** this is the one visible payoff (lines actually wrap
+   instead of truncating), so it's worth reaching as early as possible —
+   but it's also the one thing everything else in the plan measures itself
+   against. Cursor math, scroll math, and mouse math all need to agree with
+   *what got drawn*; doing rendering first gives every later phase a fixed
+   target to line up with instead of guessing.
+3. **Scroll and cursor state.** `scroll_wrap_seg` field on `BufferState`,
+   `editor_scroll`'s clamp, `calculate_clamped_cursor_row` and
+   `calculate_cursor_screen_column`. Checkpoint: cursor renders in the
+   correct screen cell again, and scroll-follow keeps it in view, on files
+   with wrapped lines.
+   **Why third:** phase 2 deliberately breaks cursor placement (it now
+   renders at a raw-line position that no longer matches the wrapped
+   screen), so this phase exists to close that gap immediately rather than
+   leave the app in a broken state any longer than needed. It also has to
+   land before phase 4, since wrap-aware up/down needs a correct
+   `(scroll_row, scroll_wrap_seg)` to step from.
+4. **Up/Down navigation.** `handle_arrow_nav`'s wrap-aware move replacing
+   the flat `key_up_impl`/`key_down_impl` calls for plain (non-ctrl)
+   up/down. Checkpoint: arrow keys step through wrapped visual rows one at
+   a time, landing on the same visual column.
+   **Why fourth:** this is the main behavior change the user actually
+   asked for (cursor should navigate visual rows like VSCode, not skip over
+   wrapped continuations) — it comes right after cursor/scroll state
+   because it directly reuses the `(buffer_row, seg_index)` stepping that
+   phase 3 just made correct, and would be unverifiable before that.
+5. **Mouse and scrollbar.** `locate_mouse_in_buffer`, `compute_scrollbar_thumb`,
+   `scrollbar_jump_to_row` switched to visual-row math. Checkpoint: clicks
+   on wrapped continuation rows land on the right character; scrollbar
+   size/position looks right on a file with several wrapped lines.
+   **Why fifth:** these are the remaining input paths that still assume
+   "1 buffer line = 1 screen row" (click-to-cursor mapping, thumb sizing).
+   They're last because they're the least likely to be exercised while
+   developing/testing the earlier phases (keyboard-driven), so any bug
+   left in them is the one most likely to slip through unnoticed if done
+   any earlier — better to sweep them once everything else is stable.
+6. **Full verification pass.** Build, then run the full manual test list
+   above (word-boundary wrap, tab lines, one long unbroken token, up/down
+   across wraps, mouse click on a continuation row, selection across a wrap
+   point, scrollbar, terminal resize).
+   **Why last:** every earlier checkpoint only verified its own piece in
+   isolation. This pass is the one place that exercises all of them
+   together in the real terminal app — which is the only way to catch
+   drift between what render/scroll/cursor/mouse each *think* is true.

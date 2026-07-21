@@ -1,0 +1,149 @@
+struct WrapPosition
+	int buffer_row
+	int seg_index
+
+# Walks `line` once, tracking visible column: `\t` expands to the next
+# `tab_width` stop (same rule as s_visual_col in rust_helper.deor), and ANSI
+# escape sequences are skipped without counting toward the column (same
+# skip block as render_visible_line). Because of that split, this walks a
+# raw buffer line (tab branch fires, ANSI branch never does) and a
+# highlighted display line (ANSI branch fires, tab branch never does --
+# synoptic already expanded its own tabs to spaces) equally well, as long
+# as both call sites pass the same `width`.
+#
+# Remembers the most recent whitespace visual-column seen since the last
+# break. Once the segment would exceed `width` columns, breaks right after
+# that remembered whitespace -- or, if none was seen (one long unbroken
+# token), hard-breaks exactly at `width`, the same fallback today's
+# truncation uses, just continued onto a new segment instead of dropped.
+# Returns the visual-column offset each new segment starts at; an empty
+# list means the line fits in a single segment (today's behavior).
+fn intList wrap_break_visual_cols(string line, int width, int tab_width)
+	unsafe_macro_run use_ansi_codes
+	const string ANSI_ESCAPE_CHARACTER = "m"
+
+	stringList chars = s_chars(line)
+	int char_count = len(chars)
+	int idx = 0
+	intList breaks = empty
+
+	int visible_cols = 0
+	int seg_start_col = 0
+	int last_ws_col = 0
+	bool have_ws = false
+
+	for if idx < char_count
+		string current_char = chars at idx
+
+		if current_char is esc
+			idx = idx + 1
+			for if idx < char_count
+				string escape_char = chars at idx
+				idx = idx + 1
+				if escape_char is ANSI_ESCAPE_CHARACTER
+					break
+			continue
+
+		int col_width = 1
+		if current_char is "\t"
+			int next_stop = (visible_cols / tab_width + 1) * tab_width
+			col_width = next_stop - visible_cols
+
+		bool current_is_ws = current_char is " " or current_char is "\t"
+		int seg_cols = visible_cols + col_width - seg_start_col
+		if seg_cols > width
+			int break_col = seg_start_col + width
+
+			# Only retreat to the remembered whitespace when the character
+			# that overflowed is itself part of an unbreakable word -- if
+			# the overflowing character is whitespace, the word before it
+			# already fit exactly up to `width` (that's why we only just
+			# now overflowed), so breaking right here is tighter than
+			# retreating to an earlier, possibly much older, whitespace.
+			if have_ws and not current_is_ws
+				break_col = last_ws_col
+			breaks at end = break_col
+			seg_start_col = break_col
+			have_ws = false
+
+		if current_is_ws
+			last_ws_col = visible_cols + col_width
+			have_ws = true
+
+		visible_cols = visible_cols + col_width
+		idx = idx + 1
+
+	return breaks
+
+# Number of visual rows `line` wraps into, given `breaks` already computed
+# by wrap_break_visual_cols for it -- one more than the number of break
+# points.
+fn int wrap_segment_count(intList breaks)
+	return len(breaks) + 1
+
+# Which segment (0-indexed) `visual_col` falls in, given `breaks` already
+# computed by wrap_break_visual_cols for the same line.
+fn int wrap_segment_index_for_col(intList breaks, int visual_col)
+	int break_count = len(breaks)
+	int seg_index = 0
+	for if seg_index < break_count
+		int break_col = breaks at seg_index
+		if visual_col < break_col
+			break
+		seg_index = seg_index + 1
+	return seg_index
+
+# Visual column `seg_index` starts at, given `breaks` already computed by
+# wrap_break_visual_cols for the same line -- 0 for the first segment.
+fn int wrap_segment_start_col(intList breaks, int seg_index)
+	if seg_index is 0
+		return 0
+	int prev_index = seg_index - 1
+	return breaks at prev_index
+
+# Advances one visual row forward from `pos`, rolling into the next buffer
+# line's first segment once the current line's segments are exhausted.
+# Stays put at the last segment of the last line.
+fn WrapPosition wrap_step_forward(WrapPosition pos, stringList lines, int width)
+	unsafe_macro_run use_consts
+	(buffer_row, seg_index) in pos
+
+	string line = lines at buffer_row
+	intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+	int seg_count = wrap_segment_count(breaks)
+	int next_seg = seg_index + 1
+	if next_seg < seg_count
+		seg_index = next_seg
+		WrapPosition next_pos = (buffer_row, seg_index)
+		return next_pos
+
+	int last_row = len(lines) - 1
+	if buffer_row < last_row
+		buffer_row = buffer_row + 1
+		seg_index = 0
+		WrapPosition next_pos = (buffer_row, seg_index)
+		return next_pos
+
+	return pos
+
+# Inverse of wrap_step_forward -- steps one visual row back, rolling into
+# the previous buffer line's last segment at a line boundary. Stays put at
+# the first segment of the first line.
+fn WrapPosition wrap_step_backward(WrapPosition pos, stringList lines, int width)
+	unsafe_macro_run use_consts
+	(buffer_row, seg_index) in pos
+
+	if seg_index > 0
+		seg_index = seg_index - 1
+		WrapPosition prev_pos = (buffer_row, seg_index)
+		return prev_pos
+
+	if buffer_row > 0
+		buffer_row = buffer_row - 1
+		string prev_line = lines at buffer_row
+		intList prev_breaks = wrap_break_visual_cols(prev_line, width, TAB_WIDTH)
+		seg_index = wrap_segment_count(prev_breaks) - 1
+		WrapPosition prev_pos = (buffer_row, seg_index)
+		return prev_pos
+
+	return pos
