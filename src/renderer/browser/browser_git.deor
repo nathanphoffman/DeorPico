@@ -1,4 +1,54 @@
 
+fn entryList g_sort_entries_by_path(entryList entries)
+	rust
+		{
+			let mut items = entries;
+			items.sort_by(|a, b| a.path.to_lowercase().cmp(&b.path.to_lowercase()));
+			items
+		}
+
+
+fn entryList g_changed_entries(StringMap git_map)
+	stringList paths = h_keys(git_map)
+
+	entryList items = empty
+	for path in paths
+		string git_status = h_get(git_map, path)
+		string name = f_basename(path)
+		bool is_dir = false
+		int depth = 0
+		bool expanded = false
+		FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
+		items at end = entry
+
+	return g_sort_entries_by_path(items)
+
+
+# Strips a leading "./" so a FileEntry.path (always rooted at the browse
+# dir, e.g. "./src/foo.rs") matches the plain-relative paths `git status`
+# reports (e.g. "src/foo.rs").
+fn string g_relative_path(string path)
+	string dot_slash = "./"
+	string clean = path
+	if s_starts_with(path, dot_slash)
+		int strip_len = 2
+		int path_len = len(path)
+		clean = s_substring(path, strip_len, path_len)
+	return clean
+
+
+fn entryList g_apply_status(entryList entries, StringMap git_map)
+	entryList result = empty
+	for entry in entries
+		(path) in entry
+		string clean = g_relative_path(path)
+		string git_status = h_get(git_map, clean)
+		FileEntry updated = entry with (git_status)
+		result at end = updated
+
+	return result
+
+
 # "+" flags a brand-new untracked file (git's "??"), "%" flags an unstaged
 # edit on a file that's already tracked -- including a staged file with a
 # further worktree edit on top ("staged_edited"), since that extra edit is

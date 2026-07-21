@@ -1,8 +1,6 @@
 # Everything depends on libs
 import "lib/file.deor"
-import "lib/file_extension.deor"
 
-import "lib/file_extension.deor"
 import "lib/comment_prefix.deor"
 import "lib/string.deor"
 import "lib/string_extension.deor"
@@ -26,6 +24,7 @@ import "src/spreadsheet.deor"
 
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"
+import "src/models/file_entry.deor"
 import "src/models/sidebar_state.deor"
 import "src/models/diff_state.deor"
 import "src/models/lint_state.deor"
@@ -117,6 +116,7 @@ import "src/renderer/editor/editor_scroll.deor"
 # minimap) -- must be loaded before editor.deor, which macro_runs these
 import "src/renderer/status/status_shortcuts.deor"
 import "src/renderer/status/lint_output_popup.deor"
+import "src/renderer/status/git_minimap.deor"
 import "src/renderer/status/minimap_gutters.deor"
 import "src/renderer/status/build_and_render_status_bar.deor"
 

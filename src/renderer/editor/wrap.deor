@@ -1,3 +1,5 @@
+shape intList = list of int
+
 struct WrapPosition
 	int buffer_row
 	int seg_index
