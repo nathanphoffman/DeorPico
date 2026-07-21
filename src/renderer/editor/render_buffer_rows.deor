@@ -80,8 +80,19 @@ macro render_buffer_rows
 			int seg_start_col = wrap_segment_start_col(breaks, seg_index)
 			int seg_count = wrap_segment_count(breaks)
 
+			# A word-boundary break can land short of the full width (the
+			# next word didn't fit) -- capping this segment's end at
+			# seg_start_col + text_visible_columns instead of the actual
+			# next break re-renders that gap's characters again at the
+			# start of the next visual row. Only the last segment has no
+			# next break to bound it by, so it keeps the full-width cap
+			# (harmless there since the line just runs out of characters
+			# first).
 			int start_visible_col = seg_start_col
 			int end_visible_col = seg_start_col + text_visible_columns
+			int next_seg_index = seg_index + 1
+			if next_seg_index < seg_count
+				end_visible_col = wrap_segment_start_col(breaks, next_seg_index)
 			VisibleColRange visible_range = (start_visible_col, end_visible_col)
 
 			RowHighlight highlight = editor_row_highlight(selection, buffer_row_index)
@@ -102,7 +113,6 @@ macro render_buffer_rows
 			else
 				screen = s_join([screen, text])
 
-			int next_seg_index = seg_index + 1
 			if next_seg_index < seg_count
 				seg_index = next_seg_index
 			else
