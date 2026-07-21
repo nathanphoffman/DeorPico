@@ -1,4 +1,65 @@
 
+# Same EditorLayoutInput/compute_editor_layout every other wrap-aware call
+# site uses (see editor_scroll.deor, mouse.deor) -- Up/Down needs today's
+# text_visible_columns to agree with what's actually drawn, and this fn
+# operates on key events rather than a render frame, so it has no layout
+# handed to it already.
+unsafe_macro compute_arrow_nav_text_visible_columns
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int total_line_count = len(lines)
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(text_visible_columns) in layout
+
+# Wrap-aware vertical move: steps exactly one visual row (a wrap
+# continuation, or the next/previous buffer line's first/last segment)
+# instead of jumping a whole buffer line, landing at the same visual
+# column within the target segment, clamped to that segment's own length
+# -- so Up/Down navigate a wrapped line's continuation rows the way VSCode
+# does, instead of skipping over them. `move_up` is set by the caller
+# (see key_left_ctrl_impl/key_right_ctrl_impl in left.deor/right.deor for
+# the same "config const before macro_run" pattern).
+macro move_cursor_visual_row
+	unsafe_macro_run use_consts
+	unsafe_macro_run compute_arrow_nav_text_visible_columns
+
+	string cur_line = lines at cursor_row
+	int cursor_visual_col = s_visual_col(cur_line, cursor_col, TAB_WIDTH)
+	intList cur_breaks = wrap_break_visual_cols(cur_line, text_visible_columns, TAB_WIDTH)
+	int cur_seg = wrap_segment_index_for_col(cur_breaks, cursor_visual_col)
+	int cur_seg_start_col = wrap_segment_start_col(cur_breaks, cur_seg)
+	int visual_col_in_seg = cursor_visual_col - cur_seg_start_col
+
+	int buffer_row = cursor_row
+	int seg_index = cur_seg
+	WrapPosition cur_pos = (buffer_row, seg_index)
+	WrapPosition new_pos = cur_pos
+	if move_up
+		new_pos = wrap_step_backward(cur_pos, lines, text_visible_columns)
+	else
+		new_pos = wrap_step_forward(cur_pos, lines, text_visible_columns)
+	(buffer_row, seg_index) in new_pos
+
+	string new_line = lines at buffer_row
+	intList new_breaks = wrap_break_visual_cols(new_line, text_visible_columns, TAB_WIDTH)
+	int new_seg_start_col = wrap_segment_start_col(new_breaks, seg_index)
+	int new_seg_count = wrap_segment_count(new_breaks)
+	int new_char_count = len(new_line)
+	int new_line_visual_len = s_visual_col(new_line, new_char_count, TAB_WIDTH)
+
+	int new_seg_end_col = new_line_visual_len
+	int next_seg_index = seg_index + 1
+	if next_seg_index < new_seg_count
+		new_seg_end_col = wrap_segment_start_col(new_breaks, next_seg_index)
+
+	int target_visual_col = new_seg_start_col + visual_col_in_seg
+	if target_visual_col > new_seg_end_col
+		target_visual_col = new_seg_end_col
+
+	cursor_row = buffer_row
+	cursor_col = s_char_index_from_visual_col(new_line, target_visual_col, TAB_WIDTH)
+
 # Editing mode: cursor movement, including shift-to-select and ctrl word-jumps
 macro handle_arrow_nav
 	if kind is "up"
@@ -6,13 +67,15 @@ macro handle_arrow_nav
 			macro_run start_or_extend_selection_impl
 		else
 			has_selection = clear_selection_impl()
-		cursor_row = key_up_impl(cursor_row)
+		bool move_up = true
+		macro_run move_cursor_visual_row
 	else if kind is "down"
 		if shift
 			macro_run start_or_extend_selection_impl
 		else
 			has_selection = clear_selection_impl()
-		cursor_row = key_down_impl(cursor_row)
+		bool move_up = false
+		macro_run move_cursor_visual_row
 	else if kind is "left"
 		if shift
 			macro_run start_or_extend_selection_impl
