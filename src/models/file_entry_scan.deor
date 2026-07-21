@@ -1,0 +1,80 @@
+fn entryList f_list_dir(string path)
+	rust
+		{
+			let mut items: Vec<FileEntry> = Vec::new();
+			if let Ok(read_dir) = std::fs::read_dir(&path) {
+				for entry in read_dir.flatten() {
+					let file_name = entry.file_name().to_string_lossy().to_string();
+					let full_path = entry.path().to_string_lossy().to_string();
+					let is_dir = entry.path().is_dir();
+					items.push(FileEntry { name: file_name, path: full_path, is_dir, depth: 0, expanded: false, git_status: String::new() });
+				}
+			}
+			items.sort_by(|a, b| {
+				match (a.is_dir, b.is_dir) {
+					(true, false) => std::cmp::Ordering::Less,
+					(false, true) => std::cmp::Ordering::Greater,
+					_ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+				}
+			});
+			items
+		}
+
+# Re-walks disk from scratch and rebuilds the flat browse_entries list,
+# re-expanding exactly the directories that were expanded in `old_entries`
+# (matched by path) so a rescan doesn't collapse the tree the user had open
+# -- used by F5 to pick up files/folders added or removed outside the app
+# (see key_refresh_impl), which a plain git-status re-tag never re-scans for.
+# git_status is left blank on every entry; the caller re-tags via
+# g_apply_status same as everywhere else builds this list.
+fn entryList e_rebuild_tree(entryList old_entries, string root_dir)
+	rust
+		{
+			use std::collections::HashSet;
+
+			let mut expanded_dirs: HashSet<String> = HashSet::new();
+			for e in &old_entries {
+				if e.is_dir && e.expanded {
+					expanded_dirs.insert(e.path.clone());
+				}
+			}
+
+			fn walk(dir: &std::path::Path, depth: i64, expanded_dirs: &HashSet<String>, out: &mut Vec<FileEntry>) {
+				let mut items: Vec<std::fs::DirEntry> = match std::fs::read_dir(dir) {
+					Ok(read_dir) => read_dir.flatten().collect(),
+					Err(_) => return,
+				};
+				items.sort_by(|a, b| {
+					match (a.path().is_dir(), b.path().is_dir()) {
+						(true, false) => std::cmp::Ordering::Less,
+						(false, true) => std::cmp::Ordering::Greater,
+						_ => a.file_name().to_string_lossy().to_lowercase().cmp(&b.file_name().to_string_lossy().to_lowercase()),
+					}
+				});
+
+				for entry in items {
+					let path = entry.path();
+					let is_dir = path.is_dir();
+					let path_str = path.to_string_lossy().to_string();
+					let is_expanded = is_dir && expanded_dirs.contains(&path_str);
+
+					out.push(FileEntry {
+						name: entry.file_name().to_string_lossy().to_string(),
+						path: path_str,
+						is_dir,
+						depth,
+						expanded: is_expanded,
+						git_status: String::new(),
+					});
+
+					if is_expanded {
+						walk(&path, depth + 1, expanded_dirs, out);
+					}
+				}
+			}
+
+			let mut result: Vec<FileEntry> = Vec::new();
+			let root_path = std::path::Path::new(&root_dir).to_path_buf();
+			walk(&root_path, 0, &expanded_dirs, &mut result);
+			result
+		}

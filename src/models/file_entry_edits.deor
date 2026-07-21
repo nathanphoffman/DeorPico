@@ -1,0 +1,76 @@
+struct EntryLookup
+	bool found
+	int index
+	int depth
+	bool expanded
+
+fn entryList e_insert_children(entryList entries, int at_index, entryList children)
+	rust
+		{
+			let mut result = entries;
+			let idx = (at_index + 1) as usize;
+			for (i, child) in children.into_iter().enumerate() {
+				result.insert(idx + i, child);
+			}
+			result
+		}
+
+fn entryList e_remove_children(entryList entries, int at_index, int min_depth)
+	rust
+		{
+			let mut result = entries;
+			let idx = (at_index + 1) as usize;
+			while idx < result.len() && result[idx].depth > min_depth {
+				result.remove(idx);
+			}
+			result
+		}
+
+# Drops the single entry at `at_index` -- used to remove the blank
+# placeholder row if ^R's create-file prompt is cancelled (see
+# start_create_file/cancel_create_file). Out-of-range is a no-op.
+fn entryList e_remove_at(entryList entries, int at_index)
+	rust
+		{
+			let mut result = entries;
+			let idx = at_index as usize;
+			if idx < result.len() {
+				result.remove(idx);
+			}
+			result
+		}
+
+# Drops every entry matching `path` -- used after ^Backspace deletes a file
+# from disk, to purge it from browse_entries without needing its index (see
+# remove_deleted_entry).
+fn entryList e_remove_by_path(entryList entries, string path)
+	rust
+		{
+			let mut result = entries;
+			result.retain(|e| e.path != path);
+			result
+		}
+
+# Locates the row for `path` in `entries` -- used by confirm_move_request to
+# find the moved entry's own row (for removal, needs index/depth) and the
+# destination directory's row (for insertion, needs index/depth/expanded --
+# a new row for the moved item is only spliced in if the destination is
+# already expanded on screen).
+fn EntryLookup e_find_by_path(entryList entries, string path)
+	rust
+		{
+			let mut found = false;
+			let mut index: i64 = -1;
+			let mut depth: i64 = 0;
+			let mut expanded = false;
+			for (i, e) in entries.iter().enumerate() {
+				if e.path == path {
+					found = true;
+					index = i as i64;
+					depth = e.depth;
+					expanded = e.expanded;
+					break;
+				}
+			}
+			EntryLookup { found, index, depth, expanded }
+		}
