@@ -1,0 +1,40 @@
+# Normalizes sel_anchor vs cursor into start_row/start_col/end_row/end_col
+# so start is always at or before end. Shared by delete/copy/paste below.
+unsafe_macro normalize_selection
+	start_row as sel_anchor_row
+	start_col as sel_anchor_col
+	end_row as cursor_row
+	end_col as cursor_col
+
+	needs_swap as false
+	if start_row > end_row
+		needs_swap = true
+	else if start_row is end_row and start_col > end_col
+		needs_swap = true
+
+	if needs_swap
+		int tmp_row = start_row
+		int tmp_col = start_col
+		start_row = end_row
+		start_col = end_col
+		end_row = tmp_row
+		end_col = tmp_col
+
+macro start_or_extend_selection_impl
+	if not has_selection
+		sel_anchor_row = cursor_row
+		sel_anchor_col = cursor_col
+		has_selection = true
+
+macro key_select_all_impl
+    cursor_row = 0
+    cursor_col = 0
+    has_selection = true
+
+    int total_line_count = len(lines)
+    sel_anchor_row = total_line_count
+    last_line as lines at (total_line_count - 1)
+    sel_anchor_col = len(last_line)
+
+fn bool clear_selection_impl()
+	return false

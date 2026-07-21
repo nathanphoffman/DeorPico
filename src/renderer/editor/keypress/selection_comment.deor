@@ -1,0 +1,57 @@
+macro key_space_comment_selection_impl
+	unsafe_macro_run normalize_selection
+
+	string ext = f_extension(filename)
+	string prefix = comment_prefix_for_ext(ext)
+
+	# No known line-comment token for this file type (block-comment-only
+	# languages like CSS/HTML, or an unrecognized extension) -- leave the
+	# selection untouched rather than guessing at a comment syntax.
+	if prefix is not ""
+		if start_row < end_row
+			macro_run push_undo_snapshot
+
+		int prefix_len = len(prefix)
+
+		for row_id in range(start_row, end_row)
+			string line = lines at row_id
+
+			string line_trimmed = s_trim(line)
+
+			# no point commenting out empty lines
+			if(line_trimmed is "")
+				continue
+
+			int first_position = 0
+			string rest = s_trim_start(line)
+			int rest_len = len(rest)
+			int line_len = len(line)
+			int leading_ws_len = line_len - rest_len
+			string leading_ws = s_substring(line, first_position, leading_ws_len)
+
+			bool is_comment = s_starts_with(line_trimmed, prefix)
+
+			if is_comment
+				# Toggling a comment on only ever adds one literal prefix
+				# plus a single space right after the line's existing
+				# indentation (see the else branch below) -- so undoing it
+				# just means removing that same prefix and following space
+				# again, and leaving everything else exactly as it was.
+				string after_prefix = s_substring(rest, prefix_len, rest_len)
+				string new_rest = after_prefix
+				string single_space = " "
+				if s_starts_with(after_prefix, single_space)
+					int after_prefix_len = len(after_prefix)
+					int space_len = 1
+					new_rest = s_substring(after_prefix, space_len, after_prefix_len)
+				line = s_join([leading_ws, new_rest])
+			else
+				# Keep the line's leading whitespace in front of the new
+				# prefix rather than pushing it after -- a commented-out
+				# indented block should still line up with its surrounding
+				# code.
+				line = s_join([leading_ws, prefix, " ", rest])
+
+			lines at row_id = line
+
+		dirty = true

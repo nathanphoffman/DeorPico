@@ -1,0 +1,66 @@
+macro do_paste_impl
+	macro_run push_undo_snapshot
+	if has_selection
+		macro_run delete_selection
+
+	string clip_text = resolve_paste_text(kind, chr)
+	int clip_len = len(clip_text)
+	if clip_len > 0
+		nls as "\n"
+		stringList clip_lines = s_split(clip_text, nls)
+		int clip_line_count = len(clip_lines)
+		int paste_row = cursor_row
+		string cur_line = lines at paste_row
+		zero as 0
+		string before = s_substring(cur_line, zero, cursor_col)
+		int line_len = len(cur_line)
+		string after = s_substring(cur_line, cursor_col, line_len)
+
+		if clip_line_count is 1
+			string only_clip = clip_lines at zero
+			stringList join_parts = [before, only_clip, after]
+			string new_line = s_join(join_parts)
+			lines at paste_row = new_line
+			int before_len = len(before)
+			int only_len = len(only_clip)
+			cursor_col = before_len + only_len
+		else
+			string first_clip = clip_lines at zero
+			stringList first_parts = [before, first_clip]
+			string first_new_line = s_join(first_parts)
+
+			int last_idx = clip_line_count - 1
+			string last_clip = clip_lines at last_idx
+			stringList last_parts = [last_clip, after]
+			string last_new_line = s_join(last_parts)
+
+			lines at paste_row = first_new_line
+			int next_row = paste_row + 1
+			stringList before_lines = l_string_take(lines, next_row)
+			stringList rest_lines = l_string_drop(lines, next_row)
+
+			stringList middle_block = empty
+			int mid_idx = 1
+			for if mid_idx < last_idx
+				string mid_clip = clip_lines at mid_idx
+				middle_block at end = mid_clip
+				mid_idx = mid_idx + 1
+			middle_block at end = last_new_line
+
+			stringList inserted_block = l_string_concat(before_lines, middle_block)
+			lines = l_string_concat(inserted_block, rest_lines)
+
+			cursor_row = paste_row + last_idx
+			cursor_col = len(last_clip)
+
+		dirty = true
+
+
+# chr passed by value here (not read as a bare outer identifier) so this
+# clones instead of moving it -- do_paste_impl is inlined into a giant
+# shared function body where chr is read again by many later macros, and
+# a bare `clip_text = chr` reassignment moves it instead of cloning.
+fn string resolve_paste_text(string kind, string chr)
+	if kind is "paste_text"
+		return chr
+	return cp_get()

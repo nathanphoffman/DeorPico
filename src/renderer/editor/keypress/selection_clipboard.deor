@@ -1,0 +1,78 @@
+macro delete_selection
+	unsafe_macro_run normalize_selection
+	zero as 0
+
+	if start_row is end_row
+		string the_line = lines at start_row
+		string before = s_substring(the_line, zero, start_col)
+		int line_len = len(the_line)
+		string after = s_substring(the_line, end_col, line_len)
+		stringList join_parts = [before, after]
+		string new_line = s_join(join_parts)
+		lines at start_row = new_line
+	else
+		string first_line = lines at start_row
+		string first_before = s_substring(first_line, zero, start_col)
+		string last_line = lines at end_row
+		int last_len = len(last_line)
+		string last_after = s_substring(last_line, end_col, last_len)
+		stringList join_parts = [first_before, last_after]
+		string merged_line = s_join(join_parts)
+		lines at start_row = merged_line
+
+		int remove_row = end_row
+		for if remove_row > start_row
+			lines remove at remove_row
+			remove_row = remove_row - 1
+
+	cursor_row = start_row
+	cursor_col = start_col
+	dirty = true
+	has_selection = false
+
+# Caller must declare `string selection_text = ""` before calling this.
+macro copy_selection_text
+	unsafe_macro_run normalize_selection
+	zero as 0
+
+	if start_row is end_row
+		string the_line = lines at start_row
+		selection_text = s_substring(the_line, start_col, end_col)
+	else
+		string first_line = lines at start_row
+		int first_len = len(first_line)
+		string first_part = s_substring(first_line, start_col, first_len)
+		stringList collected = empty
+		collected at end = first_part
+
+		int mid_row = start_row + 1
+		for if mid_row < end_row
+			string mid_line = lines at mid_row
+			collected at end = mid_line
+			mid_row = mid_row + 1
+
+		string last_line = lines at end_row
+		string last_part = s_substring(last_line, zero, end_col)
+		collected at end = last_part
+
+		nls as "\n"
+		selection_text = s_join_with(collected, nls)
+
+macro do_copy_impl
+	if has_selection
+		string selection_text = ""
+		macro_run copy_selection_text
+		bool copied = cp_set(selection_text)
+	else
+		string current_line = lines at cursor_row
+		string word_text = s_word_at(current_line, cursor_col)
+		if len(word_text) > 0
+			bool copied = cp_set(word_text)
+
+macro do_cut_impl
+	if has_selection
+		macro_run push_undo_snapshot
+		string selection_text = ""
+		macro_run copy_selection_text
+		bool copied = cp_set(selection_text)
+		macro_run delete_selection
