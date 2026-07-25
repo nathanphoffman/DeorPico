@@ -13,14 +13,6 @@
 # instead of writing a new file), so those live in rename_file.deor instead
 # of resolve_placeholder_target/confirm_create_file here.
 
-struct PlaceholderResetState
-	bool creating_file
-	bool renaming_file
-	string new_file_name
-	string create_parent_dir
-	string notice
-	bool error
-
 # Conditionally overrides the insert_index/insert_depth/parent_dir defaults
 # (set by the caller, start_create_file) if something's highlighted --
 # reassigns rather than declares them, so this stays macro_block-safe even
@@ -90,13 +82,25 @@ macro placeholder_backspace
 # make room for the placeholder, so there's no "drop", there's a "put
 # back" -- restore_renamed_entry (see ../rename/restore_renamed_entry.deor)
 # is reached instead, kept as a macro_run rather than duplicated here.
+#
+# The reset below is plain assignment into creating_file/renaming_file/etc,
+# NOT a struct destructure -- `(field) in some_struct` always declares a
+# fresh binding (see destructuring.md), and a plain `macro`'s body is
+# auto-wrapped in its own block, so that fresh binding would die at the end
+# of this macro instead of ever reaching the caller's real state. Plain
+# `x = value` is the only form that actually mutates the caller's variable
+# from in here.
 macro cancel_placeholder
 	if renaming_file
 		macro_run restore_renamed_entry
 	else
 		macro_run remove_placeholder_entry
-	PlaceholderResetState reset = reset_placeholder_state()
-	(creating_file, renaming_file, new_file_name, create_parent_dir, notice, error) in reset
+	creating_file = false
+	renaming_file = false
+	new_file_name = ""
+	create_parent_dir = ""
+	notice = ""
+	error = false
 
 macro remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
@@ -105,16 +109,3 @@ macro remove_placeholder_entry
 		browse_selected = last_entry
 	if browse_selected < 0
 		browse_selected = 0
-
-# A real fn (not a macro) -- reads nothing, so its 3 callers (this file's
-# cancel_placeholder, create/apply_created_placeholder_entry.deor,
-# rename/apply_renamed_placeholder_entry.deor) can call it without chaining
-# a leaking macro into a leaking macro.
-fn PlaceholderResetState reset_placeholder_state()
-	bool creating_file = false
-	bool renaming_file = false
-	string new_file_name = ""
-	string create_parent_dir = ""
-	string notice = ""
-	bool error = false
-	return (creating_file, renaming_file, new_file_name, create_parent_dir, notice, error)
