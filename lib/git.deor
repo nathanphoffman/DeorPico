@@ -24,7 +24,7 @@ fn stringList g_split_lines(string raw_text)
 fn string g_raw_status(string repo_path)
 	rust
 		std::process::Command::new("git")
-			.args(["status", "--porcelain=v1"])
+			.args(["status", "--porcelain=v1", "--ignored"])
 			.current_dir(&repo_path)
 			.output()
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
@@ -56,6 +56,9 @@ fn bool g_is_repo(string repo_path)
 # working tree but not yet staged (worktree "D") toggle in opposite
 # directions under ^A (see git_stage_toggle), so they can't share one status.
 fn string g_classify_status(string index_status, string worktree_status)
+	if index_status is "!" and worktree_status is "!"
+		return "ignored"
+
 	if index_status is "D"
 		return "staged_deleted"
 
@@ -94,6 +97,11 @@ fn StringMap g_status(string repo_path)
 		string worktree_status = s_char_at(line, one_idx)
 		string rest = s_substring(line, three_idx, line_len)
 		string path = s_trim(rest)
+		string slash = "/"
+		if s_ends_with(path, slash)
+			int path_len = len(path)
+			int slash_trim_end = path_len - 1
+			path = s_substring(path, zero_idx, slash_trim_end)
 		string status = g_classify_status(index_status, worktree_status)
 
 		if status is not ""
@@ -218,6 +226,8 @@ fn DirGitSummary g_dir_status_summary(string repo_path, string dir_path)
 
 		string index_status = s_char_at(line, zero_idx)
 		string worktree_status = s_char_at(line, one_idx)
+		if index_status is "!" and worktree_status is "!"
+			continue
 		string rest = s_substring(line, three_idx, line_len)
 		string path = s_trim(rest)
 

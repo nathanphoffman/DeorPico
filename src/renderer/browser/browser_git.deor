@@ -14,6 +14,8 @@ fn entryList g_changed_entries(StringMap git_map)
 	entryList items = empty
 	for path in paths
 		string git_status = h_get(git_map, path)
+		if git_status is "ignored"
+			continue
 		string name = f_basename(path)
 		bool is_dir = false
 		int depth = 0
@@ -38,11 +40,19 @@ fn string g_relative_path(string path)
 
 
 fn entryList g_apply_status(entryList entries, StringMap git_map)
+	int ignored_dir_limit = 50
+
 	entryList result = empty
 	for entry in entries
-		(path) in entry
+		(path, is_dir) in entry
 		string clean = g_relative_path(path)
 		string git_status = h_get(git_map, clean)
+
+		if git_status is "ignored" and is_dir
+			int entry_count = f_dir_entry_count(path)
+			if entry_count >= ignored_dir_limit
+				git_status = ""
+
 		FileEntry updated = entry with (git_status)
 		result at end = updated
 

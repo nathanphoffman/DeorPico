@@ -1,3 +1,14 @@
+# Shallow (non-recursive) count of `path`'s immediate entries -- used to
+# decide whether an ignored directory is small enough to grey out in the
+# browser (see g_apply_status); large ignored dirs (e.g. node_modules) are
+# left uncolored rather than paying to walk their contents.
+fn int f_dir_entry_count(string path)
+	rust
+		std::fs::read_dir(&path)
+			.map(|read_dir| read_dir.flatten().count() as i64)
+			.unwrap_or(0)
+
+
 fn entryList f_list_dir(string path)
 	rust
 		{

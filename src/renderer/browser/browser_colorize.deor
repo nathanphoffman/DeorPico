@@ -1,13 +1,17 @@
 
 
 # Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
-# "edited"/"new"/"staged_deleted"/"deleted"), or returns it unchanged for any
-# other status (including "" for a clean file). "staged_edited" (staged with
-# further worktree edits on top) still renders green like plain "staged" --
-# browser_edit_prefix is what actually flags the extra edit. A deletion gets
-# the same staged (green) / unstaged (yellow) color as any other change,
-# plus a strikethrough layered on top, rather than its own distinct color --
-# the strikethrough alone is enough to tell it apart from a plain edit.
+# "edited"/"new"/"staged_deleted"/"deleted"/"ignored"), or returns it
+# unchanged for any other status (including "" for a clean file).
+# "staged_edited" (staged with further worktree edits on top) still renders
+# green like plain "staged" -- browser_edit_prefix is what actually flags
+# the extra edit. A deletion gets the same staged (green) / unstaged
+# (yellow) color as any other change, plus a strikethrough layered on top,
+# rather than its own distinct color -- the strikethrough alone is enough
+# to tell it apart from a plain edit. "ignored" (gitignored) just dims the
+# row rather than taking its own color -- g_apply_status already caps this
+# to small directories so a huge ignored tree (e.g. node_modules) isn't
+# walked just to color it.
 fn string browser_colorize(string line, string git_status)
 	unsafe_macro_run use_browser_ansi_codes
 
@@ -24,5 +28,7 @@ fn string browser_colorize(string line, string git_status)
 		result = s_join([ANSI_GIT_STAGED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_STAGED_OFF])
 	else if git_status is "deleted"
 		result = s_join([ANSI_GIT_EDITED_ON, ANSI_STRIKETHROUGH_ON, line, ANSI_STRIKETHROUGH_OFF, ANSI_GIT_EDITED_OFF])
+	else if git_status is "ignored"
+		result = browser_dim_wrap(line)
 
 	return result
