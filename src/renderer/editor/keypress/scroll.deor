@@ -6,8 +6,8 @@ macro clamp_scroll
 	unsafe_macro_run use_consts
 	if scroll_row < 0
 		scroll_row = 0
+		scroll_wrap_seg = 0
 
-	int last_row = len(lines) - 1
 	int total_line_count = len(lines)
 	TermSize size = xt_size()
 	(cols, rows) in size
@@ -15,18 +15,6 @@ macro clamp_scroll
 	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
 	(view_rows, text_visible_columns) in layout
-
-	# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
-	# paints past the last line -- without this a long file's view always
-	# ends exactly on its last line and the padding (meant to keep text off
-	# the status bar) never becomes reachable.
-	const int EOF_PADDING_ROWS = 5
-	int max_scroll = last_row - view_rows + 1 + EOF_PADDING_ROWS
-	if max_scroll < 0
-		max_scroll = 0
-
-	if scroll_row > max_scroll
-		scroll_row = max_scroll
 
 	# A wheel notch only ever moves scroll_row (see scroll_up_impl/
 	# scroll_down_impl below) -- scroll_wrap_seg stays whatever it was last
@@ -48,6 +36,44 @@ macro clamp_scroll
 			scroll_wrap_seg = max_seg
 	else
 		scroll_wrap_seg = 0
+
+	# max_scroll is bounded in visual-row terms, not raw line count -- a
+	# wheel notch only ever moves scroll_row by a fixed number of raw lines
+	# (see scroll_up_impl/scroll_down_impl below), but a single long
+	# unwrapped line (e.g. a long paragraph) can wrap into far more on-screen
+	# rows than that. Bounding by raw line count alone let the wheel run out
+	# of "budget" while still visually stuck partway through such a line,
+	# well short of the document's real end -- this mirrors clamp_diff_scroll,
+	# which already had to solve the same problem for the diff view.
+	#
+	# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
+	# paints past the last line -- without this a long file's view always
+	# ends exactly on its last line and the padding (meant to keep text off
+	# the status bar) never becomes reachable.
+	const int EOF_PADDING_ROWS = 5
+	int total_visual_rows = wrap_total_visual_rows(lines, text_visible_columns)
+	int max_scroll_visual_row = total_visual_rows - view_rows + EOF_PADDING_ROWS
+	if max_scroll_visual_row < 0
+		max_scroll_visual_row = 0
+
+	int scroll_visual_row = total_visual_rows
+	if scroll_row < total_line_count
+		int buffer_row = scroll_row
+		int seg_index = scroll_wrap_seg
+		WrapPosition scroll_pos = (buffer_row, seg_index)
+		scroll_visual_row = wrap_visual_row_position(scroll_pos, lines, text_visible_columns)
+	else
+		scroll_visual_row = total_visual_rows + (scroll_row - total_line_count)
+
+	if scroll_visual_row > max_scroll_visual_row
+		if max_scroll_visual_row >= total_visual_rows
+			scroll_row = total_line_count + (max_scroll_visual_row - total_visual_rows)
+			scroll_wrap_seg = 0
+		else
+			WrapPosition clamped_pos = wrap_position_for_visual_row(lines, max_scroll_visual_row, text_visible_columns)
+			(buffer_row, seg_index) in clamped_pos
+			scroll_row = buffer_row
+			scroll_wrap_seg = seg_index
 
 # Shared by scroll_up/scroll_down to find this frame's actual sidebar_width
 # (wider while sidebar_focused, see layout.deor) -- so a wheel scroll over
