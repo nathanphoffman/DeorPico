@@ -97,10 +97,20 @@ fn int wrap_segment_index_for_col(intList breaks, int visual_col)
 
 # Visual column `seg_index` starts at, given `breaks` already computed by
 # wrap_break_visual_cols for the same line -- 0 for the first segment.
+# Clamps an out-of-range seg_index to the last real segment instead of
+# indexing past the end of `breaks` -- callers can hand in a seg_index left
+# over from a different line (e.g. a wheel scroll that only advanced the
+# buffer row, see clamp_scroll in scroll.deor), and without this that stale
+# value crashes here instead of just rendering the line's last segment.
 fn int wrap_segment_start_col(intList breaks, int seg_index)
 	if seg_index is 0
 		return 0
+	int break_count = len(breaks)
 	int prev_index = seg_index - 1
+	if prev_index >= break_count
+		prev_index = break_count - 1
+	if prev_index < 0
+		return 0
 	return breaks at prev_index
 
 # Advances one visual row forward from `pos`, rolling into the next buffer

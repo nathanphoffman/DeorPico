@@ -3,6 +3,7 @@
 # renderer (see layout.deor), so the wheel never scrolls further than the
 # cursor-follow logic or the drawn screen itself would allow.
 macro clamp_scroll
+	unsafe_macro_run use_consts
 	if scroll_row < 0
 		scroll_row = 0
 
@@ -13,7 +14,7 @@ macro clamp_scroll
 
 	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
 	EditorLayout layout = compute_editor_layout(layout_input)
-	(view_rows) in layout
+	(view_rows, text_visible_columns) in layout
 
 	# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
 	# paints past the last line -- without this a long file's view always
@@ -26,6 +27,27 @@ macro clamp_scroll
 
 	if scroll_row > max_scroll
 		scroll_row = max_scroll
+
+	# A wheel notch only ever moves scroll_row (see scroll_up_impl/
+	# scroll_down_impl below) -- scroll_wrap_seg stays whatever it was last
+	# set to by editor_scroll/scrollbar_jump_to_row, which can be a segment
+	# index that doesn't exist on the line scroll_row now points at (e.g. it
+	# was valid mid-way through a long wrapped line, then a wheel notch
+	# moved scroll_row onto a short line). Reclamping it here to the new
+	# line's actual segment count keeps it a valid pair with scroll_row, the
+	# same invariant scrollbar_jump_to_row already maintains -- otherwise
+	# render_buffer_rows/wrap_segment_start_col index past the end of that
+	# line's break list.
+	if scroll_wrap_seg < 0
+		scroll_wrap_seg = 0
+	else if scroll_row < total_line_count
+		string scroll_line = lines at scroll_row
+		intList scroll_breaks = wrap_break_visual_cols(scroll_line, text_visible_columns, TAB_WIDTH)
+		int max_seg = wrap_segment_count(scroll_breaks) - 1
+		if scroll_wrap_seg > max_seg
+			scroll_wrap_seg = max_seg
+	else
+		scroll_wrap_seg = 0
 
 # Shared by scroll_up/scroll_down to find this frame's actual sidebar_width
 # (wider while sidebar_focused, see layout.deor) -- so a wheel scroll over
