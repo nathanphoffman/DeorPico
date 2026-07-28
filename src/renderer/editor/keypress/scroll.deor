@@ -1,31 +1,23 @@
-# Clamps scroll_row for a plain wheel-driven scroll in the main buffer view --
-# uses the exact same EditorLayout view_rows as editor_scroll and the
-# renderer (see layout.deor), so the wheel never scrolls further than the
-# cursor-follow logic or the drawn screen itself would allow.
-macro clamp_scroll
-	unsafe_macro_run use_consts
+# scroll_row going negative (e.g. wheeling up past the top of the document)
+# -- scroll_wrap_seg is reset alongside it since a seg_index only means
+# anything paired with a real buffer_row.
+macro clamp_scroll_floor
 	if scroll_row < 0
 		scroll_row = 0
 		scroll_wrap_seg = 0
 
-	int total_line_count = len(lines)
-	TermSize size = xt_size()
-	(cols, rows) in size
-
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
-	EditorLayout layout = compute_editor_layout(layout_input)
-	(view_rows, text_visible_columns) in layout
-
-	# A wheel notch only ever moves scroll_row (see scroll_up_impl/
-	# scroll_down_impl below) -- scroll_wrap_seg stays whatever it was last
-	# set to by editor_scroll/scrollbar_jump_to_row, which can be a segment
-	# index that doesn't exist on the line scroll_row now points at (e.g. it
-	# was valid mid-way through a long wrapped line, then a wheel notch
-	# moved scroll_row onto a short line). Reclamping it here to the new
-	# line's actual segment count keeps it a valid pair with scroll_row, the
-	# same invariant scrollbar_jump_to_row already maintains -- otherwise
-	# render_buffer_rows/wrap_segment_start_col index past the end of that
-	# line's break list.
+# A wheel notch only ever moves scroll_row (see scroll_up_impl/
+# scroll_down_impl below) -- scroll_wrap_seg stays whatever it was last set
+# to by editor_scroll/scrollbar_jump_to_row, which can be a segment index
+# that doesn't exist on the line scroll_row now points at (e.g. it was valid
+# mid-way through a long wrapped line, then a wheel notch moved scroll_row
+# onto a short line). Reclamping it here to the new line's actual segment
+# count keeps it a valid pair with scroll_row, the same invariant
+# scrollbar_jump_to_row already maintains -- otherwise render_buffer_rows/
+# wrap_segment_start_col index past the end of that line's break list.
+# Expects total_line_count/text_visible_columns already computed by the
+# caller (see clamp_scroll).
+macro reclamp_scroll_wrap_seg
 	if scroll_wrap_seg < 0
 		scroll_wrap_seg = 0
 	else if scroll_row < total_line_count
@@ -37,19 +29,21 @@ macro clamp_scroll
 	else
 		scroll_wrap_seg = 0
 
-	# max_scroll is bounded in visual-row terms, not raw line count -- a
-	# wheel notch only ever moves scroll_row by a fixed number of raw lines
-	# (see scroll_up_impl/scroll_down_impl below), but a single long
-	# unwrapped line (e.g. a long paragraph) can wrap into far more on-screen
-	# rows than that. Bounding by raw line count alone let the wheel run out
-	# of "budget" while still visually stuck partway through such a line,
-	# well short of the document's real end -- this mirrors clamp_diff_scroll,
-	# which already had to solve the same problem for the diff view.
-	#
-	# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
-	# paints past the last line -- without this a long file's view always
-	# ends exactly on its last line and the padding (meant to keep text off
-	# the status bar) never becomes reachable.
+# Bounds (scroll_row, scroll_wrap_seg) by a visual-row ceiling instead of a
+# raw line-count one -- a single long unwrapped line (e.g. a long paragraph)
+# can wrap into far more on-screen rows than a flat line-count cap accounts
+# for, which let the wheel run out of "budget" while still visually stuck
+# partway through such a line, well short of the document's real end. Mirrors
+# clamp_diff_scroll, which already had to solve the same problem for the diff
+# view. Expects total_line_count/view_rows/text_visible_columns already
+# computed, and scroll_wrap_seg already valid for scroll_row's line (see
+# reclamp_scroll_wrap_seg) -- both provided by the caller (see clamp_scroll).
+#
+# +EOF_PADDING_ROWS lets scrolling reach the grey band render_buffer_rows
+# paints past the last line -- without this a long file's view always ends
+# exactly on its last line and the padding (meant to keep text off the
+# status bar) never becomes reachable.
+macro clamp_scroll_to_wrapped_ceiling
 	const int EOF_PADDING_ROWS = 5
 	int total_visual_rows = wrap_total_visual_rows(lines, text_visible_columns)
 	int max_scroll_visual_row = total_visual_rows - view_rows + EOF_PADDING_ROWS
@@ -74,6 +68,29 @@ macro clamp_scroll
 			(buffer_row, seg_index) in clamped_pos
 			scroll_row = buffer_row
 			scroll_wrap_seg = seg_index
+
+# Clamps scroll_row/scroll_wrap_seg for a plain wheel-driven scroll in the
+# main buffer view -- uses the exact same EditorLayout view_rows as
+# editor_scroll and the renderer (see layout.deor), so the wheel never
+# scrolls further than the cursor-follow logic or the drawn screen itself
+# would allow. Composed of three steps, each documented at its own
+# definition above: floor scroll_row at 0, reclamp scroll_wrap_seg to the
+# line scroll_row now points at, then clamp both to the document's true
+# (wrap-aware) end.
+macro clamp_scroll
+	unsafe_macro_run use_consts
+	macro_run clamp_scroll_floor
+
+	int total_line_count = len(lines)
+	TermSize size = xt_size()
+	(cols, rows) in size
+
+	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
+	EditorLayout layout = compute_editor_layout(layout_input)
+	(view_rows, text_visible_columns) in layout
+
+	macro_run reclamp_scroll_wrap_seg
+	macro_run clamp_scroll_to_wrapped_ceiling
 
 # Shared by scroll_up/scroll_down to find this frame's actual sidebar_width
 # (wider while sidebar_focused, see layout.deor) -- so a wheel scroll over
