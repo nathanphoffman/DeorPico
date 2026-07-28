@@ -21,10 +21,26 @@ fn string f_dirname(string path)
 # Sends `path` to the OS trash (freedesktop trash on Linux, Recycle Bin/
 # Trash elsewhere) rather than permanently deleting it -- used by ^Backspace
 # in the file browser/sidebar (see file_delete_entry) so a wrong keypress is
-# still recoverable outside the editor.
+# still recoverable outside the editor. On Linux the `trash` crate requires
+# ~/.local/share/Trash/{files,info} to already exist and errors out instead
+# of creating it, which some file managers (e.g. Nemo on a fresh Mint
+# install) never do on their own -- so ensure it's there first.
 fn bool f_trash(string path)
 	rust
-		trash::delete(&path).is_ok()
+		{
+			#[cfg(target_os = "linux")]
+			{
+				let data_home = std::env::var_os("XDG_DATA_HOME")
+					.map(std::path::PathBuf::from)
+					.or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share")));
+				if let Some(data_home) = data_home {
+					let trash_dir = data_home.join("Trash");
+					let _ = std::fs::create_dir_all(trash_dir.join("files"));
+					let _ = std::fs::create_dir_all(trash_dir.join("info"));
+				}
+			}
+			trash::delete(&path).is_ok()
+		}
 
 fn bool f_dir_is_empty(string path)
 	rust
