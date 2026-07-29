@@ -10,8 +10,30 @@ fn string cp_get()
 fn bool cp_set(string text)
 	rust
 		{
-			match arboard::Clipboard::new() {
-				Ok(mut clipboard) => clipboard.set_text(text).is_ok(),
-				Err(_) => false,
+			// X11/Wayland only serve clipboard reads while the owning process
+			// stays connected -- a bare set_text() drops the connection ~1ms
+			// later and the content vanishes unless a clipboard manager grabs
+			// it in time. Holding the connection open on a detached thread
+			// keeps paste working for as long as DeorPico keeps running.
+			// Windows/macOS clipboards persist on their own, so they skip this.
+			#[cfg(all(unix, not(any(target_os = "macos", target_os = "android", target_os = "emscripten"))))]
+			{
+				use arboard::SetExtLinux;
+				match arboard::Clipboard::new() {
+					Ok(mut clipboard) => {
+						std::thread::spawn(move || {
+							let _ = clipboard.set().wait().text(text);
+						});
+						true
+					}
+					Err(_) => false,
+				}
+			}
+			#[cfg(not(all(unix, not(any(target_os = "macos", target_os = "android", target_os = "emscripten")))))]
+			{
+				match arboard::Clipboard::new() {
+					Ok(mut clipboard) => clipboard.set_text(text).is_ok(),
+					Err(_) => false,
+				}
 			}
 		}
