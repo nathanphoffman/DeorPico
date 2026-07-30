@@ -25,7 +25,11 @@ fn string f_dirname(string path)
 # ~/.local/share/Trash/{files,info} to already exist and errors out instead
 # of creating it, which some file managers (e.g. Nemo on a fresh Mint
 # install) never do on their own -- so ensure it's there first.
-fn bool f_trash(string path)
+# Returns the underlying error's message on failure ("" on success) rather
+# than collapsing to a bool, since "trash unavailable?" alone wasn't enough
+# to diagnose why this still failed for some users after the directory-
+# creation fix above.
+fn string f_trash(string path)
 	rust
 		{
 			#[cfg(target_os = "linux")]
@@ -39,7 +43,10 @@ fn bool f_trash(string path)
 					let _ = std::fs::create_dir_all(trash_dir.join("info"));
 				}
 			}
-			trash::delete(&path).is_ok()
+			match trash::delete(&path) {
+				Ok(()) => String::new(),
+				Err(e) => e.to_string(),
+			}
 		}
 
 fn bool f_dir_is_empty(string path)

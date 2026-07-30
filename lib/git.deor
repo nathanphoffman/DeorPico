@@ -24,11 +24,37 @@ fn stringList g_split_lines(string raw_text)
 fn string g_raw_status(string repo_path)
 	rust
 		std::process::Command::new("git")
-			.args(["status", "--porcelain=v1", "--ignored"])
+			.args(["status", "--porcelain=v1", "--ignored", "-z"])
 			.current_dir(&repo_path)
 			.output()
 			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
 			.unwrap_or_default()
+
+# The NUL byte git's `-z` output separates entries with -- Deor string
+# literals don't support a \0 escape, so this is the one wrapped rust-block
+# constant for it (same reasoning as xt_esc/xt_crlf in lib/term.deor).
+fn string g_nul()
+	rust
+		"\u{0}".to_string()
+
+# `-z` output is NUL-separated instead of newline-separated, and critically
+# leaves paths as raw, unquoted bytes -- without it, `--porcelain=v1` alone
+# wraps any path with a non-ASCII byte (or an embedded quote/backslash) in
+# C-style quotes with octal escapes (e.g. a literal `"images/caf\303\251.png"`
+# for "café.png"), which every caller below was treating as the real path,
+# corrupting anything downstream that stats/opens/trashes it. Mirrors
+# g_split_lines' one-trailing-separator trim (there's a NUL after every
+# entry including the last, none before the first).
+fn stringList g_split_status_entries(string raw_text)
+	string nul = g_nul()
+	string trimmed = raw_text
+	if s_ends_with(raw_text, nul)
+		int raw_len = len(raw_text)
+		int trim_start = 0
+		int trim_end = raw_len - 1
+		trimmed = s_substring(raw_text, trim_start, trim_end)
+
+	return s_split(trimmed, nul)
 
 
 # Added to know whether to show the <GIT> section in the sidebar at all
@@ -81,22 +107,30 @@ fn string g_classify_status(string index_status, string worktree_status)
 
 fn StringMap g_status(string repo_path)
 	string raw_text = g_raw_status(repo_path)
-	stringList lines = g_split_lines(raw_text)
+	stringList entries = g_split_status_entries(raw_text)
 
 	int zero_idx = 0
 	int one_idx = 1
 	int three_idx = 3
+	int entry_count = len(entries)
 
 	StringMap result = h_make()
-	for line in lines
-		int line_len = len(line)
-		if line_len < 4
+	int pos = 0
+	for if pos < entry_count
+		string entry = entries at pos
+		int entry_len = len(entry)
+		if entry_len < 4
+			pos = pos + 1
 			continue
 
-		string index_status = s_char_at(line, zero_idx)
-		string worktree_status = s_char_at(line, one_idx)
-		string rest = s_substring(line, three_idx, line_len)
-		string path = s_trim(rest)
+		string index_status = s_char_at(entry, zero_idx)
+		string worktree_status = s_char_at(entry, one_idx)
+		# A rename/copy ("R"/"C" in the index column) carries one extra
+		# NUL-terminated field right after this one -- the path it was
+		# renamed/copied *from* -- which isn't its own status entry and
+		# must be skipped rather than misread as one on the next iteration.
+		bool is_rename = index_status is "R" or index_status is "C"
+		string path = s_substring(entry, three_idx, entry_len)
 		string slash = "/"
 		if s_ends_with(path, slash)
 			int path_len = len(path)
@@ -111,6 +145,11 @@ fn StringMap g_status(string repo_path)
 			string existing = h_get(result, path)
 			if existing is not "deleted" and existing is not "staged_deleted"
 				result = h_set(result, path, status)
+
+		if is_rename
+			pos = pos + 2
+		else
+			pos = pos + 1
 
 	return result
 
@@ -209,27 +248,37 @@ fn bool g_discard(string repo_path, string pathspec)
 # match below still catches since a string always starts with itself.
 fn DirGitSummary g_dir_status_summary(string repo_path, string dir_path)
 	string raw_text = g_raw_status(repo_path)
-	stringList lines = g_split_lines(raw_text)
+	stringList entries = g_split_status_entries(raw_text)
 
 	int zero_idx = 0
 	int one_idx = 1
 	int three_idx = 3
 	string prefix = s_join([dir_path, "/"])
+	int entry_count = len(entries)
 
 	has_staged as false
 	has_unstaged as false
 
-	for line in lines
-		int line_len = len(line)
-		if line_len < 4
+	int pos = 0
+	for if pos < entry_count
+		string entry = entries at pos
+		int entry_len = len(entry)
+		if entry_len < 4
+			pos = pos + 1
 			continue
 
-		string index_status = s_char_at(line, zero_idx)
-		string worktree_status = s_char_at(line, one_idx)
+		string index_status = s_char_at(entry, zero_idx)
+		string worktree_status = s_char_at(entry, one_idx)
+		# See g_status -- a rename/copy carries one extra NUL-terminated
+		# "renamed from" field that must be skipped, not read as its own entry.
+		bool is_rename = index_status is "R" or index_status is "C"
 		if index_status is "!" and worktree_status is "!"
+			if is_rename
+				pos = pos + 2
+			else
+				pos = pos + 1
 			continue
-		string rest = s_substring(line, three_idx, line_len)
-		string path = s_trim(rest)
+		string path = s_substring(entry, three_idx, entry_len)
 
 		if s_starts_with(path, prefix)
 			if index_status is "?" and worktree_status is "?"
@@ -239,6 +288,11 @@ fn DirGitSummary g_dir_status_summary(string repo_path, string dir_path)
 					has_staged = true
 				if worktree_status is not " "
 					has_unstaged = true
+
+		if is_rename
+			pos = pos + 2
+		else
+			pos = pos + 1
 
 	DirGitSummary summary = (has_staged, has_unstaged)
 	return summary

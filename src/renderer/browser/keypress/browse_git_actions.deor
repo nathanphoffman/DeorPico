@@ -45,14 +45,14 @@ macro discard_git_changes_entry
 		error = false
 	else if git_status is "new"
 		if pending_discard_path is path
-			bool trashed = f_trash(path)
+			string trash_error = f_trash(path)
 			pending_discard_path = ""
-			if trashed
+			if trash_error is ""
 				macro_run remove_deleted_entry
 				notice = "Deleted untracked file"
 				error = false
 			else
-				notice = "Could not delete (trash unavailable?)"
+				notice = s_join(["Could not delete: ", trash_error])
 				error = true
 		else
 			pending_discard_path = path
