@@ -23,6 +23,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_jsx
 	else if ext is HTML or ext is HTM
 		macro_run highlights_html
+	else if ext is VUE
+		macro_run highlights_vue
 	else if ext is CSS
 		macro_run highlights_css
 	else if ext is PYTHON

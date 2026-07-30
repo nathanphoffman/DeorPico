@@ -1,0 +1,114 @@
+macro highlights_vue
+	# HTML comments (used in <template>)
+	name as "comment"
+	start as "<!--"
+	stop as "-->"
+	BoundedSpec html_bc_spec = (name, start, stop)
+	html_bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, html_bc_spec, html_bc_escapable)
+
+	# JS/TS block comments (used in <script>)
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# mustache interpolation -- registered before the string/attribute rules
+	# below so "{{ someObj.value }}" reads as one span rather than tripping
+	# the attribute or member-access rules inside it
+	name as "block"
+	start as "\\{\\{"
+	stop as "\\}\\}"
+	BoundedSpec mustache_spec = (name, start, stop)
+	mustache_escapable as false
+	highlighter = xs_add_bounded(highlighter, mustache_spec, mustache_escapable)
+
+	# double/single/template-literal strings -- covers both HTML attribute
+	# values and JS string literals in <script>; template ${} interpolation
+	# isn't separately colored, the whole literal is just one string token
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec tstr_spec = (name, start, stop)
+	tstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
+
+	# tag names -- the "<"/"</" is swallowed into the match, no lookahead
+	# support in the regex crate
+	tag_name as "type"
+	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
+	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+
+	# Vue directives (v-if=, v-for=, v-bind:class=, v-on:click.stop=, ...),
+	# registered before the generic attribute rule below so they win the
+	# tokenizer's first-atom-registered tiebreak and get the "special
+	# syntax" color instead of the plain attribute color
+	vdir_name as "macro_name"
+	vdir_pattern as "\\bv-[a-zA-Z-]+(:[a-zA-Z0-9_.:-]+)?(\\.[a-zA-Z-]+)*="
+	highlighter = xs_add_keyword(highlighter, vdir_name, vdir_pattern)
+
+	# shorthand bind/event attributes (:prop=, @click.stop=) -- no leading
+	# \b since ":" and "@" aren't word characters so a boundary assertion
+	# would never match right before them
+	shorthand_name as "macro_name"
+	shorthand_pattern as "[:@][a-zA-Z_][a-zA-Z0-9_.:-]*="
+	highlighter = xs_add_keyword(highlighter, shorthand_name, shorthand_pattern)
+
+	# plain HTML attribute names tight against "=", same lookahead
+	# workaround as highlights_html
+	attr_name as "function"
+	attr_pattern as "\\b[a-zA-Z_][a-zA-Z0-9_-]*="
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+	# entities
+	entity_name as "macro_name"
+	entity_pattern as "&[A-Za-z#0-9]+;"
+	highlighter = xs_add_keyword(highlighter, entity_name, entity_pattern)
+
+	# call sites: name immediately followed by "(" -- registered before the
+	# keyword/type rules below so conventional camelCase/PascalCase call
+	# sites win the tiebreak
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_$][A-Za-z0-9_$]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|as|async|await|break|case|catch|class|const|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|instanceof|interface|let|new|null|of|private|protected|public|readonly|return|set|static|super|switch|this|throw|true|try|type|typeof|undefined|var|void|while|with|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin TS primitive/utility types (for <script lang="ts">)
+	builtin_name as "type"
+	builtin_pattern as "\\b(string|number|boolean|any|unknown|never|object|symbol|bigint)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase identifiers (component names, imported types), wherever
+	# used outside a tag
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

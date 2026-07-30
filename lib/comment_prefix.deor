@@ -10,6 +10,7 @@ unsafe_macro language_ext_consts
     const string JAVASCRIPT = "js"
     const string HTML = "html"
     const string HTM = "htm"
+    const string VUE = "vue"
     const string CSS = "css"
     const string PYTHON = "py"
     const string PYX = "pyx"
