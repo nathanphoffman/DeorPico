@@ -1,11 +1,12 @@
 macro highlights_vue
-	# HTML comments (used in <template>)
+	# HTML comments (used in <template>) -- text-reachable since these can
+	# appear directly in template markup, not just inside a mustache
 	name as "comment"
 	start as "<!--"
 	stop as "-->"
 	BoundedSpec html_bc_spec = (name, start, stop)
 	html_bc_escapable as false
-	highlighter = xs_add_bounded(highlighter, html_bc_spec, html_bc_escapable)
+	highlighter = xs_add_bounded_text(highlighter, html_bc_spec, html_bc_escapable)
 
 	# JS/TS block comments (used in <script>)
 	name as "comment"
@@ -22,13 +23,15 @@ macro highlights_vue
 
 	# mustache interpolation -- registered before the string/attribute rules
 	# below so "{{ someObj.value }}" reads as one span rather than tripping
-	# the attribute or member-access rules inside it
+	# the attribute or member-access rules inside it. Text-reachable so it's
+	# still recognized as its own span when it appears directly in template
+	# text, which is most of the time.
 	name as "block"
 	start as "\\{\\{"
 	stop as "\\}\\}"
 	BoundedSpec mustache_spec = (name, start, stop)
 	mustache_escapable as false
-	highlighter = xs_add_bounded(highlighter, mustache_spec, mustache_escapable)
+	highlighter = xs_add_bounded_text(highlighter, mustache_spec, mustache_escapable)
 
 	# double/single/template-literal strings -- covers both HTML attribute
 	# values and JS string literals in <script>; template ${} interpolation
@@ -54,11 +57,14 @@ macro highlights_vue
 	tstr_escapable as true
 	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
 
-	# tag names -- the "<"/"</" is swallowed into the match, no lookahead
-	# support in the regex crate
+	# tag names -- xs_add_tag turns on tag scoping so a tag's children (the
+	# text between its open and close tag) become a text scope where
+	# ordinary rules don't apply, which is what keeps a stray apostrophe in
+	# template text ("Don't") from opening a JS string that swallows the
+	# rest of the file
 	tag_name as "type"
 	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
-	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
 	# Vue directives (v-if=, v-for=, v-bind:class=, v-on:click.stop=, ...),
 	# registered before the generic attribute rule below so they win the

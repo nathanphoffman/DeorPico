@@ -1,11 +1,11 @@
 macro highlights_html
-	# comments
+	# comments -- text-reachable since these appear directly in page text
 	name as "comment"
 	start as "<!--"
 	stop as "-->"
 	BoundedSpec bc_spec = (name, start, stop)
 	bc_escapable as false
-	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+	highlighter = xs_add_bounded_text(highlighter, bc_spec, bc_escapable)
 
 	# attribute values
 	name as "string"
@@ -22,11 +22,13 @@ macro highlights_html
 	sstr_escapable as false
 	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
 
-	# tag names -- the "<"/"</" is swallowed into the match, no lookahead
-	# support in the regex crate
+	# tag names -- xs_add_tag turns on tag scoping so a tag's children
+	# become a text scope where ordinary rules (including the string rules
+	# above) don't apply, which is what keeps a stray apostrophe in page
+	# text ("Don't") from opening a string that swallows the rest of the file
 	tag_name as "type"
 	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
-	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
 	# attribute names tight against "=" -- same lookahead workaround
 	attr_name as "function"

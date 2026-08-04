@@ -5,20 +5,63 @@ rust
 	// match with the earliest start wins; ties go to whichever rule was
 	// registered first (see hl_tokenize_line) -- this is what lets a rule
 	// like "call site" beat a later, broader "type" rule on the same text.
+	//
+	// Tag is a variant of Keyword used only by markup grammars (tsx/jsx/vue/
+	// html) that call xs_enable_tag_scoping -- see the Frame/scope-stack
+	// comment on hl_tokenize_line for why it needs to be distinct from a
+	// plain Keyword. `guarded` is the same pattern with a mandatory
+	// "expression-start" character (or start-of-line) glued onto the front
+	// and the real match wrapped in capture group 1 -- see
+	// build_guarded_tag_pattern.
 	#[derive(Clone)]
 	enum HlRule {
 		Keyword(String, regex::Regex),
-		Bounded(String, regex::Regex, regex::Regex, bool),
+		Bounded(String, regex::Regex, regex::Regex, bool, bool), // name, start, stop, escapable, text_reentrant
+		Tag(String, regex::Regex, regex::Regex), // name, plain, guarded
+	}
+
+	// Per-row scope stack for markup grammars. Frame::Code is the permanent
+	// floor (index 0), never popped -- everything else nests on top of it.
+	//
+	//   Code      ordinary scanning with the full rule list (today's only
+	//             state, for every grammar that never registers a Tag rule)
+	//   CodeChild like Code but poppable -- <script>/<style> bodies, so they
+	//             keep full code highlighting instead of going inert
+	//   Text      inside a tag's children (JSX/HTML text) -- no rule other
+	//             than a tag start, a text-reentrant Bounded start, or (jsx_expr)
+	//             a bare '{' applies here, which is what keeps stray quotes/
+	//             apostrophes/capitalized words in prose from being read as code
+	//   InTag     inside "<Name ...", scanning attributes, watching for the
+	//             tag's own unescaped '>' or '/>' -- bool is "is a closing tag"
+	//   Expr      inside a JSX `{...}` expression entered from Text; usize
+	//             tracks unmatched '{' depth so nested object literals /
+	//             blocks don't pop it early
+	//   Bounded   inside a Bounded rule's region (string/comment/mustache/...),
+	//             usize is the rule index -- generalizes the old single-slot
+	//             "open bounded region" state to a stack slot
+	#[derive(Clone, PartialEq)]
+	enum Frame {
+		Code,
+		CodeChild,
+		Text,
+		InTag(bool, String),
+		Expr(usize),
+		Bounded(usize),
 	}
 
 	struct HighlighterInner {
 		rules: Vec<HlRule>,
-		// line_state[row] is the rule index (if any) of the bounded region
-		// still open at the START of that row -- populated by a full-file
-		// scan in xs_run so xs_line can color an arbitrary row on its own
-		// without re-scanning everything before it.
-		line_state: Vec<Option<usize>>,
+		// line_state[row] is the scope stack in effect at the START of that
+		// row -- populated by a full-file scan in xs_run so xs_line can color
+		// an arbitrary row on its own without re-scanning everything before it.
+		line_state: Vec<Vec<Frame>>,
 		tab_width: usize,
+		// Whether a bare '{' inside JSX/TSX text starts an embedded
+		// expression (Frame::Expr). Only tsx/jsx enable this -- vue's
+		// mustache interpolation uses `{{ }}` instead, handled as a plain
+		// text-reentrant Bounded rule, and html has no embedded-expression
+		// syntax at all.
+		jsx_expr: bool,
 	}
 
 	#[derive(Clone)]
@@ -105,85 +148,318 @@ rust
 		}
 	}
 
-	// Tokenizes one already-tab-expanded line, given whatever bounded region
-	// (if any) was left open by the previous line. Returns the colored spans
-	// plus the region left open at the end of this line, if any.
-	fn hl_tokenize_line(rules: &[HlRule], line: &str, start_state: Option<usize>) -> (Vec<(String, Option<String>)>, Option<usize>) {
-		let mut tokens: Vec<(String, Option<String>)> = Vec::new();
-		let mut pos = 0usize;
-		let mut state = start_state;
+	// "<Foo" / "</Foo" -> "foo" -- used to tell an opening tag from a closing
+	// one and, for opening tags, to special-case <script>/<style> bodies so
+	// they keep full code highlighting instead of going inert as JSX text.
+	fn tag_body_lower(matched: &str) -> String {
+		let s = if matched.starts_with("</") { &matched[2..] } else { &matched[1..] };
+		s.to_lowercase()
+	}
 
-		if let Some(rule_idx) = state {
-			if let HlRule::Bounded(name, _start, stop, escapable) = &rules[rule_idx] {
-				match hl_find_stop(line, stop, *escapable, 0) {
-					Some((_, end)) => {
-						tokens.push((line[0..end].to_string(), Some(name.clone())));
-						pos = end;
-						state = None;
-					}
-					None => {
-						tokens.push((line.to_string(), Some(name.clone())));
-						return (tokens, Some(rule_idx));
-					}
-				}
-			}
-		}
+	// A bare tag pattern like `</?[A-Za-z][A-Za-z0-9_.]*` is genuinely
+	// ambiguous in TS/TSX source: `Array<string>` and `useState<Foo>()` match
+	// it just as well as an actual JSX tag does, and the regex crate has no
+	// lookbehind to rule those out directly. Instead the match is required to
+	// be glued onto one of a handful of "an expression can start here"
+	// characters (or the start of the line) -- something a generic's opening
+	// "<" is never preceded by, since it's always glued to the preceding
+	// identifier/call/keyword instead. The prefix is matched but not part of
+	// capture group 1, so callers only see the tag's own span.
+	//
+	// This guard is only used for *entering* tag scanning from ordinary code
+	// (Code/CodeChild/Expr/InTag). Once already inside JSX text there's no
+	// generic-vs-tag ambiguity left to resolve, so tag detection there uses
+	// the plain, unguarded pattern.
+	fn build_guarded_tag_pattern(pattern: &str) -> String {
+		format!(r#"(?:^|[\s(){{}}\[\],;:?=&|!~+])({})"#, pattern)
+	}
+
+	#[derive(PartialEq)]
+	enum TextKind { Tag, Bounded, Brace }
+	#[derive(PartialEq)]
+	enum CodeKind { Keyword, Bounded, Tag, CloseAngle, BraceOpen, BraceClose }
+
+	// Tokenizes one already-tab-expanded line, given whatever scope stack (if
+	// any) was left open by the previous line. Returns the colored spans plus
+	// the stack left open at the end of this line.
+	//
+	// For any grammar that never registers a Tag rule, `stack` never grows
+	// past its permanent Frame::Code floor and this behaves exactly like the
+	// old flat Keyword/Bounded scan -- the branching below only matters for
+	// markup grammars (tsx/jsx/vue/html) that opt into tag scoping via
+	// xs_add_tag/xs_enable_jsx_expr.
+	fn hl_tokenize_line(rules: &[HlRule], line: &str, start_stack: &[Frame], jsx_expr: bool) -> (Vec<(String, Option<String>)>, Vec<Frame>) {
+		let mut tokens: Vec<(String, Option<String>)> = Vec::new();
+		let mut stack: Vec<Frame> = if start_stack.is_empty() { vec![Frame::Code] } else { start_stack.to_vec() };
+		let mut pos = 0usize;
 
 		while pos < line.len() {
-			let mut best_start: Option<usize> = None;
-			let mut best_end = 0usize;
-			let mut best_rule: Option<usize> = None;
-			let mut best_is_bounded = false;
+			let top = stack.last().cloned().unwrap();
 
-			for (idx, rule) in rules.iter().enumerate() {
-				let candidate = match rule {
-					HlRule::Keyword(_name, re) => re.find_at(line, pos),
-					HlRule::Bounded(_name, start_re, _stop, _escapable) => start_re.find_at(line, pos),
-				};
-				if let Some(m) = candidate {
-					if best_start.is_none() || m.start() < best_start.unwrap() {
-						best_start = Some(m.start());
-						best_end = m.end();
-						best_rule = Some(idx);
-						best_is_bounded = matches!(rule, HlRule::Bounded(..));
+			match top {
+				Frame::Bounded(rule_idx) => {
+					if let HlRule::Bounded(name, _start, stop, escapable, _text_reentrant) = &rules[rule_idx] {
+						match hl_find_stop(line, stop, *escapable, pos) {
+							Some((_, end)) => {
+								tokens.push((line[pos..end].to_string(), Some(name.clone())));
+								pos = end;
+								stack.pop();
+							}
+							None => {
+								tokens.push((line[pos..].to_string(), Some(name.clone())));
+								pos = line.len();
+							}
+						}
 					}
 				}
-			}
 
-			let start = match best_start {
-				None => {
-					tokens.push((line[pos..].to_string(), None));
-					break;
-				}
-				Some(start) => start,
-			};
-			if start > pos {
-				tokens.push((line[pos..start].to_string(), None));
-			}
-			let idx = best_rule.unwrap();
-			if best_is_bounded {
-				if let HlRule::Bounded(name, _start_re, stop, escapable) = &rules[idx] {
-					match hl_find_stop(line, stop, *escapable, best_end) {
-						Some((_, stop_end)) => {
-							tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
-							pos = stop_end;
+				Frame::Text => {
+					// Deliberately restricted candidate set: JSX/HTML text is
+					// not code, so nothing here runs the general keyword list
+					// -- that's exactly what let stray apostrophes/quotes and
+					// capitalized prose words get misread as code before.
+					let mut best: Option<(usize, usize)> = None;
+					let mut best_kind = TextKind::Tag;
+					let mut best_rule_idx = 0usize;
+
+					for (idx, rule) in rules.iter().enumerate() {
+						match rule {
+							HlRule::Tag(_name, plain_re, _guarded) => {
+								if let Some(m) = plain_re.find_at(line, pos) {
+									if best.is_none() || m.start() < best.unwrap().0 {
+										best = Some((m.start(), m.end()));
+										best_kind = TextKind::Tag;
+										best_rule_idx = idx;
+									}
+								}
+							}
+							HlRule::Bounded(_name, start_re, _stop, _escapable, text_reentrant) => {
+								if *text_reentrant {
+									if let Some(m) = start_re.find_at(line, pos) {
+										if best.is_none() || m.start() < best.unwrap().0 {
+											best = Some((m.start(), m.end()));
+											best_kind = TextKind::Bounded;
+											best_rule_idx = idx;
+										}
+									}
+								}
+							}
+							HlRule::Keyword(..) => {}
 						}
+					}
+
+					if jsx_expr {
+						if let Some(rel) = line[pos..].find('{') {
+							let bpos = pos + rel;
+							if best.is_none() || bpos < best.unwrap().0 {
+								best = Some((bpos, bpos + 1));
+								best_kind = TextKind::Brace;
+							}
+						}
+					}
+
+					match best {
 						None => {
-							tokens.push((line[start..].to_string(), Some(name.clone())));
-							state = Some(idx);
+							tokens.push((line[pos..].to_string(), None));
 							pos = line.len();
 						}
+						Some((start, end)) => {
+							if start > pos {
+								tokens.push((line[pos..start].to_string(), None));
+							}
+							match best_kind {
+								TextKind::Tag => {
+									let matched = &line[start..end];
+									let is_closing = matched.starts_with("</");
+									let tag_name = tag_body_lower(matched);
+									if let HlRule::Tag(name, _p, _g) = &rules[best_rule_idx] {
+										tokens.push((matched.to_string(), Some(name.clone())));
+									}
+									stack.push(Frame::InTag(is_closing, tag_name));
+									pos = end;
+								}
+								TextKind::Bounded => {
+									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &rules[best_rule_idx] {
+										match hl_find_stop(line, stop, *escapable, end) {
+											Some((_, stop_end)) => {
+												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
+												pos = stop_end;
+											}
+											None => {
+												tokens.push((line[start..].to_string(), Some(name.clone())));
+												stack.push(Frame::Bounded(best_rule_idx));
+												pos = line.len();
+											}
+										}
+									}
+								}
+								TextKind::Brace => {
+									tokens.push((line[start..end].to_string(), None));
+									stack.push(Frame::Expr(1));
+									pos = end;
+								}
+							}
+						}
 					}
 				}
-			} else {
-				if let HlRule::Keyword(name, _re) = &rules[idx] {
-					tokens.push((line[start..best_end].to_string(), Some(name.clone())));
+
+				// Code, CodeChild, InTag, Expr all scan with the full rule
+				// list -- InTag additionally watches for the tag's own '>',
+				// Expr additionally tracks bare '{'/'}' depth.
+				_ => {
+					let in_tag = matches!(top, Frame::InTag(_, _));
+					let in_expr = matches!(top, Frame::Expr(_));
+
+					let mut best: Option<(usize, usize)> = None;
+					let mut best_kind = CodeKind::Keyword;
+					let mut best_rule_idx = 0usize;
+
+					for (idx, rule) in rules.iter().enumerate() {
+						let candidate = match rule {
+							HlRule::Keyword(_name, re) => re.find_at(line, pos).map(|m| (m.start(), m.end())),
+							HlRule::Bounded(_name, start_re, _stop, _escapable, _tr) => start_re.find_at(line, pos).map(|m| (m.start(), m.end())),
+							HlRule::Tag(_name, _plain, guarded) => guarded
+								.captures_at(line, pos)
+								.and_then(|c| c.get(1))
+								.map(|g| (g.start(), g.end())),
+						};
+						if let Some((s, e)) = candidate {
+							if best.is_none() || s < best.unwrap().0 {
+								best = Some((s, e));
+								best_kind = match rule {
+									HlRule::Keyword(..) => CodeKind::Keyword,
+									HlRule::Bounded(..) => CodeKind::Bounded,
+									HlRule::Tag(..) => CodeKind::Tag,
+								};
+								best_rule_idx = idx;
+							}
+						}
+					}
+
+					if in_tag {
+						if let Some(rel) = line[pos..].find('>') {
+							let gpos = pos + rel;
+							if best.is_none() || gpos < best.unwrap().0 {
+								best = Some((gpos, gpos + 1));
+								best_kind = CodeKind::CloseAngle;
+							}
+						}
+					}
+
+					if in_expr {
+						let open_rel = line[pos..].find('{');
+						let close_rel = line[pos..].find('}');
+						let mut brace: Option<(usize, bool)> = None;
+						if let Some(r) = open_rel {
+							brace = Some((pos + r, true));
+						}
+						if let Some(r) = close_rel {
+							let cpos = pos + r;
+							if brace.is_none() || cpos < brace.unwrap().0 {
+								brace = Some((cpos, false));
+							}
+						}
+						if let Some((bpos, is_open)) = brace {
+							if best.is_none() || bpos < best.unwrap().0 {
+								best = Some((bpos, bpos + 1));
+								best_kind = if is_open { CodeKind::BraceOpen } else { CodeKind::BraceClose };
+							}
+						}
+					}
+
+					match best {
+						None => {
+							tokens.push((line[pos..].to_string(), None));
+							pos = line.len();
+						}
+						Some((start, end)) => {
+							if start > pos {
+								tokens.push((line[pos..start].to_string(), None));
+							}
+							match best_kind {
+								CodeKind::Keyword => {
+									if let HlRule::Keyword(name, _re) = &rules[best_rule_idx] {
+										tokens.push((line[start..end].to_string(), Some(name.clone())));
+									}
+									pos = end;
+								}
+								CodeKind::Bounded => {
+									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &rules[best_rule_idx] {
+										match hl_find_stop(line, stop, *escapable, end) {
+											Some((_, stop_end)) => {
+												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
+												pos = stop_end;
+											}
+											None => {
+												tokens.push((line[start..].to_string(), Some(name.clone())));
+												stack.push(Frame::Bounded(best_rule_idx));
+												pos = line.len();
+											}
+										}
+									}
+								}
+								CodeKind::Tag => {
+									let matched = &line[start..end];
+									let is_closing = matched.starts_with("</");
+									let tag_name = tag_body_lower(matched);
+									if let HlRule::Tag(name, _p, _g) = &rules[best_rule_idx] {
+										tokens.push((matched.to_string(), Some(name.clone())));
+									}
+									stack.push(Frame::InTag(is_closing, tag_name));
+									pos = end;
+								}
+								CodeKind::CloseAngle => {
+									let (is_closing, tag_name_for_pop) = if let Frame::InTag(ic, n) = &top {
+										(*ic, n.clone())
+									} else {
+										(false, String::new())
+									};
+									let self_close = start > 0 && line.as_bytes()[start - 1] == b'/';
+									tokens.push((line[start..end].to_string(), None));
+									pos = end;
+									stack.pop(); // pop InTag
+									if is_closing {
+										// a real closing tag also ends the text/code-child
+										// scope it belongs to -- never pop the permanent floor
+										if stack.len() > 1 {
+											stack.pop();
+										}
+									} else if !self_close {
+										// a self-closing tag has no children of its own --
+										// only a real opening tag enters a new scope
+										let is_script_style = tag_name_for_pop == "script" || tag_name_for_pop == "style";
+										stack.push(if is_script_style { Frame::CodeChild } else { Frame::Text });
+									}
+								}
+								CodeKind::BraceOpen => {
+									tokens.push((line[start..end].to_string(), None));
+									pos = end;
+									if let Some(Frame::Expr(d)) = stack.last_mut() {
+										*d += 1;
+									}
+								}
+								CodeKind::BraceClose => {
+									tokens.push((line[start..end].to_string(), None));
+									pos = end;
+									let mut pop_it = false;
+									if let Some(Frame::Expr(d)) = stack.last_mut() {
+										*d -= 1;
+										if *d == 0 {
+											pop_it = true;
+										}
+									}
+									if pop_it {
+										stack.pop();
+									}
+								}
+							}
+						}
+					}
 				}
-				pos = best_end;
 			}
 		}
 
-		(tokens, state)
+		(tokens, stack)
 	}
 
 struct BoundedSpec
@@ -197,6 +473,7 @@ fn Highlighter xs_make(int tab_width)
 			rules: Vec::new(),
 			line_state: Vec::new(),
 			tab_width: tab_width as usize,
+			jsx_expr: false,
 		})))
 
 fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
@@ -212,7 +489,47 @@ fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
 		{
 			let start = regex::Regex::new(spec.start.as_str()).unwrap();
 			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable));
+			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable, false));
+			hlt
+		}
+
+# Like xs_add_bounded, but the region is also reachable from inside JSX/HTML
+# text (Frame::Text) -- e.g. Vue's "{{ mustache }}" interpolation or an
+# "<!-- -->" comment written directly in markup, as opposed to a JS string or
+# comment, which must never open from inside plain text (that's the bug this
+# whole scope-stack exists to fix -- see hl_tokenize_line).
+fn Highlighter xs_add_bounded_text(Highlighter hlt, BoundedSpec spec, bool escapable)
+	rust
+		{
+			let start = regex::Regex::new(spec.start.as_str()).unwrap();
+			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
+			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable, true));
+			hlt
+		}
+
+# Registers a tag rule (e.g. "</?[A-Za-z][A-Za-z0-9_.]*") for a markup
+# grammar. Unlike xs_add_keyword this also enables tag scoping: a match
+# pushes an InTag frame that swallows the tag's attributes and, once its
+# closing '>' is found, opens (or closes) a Text scope for the tag's
+# children -- see the Frame doc comment on hl_tokenize_line.
+fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
+	rust
+		{
+			let plain = regex::Regex::new(pattern.as_str()).unwrap();
+			let guarded = regex::Regex::new(build_guarded_tag_pattern(pattern.as_str()).as_str()).unwrap();
+			hlt.0.lock().unwrap().rules.push(HlRule::Tag(name.clone(), plain, guarded));
+			hlt
+		}
+
+# Lets a bare '{' inside JSX/TSX text start an embedded expression
+# (Frame::Expr), which resumes full code scanning until its matching '}'.
+# Only call this for grammars whose text content can hold `{expr}` --
+# tsx/jsx. Vue's mustache interpolation and html's lack of any embedded-
+# expression syntax mean neither of those grammars should call this.
+fn Highlighter xs_enable_jsx_expr(Highlighter hlt)
+	rust
+		{
+			hlt.0.lock().unwrap().jsx_expr = true;
 			hlt
 		}
 
@@ -221,13 +538,14 @@ fn Highlighter xs_run(Highlighter hlt, stringList lines)
 		{
 			let mut inner = hlt.0.lock().unwrap();
 			let tab_width = inner.tab_width;
-			let mut state: Option<usize> = None;
-			let mut line_state: Vec<Option<usize>> = Vec::with_capacity(lines.len());
+			let jsx_expr = inner.jsx_expr;
+			let mut stack: Vec<Frame> = vec![Frame::Code];
+			let mut line_state: Vec<Vec<Frame>> = Vec::with_capacity(lines.len());
 			for line in &lines {
-				line_state.push(state);
+				line_state.push(stack.clone());
 				let expanded = hl_expand_tabs(line.as_str(), tab_width);
-				let (_tokens, next_state) = hl_tokenize_line(&inner.rules, expanded.as_str(), state);
-				state = next_state;
+				let (_tokens, next_stack) = hl_tokenize_line(&inner.rules, expanded.as_str(), &stack, jsx_expr);
+				stack = next_stack;
 			}
 			inner.line_state = line_state;
 			drop(inner);
@@ -239,8 +557,8 @@ fn string xs_line(Highlighter hlt, int row, string line)
 		{
 			let inner = hlt.0.lock().unwrap();
 			let expanded = hl_expand_tabs(line.as_str(), inner.tab_width);
-			let start_state = inner.line_state.get(row as usize).cloned().flatten();
-			let (tokens, _end_state) = hl_tokenize_line(&inner.rules, expanded.as_str(), start_state);
+			let start_stack = inner.line_state.get(row as usize).cloned().unwrap_or_else(|| vec![Frame::Code]);
+			let (tokens, _end_stack) = hl_tokenize_line(&inner.rules, expanded.as_str(), &start_stack, inner.jsx_expr);
 			let mut out = String::new();
 			for (text, kind) in tokens {
 				match kind {

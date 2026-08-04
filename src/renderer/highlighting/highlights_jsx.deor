@@ -37,12 +37,19 @@ macro highlights_jsx
 	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
 
 	# JSX tag names: "<" or "</" immediately followed by a tag/component
-	# name (dotted for namespaced components like <Foo.Bar>) -- the "<" is
-	# swallowed into the match since the regex crate has no lookbehind,
-	# same trick as the call-site pattern below
+	# name (dotted for namespaced components like <Foo.Bar>). xs_add_tag
+	# (rather than xs_add_keyword) also turns on tag scoping: a match opens
+	# an attribute scope that, once the tag's closing ">" is found, enters a
+	# text scope for its children where ordinary code rules don't apply --
+	# that's what keeps quotes/apostrophes/capitalized words in JSX text
+	# from being misread as code.
 	tag_name as "type"
 	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.]*"
-	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
+
+	# lets a bare "{" inside JSX text (e.g. {this.props.name}) resume full
+	# code scanning until its matching "}", instead of staying inert
+	highlighter = xs_enable_jsx_expr(highlighter)
 
 	# JSX attribute names (className=, onClick=): identifier tight against
 	# "=" with no space, which in practice only really happens for JSX
