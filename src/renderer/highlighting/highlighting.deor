@@ -17,6 +17,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_jsx
 	else if ext is TYPESCRIPT
 		macro_run highlights_typescript
+	else if ext is TSX
+		macro_run highlights_tsx
 	else if ext is JAVASCRIPT
 		# JS is a subset of JSX's grammar -- the JSX tag rule simply never
 		# matches in plain JS source, so the same rules serve both.
