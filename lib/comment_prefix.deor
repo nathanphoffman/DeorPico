@@ -40,6 +40,35 @@ unsafe_macro language_ext_consts
     const string MARKDOWN2 = "markdown"
     const string JSON = "json"
     const string TOML = "toml"
+    const string MTS = "mts"
+    const string SWCRC = "swcrc"
+    const string ENV = "env"
+    const string YML = "yml"
+    const string YAML = "yaml"
+
+# Extension for highlighting/comment-prefix purposes, given a full path.
+#
+# Plain f_extension() is Rust's Path::extension(), which returns "" for a
+# bare dotfile like ".env" or ".swcrc" (a filename that starts with "." and
+# has no other "." is defined to have no extension, not the text after that
+# leading dot) -- so those two config files, which are almost always used
+# under exactly that bare name, would otherwise always land in the
+# unrecognized/no-highlighting fallback. This special-cases their basenames
+# before falling back to the normal extension for everything else.
+fn string resolve_highlight_ext(string filename)
+    unsafe_macro_run language_ext_consts
+
+    string base = f_basename(filename)
+    env_dot as ".env"
+    env_prefix as ".env."
+    swcrc_dot as ".swcrc"
+
+    if base is env_dot or s_starts_with(base, env_prefix)
+        return ENV
+    else if base is swcrc_dot
+        return SWCRC
+    else
+        return f_extension(filename)
 
 # Returns the line-comment prefix for a file extension (e.g. "//" for "rs"),
 # or "" if the language has no single-line comment form (or is unrecognized).
@@ -60,10 +89,14 @@ fn string comment_prefix_for_ext(string ext)
     prefixes = h_set(prefixes, BASH2, hash)
     prefixes = h_set(prefixes, POWERSHELL, hash)
     prefixes = h_set(prefixes, TOML, hash)
+    prefixes = h_set(prefixes, ENV, hash)
+    prefixes = h_set(prefixes, YML, hash)
+    prefixes = h_set(prefixes, YAML, hash)
     prefixes = h_set(prefixes, CSHARP, slash)
     prefixes = h_set(prefixes, JSX, slash)
     prefixes = h_set(prefixes, TYPESCRIPT, slash)
     prefixes = h_set(prefixes, TSX, slash)
+    prefixes = h_set(prefixes, MTS, slash)
     prefixes = h_set(prefixes, JAVASCRIPT, slash)
     prefixes = h_set(prefixes, RUST, slash)
     prefixes = h_set(prefixes, C_SRC, slash)

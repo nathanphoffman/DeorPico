@@ -1,7 +1,7 @@
 macro key_space_comment_selection_impl
 	unsafe_macro_run normalize_selection
 
-	string ext = f_extension(filename)
+	string ext = resolve_highlight_ext(filename)
 	string prefix = comment_prefix_for_ext(ext)
 
 	# No known line-comment token for this file type (block-comment-only

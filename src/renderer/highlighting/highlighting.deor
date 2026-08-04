@@ -15,7 +15,7 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_csharp
 	else if ext is JSX
 		macro_run highlights_jsx
-	else if ext is TYPESCRIPT
+	else if ext is TYPESCRIPT or ext is MTS
 		macro_run highlights_typescript
 	else if ext is TSX
 		macro_run highlights_tsx
@@ -61,10 +61,14 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_powershell
 	else if ext is MARKDOWN1 or ext is MARKDOWN2
 		macro_run highlights_markdown
-	else if ext is JSON
+	else if ext is JSON or ext is SWCRC
 		macro_run highlights_json
 	else if ext is TOML
 		macro_run highlights_toml
+	else if ext is YML or ext is YAML
+		macro_run highlights_yaml
+	else if ext is ENV
+		macro_run highlights_env
 	else
 		# No custom rules for this extension yet -- plain, uncolored text.
 		highlighter = xs_make(TAB_WIDTH)

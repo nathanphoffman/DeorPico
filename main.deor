@@ -45,7 +45,7 @@ macro install_panic_crash_handler
 # four variables need to outlive this call for render_frame to mutate.
 unsafe_macro init_highlight_state
 	string current_file = filename
-	string ext = f_extension(current_file)
+	string ext = resolve_highlight_ext(current_file)
 	Highlighter highlighter = initialize_highlighter(ext)
 	stringList last_highlighted_lines = empty
 
@@ -55,7 +55,7 @@ unsafe_macro init_highlight_state
 macro refresh_highlighter_for_file_change
 	if filename is not current_file
 		current_file = filename
-		ext = f_extension(current_file)
+		ext = resolve_highlight_ext(current_file)
 		highlighter = initialize_highlighter(ext)
 		stringList cleared_highlighted_lines = empty
 		last_highlighted_lines = cleared_highlighted_lines

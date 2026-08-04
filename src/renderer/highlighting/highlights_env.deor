@@ -1,0 +1,41 @@
+macro highlights_env
+	# comments
+	comment_name as "comment"
+	comment_pattern as "#.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# optional shell "export" prefix, as in `export FOO=bar`
+	kw_name as "keyword"
+	kw_pattern as "\\bexport\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# variable name tight against "=", anchored to the start of the line
+	# (optionally after "export "). Trailing "=" swallowed into the match
+	# since the regex crate has no lookahead (same trick as the JSON/TOML
+	# key rules).
+	key_name as "function"
+	key_pattern as "^\\s*(export\\s+)?[A-Za-z_][A-Za-z0-9_]*\\s*="
+	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
+
+	# double-quoted values (backslash-escapable, and the form that supports
+	# $VAR/${VAR} expansion in most .env loaders)
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	# single-quoted values -- treated as literal, no escapes, matching
+	# shell single-quote semantics
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	# numeric literals
+	num_name as "number"
+	num_pattern as "\\b\\d+(\\.\\d+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
