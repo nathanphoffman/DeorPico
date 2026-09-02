@@ -69,6 +69,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_yaml
 	else if ext is ENV
 		macro_run highlights_env
+	else if ext is PRISMA
+		macro_run highlights_prisma
 	else
 		# No custom rules for this extension yet -- plain, uncolored text.
 		highlighter = xs_make(TAB_WIDTH)

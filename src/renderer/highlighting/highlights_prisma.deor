@@ -1,0 +1,52 @@
+macro highlights_prisma
+	# line comments -- covers "///" doc comments too, since the "//" rule
+	# matches at the same position and swallows the whole rest of the line
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# strings -- Prisma only has double-quoted strings
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	# attributes -- field attributes (@id, @unique), block attributes
+	# (@@index, @@map) and native database types (@db.VarChar), so the
+	# dotted tail is part of the pattern. "@@" is covered by the same rule
+	# because the second "@" is optional in it.
+	attr_name as "macro_name"
+	attr_pattern as "@@?[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*"
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+	# call sites -- env(), now(), autoincrement(), cuid(), ... registered
+	# before the PascalCase rule below so Unsupported("...") reads as a call
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	# block keywords and literals -- registered before the field-name rule
+	# so "model" at the start of a line wins the tiebreak against it
+	kw_name as "keyword"
+	kw_pattern as "\\b(datasource|generator|model|enum|type|view|true|false|null)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# PascalCase identifiers, wherever used -- this is both the scalar types
+	# (String, Int, DateTime, ...) and the model/enum names fields refer to
+	type_name as "type"
+	type_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, type_name, type_pattern)
+
+	# field names -- the identifier that opens a line inside a block, which
+	# is also how enum members and "key = value" config lines read. Anchored
+	# to the start of the line so a type or argument name never matches.
+	field_name as "function"
+	field_pattern as "^\\s*[A-Za-z_][A-Za-z0-9_]*"
+	highlighter = xs_add_keyword(highlighter, field_name, field_pattern)
+
+	# numeric literals
+	num_name as "number"
+	num_pattern as "\\b\\d+(\\.\\d+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

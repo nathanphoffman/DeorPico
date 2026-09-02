@@ -45,6 +45,7 @@ unsafe_macro language_ext_consts
     const string ENV = "env"
     const string YML = "yml"
     const string YAML = "yaml"
+    const string PRISMA = "prisma"
 
 # Extension for highlighting/comment-prefix purposes, given a full path.
 #
@@ -110,6 +111,7 @@ fn string comment_prefix_for_ext(string ext)
     prefixes = h_set(prefixes, JAVA, slash)
     prefixes = h_set(prefixes, PHP, slash)
     prefixes = h_set(prefixes, CMM, slash)
+    prefixes = h_set(prefixes, PRISMA, slash)
     prefixes = h_set(prefixes, ASM1, semi)
     prefixes = h_set(prefixes, ASM2, semi)
     prefixes = h_set(prefixes, FORTRAN90, bang)
