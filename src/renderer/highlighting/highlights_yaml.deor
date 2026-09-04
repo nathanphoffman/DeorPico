@@ -1,4 +1,13 @@
 macro highlights_yaml
+	# document markers: "---" opens a document, "..." ends one. Multi-document
+	# streams (kubernetes manifests, docker-compose overlays) are the common
+	# case. When this grammar is running as a markdown file's frontmatter
+	# sub-grammar the closing "---" is the region terminator instead, and the
+	# tokenizer gives the terminator precedence -- see hl_tokenize_line.
+	doc_name as "macro_name"
+	doc_pattern as "^(---|\\.\\.\\.)\\s*$"
+	highlighter = xs_add_keyword(highlighter, doc_name, doc_pattern)
+
 	# comments
 	comment_name as "comment"
 	comment_pattern as "#.*"
@@ -25,8 +34,20 @@ macro highlights_yaml
 	# the plain string rules below so a quoted key still wins the
 	# tokenizer's first-atom-registered tiebreak at its opening quote.
 	key_name as "function"
-	key_pattern as "^\\s*(-\\s+)?(\"[^\"]*\"|'[^']*'|[A-Za-z0-9_.-]+)\\s*:"
+	key_pattern as "^\\s*(-\\s+)?(\"[^\"]*\"|'[^']*'|[A-Za-z0-9_.<-]+)\\s*:"
 	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
+
+	# keys inside a flow mapping -- the compact inline form,
+	# "- { tag: x, note: \"y\" }". These are keys only because they follow a
+	# "{" or a "," rather than because of where they sit in the line, so the
+	# rule above (anchored to the start of the line) can never see them. The
+	# regex crate has no lookbehind, so the "{"/"," is matched but left out of
+	# capture group 1, which is the only part xs_add_keyword_group colors.
+	# Registered before the string rules below so a quoted flow key still wins
+	# the tokenizer's first-atom-registered tiebreak at its opening quote.
+	flow_key_name as "function"
+	flow_key_pattern as "[{,]\\s*((?:\"[^\"]*\"|'[^']*'|[A-Za-z0-9_.<-]+)\\s*:)"
+	highlighter = xs_add_keyword_group(highlighter, flow_key_name, flow_key_pattern)
 
 	# double-quoted strings (backslash-escapable)
 	name as "string"

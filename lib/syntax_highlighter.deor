@@ -18,6 +18,27 @@ rust
 		Keyword(String, regex::Regex),
 		Bounded(String, regex::Regex, regex::Regex, bool, bool), // name, start, stop, escapable, text_reentrant
 		Tag(String, regex::Regex, regex::Regex), // name, plain, guarded
+		// Like Keyword, but only capture group 1 is colored and consumed. The
+		// regex crate has no lookbehind, so a rule that may only fire after
+		// some preceding character -- yaml's "{ key:" / ", key:" inside a flow
+		// mapping -- has to match that character too; this keeps it out of the
+		// colored span, the same trick HlRule::Tag's `guarded` pattern uses.
+		KeywordCap(String, regex::Regex),
+	}
+
+	// A second, complete rule list that takes over inside a delimited region.
+	// YAML frontmatter in a markdown file is the motivating case, but nothing
+	// here is specific to it. `first_row_only` exists because a markdown
+	// frontmatter fence is only a fence on line 1 -- the identical "---"
+	// further down a document is a horizontal rule or a setext heading
+	// underline, and must not open a bogus region.
+	#[derive(Clone)]
+	struct SubGrammar {
+		name: String,
+		start: regex::Regex,
+		stop: regex::Regex,
+		first_row_only: bool,
+		rules: Vec<HlRule>,
 	}
 
 	// Per-row scope stack for markup grammars. Frame::Code is the permanent
@@ -39,6 +60,10 @@ rust
 	//   Bounded   inside a Bounded rule's region (string/comment/mustache/...),
 	//             usize is the rule index -- generalizes the old single-slot
 	//             "open bounded region" state to a stack slot
+	//   Sub       inside a sub-grammar region (yaml frontmatter in a .md
+	//             file); usize indexes HighlighterInner::subs, and scanning
+	//             continues with that sub-grammar's own rule list instead of
+	//             the host grammar's -- see hl_active_rules
 	#[derive(Clone, PartialEq)]
 	enum Frame {
 		Code,
@@ -47,10 +72,17 @@ rust
 		InTag(bool, String),
 		Expr(usize),
 		Bounded(usize),
+		Sub(usize),
 	}
 
 	struct HighlighterInner {
 		rules: Vec<HlRule>,
+		subs: Vec<SubGrammar>,
+		// Where xs_add_* appends: None = the main rule list, Some(i) =
+		// subs[i].rules. Set by xs_sub_begin, cleared by xs_sub_end -- that is
+		// what lets an existing grammar macro (highlights_yaml) be replayed
+		// verbatim into a sub-grammar instead of being duplicated there.
+		target: Option<usize>,
 		// line_state[row] is the scope stack in effect at the START of that
 		// row -- populated by a full-file scan in xs_run so xs_line can color
 		// an arbitrary row on its own without re-scanning everything before it.
@@ -174,10 +206,36 @@ rust
 		format!(r#"(?:^|[\s(){{}}\[\],;:?=&|!~+])({})"#, pattern)
 	}
 
+	// The rule list in effect for a given scope stack: the nearest enclosing
+	// Frame::Sub wins, otherwise the host grammar's own list. A Sub frame is
+	// only ever popped by its own stop pattern, so every frame nested above
+	// one belongs to that sub-grammar -- including Bounded frames, whose
+	// stored rule index is relative to whichever list opened them.
+	fn hl_active_rules<'a>(main: &'a [HlRule], subs: &'a [SubGrammar], stack: &[Frame]) -> &'a [HlRule] {
+		for frame in stack.iter().rev() {
+			if let Frame::Sub(i) = frame {
+				return &subs[*i].rules;
+			}
+		}
+		main
+	}
+
+	// Appends to whichever rule list xs_sub_begin/xs_sub_end has made current,
+	// so every xs_add_* builder is sub-grammar aware without each one needing
+	// to know about sub-grammars.
+	fn hl_push_rule(hlt: &Highlighter, rule: HlRule) {
+		let mut inner = hlt.0.lock().unwrap();
+		let target = inner.target;
+		match target {
+			Some(i) => inner.subs[i].rules.push(rule),
+			None => inner.rules.push(rule),
+		}
+	}
+
 	#[derive(PartialEq)]
 	enum TextKind { Tag, Bounded, Brace }
 	#[derive(PartialEq)]
-	enum CodeKind { Keyword, Bounded, Tag, CloseAngle, BraceOpen, BraceClose }
+	enum CodeKind { Keyword, Bounded, Tag, CloseAngle, BraceOpen, BraceClose, SubOpen, SubClose }
 
 	// Tokenizes one already-tab-expanded line, given whatever scope stack (if
 	// any) was left open by the previous line. Returns the colored spans plus
@@ -188,17 +246,20 @@ rust
 	// old flat Keyword/Bounded scan -- the branching below only matters for
 	// markup grammars (tsx/jsx/vue/html) that opt into tag scoping via
 	// xs_add_tag/xs_enable_jsx_expr.
-	fn hl_tokenize_line(rules: &[HlRule], line: &str, start_stack: &[Frame], jsx_expr: bool) -> (Vec<(String, Option<String>)>, Vec<Frame>) {
+	fn hl_tokenize_line(rules: &[HlRule], subs: &[SubGrammar], line: &str, row: usize, start_stack: &[Frame], jsx_expr: bool) -> (Vec<(String, Option<String>)>, Vec<Frame>) {
 		let mut tokens: Vec<(String, Option<String>)> = Vec::new();
 		let mut stack: Vec<Frame> = if start_stack.is_empty() { vec![Frame::Code] } else { start_stack.to_vec() };
 		let mut pos = 0usize;
 
 		while pos < line.len() {
 			let top = stack.last().cloned().unwrap();
+			// Recomputed every step, because a step can itself push or pop a
+			// Frame::Sub and so change which grammar the next atom is read in.
+			let active = hl_active_rules(rules, subs, &stack);
 
 			match top {
 				Frame::Bounded(rule_idx) => {
-					if let HlRule::Bounded(name, _start, stop, escapable, _text_reentrant) = &rules[rule_idx] {
+					if let HlRule::Bounded(name, _start, stop, escapable, _text_reentrant) = &active[rule_idx] {
 						match hl_find_stop(line, stop, *escapable, pos) {
 							Some((_, end)) => {
 								tokens.push((line[pos..end].to_string(), Some(name.clone())));
@@ -222,7 +283,7 @@ rust
 					let mut best_kind = TextKind::Tag;
 					let mut best_rule_idx = 0usize;
 
-					for (idx, rule) in rules.iter().enumerate() {
+					for (idx, rule) in active.iter().enumerate() {
 						match rule {
 							HlRule::Tag(_name, plain_re, _guarded) => {
 								if let Some(m) = plain_re.find_at(line, pos) {
@@ -245,6 +306,7 @@ rust
 								}
 							}
 							HlRule::Keyword(..) => {}
+							HlRule::KeywordCap(..) => {}
 						}
 					}
 
@@ -272,14 +334,14 @@ rust
 									let matched = &line[start..end];
 									let is_closing = matched.starts_with("</");
 									let tag_name = tag_body_lower(matched);
-									if let HlRule::Tag(name, _p, _g) = &rules[best_rule_idx] {
+									if let HlRule::Tag(name, _p, _g) = &active[best_rule_idx] {
 										tokens.push((matched.to_string(), Some(name.clone())));
 									}
 									stack.push(Frame::InTag(is_closing, tag_name));
 									pos = end;
 								}
 								TextKind::Bounded => {
-									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &rules[best_rule_idx] {
+									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &active[best_rule_idx] {
 										match hl_find_stop(line, stop, *escapable, end) {
 											Some((_, stop_end)) => {
 												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
@@ -309,14 +371,23 @@ rust
 				_ => {
 					let in_tag = matches!(top, Frame::InTag(_, _));
 					let in_expr = matches!(top, Frame::Expr(_));
+					let in_sub: Option<usize> = match &top {
+						Frame::Sub(i) => Some(*i),
+						_ => None,
+					};
 
 					let mut best: Option<(usize, usize)> = None;
 					let mut best_kind = CodeKind::Keyword;
 					let mut best_rule_idx = 0usize;
+					let mut best_sub_idx = 0usize;
 
-					for (idx, rule) in rules.iter().enumerate() {
+					for (idx, rule) in active.iter().enumerate() {
 						let candidate = match rule {
 							HlRule::Keyword(_name, re) => re.find_at(line, pos).map(|m| (m.start(), m.end())),
+							HlRule::KeywordCap(_name, re) => re
+								.captures_at(line, pos)
+								.and_then(|c| c.get(1))
+								.map(|g| (g.start(), g.end())),
 							HlRule::Bounded(_name, start_re, _stop, _escapable, _tr) => start_re.find_at(line, pos).map(|m| (m.start(), m.end())),
 							HlRule::Tag(_name, _plain, guarded) => guarded
 								.captures_at(line, pos)
@@ -328,6 +399,7 @@ rust
 								best = Some((s, e));
 								best_kind = match rule {
 									HlRule::Keyword(..) => CodeKind::Keyword,
+									HlRule::KeywordCap(..) => CodeKind::Keyword,
 									HlRule::Bounded(..) => CodeKind::Bounded,
 									HlRule::Tag(..) => CodeKind::Tag,
 								};
@@ -367,6 +439,39 @@ rust
 						}
 					}
 
+					// Entering a sub-grammar is only possible from the host
+					// grammar's own top level -- not from inside a tag, an
+					// expression, or another sub-grammar.
+					if matches!(top, Frame::Code) {
+						for (i, sub) in subs.iter().enumerate() {
+							if sub.first_row_only && row != 0 {
+								continue;
+							}
+							if let Some(m) = sub.start.find_at(line, pos) {
+								if best.is_none() || m.start() < best.unwrap().0 {
+									best = Some((m.start(), m.end()));
+									best_kind = CodeKind::SubOpen;
+									best_sub_idx = i;
+								}
+							}
+						}
+					}
+
+					// The region's own closing fence outranks anything its
+					// rules matched at the same position (note "<=", not "<"),
+					// so a sub-grammar that also has a rule for the fence text
+					// -- yaml's "---" document marker, which is exactly the
+					// markdown frontmatter terminator -- can't swallow the
+					// close and run on to the end of the file.
+					if let Some(i) = in_sub {
+						if let Some(m) = subs[i].stop.find_at(line, pos) {
+							if best.is_none() || m.start() <= best.unwrap().0 {
+								best = Some((m.start(), m.end()));
+								best_kind = CodeKind::SubClose;
+							}
+						}
+					}
+
 					match best {
 						None => {
 							tokens.push((line[pos..].to_string(), None));
@@ -377,14 +482,31 @@ rust
 								tokens.push((line[pos..start].to_string(), None));
 							}
 							match best_kind {
+								CodeKind::SubOpen => {
+									tokens.push((line[start..end].to_string(), Some(subs[best_sub_idx].name.clone())));
+									pos = end;
+									stack.push(Frame::Sub(best_sub_idx));
+								}
+								CodeKind::SubClose => {
+									if let Some(i) = in_sub {
+										tokens.push((line[start..end].to_string(), Some(subs[i].name.clone())));
+									}
+									pos = end;
+									stack.pop();
+								}
 								CodeKind::Keyword => {
-									if let HlRule::Keyword(name, _re) = &rules[best_rule_idx] {
-										tokens.push((line[start..end].to_string(), Some(name.clone())));
+									// start..end is already group 1's span for a
+									// KeywordCap, so both variants render alike.
+									match &active[best_rule_idx] {
+										HlRule::Keyword(name, _re) | HlRule::KeywordCap(name, _re) => {
+											tokens.push((line[start..end].to_string(), Some(name.clone())));
+										}
+										_ => {}
 									}
 									pos = end;
 								}
 								CodeKind::Bounded => {
-									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &rules[best_rule_idx] {
+									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &active[best_rule_idx] {
 										match hl_find_stop(line, stop, *escapable, end) {
 											Some((_, stop_end)) => {
 												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
@@ -402,7 +524,7 @@ rust
 									let matched = &line[start..end];
 									let is_closing = matched.starts_with("</");
 									let tag_name = tag_body_lower(matched);
-									if let HlRule::Tag(name, _p, _g) = &rules[best_rule_idx] {
+									if let HlRule::Tag(name, _p, _g) = &active[best_rule_idx] {
 										tokens.push((matched.to_string(), Some(name.clone())));
 									}
 									stack.push(Frame::InTag(is_closing, tag_name));
@@ -471,6 +593,8 @@ fn Highlighter xs_make(int tab_width)
 	rust
 		Highlighter(std::sync::Arc::new(std::sync::Mutex::new(HighlighterInner {
 			rules: Vec::new(),
+			subs: Vec::new(),
+			target: None,
 			line_state: Vec::new(),
 			tab_width: tab_width as usize,
 			jsx_expr: false,
@@ -480,7 +604,7 @@ fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
 	rust
 		{
 			let re = regex::Regex::new(pattern.as_str()).unwrap();
-			hlt.0.lock().unwrap().rules.push(HlRule::Keyword(name.clone(), re));
+			hl_push_rule(&hlt, HlRule::Keyword(name.clone(), re));
 			hlt
 		}
 
@@ -489,7 +613,7 @@ fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
 		{
 			let start = regex::Regex::new(spec.start.as_str()).unwrap();
 			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable, false));
+			hl_push_rule(&hlt, HlRule::Bounded(spec.name.clone(), start, stop, escapable, false));
 			hlt
 		}
 
@@ -503,7 +627,7 @@ fn Highlighter xs_add_bounded_text(Highlighter hlt, BoundedSpec spec, bool escap
 		{
 			let start = regex::Regex::new(spec.start.as_str()).unwrap();
 			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			hlt.0.lock().unwrap().rules.push(HlRule::Bounded(spec.name.clone(), start, stop, escapable, true));
+			hl_push_rule(&hlt, HlRule::Bounded(spec.name.clone(), start, stop, escapable, true));
 			hlt
 		}
 
@@ -517,7 +641,61 @@ fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
 		{
 			let plain = regex::Regex::new(pattern.as_str()).unwrap();
 			let guarded = regex::Regex::new(build_guarded_tag_pattern(pattern.as_str()).as_str()).unwrap();
-			hlt.0.lock().unwrap().rules.push(HlRule::Tag(name.clone(), plain, guarded));
+			hl_push_rule(&hlt, HlRule::Tag(name.clone(), plain, guarded));
+			hlt
+		}
+
+# Like xs_add_keyword, but only capture group 1 of the pattern is colored and
+# consumed; anything the pattern matched before that group is left as plain
+# text. The regex crate has no lookbehind, so this is how a rule expresses
+# "only match here when preceded by X" without swallowing the X -- e.g. yaml's
+# flow-mapping keys, which are only keys when they follow a "{" or a ",".
+fn Highlighter xs_add_keyword_group(Highlighter hlt, string name, string pattern)
+	rust
+		{
+			let re = regex::Regex::new(pattern.as_str()).unwrap();
+			hl_push_rule(&hlt, HlRule::KeywordCap(name.clone(), re));
+			hlt
+		}
+
+# Opens a sub-grammar: a region, delimited by spec.start/spec.stop, whose
+# contents are scanned with their own complete rule list rather than the host
+# grammar's. Every xs_add_* call between here and the matching xs_sub_end goes
+# into that list, so an existing grammar macro can simply be replayed inside:
+#
+#     highlighter = xs_sub_begin(highlighter, fm_spec, first_row_only)
+#     macro_run highlights_yaml
+#     highlighter = xs_sub_end(highlighter)
+#
+# spec.name colors the delimiter lines themselves. first_row_only restricts
+# the opener to row 0 of the file, which is what distinguishes a markdown
+# frontmatter fence from the horizontal rule that "---" means anywhere else.
+fn Highlighter xs_sub_begin(Highlighter hlt, BoundedSpec spec, bool first_row_only)
+	rust
+		{
+			let start = regex::Regex::new(spec.start.as_str()).unwrap();
+			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
+			{
+				let mut inner = hlt.0.lock().unwrap();
+				inner.subs.push(SubGrammar {
+					name: spec.name.clone(),
+					start,
+					stop,
+					first_row_only,
+					rules: Vec::new(),
+				});
+				let idx = inner.subs.len() - 1;
+				inner.target = Some(idx);
+			}
+			hlt
+		}
+
+# Closes the region opened by xs_sub_begin -- subsequent xs_add_* calls go
+# back to the host grammar's own rule list.
+fn Highlighter xs_sub_end(Highlighter hlt)
+	rust
+		{
+			hlt.0.lock().unwrap().target = None;
 			hlt
 		}
 
@@ -541,10 +719,10 @@ fn Highlighter xs_run(Highlighter hlt, stringList lines)
 			let jsx_expr = inner.jsx_expr;
 			let mut stack: Vec<Frame> = vec![Frame::Code];
 			let mut line_state: Vec<Vec<Frame>> = Vec::with_capacity(lines.len());
-			for line in &lines {
+			for (row, line) in lines.iter().enumerate() {
 				line_state.push(stack.clone());
 				let expanded = hl_expand_tabs(line.as_str(), tab_width);
-				let (_tokens, next_stack) = hl_tokenize_line(&inner.rules, expanded.as_str(), &stack, jsx_expr);
+				let (_tokens, next_stack) = hl_tokenize_line(&inner.rules, &inner.subs, expanded.as_str(), row, &stack, jsx_expr);
 				stack = next_stack;
 			}
 			inner.line_state = line_state;
@@ -558,7 +736,7 @@ fn string xs_line(Highlighter hlt, int row, string line)
 			let inner = hlt.0.lock().unwrap();
 			let expanded = hl_expand_tabs(line.as_str(), inner.tab_width);
 			let start_stack = inner.line_state.get(row as usize).cloned().unwrap_or_else(|| vec![Frame::Code]);
-			let (tokens, _end_stack) = hl_tokenize_line(&inner.rules, expanded.as_str(), &start_stack, inner.jsx_expr);
+			let (tokens, _end_stack) = hl_tokenize_line(&inner.rules, &inner.subs, expanded.as_str(), row as usize, &start_stack, inner.jsx_expr);
 			let mut out = String::new();
 			for (text, kind) in tokens {
 				match kind {

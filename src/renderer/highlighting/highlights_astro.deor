@@ -1,0 +1,123 @@
+macro highlights_astro
+	# Astro is two grammars in one file: a TS "frontmatter" fence at the top
+	# (--- ... ---) followed by JSX-flavored markup, so these rules are the
+	# tsx set plus the HTML-only bits (markup comments, entities) and
+	# Astro's own template directives.
+
+	# HTML comments -- text-reachable since these appear directly in markup
+	# text, not just inside an expression
+	name as "comment"
+	start as "<!--"
+	stop as "-->"
+	BoundedSpec html_bc_spec = (name, start, stop)
+	html_bc_escapable as false
+	highlighter = xs_add_bounded_text(highlighter, html_bc_spec, html_bc_escapable)
+
+	# TS block comments (frontmatter, and inside {} expressions)
+	name as "comment"
+	start as "/\\*"
+	stop as "\\*/"
+	BoundedSpec bc_spec = (name, start, stop)
+	bc_escapable as false
+	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+
+	# line comments
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+
+	# the frontmatter fences themselves -- a line that is nothing but "---".
+	# "^" anchors to the start of the current line, so this can't be
+	# confused with a "---" written mid-line inside markup text.
+	fence_name as "macro_name"
+	fence_pattern as "^\\s*---\\s*$"
+	highlighter = xs_add_keyword(highlighter, fence_name, fence_pattern)
+
+	# double/single/template-literal strings -- covers both HTML attribute
+	# values and TS string literals in the frontmatter; template ${}
+	# interpolation isn't separately colored, the whole literal is one
+	# string token.
+	#
+	# Deliberately NO regex-literal rule (/pattern/), same reasoning as
+	# highlights_tsx -- it can't be told apart from division "/".
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+
+	name as "string"
+	start as "'"
+	stop as "'"
+	BoundedSpec sstr_spec = (name, start, stop)
+	sstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec tstr_spec = (name, start, stop)
+	tstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)
+
+	# tag names: plain HTML elements, custom elements with dashes, and
+	# dotted component references (<Foo.Bar>). xs_add_tag also turns on tag
+	# scoping so a tag's children become a text scope where ordinary code
+	# rules don't apply -- that's what keeps an apostrophe in page text
+	# ("Don't") from opening a string that swallows the rest of the file.
+	tag_name as "type"
+	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.-]*"
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
+
+	# lets a bare "{" inside markup text (e.g. {post.title}) resume full
+	# code scanning until its matching "}", instead of staying inert --
+	# Astro expressions are JSX expressions
+	highlighter = xs_enable_jsx_expr(highlighter)
+
+	# Astro template directives (client:load, client:visible, set:html,
+	# is:raw, transition:name, define:vars, server:defer, ...). Registered
+	# before the generic attribute rule below so they get the "special
+	# syntax" color instead of the plain attribute color. No trailing "="
+	# required since several of them are bare (client:load, is:raw).
+	dir_name as "macro_name"
+	dir_pattern as "\\b(client|server|set|is|transition|define|slot):[a-zA-Z-]+"
+	highlighter = xs_add_keyword(highlighter, dir_name, dir_pattern)
+
+	# plain attribute names tight against "=" -- the "=" is swallowed into
+	# the match as a lookahead workaround, same as highlights_html
+	attr_name as "function"
+	attr_pattern as "\\b[a-zA-Z_][a-zA-Z0-9_-]*="
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+	# entities
+	entity_name as "macro_name"
+	entity_pattern as "&[A-Za-z#0-9]+;"
+	highlighter = xs_add_keyword(highlighter, entity_name, entity_pattern)
+
+	# call sites: name immediately followed by "(" -- registered before the
+	# keyword/type rules below so conventional camelCase/PascalCase call
+	# sites win the tokenizer's first-atom-registered tiebreak
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_$][A-Za-z0-9_$]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|as|asserts|async|await|break|case|catch|class|const|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|infer|instanceof|interface|is|keyof|let|module|namespace|new|null|of|out|override|private|protected|public|readonly|return|satisfies|set|static|super|switch|this|throw|true|try|type|typeof|undefined|unique|var|void|while|with|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+	# builtin primitive/utility types (frontmatter is TypeScript)
+	builtin_name as "type"
+	builtin_pattern as "\\b(string|number|boolean|any|unknown|never|object|symbol|bigint)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+	# PascalCase identifiers (component names, imported types), wherever
+	# used outside a tag
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+
+	# numeric literals, underscores allowed as separators
+	num_name as "number"
+	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

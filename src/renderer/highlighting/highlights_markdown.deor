@@ -1,4 +1,37 @@
 macro highlights_markdown
+	# YAML frontmatter: the "--- ... ---" block at the very top of the file
+	# (the Jekyll convention, also used by Hugo, Astro, Eleventy and
+	# Obsidian). Its body is scanned with the real yaml grammar instead of
+	# markdown's rules -- see xs_sub_begin. The rules can't just be added to
+	# markdown's own list: yaml's key rule would light up ordinary prose like
+	# "Note: see below", and its "#" comment rule would collide with markdown
+	# headings.
+	#
+	# first_row_only is what keeps this honest -- a "---" anywhere further
+	# down a document is a horizontal rule or a setext heading underline, and
+	# would otherwise flip the rest of the file into yaml mode.
+	name as "macro_name"
+	start as "^---\\s*$"
+	stop as "^---\\s*$"
+	BoundedSpec yaml_fm_spec = (name, start, stop)
+	yaml_fm_first_row_only as true
+	highlighter = xs_sub_begin(highlighter, yaml_fm_spec, yaml_fm_first_row_only)
+	macro_run highlights_yaml
+	highlighter = xs_sub_end(highlighter)
+
+	# TOML frontmatter ("+++ ... +++", the other convention Hugo accepts).
+	# Same mechanism, and unambiguous besides -- "+++" means nothing else in
+	# markdown -- but still row-0 only, since frontmatter is by definition the
+	# head of the file.
+	name as "macro_name"
+	start as "^\\+\\+\\+\\s*$"
+	stop as "^\\+\\+\\+\\s*$"
+	BoundedSpec toml_fm_spec = (name, start, stop)
+	toml_fm_first_row_only as true
+	highlighter = xs_sub_begin(highlighter, toml_fm_spec, toml_fm_first_row_only)
+	macro_run highlights_toml
+	highlighter = xs_sub_end(highlighter)
+
 	# fenced code blocks -- registered before the inline single-backtick
 	# rule below so a real ``` fence wins the tokenizer's
 	# first-atom-registered tiebreak at the same opening backtick
