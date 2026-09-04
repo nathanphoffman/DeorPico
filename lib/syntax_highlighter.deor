@@ -1,192 +1,47 @@
+# Syntax highlighter.
+#
+# The tokenizer -- scope stack, tag scoping, sub-grammars, token assembly --
+# lives in Deor below. What stays in Rust is the regex layer and a couple of
+# byte-level string primitives Deor has no way to express: compiled regexes
+# are exactly what `raw` exists for (see the spec's Types page), and regex
+# match offsets are byte offsets, which Deor's char-based s_substring cannot
+# safely index with.
+#
+# The current line being scanned is parked inside the handle rather than
+# passed to each shim. Deor clones every argument at the call site, so a
+# `string line` parameter on a function called a few hundred times per line
+# would copy the whole line each time.
+
 raw Highlighter
 
 rust
-	// A rule is tried in registration order. At any given scan position the
-	// match with the earliest start wins; ties go to whichever rule was
-	// registered first (see hl_tokenize_line) -- this is what lets a rule
-	// like "call site" beat a later, broader "type" rule on the same text.
-	//
-	// Tag is a variant of Keyword used only by markup grammars (tsx/jsx/vue/
-	// html) that call xs_enable_tag_scoping -- see the Frame/scope-stack
-	// comment on hl_tokenize_line for why it needs to be distinct from a
-	// plain Keyword. `guarded` is the same pattern with a mandatory
-	// "expression-start" character (or start-of-line) glued onto the front
-	// and the real match wrapped in capture group 1 -- see
-	// build_guarded_tag_pattern.
-	#[derive(Clone)]
-	enum HlRule {
-		Keyword(String, regex::Regex),
-		Bounded(String, regex::Regex, regex::Regex, bool, bool), // name, start, stop, escapable, text_reentrant
-		Tag(String, regex::Regex, regex::Regex), // name, plain, guarded
-		// Like Keyword, but only capture group 1 is colored and consumed. The
-		// regex crate has no lookbehind, so a rule that may only fire after
-		// some preceding character -- yaml's "{ key:" / ", key:" inside a flow
-		// mapping -- has to match that character too; this keeps it out of the
-		// colored span, the same trick HlRule::Tag's `guarded` pattern uses.
-		KeywordCap(String, regex::Regex),
-	}
-
-	// A second, complete rule list that takes over inside a delimited region.
-	// YAML frontmatter in a markdown file is the motivating case, but nothing
-	// here is specific to it. `first_row_only` exists because a markdown
-	// frontmatter fence is only a fence on line 1 -- the identical "---"
-	// further down a document is a horizontal rule or a setext heading
-	// underline, and must not open a bogus region.
-	#[derive(Clone)]
-	struct SubGrammar {
-		name: String,
-		start: regex::Regex,
-		stop: regex::Regex,
-		first_row_only: bool,
+	// Rc<RefCell<..>> rather than Arc<Mutex<..>>: the tokenizer calls back in
+	// several times per scan position, and an uncontended mutex lock is still
+	// ~20ns of pure overhead on the render path. The highlighter is created
+	// and used entirely inside the render loop (see main.deor's
+	// init_highlight_state) and never crosses a thread.
+	struct HlState {
+		regexes: Vec<regex::Regex>,
+		// The host grammar's rules, and one further rule list per sub-grammar.
 		rules: Vec<HlRule>,
-	}
-
-	// Per-row scope stack for markup grammars. Frame::Code is the permanent
-	// floor (index 0), never popped -- everything else nests on top of it.
-	//
-	//   Code      ordinary scanning with the full rule list (today's only
-	//             state, for every grammar that never registers a Tag rule)
-	//   CodeChild like Code but poppable -- <script>/<style> bodies, so they
-	//             keep full code highlighting instead of going inert
-	//   Text      inside a tag's children (JSX/HTML text) -- no rule other
-	//             than a tag start, a text-reentrant Bounded start, or (jsx_expr)
-	//             a bare '{' applies here, which is what keeps stray quotes/
-	//             apostrophes/capitalized words in prose from being read as code
-	//   InTag     inside "<Name ...", scanning attributes, watching for the
-	//             tag's own unescaped '>' or '/>' -- bool is "is a closing tag"
-	//   Expr      inside a JSX `{...}` expression entered from Text; usize
-	//             tracks unmatched '{' depth so nested object literals /
-	//             blocks don't pop it early
-	//   Bounded   inside a Bounded rule's region (string/comment/mustache/...),
-	//             usize is the rule index -- generalizes the old single-slot
-	//             "open bounded region" state to a stack slot
-	//   Sub       inside a sub-grammar region (yaml frontmatter in a .md
-	//             file); usize indexes HighlighterInner::subs, and scanning
-	//             continues with that sub-grammar's own rule list instead of
-	//             the host grammar's -- see hl_active_rules
-	#[derive(Clone, PartialEq)]
-	enum Frame {
-		Code,
-		CodeChild,
-		Text,
-		InTag(bool, String),
-		Expr(usize),
-		Bounded(usize),
-		Sub(usize),
-	}
-
-	struct HighlighterInner {
-		rules: Vec<HlRule>,
-		subs: Vec<SubGrammar>,
-		// Where xs_add_* appends: None = the main rule list, Some(i) =
-		// subs[i].rules. Set by xs_sub_begin, cleared by xs_sub_end -- that is
-		// what lets an existing grammar macro (highlights_yaml) be replayed
-		// verbatim into a sub-grammar instead of being duplicated there.
-		target: Option<usize>,
+		sub_meta: Vec<SubMeta>,
+		sub_rules: Vec<Vec<HlRule>>,
+		// Where xs_add_* appends: -1 = the host list, i = sub_rules[i]. Set by
+		// xs_sub_begin, cleared by xs_sub_end -- that is what lets an existing
+		// grammar macro (highlights_yaml) be replayed verbatim into a
+		// sub-grammar instead of being duplicated there.
+		target: i64,
 		// line_state[row] is the scope stack in effect at the START of that
 		// row -- populated by a full-file scan in xs_run so xs_line can color
 		// an arbitrary row on its own without re-scanning everything before it.
 		line_state: Vec<Vec<Frame>>,
-		tab_width: usize,
-		// Whether a bare '{' inside JSX/TSX text starts an embedded
-		// expression (Frame::Expr). Only tsx/jsx enable this -- vue's
-		// mustache interpolation uses `{{ }}` instead, handled as a plain
-		// text-reentrant Bounded rule, and html has no embedded-expression
-		// syntax at all.
+		line: String,
+		tab_width: i64,
 		jsx_expr: bool,
 	}
 
 	#[derive(Clone)]
-	struct Highlighter(std::sync::Arc<std::sync::Mutex<HighlighterInner>>);
-
-	// Matches VS Code's default "Dark+" theme token colors (truecolor, not the
-	// 16-color ANSI palette) so highlighting looks the same as the VS Code editor.
-	fn xs_color_code(name: &str) -> &'static str {
-		match name {
-			"keyword" => "\x1b[38;2;198;120;221m",        // #C586C0
-			"string" => "\x1b[38;2;206;145;120m",         // #CE9178
-			"comment" => "\x1b[38;2;106;153;85m",         // #6A9955
-			"number" => "\x1b[38;2;181;206;168m",         // #B5CEA8
-			"type" => "\x1b[38;2;78;201;176m",            // #4EC9B0
-			"function" => "\x1b[38;2;156;220;254m",       // #9CDCFE pale blue
-			"macro_name" => "\x1b[38;2;125;176;203m",     // #7DB0CB steel blue, darker than function
-			"invalid" => "\x1b[38;2;244;71;71m",          // #F44747
-			"heading" => "\x1b[1;38;2;86;156;214m",       // #569CD6 bold
-			"quote" => "\x1b[3;38;2;106;153;85m",         // comment green, italic
-			"bold" => "\x1b[1m",
-			"italic" => "\x1b[3m",
-			"strikethrough" => "\x1b[9m",
-			"image" => "\x1b[38;2;78;201;176m",           // type teal
-			"link" => "\x1b[4;38;2;86;156;214m",          // #569CD6 underlined
-			"math" => "\x1b[38;2;181;206;168m",           // number pale green
-			"block" => "\x1b[38;2;206;145;120m",          // string orange
-			"linebreak" => "\x1b[38;2;106;153;85m",       // comment green
-			"list" => "\x1b[38;2;198;120;221m",           // keyword purple
-			_ => "",
-		}
-	}
-
-	// Tabs are expanded to real tab stops (not a flat N spaces) so the
-	// highlighted output stays in the same column space s_visual_col assumes
-	// when it maps cursor/click positions -- see src/consts.deor's TAB_WIDTH.
-	fn hl_expand_tabs(line: &str, tab_width: usize) -> String {
-		let mut out = String::with_capacity(line.len());
-		let mut col: usize = 0;
-		for ch in line.chars() {
-			if ch == '\t' {
-				let next_col = (col / tab_width + 1) * tab_width;
-				for _ in col..next_col {
-					out.push(' ');
-				}
-				col = next_col;
-			} else {
-				out.push(ch);
-				col += 1;
-			}
-		}
-		out
-	}
-
-	fn hl_is_escaped(line: &str, pos: usize) -> bool {
-		let bytes = line.as_bytes();
-		let mut count = 0;
-		let mut i = pos;
-		while i > 0 && bytes[i - 1] == b'\\' {
-			count += 1;
-			i -= 1;
-		}
-		count % 2 == 1
-	}
-
-	// Earliest non-escaped occurrence of `stop` at or after `from`. Escaped
-	// occurrences (odd number of backslashes immediately before the match)
-	// are skipped over, same convention as backslash-escaped string literals.
-	fn hl_find_stop(line: &str, stop: &regex::Regex, escapable: bool, from: usize) -> Option<(usize, usize)> {
-		let mut pos = from;
-		loop {
-			if pos > line.len() {
-				return None;
-			}
-			match stop.find_at(line, pos) {
-				None => return None,
-				Some(m) => {
-					if escapable && hl_is_escaped(line, m.start()) {
-						pos = m.start() + 1;
-						continue;
-					}
-					return Some((m.start(), m.end()));
-				}
-			}
-		}
-	}
-
-	// "<Foo" / "</Foo" -> "foo" -- used to tell an opening tag from a closing
-	// one and, for opening tags, to special-case <script>/<style> bodies so
-	// they keep full code highlighting instead of going inert as JSX text.
-	fn tag_body_lower(matched: &str) -> String {
-		let s = if matched.starts_with("</") { &matched[2..] } else { &matched[1..] };
-		s.to_lowercase()
-	}
+	struct Highlighter(std::rc::Rc<std::cell::RefCell<HlState>>);
 
 	// A bare tag pattern like `</?[A-Za-z][A-Za-z0-9_.]*` is genuinely
 	// ambiguous in TS/TSX source: `Array<string>` and `useState<Foo>()` match
@@ -206,444 +61,1317 @@ rust
 		format!(r#"(?:^|[\s(){{}}\[\],;:?=&|!~+])({})"#, pattern)
 	}
 
-	// The rule list in effect for a given scope stack: the nearest enclosing
-	// Frame::Sub wins, otherwise the host grammar's own list. A Sub frame is
-	// only ever popped by its own stop pattern, so every frame nested above
-	// one belongs to that sub-grammar -- including Bounded frames, whose
-	// stored rule index is relative to whichever list opened them.
-	fn hl_active_rules<'a>(main: &'a [HlRule], subs: &'a [SubGrammar], stack: &[Frame]) -> &'a [HlRule] {
-		for frame in stack.iter().rev() {
-			if let Frame::Sub(i) = frame {
-				return &subs[*i].rules;
-			}
-		}
-		main
-	}
+# ---------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------
 
-	// Appends to whichever rule list xs_sub_begin/xs_sub_end has made current,
-	// so every xs_add_* builder is sub-grammar aware without each one needing
-	// to know about sub-grammars.
-	fn hl_push_rule(hlt: &Highlighter, rule: HlRule) {
-		let mut inner = hlt.0.lock().unwrap();
-		let target = inner.target;
-		match target {
-			Some(i) => inner.subs[i].rules.push(rule),
-			None => inner.rules.push(rule),
-		}
-	}
+# Token colors, interned at rule-registration time. Rules carry a ColorId
+# rather than a color name so that HlRule holds nothing but enums, ints and
+# bools -- cloning a rule list (which Deor does on every call that takes one)
+# is then a flat memcpy with no string allocations.
+enum ColorId
+	NoColor
+	KeywordHue
+	StringHue
+	CommentHue
+	NumberHue
+	TypeHue
+	FunctionHue
+	MacroHue
+	InvalidHue
+	HeadingHue
+	QuoteHue
+	BoldHue
+	ItalicHue
+	StrikeHue
+	ImageHue
+	LinkHue
+	MathHue
+	BlockHue
+	BreakHue
+	ListHue
 
-	#[derive(PartialEq)]
-	enum TextKind { Tag, Bounded, Brace }
-	#[derive(PartialEq)]
-	enum CodeKind { Keyword, Bounded, Tag, CloseAngle, BraceOpen, BraceClose, SubOpen, SubClose }
+# A rule is tried in registration order. At any given scan position the match
+# with the earliest start wins; ties go to whichever rule was registered first
+# -- this is what lets a rule like "call site" beat a later, broader "type"
+# rule on the same text.
+#
+# TagRule is a variant of KeywordRule used only by markup grammars (tsx/jsx/
+# vue/html/astro) registered through xs_add_tag; it also enables tag scoping.
+# KeywordCapRule colors only capture group 1 of its pattern: the regex crate
+# has no lookbehind, so a rule that may only fire after some preceding
+# character -- yaml's "{ key:" / ", key:" inside a flow mapping -- has to match
+# that character too, and this keeps it out of the colored span.
+enum RuleKind
+	KeywordRule
+	KeywordCapRule
+	BoundedRule
+	TagRule
 
-	// Tokenizes one already-tab-expanded line, given whatever scope stack (if
-	// any) was left open by the previous line. Returns the colored spans plus
-	// the stack left open at the end of this line.
-	//
-	// For any grammar that never registers a Tag rule, `stack` never grows
-	// past its permanent Frame::Code floor and this behaves exactly like the
-	// old flat Keyword/Bounded scan -- the branching below only matters for
-	// markup grammars (tsx/jsx/vue/html) that opt into tag scoping via
-	// xs_add_tag/xs_enable_jsx_expr.
-	fn hl_tokenize_line(rules: &[HlRule], subs: &[SubGrammar], line: &str, row: usize, start_stack: &[Frame], jsx_expr: bool) -> (Vec<(String, Option<String>)>, Vec<Frame>) {
-		let mut tokens: Vec<(String, Option<String>)> = Vec::new();
-		let mut stack: Vec<Frame> = if start_stack.is_empty() { vec![Frame::Code] } else { start_stack.to_vec() };
-		let mut pos = 0usize;
+# Per-row scope stack for markup grammars. CodeFrame is the permanent floor
+# (index 0), never popped -- everything else nests on top of it.
+#
+#   CodeFrame       ordinary scanning with the full rule list (the only state
+#                   for every grammar that never registers a tag rule)
+#   CodeChildFrame  like CodeFrame but poppable -- <script>/<style> bodies, so
+#                   they keep full code highlighting instead of going inert
+#   TextFrame       inside a tag's children (JSX/HTML text) -- no rule other
+#                   than a tag start, a text-reentrant bounded start, or (when
+#                   jsx_expr is on) a bare '{' applies here, which is what
+#                   keeps stray quotes/apostrophes/capitalized words in prose
+#                   from being read as code
+#   InTagFrame      inside "<Name ...", scanning attributes, watching for the
+#                   tag's own unescaped '>' or '/>'
+#   ExprFrame       inside a JSX `{...}` expression entered from text;
+#                   expr_depth tracks unmatched '{' so nested object literals
+#                   don't pop it early
+#   BoundedFrame    inside a bounded region (string/comment/mustache/...),
+#                   frame_idx is the rule index within the active rule list
+#   SubFrame        inside a sub-grammar region (yaml frontmatter in a .md
+#                   file); frame_idx indexes the sub-grammar list, and scanning
+#                   continues with that sub-grammar's own rules
+enum FrameKind
+	CodeFrame
+	CodeChildFrame
+	TextFrame
+	InTagFrame
+	ExprFrame
+	BoundedFrame
+	SubFrame
 
-		while pos < line.len() {
-			let top = stack.last().cloned().unwrap();
-			// Recomputed every step, because a step can itself push or pop a
-			// Frame::Sub and so change which grammar the next atom is read in.
-			let active = hl_active_rules(rules, subs, &stack);
+# What won the match contest at a scan position.
+enum HitKind
+	HitNone
+	HitKeyword
+	HitBounded
+	HitTag
+	HitBrace
+	HitCloseAngle
+	HitBraceOpen
+	HitBraceClose
+	HitSubOpen
+	HitSubClose
 
-			match top {
-				Frame::Bounded(rule_idx) => {
-					if let HlRule::Bounded(name, _start, stop, escapable, _text_reentrant) = &active[rule_idx] {
-						match hl_find_stop(line, stop, *escapable, pos) {
-							Some((_, end)) => {
-								tokens.push((line[pos..end].to_string(), Some(name.clone())));
-								pos = end;
-								stack.pop();
-							}
-							None => {
-								tokens.push((line[pos..].to_string(), Some(name.clone())));
-								pos = line.len();
-							}
-						}
-					}
-				}
+struct RxMatch
+	bool rx_found
+	int rx_start
+	int rx_stop
 
-				Frame::Text => {
-					// Deliberately restricted candidate set: JSX/HTML text is
-					// not code, so nothing here runs the general keyword list
-					// -- that's exactly what let stray apostrophes/quotes and
-					// capitalized prose words get misread as code before.
-					let mut best: Option<(usize, usize)> = None;
-					let mut best_kind = TextKind::Tag;
-					let mut best_rule_idx = 0usize;
+struct BytePos
+	bool byte_found
+	int byte_idx
 
-					for (idx, rule) in active.iter().enumerate() {
-						match rule {
-							HlRule::Tag(_name, plain_re, _guarded) => {
-								if let Some(m) = plain_re.find_at(line, pos) {
-									if best.is_none() || m.start() < best.unwrap().0 {
-										best = Some((m.start(), m.end()));
-										best_kind = TextKind::Tag;
-										best_rule_idx = idx;
-									}
-								}
-							}
-							HlRule::Bounded(_name, start_re, _stop, _escapable, text_reentrant) => {
-								if *text_reentrant {
-									if let Some(m) = start_re.find_at(line, pos) {
-										if best.is_none() || m.start() < best.unwrap().0 {
-											best = Some((m.start(), m.end()));
-											best_kind = TextKind::Bounded;
-											best_rule_idx = idx;
-										}
-									}
-								}
-							}
-							HlRule::Keyword(..) => {}
-							HlRule::KeywordCap(..) => {}
-						}
-					}
+struct SubRef
+	bool sub_active
+	int sub_slot
 
-					if jsx_expr {
-						if let Some(rel) = line[pos..].find('{') {
-							let bpos = pos + rel;
-							if best.is_none() || bpos < best.unwrap().0 {
-								best = Some((bpos, bpos + 1));
-								best_kind = TextKind::Brace;
-							}
-						}
-					}
+struct HlRule
+	RuleKind rule_kind
+	ColorId rule_color
+	int main_rx
+	int stop_rx
+	int guard_rx
+	bool escapable
+	bool text_reentrant
 
-					match best {
-						None => {
-							tokens.push((line[pos..].to_string(), None));
-							pos = line.len();
-						}
-						Some((start, end)) => {
-							if start > pos {
-								tokens.push((line[pos..start].to_string(), None));
-							}
-							match best_kind {
-								TextKind::Tag => {
-									let matched = &line[start..end];
-									let is_closing = matched.starts_with("</");
-									let tag_name = tag_body_lower(matched);
-									if let HlRule::Tag(name, _p, _g) = &active[best_rule_idx] {
-										tokens.push((matched.to_string(), Some(name.clone())));
-									}
-									stack.push(Frame::InTag(is_closing, tag_name));
-									pos = end;
-								}
-								TextKind::Bounded => {
-									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &active[best_rule_idx] {
-										match hl_find_stop(line, stop, *escapable, end) {
-											Some((_, stop_end)) => {
-												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
-												pos = stop_end;
-											}
-											None => {
-												tokens.push((line[start..].to_string(), Some(name.clone())));
-												stack.push(Frame::Bounded(best_rule_idx));
-												pos = line.len();
-											}
-										}
-									}
-								}
-								TextKind::Brace => {
-									tokens.push((line[start..end].to_string(), None));
-									stack.push(Frame::Expr(1));
-									pos = end;
-								}
-							}
-						}
-					}
-				}
+shape ruleList = list of HlRule
 
-				// Code, CodeChild, InTag, Expr all scan with the full rule
-				// list -- InTag additionally watches for the tag's own '>',
-				// Expr additionally tracks bare '{'/'}' depth.
-				_ => {
-					let in_tag = matches!(top, Frame::InTag(_, _));
-					let in_expr = matches!(top, Frame::Expr(_));
-					let in_sub: Option<usize> = match &top {
-						Frame::Sub(i) => Some(*i),
-						_ => None,
-					};
+# A sub-grammar is a second, complete rule list that takes over inside a
+# delimited region. YAML frontmatter in a markdown file is the motivating
+# case, but nothing here is specific to it. first_row_only exists because a
+# markdown frontmatter fence is only a fence on line 1 -- the identical "---"
+# further down a document is a horizontal rule or a setext heading underline,
+# and must not open a bogus region.
+struct SubMeta
+	ColorId sub_color
+	int sub_start_rx
+	int sub_stop_rx
+	bool first_row_only
 
-					let mut best: Option<(usize, usize)> = None;
-					let mut best_kind = CodeKind::Keyword;
-					let mut best_rule_idx = 0usize;
-					let mut best_sub_idx = 0usize;
+shape subMetaList = list of SubMeta
 
-					for (idx, rule) in active.iter().enumerate() {
-						let candidate = match rule {
-							HlRule::Keyword(_name, re) => re.find_at(line, pos).map(|m| (m.start(), m.end())),
-							HlRule::KeywordCap(_name, re) => re
-								.captures_at(line, pos)
-								.and_then(|c| c.get(1))
-								.map(|g| (g.start(), g.end())),
-							HlRule::Bounded(_name, start_re, _stop, _escapable, _tr) => start_re.find_at(line, pos).map(|m| (m.start(), m.end())),
-							HlRule::Tag(_name, _plain, guarded) => guarded
-								.captures_at(line, pos)
-								.and_then(|c| c.get(1))
-								.map(|g| (g.start(), g.end())),
-						};
-						if let Some((s, e)) = candidate {
-							if best.is_none() || s < best.unwrap().0 {
-								best = Some((s, e));
-								best_kind = match rule {
-									HlRule::Keyword(..) => CodeKind::Keyword,
-									HlRule::KeywordCap(..) => CodeKind::Keyword,
-									HlRule::Bounded(..) => CodeKind::Bounded,
-									HlRule::Tag(..) => CodeKind::Tag,
-								};
-								best_rule_idx = idx;
-							}
-						}
-					}
+struct Frame
+	FrameKind frame_kind
+	bool tag_closing
+	string tag_name
+	int expr_depth
+	int frame_idx
 
-					if in_tag {
-						if let Some(rel) = line[pos..].find('>') {
-							let gpos = pos + rel;
-							if best.is_none() || gpos < best.unwrap().0 {
-								best = Some((gpos, gpos + 1));
-								best_kind = CodeKind::CloseAngle;
-							}
-						}
-					}
+shape frameList = list of Frame
+shape frameListList = list of frameList
 
-					if in_expr {
-						let open_rel = line[pos..].find('{');
-						let close_rel = line[pos..].find('}');
-						let mut brace: Option<(usize, bool)> = None;
-						if let Some(r) = open_rel {
-							brace = Some((pos + r, true));
-						}
-						if let Some(r) = close_rel {
-							let cpos = pos + r;
-							if brace.is_none() || cpos < brace.unwrap().0 {
-								brace = Some((cpos, false));
-							}
-						}
-						if let Some((bpos, is_open)) = brace {
-							if best.is_none() || bpos < best.unwrap().0 {
-								best = Some((bpos, bpos + 1));
-								best_kind = if is_open { CodeKind::BraceOpen } else { CodeKind::BraceClose };
-							}
-						}
-					}
+struct Token
+	string tok_text
+	ColorId tok_color
 
-					// Entering a sub-grammar is only possible from the host
-					// grammar's own top level -- not from inside a tag, an
-					// expression, or another sub-grammar.
-					if matches!(top, Frame::Code) {
-						for (i, sub) in subs.iter().enumerate() {
-							if sub.first_row_only && row != 0 {
-								continue;
-							}
-							if let Some(m) = sub.start.find_at(line, pos) {
-								if best.is_none() || m.start() < best.unwrap().0 {
-									best = Some((m.start(), m.end()));
-									best_kind = CodeKind::SubOpen;
-									best_sub_idx = i;
-								}
-							}
-						}
-					}
+shape tokenList = list of Token
 
-					// The region's own closing fence outranks anything its
-					// rules matched at the same position (note "<=", not "<"),
-					// so a sub-grammar that also has a rule for the fence text
-					// -- yaml's "---" document marker, which is exactly the
-					// markdown frontmatter terminator -- can't swallow the
-					// close and run on to the end of the file.
-					if let Some(i) = in_sub {
-						if let Some(m) = subs[i].stop.find_at(line, pos) {
-							if best.is_none() || m.start() <= best.unwrap().0 {
-								best = Some((m.start(), m.end()));
-								best_kind = CodeKind::SubClose;
-							}
-						}
-					}
+struct TokenizeResult
+	tokenList out_tokens
+	frameList out_stack
 
-					match best {
-						None => {
-							tokens.push((line[pos..].to_string(), None));
-							pos = line.len();
-						}
-						Some((start, end)) => {
-							if start > pos {
-								tokens.push((line[pos..start].to_string(), None));
-							}
-							match best_kind {
-								CodeKind::SubOpen => {
-									tokens.push((line[start..end].to_string(), Some(subs[best_sub_idx].name.clone())));
-									pos = end;
-									stack.push(Frame::Sub(best_sub_idx));
-								}
-								CodeKind::SubClose => {
-									if let Some(i) = in_sub {
-										tokens.push((line[start..end].to_string(), Some(subs[i].name.clone())));
-									}
-									pos = end;
-									stack.pop();
-								}
-								CodeKind::Keyword => {
-									// start..end is already group 1's span for a
-									// KeywordCap, so both variants render alike.
-									match &active[best_rule_idx] {
-										HlRule::Keyword(name, _re) | HlRule::KeywordCap(name, _re) => {
-											tokens.push((line[start..end].to_string(), Some(name.clone())));
-										}
-										_ => {}
-									}
-									pos = end;
-								}
-								CodeKind::Bounded => {
-									if let HlRule::Bounded(name, _s, stop, escapable, _tr) = &active[best_rule_idx] {
-										match hl_find_stop(line, stop, *escapable, end) {
-											Some((_, stop_end)) => {
-												tokens.push((line[start..stop_end].to_string(), Some(name.clone())));
-												pos = stop_end;
-											}
-											None => {
-												tokens.push((line[start..].to_string(), Some(name.clone())));
-												stack.push(Frame::Bounded(best_rule_idx));
-												pos = line.len();
-											}
-										}
-									}
-								}
-								CodeKind::Tag => {
-									let matched = &line[start..end];
-									let is_closing = matched.starts_with("</");
-									let tag_name = tag_body_lower(matched);
-									if let HlRule::Tag(name, _p, _g) = &active[best_rule_idx] {
-										tokens.push((matched.to_string(), Some(name.clone())));
-									}
-									stack.push(Frame::InTag(is_closing, tag_name));
-									pos = end;
-								}
-								CodeKind::CloseAngle => {
-									let (is_closing, tag_name_for_pop) = if let Frame::InTag(ic, n) = &top {
-										(*ic, n.clone())
-									} else {
-										(false, String::new())
-									};
-									let self_close = start > 0 && line.as_bytes()[start - 1] == b'/';
-									tokens.push((line[start..end].to_string(), None));
-									pos = end;
-									stack.pop(); // pop InTag
-									if is_closing {
-										// a real closing tag also ends the text/code-child
-										// scope it belongs to -- never pop the permanent floor
-										if stack.len() > 1 {
-											stack.pop();
-										}
-									} else if !self_close {
-										// a self-closing tag has no children of its own --
-										// only a real opening tag enters a new scope
-										let is_script_style = tag_name_for_pop == "script" || tag_name_for_pop == "style";
-										stack.push(if is_script_style { Frame::CodeChild } else { Frame::Text });
-									}
-								}
-								CodeKind::BraceOpen => {
-									tokens.push((line[start..end].to_string(), None));
-									pos = end;
-									if let Some(Frame::Expr(d)) = stack.last_mut() {
-										*d += 1;
-									}
-								}
-								CodeKind::BraceClose => {
-									tokens.push((line[start..end].to_string(), None));
-									pos = end;
-									let mut pop_it = false;
-									if let Some(Frame::Expr(d)) = stack.last_mut() {
-										*d -= 1;
-										if *d == 0 {
-											pop_it = true;
-										}
-									}
-									if pop_it {
-										stack.pop();
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+struct Best
+	HitKind hit_kind
+	int hit_start
+	int hit_stop
+	int hit_rule
+	int hit_sub
 
-		(tokens, stack)
-	}
+struct HlConfig
+	int cfg_tab_width
+	bool cfg_jsx_expr
+
+# Deor caps a function at three parameters, so the tokenizer's per-line and
+# per-position context travel as structs.
+#
+# Grammar is everything hl_tokenize_line needs for one line; Spot is the
+# per-position part. Spot is all scalars, so it is free to clone -- which
+# matters, because Deor clones every argument at the call site and the match
+# helpers are called a few times per scan position. For the same reason each
+# helper takes only the list it actually reads: handing the rule list to the
+# sub-grammar probes, which never look at it, cost an allocation per probe.
+struct Grammar
+	ruleList gr_host
+	subMetaList gr_subs
+	int gr_row
+	int gr_len
+	bool gr_jsx
+	bool gr_tokens
+
+struct Spot
+	int spot_pos
+	int spot_row
+	bool spot_jsx
+	bool spot_in_tag
+	bool spot_in_expr
+	bool spot_in_code
+	bool spot_in_sub
+	int spot_sub
+
+struct StopSpec
+	int stop_slot
+	bool stop_escapable
+	int stop_from
 
 struct BoundedSpec
 	string name
 	string start
 	string stop
 
+# ---------------------------------------------------------------------------
+# Rust shims -- the regex layer and byte-level string access
+# ---------------------------------------------------------------------------
+
 fn Highlighter xs_make(int tab_width)
 	rust
-		Highlighter(std::sync::Arc::new(std::sync::Mutex::new(HighlighterInner {
+		Highlighter(std::rc::Rc::new(std::cell::RefCell::new(HlState {
+			regexes: Vec::new(),
 			rules: Vec::new(),
-			subs: Vec::new(),
-			target: None,
+			sub_meta: Vec::new(),
+			sub_rules: Vec::new(),
+			target: -1,
 			line_state: Vec::new(),
-			tab_width: tab_width as usize,
+			line: String::new(),
+			tab_width: tab_width,
 			jsx_expr: false,
 		})))
 
-fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
+# Compiles a pattern into the handle's regex bank and returns its slot.
+fn int hl_rx_add(Highlighter hlt, string pattern)
 	rust
 		{
 			let re = regex::Regex::new(pattern.as_str()).unwrap();
-			hl_push_rule(&hlt, HlRule::Keyword(name.clone(), re));
+			let mut st = hlt.0.borrow_mut();
+			st.regexes.push(re);
+			(st.regexes.len() - 1) as i64
+		}
+
+# The guarded form of a tag pattern -- see build_guarded_tag_pattern.
+fn int hl_rx_add_guarded(Highlighter hlt, string pattern)
+	rust
+		{
+			let guarded = build_guarded_tag_pattern(pattern.as_str());
+			let re = regex::Regex::new(guarded.as_str()).unwrap();
+			let mut st = hlt.0.borrow_mut();
+			st.regexes.push(re);
+			(st.regexes.len() - 1) as i64
+		}
+
+# Earliest match of a bank regex at or after `pos` in the parked line.
+fn RxMatch hl_rx_find(Highlighter hlt, int slot, int pos)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = pos as usize;
+			if start > st.line.len() {
+				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+			} else {
+				match st.regexes[slot as usize].find_at(st.line.as_str(), start) {
+					Some(m) => RxMatch { rx_found: true, rx_start: m.start() as i64, rx_stop: m.end() as i64 },
+					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
+				}
+			}
+		}
+
+# Same, but reports only capture group 1's span -- used by KeywordCapRule and
+# by the guarded tag patterns.
+fn RxMatch hl_rx_group(Highlighter hlt, int slot, int pos)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = pos as usize;
+			if start > st.line.len() {
+				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+			} else {
+				match st.regexes[slot as usize].captures_at(st.line.as_str(), start).and_then(|c| c.get(1)) {
+					Some(g) => RxMatch { rx_found: true, rx_start: g.start() as i64, rx_stop: g.end() as i64 },
+					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
+				}
+			}
+		}
+
+fn RxMatch hl_no_match()
+	rust
+		RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+
+# Parks the line every subsequent shim call reads, and returns its byte length.
+fn int hl_set_line(Highlighter hlt, string line)
+	rust
+		{
+			let mut st = hlt.0.borrow_mut();
+			st.line = line;
+			st.line.len() as i64
+		}
+
+fn string hl_slice(Highlighter hlt, int start, int stop)
+	rust
+		{
+			let st = hlt.0.borrow();
+			st.line[(start as usize)..(stop as usize)].to_string()
+		}
+
+fn BytePos hl_find_byte(Highlighter hlt, string needle, int from)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = from as usize;
+			let hit = if start <= st.line.len() { st.line[start..].find(needle.as_str()) } else { None };
+			match hit {
+				Some(rel) => BytePos { byte_found: true, byte_idx: (start + rel) as i64 },
+				None => BytePos { byte_found: false, byte_idx: 0 },
+			}
+		}
+
+fn bool hl_byte_is(Highlighter hlt, int idx, string chr)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let bytes = st.line.as_bytes();
+			let at = idx as usize;
+			at < bytes.len() && !chr.is_empty() && bytes[at] == chr.as_bytes()[0]
+		}
+
+# Tabs are expanded to real tab stops (not a flat N spaces) so the highlighted
+# output stays in the same column space s_visual_col assumes when it maps
+# cursor/click positions -- see src/consts.deor's TAB_WIDTH. Kept in Rust: a
+# Deor version would have to allocate a String per character.
+fn string hl_expand_tabs(string line, int tab_width)
+	rust
+		{
+			let width = tab_width as usize;
+			let mut out = String::with_capacity(line.len());
+			let mut col: usize = 0;
+			for ch in line.chars() {
+				if ch == '\t' {
+					let next_col = (col / width + 1) * width;
+					for _ in col..next_col {
+						out.push(' ');
+					}
+					col = next_col;
+				} else {
+					out.push(ch);
+					col += 1;
+				}
+			}
+			out
+		}
+
+# Appends to whichever rule list xs_sub_begin/xs_sub_end has made current.
+fn Highlighter hl_add_rule(Highlighter hlt, HlRule rule)
+	rust
+		{
+			{
+				let mut st = hlt.0.borrow_mut();
+				let target = st.target;
+				if target < 0 {
+					st.rules.push(rule);
+				} else {
+					st.sub_rules[target as usize].push(rule);
+				}
+			}
 			hlt
 		}
 
-fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
+# Registers a sub-grammar and makes it the current append target.
+fn Highlighter hl_add_sub(Highlighter hlt, SubMeta meta)
 	rust
 		{
-			let start = regex::Regex::new(spec.start.as_str()).unwrap();
-			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			hl_push_rule(&hlt, HlRule::Bounded(spec.name.clone(), start, stop, escapable, false));
+			{
+				let mut st = hlt.0.borrow_mut();
+				st.sub_meta.push(meta);
+				st.sub_rules.push(Vec::new());
+				st.target = (st.sub_meta.len() - 1) as i64;
+			}
 			hlt
 		}
 
-# Like xs_add_bounded, but the region is also reachable from inside JSX/HTML
-# text (Frame::Text) -- e.g. Vue's "{{ mustache }}" interpolation or an
-# "<!-- -->" comment written directly in markup, as opposed to a JS string or
-# comment, which must never open from inside plain text (that's the bug this
-# whole scope-stack exists to fix -- see hl_tokenize_line).
-fn Highlighter xs_add_bounded_text(Highlighter hlt, BoundedSpec spec, bool escapable)
+fn Highlighter hl_clear_target(Highlighter hlt)
 	rust
 		{
-			let start = regex::Regex::new(spec.start.as_str()).unwrap();
-			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			hl_push_rule(&hlt, HlRule::Bounded(spec.name.clone(), start, stop, escapable, true));
+			hlt.0.borrow_mut().target = -1;
 			hlt
 		}
 
-# Registers a tag rule (e.g. "</?[A-Za-z][A-Za-z0-9_.]*") for a markup
-# grammar. Unlike xs_add_keyword this also enables tag scoping: a match
-# pushes an InTag frame that swallows the tag's attributes and, once its
-# closing '>' is found, opens (or closes) a Text scope for the tag's
-# children -- see the Frame doc comment on hl_tokenize_line.
-fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
+fn Highlighter hl_enable_jsx(Highlighter hlt)
 	rust
 		{
-			let plain = regex::Regex::new(pattern.as_str()).unwrap();
-			let guarded = regex::Regex::new(build_guarded_tag_pattern(pattern.as_str()).as_str()).unwrap();
-			hl_push_rule(&hlt, HlRule::Tag(name.clone(), plain, guarded));
+			hlt.0.borrow_mut().jsx_expr = true;
 			hlt
 		}
+
+fn ruleList hl_host_rules(Highlighter hlt)
+	rust
+		hlt.0.borrow().rules.clone()
+
+fn ruleList hl_sub_rules(Highlighter hlt, int slot)
+	rust
+		hlt.0.borrow().sub_rules[slot as usize].clone()
+
+fn subMetaList hl_sub_metas(Highlighter hlt)
+	rust
+		hlt.0.borrow().sub_meta.clone()
+
+fn HlConfig hl_config(Highlighter hlt)
+	rust
+		{
+			let st = hlt.0.borrow();
+			HlConfig { cfg_tab_width: st.tab_width, cfg_jsx_expr: st.jsx_expr }
+		}
+
+fn frameList hl_state_at(Highlighter hlt, int row)
+	rust
+		{
+			let st = hlt.0.borrow();
+			match st.line_state.get(row as usize) {
+				Some(frames) => frames.clone(),
+				None => vec![Frame {
+					frame_kind: FrameKind::CodeFrame,
+					tag_closing: false,
+					tag_name: String::new(),
+					expr_depth: 0,
+					frame_idx: 0,
+				}],
+			}
+		}
+
+fn Highlighter hl_state_store(Highlighter hlt, frameListList states)
+	rust
+		{
+			hlt.0.borrow_mut().line_state = states;
+			hlt
+		}
+
+# Deor string literals have no \x1b escape (see the spec's Strings page), so
+# the escape byte itself comes from here; which color goes with which token is
+# decided in Deor by hl_color_code.
+fn string hl_ansi(string body)
+	rust
+		format!("\x1b[{}m", body)
+
+# ---------------------------------------------------------------------------
+# Colors
+# ---------------------------------------------------------------------------
+
+# Grammar files register rules with a color *name*; this interns it once, at
+# registration time, so the tokenizer never carries strings around.
+fn ColorId hl_color_id(string name)
+	keyword_name as "keyword"
+	string_name as "string"
+	comment_name as "comment"
+	number_name as "number"
+	type_name as "type"
+	function_name as "function"
+	macro_name as "macro_name"
+	invalid_name as "invalid"
+	heading_name as "heading"
+	quote_name as "quote"
+	bold_name as "bold"
+	italic_name as "italic"
+	strike_name as "strikethrough"
+	image_name as "image"
+	link_name as "link"
+	math_name as "math"
+	block_name as "block"
+	break_name as "linebreak"
+	list_name as "list"
+
+	ColorId out = NoColor
+	if name is keyword_name
+		out = KeywordHue
+	else if name is string_name
+		out = StringHue
+	else if name is comment_name
+		out = CommentHue
+	else if name is number_name
+		out = NumberHue
+	else if name is type_name
+		out = TypeHue
+	else if name is function_name
+		out = FunctionHue
+	else if name is macro_name
+		out = MacroHue
+	else if name is invalid_name
+		out = InvalidHue
+	else if name is heading_name
+		out = HeadingHue
+	else if name is quote_name
+		out = QuoteHue
+	else if name is bold_name
+		out = BoldHue
+	else if name is italic_name
+		out = ItalicHue
+	else if name is strike_name
+		out = StrikeHue
+	else if name is image_name
+		out = ImageHue
+	else if name is link_name
+		out = LinkHue
+	else if name is math_name
+		out = MathHue
+	else if name is block_name
+		out = BlockHue
+	else if name is break_name
+		out = BreakHue
+	else if name is list_name
+		out = ListHue
+	return out
+
+# Matches VS Code's default "Dark+" theme token colors (truecolor, not the
+# 16-color ANSI palette) so highlighting looks the same as the VS Code editor.
+fn string hl_color_code(ColorId color)
+	empty_code as ""
+	keyword_body as "38;2;198;120;221"
+	string_body as "38;2;206;145;120"
+	comment_body as "38;2;106;153;85"
+	number_body as "38;2;181;206;168"
+	type_body as "38;2;78;201;176"
+	function_body as "38;2;156;220;254"
+	macro_body as "38;2;125;176;203"
+	invalid_body as "38;2;244;71;71"
+	heading_body as "1;38;2;86;156;214"
+	quote_body as "3;38;2;106;153;85"
+	bold_body as "1"
+	italic_body as "3"
+	strike_body as "9"
+	link_body as "4;38;2;86;156;214"
+
+	string body = empty_code
+	if color is KeywordHue
+		body = keyword_body
+	else if color is StringHue
+		body = string_body
+	else if color is CommentHue
+		body = comment_body
+	else if color is NumberHue
+		body = number_body
+	else if color is TypeHue
+		body = type_body
+	else if color is FunctionHue
+		body = function_body
+	else if color is MacroHue
+		body = macro_body
+	else if color is InvalidHue
+		body = invalid_body
+	else if color is HeadingHue
+		body = heading_body
+	else if color is QuoteHue
+		body = quote_body
+	else if color is BoldHue
+		body = bold_body
+	else if color is ItalicHue
+		body = italic_body
+	else if color is StrikeHue
+		body = strike_body
+	else if color is ImageHue
+		body = type_body
+	else if color is LinkHue
+		body = link_body
+	else if color is MathHue
+		body = number_body
+	else if color is BlockHue
+		body = string_body
+	else if color is BreakHue
+		body = comment_body
+	else if color is ListHue
+		body = keyword_body
+
+	if body is empty_code
+		return empty_code
+	string code = hl_ansi(body)
+	return code
+
+# ---------------------------------------------------------------------------
+# Frame constructors
+# ---------------------------------------------------------------------------
+
+fn Frame hl_frame_code()
+	FrameKind frame_kind = CodeFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_child()
+	FrameKind frame_kind = CodeChildFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_text()
+	FrameKind frame_kind = TextFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_tag(bool closing, string name)
+	FrameKind frame_kind = InTagFrame
+	bool tag_closing = closing
+	string tag_name = name
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_expr(int depth)
+	FrameKind frame_kind = ExprFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = depth
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_bounded(int slot)
+	FrameKind frame_kind = BoundedFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = slot
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_sub(int slot)
+	FrameKind frame_kind = SubFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = slot
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+# ---------------------------------------------------------------------------
+# Scanning helpers
+# ---------------------------------------------------------------------------
+
+# The sub-grammar in effect for a scope stack: the nearest enclosing SubFrame
+# wins, otherwise the host grammar. A SubFrame is only ever popped by its own
+# stop pattern, so every frame nested above one belongs to that sub-grammar --
+# including bounded frames, whose stored rule index is relative to whichever
+# list opened them.
+fn SubRef hl_active_sub(frameList stack)
+	bool sub_active = false
+	int sub_slot = 0
+	int count = len(stack)
+	for back in range(count)
+		int probe_idx = count - back
+		probe_idx = probe_idx - 1
+		Frame probe = stack at probe_idx
+		(frame_kind, frame_idx) in probe
+		if frame_kind is SubFrame
+			sub_active = true
+			sub_slot = frame_idx
+			break
+	SubRef out = (sub_active, sub_slot)
+	return out
+
+# True when the byte at `pos` is preceded by an odd number of backslashes --
+# the same convention as backslash-escaped string literals.
+fn bool hl_is_escaped(Highlighter hlt, int pos)
+	backslash as "\\"
+	int count = 0
+	int idx = pos
+	for if idx > 0
+		int prev = idx - 1
+		bool is_slash = hl_byte_is(hlt, prev, backslash)
+		if is_slash is false
+			break
+		count = count + 1
+		idx = prev
+	int rem = count % 2
+	bool odd = rem is 1
+	return odd
+
+# Earliest non-escaped occurrence of a bounded region's stop pattern at or
+# after `from`. Escaped occurrences are skipped over.
+fn RxMatch hl_find_stop(Highlighter hlt, StopSpec spec)
+	(stop_slot, stop_escapable, stop_from) in spec
+	RxMatch out = hl_no_match()
+	int scan = stop_from
+	for if true
+		RxMatch hit = hl_rx_find(hlt, stop_slot, scan)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found is false
+			break
+		bool skip = false
+		if stop_escapable
+			skip = hl_is_escaped(hlt, rx_start)
+		if skip
+			scan = rx_start + 1
+			continue
+		out = hit
+		break
+	return out
+
+# "<Foo" / "</Foo" -> "foo" -- used to tell an opening tag from a closing one
+# and, for opening tags, to special-case <script>/<style> bodies so they keep
+# full code highlighting instead of going inert as markup text.
+fn string hl_tag_body_lower(string matched)
+	close_prefix as "</"
+	bool is_closing = s_starts_with(matched, close_prefix)
+	int start_at = 1
+	if is_closing
+		start_at = 2
+	int stop_at = len(matched)
+	string body = s_substring(matched, start_at, stop_at)
+	string lowered = s_to_lower(body)
+	return lowered
+
+# Deliberately restricted candidate set: JSX/HTML text is not code, so nothing
+# here runs the general keyword list -- that's exactly what let stray
+# apostrophes/quotes and capitalized prose words get misread as code before.
+fn Best hl_best_text(Highlighter hlt, ruleList rules, Spot spot)
+	(spot_pos, spot_jsx) in spot
+	bool found_any = false
+	HitKind win_kind = HitNone
+	int win_start = 0
+	int win_stop = 0
+	int win_rule = 0
+
+	int count = len(rules)
+	for idx in range(count)
+		HlRule rule = rules at idx
+		(rule_kind, main_rx, text_reentrant) in rule
+		bool eligible = false
+		if rule_kind is TagRule
+			eligible = true
+		else if rule_kind is BoundedRule
+			eligible = text_reentrant
+		if eligible
+			RxMatch hit = hl_rx_find(hlt, main_rx, spot_pos)
+			(rx_found, rx_start, rx_stop) in hit
+			if rx_found
+				bool better = false
+				if found_any is false
+					better = true
+				else if rx_start < win_start
+					better = true
+				if better
+					found_any = true
+					win_start = rx_start
+					win_stop = rx_stop
+					win_rule = idx
+					if rule_kind is TagRule
+						win_kind = HitTag
+					else
+						win_kind = HitBounded
+
+	if spot_jsx
+		open_brace as "{"
+		BytePos brace = hl_find_byte(hlt, open_brace, spot_pos)
+		(byte_found, byte_idx) in brace
+		if byte_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if byte_idx < win_start
+				better = true
+			if better
+				found_any = true
+				win_kind = HitBrace
+				win_start = byte_idx
+				win_stop = byte_idx + 1
+
+	HitKind hit_kind = win_kind
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = win_rule
+	int hit_sub = 0
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# CodeFrame, CodeChildFrame, InTagFrame, ExprFrame and SubFrame all scan with
+# the full rule list -- InTagFrame additionally watches for the tag's own '>',
+# ExprFrame additionally tracks bare '{'/'}' depth.
+fn Best hl_best_code(Highlighter hlt, ruleList rules, Spot spot)
+	(spot_pos, spot_in_tag, spot_in_expr) in spot
+	bool found_any = false
+	HitKind win_kind = HitNone
+	int win_start = 0
+	int win_stop = 0
+	int win_rule = 0
+
+	int count = len(rules)
+	for idx in range(count)
+		HlRule rule = rules at idx
+		(rule_kind, main_rx, guard_rx) in rule
+		RxMatch hit = hl_no_match()
+		if rule_kind is KeywordCapRule
+			hit = hl_rx_group(hlt, main_rx, spot_pos)
+		else if rule_kind is TagRule
+			hit = hl_rx_group(hlt, guard_rx, spot_pos)
+		else
+			hit = hl_rx_find(hlt, main_rx, spot_pos)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if rx_start < win_start
+				better = true
+			if better
+				found_any = true
+				win_start = rx_start
+				win_stop = rx_stop
+				win_rule = idx
+				if rule_kind is BoundedRule
+					win_kind = HitBounded
+				else if rule_kind is TagRule
+					win_kind = HitTag
+				else
+					win_kind = HitKeyword
+
+	if spot_in_tag
+		close_angle as ">"
+		BytePos angle = hl_find_byte(hlt, close_angle, spot_pos)
+		(byte_found, byte_idx) in angle
+		if byte_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if byte_idx < win_start
+				better = true
+			if better
+				found_any = true
+				win_kind = HitCloseAngle
+				win_start = byte_idx
+				win_stop = byte_idx + 1
+
+	if spot_in_expr
+		open_brace as "{"
+		close_brace as "}"
+		BytePos opened = hl_find_byte(hlt, open_brace, spot_pos)
+		BytePos closed = hl_find_byte(hlt, close_brace, spot_pos)
+		(byte_found, byte_idx) in opened
+		bool brace_found = byte_found
+		int brace_at = byte_idx
+		bool brace_open = true
+		(byte_found, byte_idx) in closed
+		if byte_found
+			if brace_found is false
+				brace_found = true
+				brace_at = byte_idx
+				brace_open = false
+			else if byte_idx < brace_at
+				brace_at = byte_idx
+				brace_open = false
+		if brace_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if brace_at < win_start
+				better = true
+			if better
+				found_any = true
+				win_start = brace_at
+				win_stop = brace_at + 1
+				if brace_open
+					win_kind = HitBraceOpen
+				else
+					win_kind = HitBraceClose
+
+	HitKind hit_kind = win_kind
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = win_rule
+	int hit_sub = 0
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# Entering a sub-grammar is only possible from the host grammar's own top
+# level -- not from inside a tag, an expression, or another sub-grammar.
+# Returns HitNone when no region opens here.
+fn Best hl_sub_open_hit(Highlighter hlt, subMetaList subs, Spot spot)
+	(spot_pos, spot_row, spot_in_code) in spot
+
+	bool found_any = false
+	int win_start = 0
+	int win_stop = 0
+	int win_sub = 0
+
+	if spot_in_code
+		int count = len(subs)
+		for idx in range(count)
+			SubMeta meta = subs at idx
+			(sub_start_rx, first_row_only) in meta
+			bool skip = false
+			if first_row_only
+				if spot_row is not 0
+					skip = true
+			if skip is false
+				RxMatch hit = hl_rx_find(hlt, sub_start_rx, spot_pos)
+				(rx_found, rx_start, rx_stop) in hit
+				if rx_found
+					bool better = false
+					if found_any is false
+						better = true
+					else if rx_start < win_start
+						better = true
+					if better
+						found_any = true
+						win_start = rx_start
+						win_stop = rx_stop
+						win_sub = idx
+
+	HitKind hit_kind = HitNone
+	if found_any
+		hit_kind = HitSubOpen
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = 0
+	int hit_sub = win_sub
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# The open region's closing fence. Returns HitNone when it isn't here.
+fn Best hl_sub_close_hit(Highlighter hlt, subMetaList subs, Spot spot)
+	(spot_pos, spot_in_sub, spot_sub) in spot
+
+	HitKind hit_kind = HitNone
+	int hit_start = 0
+	int hit_stop = 0
+	int hit_rule = 0
+	int hit_sub = spot_sub
+
+	if spot_in_sub
+		SubMeta meta = subs at spot_sub
+		(sub_stop_rx) in meta
+		RxMatch hit = hl_rx_find(hlt, sub_stop_rx, spot_pos)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found
+			hit_kind = HitSubClose
+			hit_start = rx_start
+			hit_stop = rx_stop
+
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# Whichever of two candidates starts earlier, with `base` keeping ties -- the
+# tokenizer's usual first-registered-wins rule.
+fn Best hl_pick_earlier(Best base, Best other)
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in other
+	HitKind other_kind = hit_kind
+	int other_start = hit_start
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in base
+	if other_kind is HitNone
+		return base
+	if hit_kind is HitNone
+		return other
+	if other_start < hit_start
+		return other
+	return base
+
+# Same, but `other` also wins an exact tie. A sub-grammar's closing fence has
+# to outrank anything its own rules matched at the same position, so that a
+# grammar carrying a rule for the fence text -- yaml's "---" document marker,
+# which is exactly the markdown frontmatter terminator -- can't swallow the
+# close and run on to the end of the file.
+fn Best hl_pick_at_or_earlier(Best base, Best other)
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in other
+	HitKind other_kind = hit_kind
+	int other_start = hit_start
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in base
+	if other_kind is HitNone
+		return base
+	if hit_kind is HitNone
+		return other
+	if other_start <= hit_start
+		return other
+	return base
+
+# ---------------------------------------------------------------------------
+# The tokenizer
+# ---------------------------------------------------------------------------
+
+# Tokenizes one already-tab-expanded line, given whatever scope stack (if any)
+# was left open by the previous line. Returns the colored spans plus the stack
+# left open at the end of this line.
+#
+# For any grammar that never registers a tag rule, the stack never grows past
+# its permanent CodeFrame floor and this behaves like a flat keyword/bounded
+# scan -- the branching below only matters for markup grammars that opt into
+# tag scoping via xs_add_tag/xs_enable_jsx_expr, and for grammars with a
+# sub-grammar region.
+fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList start_stack)
+	(gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens) in gram
+
+	tokenList out_tokens = empty
+	frameList out_stack = start_stack
+	int stack_size = len(out_stack)
+	if stack_size is 0
+		Frame floor_frame = hl_frame_code()
+		out_stack at end = floor_frame
+
+	SubRef opening_ref = hl_active_sub(out_stack)
+	(sub_active, sub_slot) in opening_ref
+	bool cur_in_sub = sub_active
+	int cur_sub = sub_slot
+
+	ruleList active = gr_host
+	if cur_in_sub
+		active = hl_sub_rules(hlt, cur_sub)
+
+	int pos = 0
+	for if pos < gr_len
+		int top_idx = len(out_stack) - 1
+		Frame top = out_stack at top_idx
+		(frame_kind, tag_closing, tag_name, expr_depth, frame_idx) in top
+
+		if frame_kind is BoundedFrame
+			HlRule open_rule = active at frame_idx
+			(rule_color, stop_rx, escapable) in open_rule
+			int stop_slot = stop_rx
+			bool stop_escapable = escapable
+			int stop_from = pos
+			StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+			RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+			(rx_found, rx_start, rx_stop) in stop_hit
+			int span_end = gr_len
+			if rx_found
+				span_end = rx_stop
+			if gr_tokens
+				string tok_text = hl_slice(hlt, pos, span_end)
+				ColorId tok_color = rule_color
+				Token tok = (tok_text, tok_color)
+				out_tokens at end = tok
+			pos = span_end
+			if rx_found
+				out_stack remove at top_idx
+
+		else if frame_kind is TextFrame
+			int spot_pos = pos
+			int spot_row = gr_row
+			bool spot_jsx = gr_jsx
+			bool spot_in_tag = false
+			bool spot_in_expr = false
+			bool spot_in_code = false
+			bool spot_in_sub = cur_in_sub
+			int spot_sub = cur_sub
+			Spot spot = (spot_pos, spot_row, spot_jsx, spot_in_tag, spot_in_expr, spot_in_code, spot_in_sub, spot_sub)
+			Best best = hl_best_text(hlt, active, spot)
+			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best
+
+			if hit_kind is HitNone
+				if gr_tokens
+					string tok_text = hl_slice(hlt, pos, gr_len)
+					ColorId tok_color = NoColor
+					Token tok = (tok_text, tok_color)
+					out_tokens at end = tok
+				pos = gr_len
+			else
+				if hit_start > pos
+					if gr_tokens
+						string tok_text = hl_slice(hlt, pos, hit_start)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+
+				if hit_kind is HitTag
+					string matched = hl_slice(hlt, hit_start, hit_stop)
+					close_prefix as "</"
+					bool is_closing = s_starts_with(matched, close_prefix)
+					string body_name = hl_tag_body_lower(matched)
+					HlRule tag_rule = active at hit_rule
+					(rule_color) in tag_rule
+					if gr_tokens
+						string tok_text = matched
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					Frame tag_frame = hl_frame_tag(is_closing, body_name)
+					out_stack at end = tag_frame
+					pos = hit_stop
+
+				else if hit_kind is HitBounded
+					HlRule bounded_rule = active at hit_rule
+					(rule_color, stop_rx, escapable) in bounded_rule
+					int stop_slot = stop_rx
+					bool stop_escapable = escapable
+					int stop_from = hit_stop
+					StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+					RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+					(rx_found, rx_start, rx_stop) in stop_hit
+					int span_end = gr_len
+					if rx_found
+						span_end = rx_stop
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, span_end)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = span_end
+					if rx_found is false
+						Frame bounded_frame = hl_frame_bounded(hit_rule)
+						out_stack at end = bounded_frame
+
+				else
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					int first_depth = 1
+					Frame expr_frame = hl_frame_expr(first_depth)
+					out_stack at end = expr_frame
+					pos = hit_stop
+
+		else
+			int spot_pos = pos
+			int spot_row = gr_row
+			bool spot_jsx = gr_jsx
+			bool spot_in_tag = false
+			if frame_kind is InTagFrame
+				spot_in_tag = true
+			bool spot_in_expr = false
+			if frame_kind is ExprFrame
+				spot_in_expr = true
+			bool spot_in_code = false
+			if frame_kind is CodeFrame
+				spot_in_code = true
+			bool spot_in_sub = cur_in_sub
+			int spot_sub = cur_sub
+			Spot spot = (spot_pos, spot_row, spot_jsx, spot_in_tag, spot_in_expr, spot_in_code, spot_in_sub, spot_sub)
+
+			Best scanned = hl_best_code(hlt, active, spot)
+			Best opener = hl_sub_open_hit(hlt, gr_subs, spot)
+			Best merged = hl_pick_earlier(scanned, opener)
+			Best closer = hl_sub_close_hit(hlt, gr_subs, spot)
+			Best best = hl_pick_at_or_earlier(merged, closer)
+			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best
+
+			if hit_kind is HitNone
+				if gr_tokens
+					string tok_text = hl_slice(hlt, pos, gr_len)
+					ColorId tok_color = NoColor
+					Token tok = (tok_text, tok_color)
+					out_tokens at end = tok
+				pos = gr_len
+			else
+				if hit_start > pos
+					if gr_tokens
+						string tok_text = hl_slice(hlt, pos, hit_start)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+
+				if hit_kind is HitSubOpen
+					SubMeta opened_meta = gr_subs at hit_sub
+					(sub_color) in opened_meta
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = sub_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					Frame sub_frame = hl_frame_sub(hit_sub)
+					out_stack at end = sub_frame
+					cur_in_sub = true
+					cur_sub = hit_sub
+					active = hl_sub_rules(hlt, hit_sub)
+
+				else if hit_kind is HitSubClose
+					SubMeta closed_meta = gr_subs at cur_sub
+					(sub_color) in closed_meta
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = sub_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int sub_top = len(out_stack) - 1
+					out_stack remove at sub_top
+					cur_in_sub = false
+					cur_sub = 0
+					active = hl_host_rules(hlt)
+
+				else if hit_kind is HitKeyword
+					HlRule word_rule = active at hit_rule
+					(rule_color) in word_rule
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+
+				else if hit_kind is HitBounded
+					HlRule bounded_rule = active at hit_rule
+					(rule_color, stop_rx, escapable) in bounded_rule
+					int stop_slot = stop_rx
+					bool stop_escapable = escapable
+					int stop_from = hit_stop
+					StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+					RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+					(rx_found, rx_start, rx_stop) in stop_hit
+					int span_end = gr_len
+					if rx_found
+						span_end = rx_stop
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, span_end)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = span_end
+					if rx_found is false
+						Frame bounded_frame = hl_frame_bounded(hit_rule)
+						out_stack at end = bounded_frame
+
+				else if hit_kind is HitTag
+					string matched = hl_slice(hlt, hit_start, hit_stop)
+					close_prefix as "</"
+					bool is_closing = s_starts_with(matched, close_prefix)
+					string body_name = hl_tag_body_lower(matched)
+					HlRule tag_rule = active at hit_rule
+					(rule_color) in tag_rule
+					if gr_tokens
+						string tok_text = matched
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					Frame tag_frame = hl_frame_tag(is_closing, body_name)
+					out_stack at end = tag_frame
+					pos = hit_stop
+
+				else if hit_kind is HitCloseAngle
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					slash as "/"
+					bool self_close = false
+					if hit_start > 0
+						int before = hit_start - 1
+						self_close = hl_byte_is(hlt, before, slash)
+					int tag_top = len(out_stack) - 1
+					out_stack remove at tag_top
+					if tag_closing
+						# a real closing tag also ends the text/code-child
+						# scope it belongs to -- never pop the permanent floor
+						int depth_now = len(out_stack)
+						if depth_now > 1
+							int drop_idx = depth_now - 1
+							out_stack remove at drop_idx
+						SubRef after_pop = hl_active_sub(out_stack)
+						(sub_active, sub_slot) in after_pop
+						cur_in_sub = sub_active
+						cur_sub = sub_slot
+						active = hl_host_rules(hlt)
+						if cur_in_sub
+							active = hl_sub_rules(hlt, cur_sub)
+					else if self_close is false
+						# a self-closing tag has no children of its own --
+						# only a real opening tag enters a new scope
+						script_tag as "script"
+						style_tag as "style"
+						bool is_script = tag_name is script_tag
+						bool is_style = tag_name is style_tag
+						Frame child_frame = hl_frame_text()
+						if is_script
+							child_frame = hl_frame_child()
+						else if is_style
+							child_frame = hl_frame_child()
+						out_stack at end = child_frame
+
+				else if hit_kind is HitBraceOpen
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int expr_top = len(out_stack) - 1
+					Frame expr_frame = out_stack at expr_top
+					(frame_kind, expr_depth) in expr_frame
+					if frame_kind is ExprFrame
+						int deeper = expr_depth + 1
+						Frame updated = hl_frame_expr(deeper)
+						out_stack at expr_top = updated
+
+				else
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int expr_top = len(out_stack) - 1
+					Frame expr_frame = out_stack at expr_top
+					(frame_kind, expr_depth) in expr_frame
+					if frame_kind is ExprFrame
+						int shallower = expr_depth - 1
+						if shallower is 0
+							out_stack remove at expr_top
+						else
+							Frame updated = hl_frame_expr(shallower)
+							out_stack at expr_top = updated
+
+	TokenizeResult result = (out_tokens, out_stack)
+	return result
+
+# ---------------------------------------------------------------------------
+# Rule registration
+# ---------------------------------------------------------------------------
+
+fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
+	RuleKind rule_kind = KeywordRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = 0
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+
+	return hl_add_rule(hlt, rule)
 
 # Like xs_add_keyword, but only capture group 1 of the pattern is colored and
 # consumed; anything the pattern matched before that group is left as plain
@@ -651,12 +1379,57 @@ fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
 # "only match here when preceded by X" without swallowing the X -- e.g. yaml's
 # flow-mapping keys, which are only keys when they follow a "{" or a ",".
 fn Highlighter xs_add_keyword_group(Highlighter hlt, string name, string pattern)
-	rust
-		{
-			let re = regex::Regex::new(pattern.as_str()).unwrap();
-			hl_push_rule(&hlt, HlRule::KeywordCap(name.clone(), re));
-			hlt
-		}
+	RuleKind rule_kind = KeywordCapRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = 0
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
+	(name, start, stop) in spec
+	RuleKind rule_kind = BoundedRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, start)
+	int stop_rx = hl_rx_add(hlt, stop)
+	int guard_rx = 0
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+# Like xs_add_bounded, but the region is also reachable from inside JSX/HTML
+# text -- e.g. Vue's "{{ mustache }}" interpolation or an "<!-- -->" comment
+# written directly in markup, as opposed to a JS string or comment, which must
+# never open from inside plain text (that's the bug the scope stack exists to
+# fix -- see hl_tokenize_line).
+fn Highlighter xs_add_bounded_text(Highlighter hlt, BoundedSpec spec, bool escapable)
+	(name, start, stop) in spec
+	RuleKind rule_kind = BoundedRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, start)
+	int stop_rx = hl_rx_add(hlt, stop)
+	int guard_rx = 0
+	bool text_reentrant = true
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+# Registers a tag rule (e.g. "</?[A-Za-z][A-Za-z0-9_.]*") for a markup
+# grammar. Unlike xs_add_keyword this also enables tag scoping: a match pushes
+# an InTagFrame that swallows the tag's attributes and, once its closing '>'
+# is found, opens (or closes) a text scope for the tag's children.
+fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
+	RuleKind rule_kind = TagRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = hl_rx_add_guarded(hlt, pattern)
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
 
 # Opens a sub-grammar: a region, delimited by spec.start/spec.stop, whose
 # contents are scanned with their own complete rule list rather than the host
@@ -671,82 +1444,92 @@ fn Highlighter xs_add_keyword_group(Highlighter hlt, string name, string pattern
 # the opener to row 0 of the file, which is what distinguishes a markdown
 # frontmatter fence from the horizontal rule that "---" means anywhere else.
 fn Highlighter xs_sub_begin(Highlighter hlt, BoundedSpec spec, bool first_row_only)
-	rust
-		{
-			let start = regex::Regex::new(spec.start.as_str()).unwrap();
-			let stop = regex::Regex::new(spec.stop.as_str()).unwrap();
-			{
-				let mut inner = hlt.0.lock().unwrap();
-				inner.subs.push(SubGrammar {
-					name: spec.name.clone(),
-					start,
-					stop,
-					first_row_only,
-					rules: Vec::new(),
-				});
-				let idx = inner.subs.len() - 1;
-				inner.target = Some(idx);
-			}
-			hlt
-		}
+	(name, start, stop) in spec
+	ColorId sub_color = hl_color_id(name)
+	int sub_start_rx = hl_rx_add(hlt, start)
+	int sub_stop_rx = hl_rx_add(hlt, stop)
+	SubMeta meta = (sub_color, sub_start_rx, sub_stop_rx, first_row_only)
+	return hl_add_sub(hlt, meta)
 
 # Closes the region opened by xs_sub_begin -- subsequent xs_add_* calls go
 # back to the host grammar's own rule list.
 fn Highlighter xs_sub_end(Highlighter hlt)
-	rust
-		{
-			hlt.0.lock().unwrap().target = None;
-			hlt
-		}
+	return hl_clear_target(hlt)
 
-# Lets a bare '{' inside JSX/TSX text start an embedded expression
-# (Frame::Expr), which resumes full code scanning until its matching '}'.
-# Only call this for grammars whose text content can hold `{expr}` --
-# tsx/jsx. Vue's mustache interpolation and html's lack of any embedded-
-# expression syntax mean neither of those grammars should call this.
+# Lets a bare '{' inside JSX/TSX text start an embedded expression, which
+# resumes full code scanning until its matching '}'. Only call this for
+# grammars whose text content can hold `{expr}` -- tsx/jsx/astro. Vue's
+# mustache interpolation uses `{{ }}` (a text-reentrant bounded rule instead),
+# and html has no embedded-expression syntax at all.
 fn Highlighter xs_enable_jsx_expr(Highlighter hlt)
-	rust
-		{
-			hlt.0.lock().unwrap().jsx_expr = true;
-			hlt
-		}
+	return hl_enable_jsx(hlt)
 
+# ---------------------------------------------------------------------------
+# Driving the highlighter
+# ---------------------------------------------------------------------------
+
+# Full-file scan: records the scope stack in effect at the start of every row
+# so xs_line can later color an arbitrary row on its own without re-scanning
+# everything before it.
 fn Highlighter xs_run(Highlighter hlt, stringList lines)
-	rust
-		{
-			let mut inner = hlt.0.lock().unwrap();
-			let tab_width = inner.tab_width;
-			let jsx_expr = inner.jsx_expr;
-			let mut stack: Vec<Frame> = vec![Frame::Code];
-			let mut line_state: Vec<Vec<Frame>> = Vec::with_capacity(lines.len());
-			for (row, line) in lines.iter().enumerate() {
-				line_state.push(stack.clone());
-				let expanded = hl_expand_tabs(line.as_str(), tab_width);
-				let (_tokens, next_stack) = hl_tokenize_line(&inner.rules, &inner.subs, expanded.as_str(), row, &stack, jsx_expr);
-				stack = next_stack;
-			}
-			inner.line_state = line_state;
-			drop(inner);
-			hlt
-		}
+	HlConfig config = hl_config(hlt)
+	(cfg_tab_width, cfg_jsx_expr) in config
+	ruleList gr_host = hl_host_rules(hlt)
+	subMetaList gr_subs = hl_sub_metas(hlt)
+	bool gr_jsx = cfg_jsx_expr
 
+	# The full-file scan only needs each row's end-of-row scope stack.
+	bool gr_tokens = false
+
+	frameList stack = empty
+	Frame floor_frame = hl_frame_code()
+	stack at end = floor_frame
+
+	frameListList states = empty
+	int count = len(lines)
+	for row in range(count)
+		states at end = stack
+		string line = lines at row
+		string expanded = hl_expand_tabs(line, cfg_tab_width)
+		int gr_len = hl_set_line(hlt, expanded)
+		int gr_row = row
+		Grammar gram = (gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens)
+		TokenizeResult scanned = hl_tokenize_line(hlt, gram, stack)
+		(out_stack) in scanned
+		stack = out_stack
+
+	return hl_state_store(hlt, states)
+
+# Colors a single row, starting from the scope stack xs_run recorded for it.
 fn string xs_line(Highlighter hlt, int row, string line)
-	rust
-		{
-			let inner = hlt.0.lock().unwrap();
-			let expanded = hl_expand_tabs(line.as_str(), inner.tab_width);
-			let start_stack = inner.line_state.get(row as usize).cloned().unwrap_or_else(|| vec![Frame::Code]);
-			let (tokens, _end_stack) = hl_tokenize_line(&inner.rules, &inner.subs, expanded.as_str(), row as usize, &start_stack, inner.jsx_expr);
-			let mut out = String::new();
-			for (text, kind) in tokens {
-				match kind {
-					Some(k) => {
-						out.push_str(xs_color_code(&k));
-						out.push_str(&text);
-						out.push_str("\x1b[0m");
-					}
-					None => out.push_str(&text),
-				}
-			}
-			out
-		}
+	HlConfig config = hl_config(hlt)
+	(cfg_tab_width, cfg_jsx_expr) in config
+	ruleList gr_host = hl_host_rules(hlt)
+	subMetaList gr_subs = hl_sub_metas(hlt)
+	bool gr_jsx = cfg_jsx_expr
+	int gr_row = row
+
+	string expanded = hl_expand_tabs(line, cfg_tab_width)
+	int gr_len = hl_set_line(hlt, expanded)
+	frameList start_stack = hl_state_at(hlt, row)
+	bool gr_tokens = true
+	Grammar gram = (gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens)
+	TokenizeResult scanned = hl_tokenize_line(hlt, gram, start_stack)
+	(out_tokens) in scanned
+
+	reset_body as "0"
+	empty_code as ""
+	string reset = hl_ansi(reset_body)
+	stringList parts = empty
+	for tok in out_tokens
+		(tok_text, tok_color) in tok
+		string code = hl_color_code(tok_color)
+		if code is empty_code
+			parts at end = tok_text
+		else
+			parts at end = code
+			parts at end = tok_text
+			parts at end = reset
+
+	string out = s_join(parts)
+	return out
