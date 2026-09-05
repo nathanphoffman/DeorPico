@@ -9,6 +9,7 @@ unsafe_macro language_ext_consts
     const string TYPESCRIPT = "ts"
     const string TSX = "tsx"
     const string JAVASCRIPT = "js"
+    const string MJS = "mjs"
     const string HTML = "html"
     const string HTM = "htm"
     const string VUE = "vue"
@@ -100,6 +101,7 @@ fn string comment_prefix_for_ext(string ext)
     prefixes = h_set(prefixes, TSX, slash)
     prefixes = h_set(prefixes, MTS, slash)
     prefixes = h_set(prefixes, JAVASCRIPT, slash)
+    prefixes = h_set(prefixes, MJS, slash)
     prefixes = h_set(prefixes, RUST, slash)
     prefixes = h_set(prefixes, C_SRC, slash)
     prefixes = h_set(prefixes, C_HEADER, slash)
