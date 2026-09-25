@@ -651,12 +651,12 @@ fn Frame hl_frame_text()
 	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
 	return out
 
-fn Frame hl_frame_tag(bool closing, string name)
+fn Frame hl_frame_tag(bool closing, string name, int rule_idx)
 	FrameKind frame_kind = InTagFrame
 	bool tag_closing = closing
 	string tag_name = name
 	int expr_depth = 0
-	int frame_idx = 0
+	int frame_idx = rule_idx
 	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
 	return out
 
@@ -1162,7 +1162,7 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 						ColorId tok_color = rule_color
 						Token tok = (tok_text, tok_color)
 						out_tokens at end = tok
-					Frame tag_frame = hl_frame_tag(is_closing, body_name)
+					Frame tag_frame = hl_frame_tag(is_closing, body_name, hit_rule)
 					out_stack at end = tag_frame
 					pos = hit_stop
 
@@ -1222,6 +1222,16 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 			Best closer = hl_sub_close_hit(hlt, gr_subs, spot)
 			Best best = hl_pick_at_or_earlier(merged, closer)
 			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best
+
+			# a self-closing tag's "/>" is colored as one token with the tag
+			slash as "/"
+			bool self_close = false
+			if hit_kind is HitCloseAngle
+				if hit_start > pos
+					int before = hit_start - 1
+					self_close = hl_byte_is(hlt, before, slash)
+					if self_close
+						hit_start = before
 
 			if hit_kind is HitNone
 				if gr_tokens
@@ -1318,22 +1328,20 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 						ColorId tok_color = rule_color
 						Token tok = (tok_text, tok_color)
 						out_tokens at end = tok
-					Frame tag_frame = hl_frame_tag(is_closing, body_name)
+					Frame tag_frame = hl_frame_tag(is_closing, body_name, hit_rule)
 					out_stack at end = tag_frame
 					pos = hit_stop
 
 				else if hit_kind is HitCloseAngle
+					# same color as the "<Name" that opened this tag
+					HlRule opened_rule = active at frame_idx
+					(rule_color) in opened_rule
 					if gr_tokens
 						string tok_text = hl_slice(hlt, hit_start, hit_stop)
-						ColorId tok_color = NoColor
+						ColorId tok_color = rule_color
 						Token tok = (tok_text, tok_color)
 						out_tokens at end = tok
 					pos = hit_stop
-					slash as "/"
-					bool self_close = false
-					if hit_start > 0
-						int before = hit_start - 1
-						self_close = hl_byte_is(hlt, before, slash)
 					int tag_top = len(out_stack) - 1
 					out_stack remove at tag_top
 					if tag_closing
