@@ -1,0 +1,67 @@
+# Driving the highlighter
+
+# Full-file scan: records the scope stack in effect at the start of every row
+# so xs_line can later color an arbitrary row on its own without re-scanning
+# everything before it.
+fn Highlighter xs_run(Highlighter hlt, stringList lines)
+	HlConfig config = hl_config(hlt)
+	(cfg_tab_width, cfg_jsx_expr) in config
+	ruleList gr_host = hl_host_rules(hlt)
+	subMetaList gr_subs = hl_sub_metas(hlt)
+	bool gr_jsx = cfg_jsx_expr
+
+	# The full-file scan only needs each row's end-of-row scope stack.
+	bool gr_tokens = false
+
+	frameList stack = empty
+	Frame floor_frame = hl_frame_code()
+	stack at end = floor_frame
+
+	frameListList states = empty
+	int count = len(lines)
+	for row in range(count)
+		states at end = stack
+		string line = lines at row
+		string expanded = hl_expand_tabs(line, cfg_tab_width)
+		int gr_len = hl_set_line(hlt, expanded)
+		int gr_row = row
+		Grammar gram = (gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens)
+		TokenizeResult scanned = hl_tokenize_line(hlt, gram, stack)
+		(out_stack) in scanned
+		stack = out_stack
+
+	return hl_state_store(hlt, states)
+
+# Colors a single row, starting from the scope stack xs_run recorded for it.
+fn string xs_line(Highlighter hlt, int row, string line)
+	HlConfig config = hl_config(hlt)
+	(cfg_tab_width, cfg_jsx_expr) in config
+	ruleList gr_host = hl_host_rules(hlt)
+	subMetaList gr_subs = hl_sub_metas(hlt)
+	bool gr_jsx = cfg_jsx_expr
+	int gr_row = row
+
+	string expanded = hl_expand_tabs(line, cfg_tab_width)
+	int gr_len = hl_set_line(hlt, expanded)
+	frameList start_stack = hl_state_at(hlt, row)
+	bool gr_tokens = true
+	Grammar gram = (gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens)
+	TokenizeResult scanned = hl_tokenize_line(hlt, gram, start_stack)
+	(out_tokens) in scanned
+
+	reset_body as "0"
+	empty_code as ""
+	string reset = hl_ansi(reset_body)
+	stringList parts = empty
+	for tok in out_tokens
+		(tok_text, tok_color) in tok
+		string code = hl_color_code(tok_color)
+		if code is empty_code
+			parts at end = tok_text
+		else
+			parts at end = code
+			parts at end = tok_text
+			parts at end = reset
+
+	string out = s_join(parts)
+	return out

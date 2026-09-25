@@ -1,0 +1,104 @@
+# Rule registration
+
+fn Highlighter xs_add_keyword(Highlighter hlt, string name, string pattern)
+	RuleKind rule_kind = KeywordRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = 0
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+
+	return hl_add_rule(hlt, rule)
+
+# Like xs_add_keyword, but only capture group 1 of the pattern is colored and
+# consumed; anything the pattern matched before that group is left as plain
+# text. The regex crate has no lookbehind, so this is how a rule expresses
+# "only match here when preceded by X" without swallowing the X -- e.g. yaml's
+# flow-mapping keys, which are only keys when they follow a "{" or a ",".
+fn Highlighter xs_add_keyword_group(Highlighter hlt, string name, string pattern)
+	RuleKind rule_kind = KeywordCapRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = 0
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+fn Highlighter xs_add_bounded(Highlighter hlt, BoundedSpec spec, bool escapable)
+	(name, start, stop) in spec
+	RuleKind rule_kind = BoundedRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, start)
+	int stop_rx = hl_rx_add(hlt, stop)
+	int guard_rx = 0
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+# Like xs_add_bounded, but the region is also reachable from inside JSX/HTML
+# text -- e.g. Vue's "{{ mustache }}" interpolation or an "<!-- -->" comment
+# written directly in markup, as opposed to a JS string or comment, which must
+# never open from inside plain text (that's the bug the scope stack exists to
+# fix -- see hl_tokenize_line).
+fn Highlighter xs_add_bounded_text(Highlighter hlt, BoundedSpec spec, bool escapable)
+	(name, start, stop) in spec
+	RuleKind rule_kind = BoundedRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, start)
+	int stop_rx = hl_rx_add(hlt, stop)
+	int guard_rx = 0
+	bool text_reentrant = true
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+# Registers a tag rule (e.g. "</?[A-Za-z][A-Za-z0-9_.]*") for a markup
+# grammar. Unlike xs_add_keyword this also enables tag scoping: a match pushes
+# an InTagFrame that swallows the tag's attributes and, once its closing '>'
+# is found, opens (or closes) a text scope for the tag's children.
+fn Highlighter xs_add_tag(Highlighter hlt, string name, string pattern)
+	RuleKind rule_kind = TagRule
+	ColorId rule_color = hl_color_id(name)
+	int main_rx = hl_rx_add(hlt, pattern)
+	int stop_rx = 0
+	int guard_rx = hl_rx_add_guarded(hlt, pattern)
+	bool escapable = false
+	bool text_reentrant = false
+	HlRule rule = (rule_kind, rule_color, main_rx, stop_rx, guard_rx, escapable, text_reentrant)
+	return hl_add_rule(hlt, rule)
+
+# Opens a sub-grammar: a region, delimited by spec.start/spec.stop, whose
+# contents are scanned with their own complete rule list rather than the host
+# grammar's. Every xs_add_* call between here and the matching xs_sub_end goes
+# into that list, so an existing grammar macro can simply be replayed inside:
+#
+#     highlighter = xs_sub_begin(highlighter, fm_spec, first_row_only)
+#     macro_run highlights_yaml
+#     highlighter = xs_sub_end(highlighter)
+#
+# spec.name colors the delimiter lines themselves. first_row_only restricts
+# the opener to row 0 of the file, which is what distinguishes a markdown
+# frontmatter fence from the horizontal rule that "---" means anywhere else.
+fn Highlighter xs_sub_begin(Highlighter hlt, BoundedSpec spec, bool first_row_only)
+	(name, start, stop) in spec
+	ColorId sub_color = hl_color_id(name)
+	int sub_start_rx = hl_rx_add(hlt, start)
+	int sub_stop_rx = hl_rx_add(hlt, stop)
+	SubMeta meta = (sub_color, sub_start_rx, sub_stop_rx, first_row_only)
+	return hl_add_sub(hlt, meta)
+
+# Closes the region opened by xs_sub_begin -- subsequent xs_add_* calls go
+# back to the host grammar's own rule list.
+fn Highlighter xs_sub_end(Highlighter hlt)
+	return hl_clear_target(hlt)
+
+# Lets a bare '{' inside JSX/TSX text start an embedded expression, which
+# resumes full code scanning until its matching '}'. Only call this for
+# grammars whose text content can hold `{expr}` -- tsx/jsx/astro. Vue's
+# mustache interpolation uses `{{ }}` (a text-reentrant bounded rule instead),
+# and html has no embedded-expression syntax at all.
+fn Highlighter xs_enable_jsx_expr(Highlighter hlt)
+	return hl_enable_jsx(hlt)

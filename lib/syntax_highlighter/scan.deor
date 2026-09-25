@@ -1,0 +1,367 @@
+# Scanning helpers
+
+# The sub-grammar in effect for a scope stack: the nearest enclosing SubFrame
+# wins, otherwise the host grammar. A SubFrame is only ever popped by its own
+# stop pattern, so every frame nested above one belongs to that sub-grammar --
+# including bounded frames, whose stored rule index is relative to whichever
+# list opened them.
+fn SubRef hl_active_sub(frameList stack)
+	bool sub_active = false
+	int sub_slot = 0
+	int count = len(stack)
+	for back in range(count)
+		int probe_idx = count - back
+		probe_idx = probe_idx - 1
+		Frame probe = stack at probe_idx
+		(frame_kind, frame_idx) in probe
+		if frame_kind is SubFrame
+			sub_active = true
+			sub_slot = frame_idx
+			break
+	SubRef out = (sub_active, sub_slot)
+	return out
+
+# True when the byte at `pos` is preceded by an odd number of backslashes --
+# the same convention as backslash-escaped string literals.
+fn bool hl_is_escaped(Highlighter hlt, int pos)
+	backslash as "\\"
+	int count = 0
+	int idx = pos
+	for if idx > 0
+		int prev = idx - 1
+		bool is_slash = hl_byte_is(hlt, prev, backslash)
+		if is_slash is false
+			break
+		count = count + 1
+		idx = prev
+	int rem = count % 2
+	bool odd = rem is 1
+	return odd
+
+# Earliest non-escaped occurrence of a bounded region's stop pattern at or
+# after `from`. Escaped occurrences are skipped over.
+fn RxMatch hl_find_stop(Highlighter hlt, StopSpec spec)
+	(stop_slot, stop_escapable, stop_from) in spec
+	RxMatch out = hl_no_match()
+	int scan = stop_from
+	for if true
+		RxMatch hit = hl_rx_find(hlt, stop_slot, scan)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found is false
+			break
+		bool skip = false
+		if stop_escapable
+			skip = hl_is_escaped(hlt, rx_start)
+		if skip
+			scan = rx_start + 1
+			continue
+		out = hit
+		break
+	return out
+
+# "<Foo" / "</Foo" -> "foo" -- used to tell an opening tag from a closing one
+# and, for opening tags, to special-case <script>/<style> bodies so they keep
+# full code highlighting instead of going inert as markup text.
+fn string hl_tag_body_lower(string matched)
+	close_prefix as "</"
+	bool is_closing = s_starts_with(matched, close_prefix)
+	int start_at = 1
+	if is_closing
+		start_at = 2
+	int stop_at = len(matched)
+	string body = s_substring(matched, start_at, stop_at)
+	string lowered = s_to_lower(body)
+	return lowered
+
+# HTML elements that never have children or a closing tag.
+fn bool hl_is_void_tag(string name)
+	void_list as "area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr"
+	comma as ","
+	stringList void_tags = s_split(void_list, comma)
+	int count = len(void_tags)
+	for idx in range(count)
+		string void_tag = void_tags at idx
+		if name is void_tag
+			return true
+	return false
+
+# Deliberately restricted candidate set: JSX/HTML text is not code, so nothing
+# here runs the general keyword list -- that's exactly what let stray
+# apostrophes/quotes and capitalized prose words get misread as code before.
+fn Best hl_best_text(Highlighter hlt, ruleList rules, Spot spot)
+	(spot_pos, spot_jsx) in spot
+	bool found_any = false
+	HitKind win_kind = HitNone
+	int win_start = 0
+	int win_stop = 0
+	int win_rule = 0
+
+	int count = len(rules)
+	for idx in range(count)
+		HlRule rule = rules at idx
+		(rule_kind, main_rx, text_reentrant) in rule
+		bool eligible = false
+		if rule_kind is TagRule
+			eligible = true
+		else if rule_kind is BoundedRule
+			eligible = text_reentrant
+		if eligible
+			RxMatch hit = hl_rx_find(hlt, main_rx, spot_pos)
+			(rx_found, rx_start, rx_stop) in hit
+			if rx_found
+				bool better = false
+				if found_any is false
+					better = true
+				else if rx_start < win_start
+					better = true
+				if better
+					found_any = true
+					win_start = rx_start
+					win_stop = rx_stop
+					win_rule = idx
+					if rule_kind is TagRule
+						win_kind = HitTag
+					else
+						win_kind = HitBounded
+
+	if spot_jsx
+		open_brace as "{"
+		BytePos brace = hl_find_byte(hlt, open_brace, spot_pos)
+		(byte_found, byte_idx) in brace
+		if byte_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if byte_idx < win_start
+				better = true
+			if better
+				found_any = true
+				win_kind = HitBrace
+				win_start = byte_idx
+				win_stop = byte_idx + 1
+
+	HitKind hit_kind = win_kind
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = win_rule
+	int hit_sub = 0
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# CodeFrame, CodeChildFrame, InTagFrame, ExprFrame and SubFrame all scan with
+# the full rule list -- InTagFrame additionally watches for the tag's own '>',
+# ExprFrame additionally tracks bare '{'/'}' depth.
+fn Best hl_best_code(Highlighter hlt, ruleList rules, Spot spot)
+	(spot_pos, spot_jsx, spot_in_tag, spot_in_expr) in spot
+	bool found_any = false
+	HitKind win_kind = HitNone
+	int win_start = 0
+	int win_stop = 0
+	int win_rule = 0
+
+	int count = len(rules)
+	for idx in range(count)
+		HlRule rule = rules at idx
+		(rule_kind, main_rx, guard_rx) in rule
+		RxMatch hit = hl_no_match()
+		if rule_kind is KeywordCapRule
+			hit = hl_rx_group(hlt, main_rx, spot_pos)
+		else if rule_kind is TagRule
+			hit = hl_rx_group(hlt, guard_rx, spot_pos)
+		else
+			hit = hl_rx_find(hlt, main_rx, spot_pos)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if rx_start < win_start
+				better = true
+			if better
+				found_any = true
+				win_start = rx_start
+				win_stop = rx_stop
+				win_rule = idx
+				if rule_kind is BoundedRule
+					win_kind = HitBounded
+				else if rule_kind is TagRule
+					win_kind = HitTag
+				else
+					win_kind = HitKeyword
+
+	if spot_in_tag
+		close_angle as ">"
+		BytePos angle = hl_find_byte(hlt, close_angle, spot_pos)
+		(byte_found, byte_idx) in angle
+		if byte_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if byte_idx < win_start
+				better = true
+			if better
+				found_any = true
+				win_kind = HitCloseAngle
+				win_start = byte_idx
+				win_stop = byte_idx + 1
+
+	if spot_in_expr
+		open_brace as "{"
+		close_brace as "}"
+		BytePos opened = hl_find_byte(hlt, open_brace, spot_pos)
+		BytePos closed = hl_find_byte(hlt, close_brace, spot_pos)
+		(byte_found, byte_idx) in opened
+		bool brace_found = byte_found
+		int brace_at = byte_idx
+		bool brace_open = true
+		(byte_found, byte_idx) in closed
+		if byte_found
+			if brace_found is false
+				brace_found = true
+				brace_at = byte_idx
+				brace_open = false
+			else if byte_idx < brace_at
+				brace_at = byte_idx
+				brace_open = false
+		if brace_found
+			bool better = false
+			if found_any is false
+				better = true
+			else if brace_at < win_start
+				better = true
+			if better
+				found_any = true
+				win_start = brace_at
+				win_stop = brace_at + 1
+				if brace_open
+					win_kind = HitBraceOpen
+				else
+					win_kind = HitBraceClose
+
+	# a JSX attribute value like onClick={() => go()} -- step into it as an
+	# expression so its "=>" isn't mistaken for the tag's closing ">"
+	if spot_in_tag
+		if spot_jsx
+			open_brace as "{"
+			BytePos opened = hl_find_byte(hlt, open_brace, spot_pos)
+			(byte_found, byte_idx) in opened
+			if byte_found
+				bool better = false
+				if found_any is false
+					better = true
+				else if byte_idx < win_start
+					better = true
+				if better
+					found_any = true
+					win_kind = HitBraceOpen
+					win_start = byte_idx
+					win_stop = byte_idx + 1
+
+	HitKind hit_kind = win_kind
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = win_rule
+	int hit_sub = 0
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# Entering a sub-grammar is only possible from the host grammar's own top
+# level -- not from inside a tag, an expression, or another sub-grammar.
+# Returns HitNone when no region opens here.
+fn Best hl_sub_open_hit(Highlighter hlt, subMetaList subs, Spot spot)
+	(spot_pos, spot_row, spot_in_code) in spot
+
+	bool found_any = false
+	int win_start = 0
+	int win_stop = 0
+	int win_sub = 0
+
+	if spot_in_code
+		int count = len(subs)
+		for idx in range(count)
+			SubMeta meta = subs at idx
+			(sub_start_rx, first_row_only) in meta
+			bool skip = false
+			if first_row_only
+				if spot_row is not 0
+					skip = true
+			if skip is false
+				RxMatch hit = hl_rx_find(hlt, sub_start_rx, spot_pos)
+				(rx_found, rx_start, rx_stop) in hit
+				if rx_found
+					bool better = false
+					if found_any is false
+						better = true
+					else if rx_start < win_start
+						better = true
+					if better
+						found_any = true
+						win_start = rx_start
+						win_stop = rx_stop
+						win_sub = idx
+
+	HitKind hit_kind = HitNone
+	if found_any
+		hit_kind = HitSubOpen
+	int hit_start = win_start
+	int hit_stop = win_stop
+	int hit_rule = 0
+	int hit_sub = win_sub
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# The open region's closing fence. Returns HitNone when it isn't here.
+fn Best hl_sub_close_hit(Highlighter hlt, subMetaList subs, Spot spot)
+	(spot_pos, spot_in_sub, spot_sub) in spot
+
+	HitKind hit_kind = HitNone
+	int hit_start = 0
+	int hit_stop = 0
+	int hit_rule = 0
+	int hit_sub = spot_sub
+
+	if spot_in_sub
+		SubMeta meta = subs at spot_sub
+		(sub_stop_rx) in meta
+		RxMatch hit = hl_rx_find(hlt, sub_stop_rx, spot_pos)
+		(rx_found, rx_start, rx_stop) in hit
+		if rx_found
+			hit_kind = HitSubClose
+			hit_start = rx_start
+			hit_stop = rx_stop
+
+	Best out = (hit_kind, hit_start, hit_stop, hit_rule, hit_sub)
+	return out
+
+# Whichever of two candidates starts earlier, with `base` keeping ties -- the
+# tokenizer's usual first-registered-wins rule.
+fn Best hl_pick_earlier(Best base, Best other)
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in other
+	HitKind other_kind = hit_kind
+	int other_start = hit_start
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in base
+	if other_kind is HitNone
+		return base
+	if hit_kind is HitNone
+		return other
+	if other_start < hit_start
+		return other
+	return base
+
+# Same, but `other` also wins an exact tie. A sub-grammar's closing fence has
+# to outrank anything its own rules matched at the same position, so that a
+# grammar carrying a rule for the fence text -- yaml's "---" document marker,
+# which is exactly the markdown frontmatter terminator -- can't swallow the
+# close and run on to the end of the file.
+fn Best hl_pick_at_or_earlier(Best base, Best other)
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in other
+	HitKind other_kind = hit_kind
+	int other_start = hit_start
+	(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in base
+	if other_kind is HitNone
+		return base
+	if hit_kind is HitNone
+		return other
+	if other_start <= hit_start
+		return other
+	return base

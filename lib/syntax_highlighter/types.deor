@@ -1,0 +1,194 @@
+# Types
+
+# Token colors, interned at rule-registration time. Rules carry a ColorId
+# rather than a color name so that HlRule holds nothing but enums, ints and
+# bools -- cloning a rule list (which Deor does on every call that takes one)
+# is then a flat memcpy with no string allocations.
+enum ColorId
+	NoColor
+	KeywordHue
+	StringHue
+	CommentHue
+	NumberHue
+	TypeHue
+	FunctionHue
+	MacroHue
+	InvalidHue
+	HeadingHue
+	QuoteHue
+	BoldHue
+	ItalicHue
+	StrikeHue
+	ImageHue
+	LinkHue
+	MathHue
+	BlockHue
+	BreakHue
+	ListHue
+
+# A rule is tried in registration order. At any given scan position the match
+# with the earliest start wins; ties go to whichever rule was registered first
+# -- this is what lets a rule like "call site" beat a later, broader "type"
+# rule on the same text.
+#
+# TagRule is a variant of KeywordRule used only by markup grammars (tsx/jsx/
+# vue/html/astro) registered through xs_add_tag; it also enables tag scoping.
+# KeywordCapRule colors only capture group 1 of its pattern: the regex crate
+# has no lookbehind, so a rule that may only fire after some preceding
+# character -- yaml's "{ key:" / ", key:" inside a flow mapping -- has to match
+# that character too, and this keeps it out of the colored span.
+enum RuleKind
+	KeywordRule
+	KeywordCapRule
+	BoundedRule
+	TagRule
+
+# Per-row scope stack for markup grammars. CodeFrame is the permanent floor
+# (index 0), never popped -- everything else nests on top of it.
+#
+#   CodeFrame       ordinary scanning with the full rule list (the only state
+#                   for every grammar that never registers a tag rule)
+#   CodeChildFrame  like CodeFrame but poppable -- <script>/<style> bodies, so
+#                   they keep full code highlighting instead of going inert
+#   TextFrame       inside a tag's children (JSX/HTML text) -- no rule other
+#                   than a tag start, a text-reentrant bounded start, or (when
+#                   jsx_expr is on) a bare '{' applies here, which is what
+#                   keeps stray quotes/apostrophes/capitalized words in prose
+#                   from being read as code
+#   InTagFrame      inside "<Name ...", scanning attributes, watching for the
+#                   tag's own unescaped '>' or '/>'
+#   ExprFrame       inside a JSX `{...}` expression entered from text;
+#                   expr_depth tracks unmatched '{' so nested object literals
+#                   don't pop it early
+#   BoundedFrame    inside a bounded region (string/comment/mustache/...),
+#                   frame_idx is the rule index within the active rule list
+#   SubFrame        inside a sub-grammar region (yaml frontmatter in a .md
+#                   file); frame_idx indexes the sub-grammar list, and scanning
+#                   continues with that sub-grammar's own rules
+enum FrameKind
+	CodeFrame
+	CodeChildFrame
+	TextFrame
+	InTagFrame
+	ExprFrame
+	BoundedFrame
+	SubFrame
+
+# What won the match contest at a scan position.
+enum HitKind
+	HitNone
+	HitKeyword
+	HitBounded
+	HitTag
+	HitBrace
+	HitCloseAngle
+	HitBraceOpen
+	HitBraceClose
+	HitSubOpen
+	HitSubClose
+
+struct RxMatch
+	bool rx_found
+	int rx_start
+	int rx_stop
+
+struct BytePos
+	bool byte_found
+	int byte_idx
+
+struct SubRef
+	bool sub_active
+	int sub_slot
+
+struct HlRule
+	RuleKind rule_kind
+	ColorId rule_color
+	int main_rx
+	int stop_rx
+	int guard_rx
+	bool escapable
+	bool text_reentrant
+
+shape ruleList = list of HlRule
+
+# A sub-grammar is a second, complete rule list that takes over inside a
+# delimited region. YAML frontmatter in a markdown file is the motivating
+# case, but nothing here is specific to it. first_row_only exists because a
+# markdown frontmatter fence is only a fence on line 1 -- the identical "---"
+# further down a document is a horizontal rule or a setext heading underline,
+# and must not open a bogus region.
+struct SubMeta
+	ColorId sub_color
+	int sub_start_rx
+	int sub_stop_rx
+	bool first_row_only
+
+shape subMetaList = list of SubMeta
+
+struct Frame
+	FrameKind frame_kind
+	bool tag_closing
+	string tag_name
+	int expr_depth
+	int frame_idx
+
+shape frameList = list of Frame
+shape frameListList = list of frameList
+
+struct Token
+	string tok_text
+	ColorId tok_color
+
+shape tokenList = list of Token
+
+struct TokenizeResult
+	tokenList out_tokens
+	frameList out_stack
+
+struct Best
+	HitKind hit_kind
+	int hit_start
+	int hit_stop
+	int hit_rule
+	int hit_sub
+
+struct HlConfig
+	int cfg_tab_width
+	bool cfg_jsx_expr
+
+# Deor caps a function at three parameters, so the tokenizer's per-line and
+# per-position context travel as structs.
+#
+# Grammar is everything hl_tokenize_line needs for one line; Spot is the
+# per-position part. Spot is all scalars, so it is free to clone -- which
+# matters, because Deor clones every argument at the call site and the match
+# helpers are called a few times per scan position. For the same reason each
+# helper takes only the list it actually reads: handing the rule list to the
+# sub-grammar probes, which never look at it, cost an allocation per probe.
+struct Grammar
+	ruleList gr_host
+	subMetaList gr_subs
+	int gr_row
+	int gr_len
+	bool gr_jsx
+	bool gr_tokens
+
+struct Spot
+	int spot_pos
+	int spot_row
+	bool spot_jsx
+	bool spot_in_tag
+	bool spot_in_expr
+	bool spot_in_code
+	bool spot_in_sub
+	int spot_sub
+
+struct StopSpec
+	int stop_slot
+	bool stop_escapable
+	int stop_from
+
+struct BoundedSpec
+	string name
+	string start
+	string stop

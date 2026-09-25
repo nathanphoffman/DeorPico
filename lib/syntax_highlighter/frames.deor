@@ -1,0 +1,64 @@
+# Frame constructors
+
+fn Frame hl_frame_code()
+	FrameKind frame_kind = CodeFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_child()
+	FrameKind frame_kind = CodeChildFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_text()
+	FrameKind frame_kind = TextFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_tag(bool closing, string name, int rule_idx)
+	FrameKind frame_kind = InTagFrame
+	bool tag_closing = closing
+	string tag_name = name
+	int expr_depth = 0
+	int frame_idx = rule_idx
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_expr(int depth)
+	FrameKind frame_kind = ExprFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = depth
+	int frame_idx = 0
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_bounded(int slot)
+	FrameKind frame_kind = BoundedFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = slot
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out
+
+fn Frame hl_frame_sub(int slot)
+	FrameKind frame_kind = SubFrame
+	bool tag_closing = false
+	string tag_name = ""
+	int expr_depth = 0
+	int frame_idx = slot
+	Frame out = (frame_kind, tag_closing, tag_name, expr_depth, frame_idx)
+	return out

@@ -1,0 +1,277 @@
+# Rust shims -- the Highlighter handle, the regex layer and byte-level
+# string access.
+
+raw Highlighter
+
+rust
+	// Rc<RefCell<..>> rather than Arc<Mutex<..>>: the tokenizer calls back in
+	// several times per scan position, and an uncontended mutex lock is still
+	// ~20ns of pure overhead on the render path. The highlighter is created
+	// and used entirely inside the render loop (see main.deor's
+	// init_highlight_state) and never crosses a thread.
+	struct HlState {
+		regexes: Vec<regex::Regex>,
+		// The host grammar's rules, and one further rule list per sub-grammar.
+		rules: Vec<HlRule>,
+		sub_meta: Vec<SubMeta>,
+		sub_rules: Vec<Vec<HlRule>>,
+		// Where xs_add_* appends: -1 = the host list, i = sub_rules[i]. Set by
+		// xs_sub_begin, cleared by xs_sub_end -- that is what lets an existing
+		// grammar macro (highlights_yaml) be replayed verbatim into a
+		// sub-grammar instead of being duplicated there.
+		target: i64,
+		// line_state[row] is the scope stack in effect at the START of that
+		// row -- populated by a full-file scan in xs_run so xs_line can color
+		// an arbitrary row on its own without re-scanning everything before it.
+		line_state: Vec<Vec<Frame>>,
+		line: String,
+		tab_width: i64,
+		jsx_expr: bool,
+	}
+
+	#[derive(Clone)]
+	struct Highlighter(std::rc::Rc<std::cell::RefCell<HlState>>);
+
+	// A bare tag pattern like `</?[A-Za-z][A-Za-z0-9_.]*` is genuinely
+	// ambiguous in TS/TSX source: `Array<string>` and `useState<Foo>()` match
+	// it just as well as an actual JSX tag does, and the regex crate has no
+	// lookbehind to rule those out directly. Instead the match is required to
+	// be glued onto one of a handful of "an expression can start here"
+	// characters (or the start of the line) -- something a generic's opening
+	// "<" is never preceded by, since it's always glued to the preceding
+	// identifier/call/keyword instead. The prefix is matched but not part of
+	// capture group 1, so callers only see the tag's own span.
+	//
+	// This guard is only used for *entering* tag scanning from ordinary code
+	// (Code/CodeChild/Expr/InTag). Once already inside JSX text there's no
+	// generic-vs-tag ambiguity left to resolve, so tag detection there uses
+	// the plain, unguarded pattern.
+	fn build_guarded_tag_pattern(pattern: &str) -> String {
+		format!(r#"(?:^|[\s(){{}}\[\],;:?=&|!~+])({})"#, pattern)
+	}
+
+fn Highlighter xs_make(int tab_width)
+	rust
+		Highlighter(std::rc::Rc::new(std::cell::RefCell::new(HlState {
+			regexes: Vec::new(),
+			rules: Vec::new(),
+			sub_meta: Vec::new(),
+			sub_rules: Vec::new(),
+			target: -1,
+			line_state: Vec::new(),
+			line: String::new(),
+			tab_width: tab_width,
+			jsx_expr: false,
+		})))
+
+# Compiles a pattern into the handle's regex bank and returns its slot.
+fn int hl_rx_add(Highlighter hlt, string pattern)
+	rust
+		{
+			let re = regex::Regex::new(pattern.as_str()).unwrap();
+			let mut st = hlt.0.borrow_mut();
+			st.regexes.push(re);
+			(st.regexes.len() - 1) as i64
+		}
+
+# The guarded form of a tag pattern -- see build_guarded_tag_pattern.
+fn int hl_rx_add_guarded(Highlighter hlt, string pattern)
+	rust
+		{
+			let guarded = build_guarded_tag_pattern(pattern.as_str());
+			let re = regex::Regex::new(guarded.as_str()).unwrap();
+			let mut st = hlt.0.borrow_mut();
+			st.regexes.push(re);
+			(st.regexes.len() - 1) as i64
+		}
+
+# Earliest match of a bank regex at or after `pos` in the parked line.
+fn RxMatch hl_rx_find(Highlighter hlt, int slot, int pos)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = pos as usize;
+			if start > st.line.len() {
+				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+			} else {
+				match st.regexes[slot as usize].find_at(st.line.as_str(), start) {
+					Some(m) => RxMatch { rx_found: true, rx_start: m.start() as i64, rx_stop: m.end() as i64 },
+					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
+				}
+			}
+		}
+
+# Same, but reports only capture group 1's span -- used by KeywordCapRule and
+# by the guarded tag patterns.
+fn RxMatch hl_rx_group(Highlighter hlt, int slot, int pos)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = pos as usize;
+			if start > st.line.len() {
+				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+			} else {
+				match st.regexes[slot as usize].captures_at(st.line.as_str(), start).and_then(|c| c.get(1)) {
+					Some(g) => RxMatch { rx_found: true, rx_start: g.start() as i64, rx_stop: g.end() as i64 },
+					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
+				}
+			}
+		}
+
+fn RxMatch hl_no_match()
+	rust
+		RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
+
+# Parks the line every subsequent shim call reads, and returns its byte length.
+fn int hl_set_line(Highlighter hlt, string line)
+	rust
+		{
+			let mut st = hlt.0.borrow_mut();
+			st.line = line;
+			st.line.len() as i64
+		}
+
+fn string hl_slice(Highlighter hlt, int start, int stop)
+	rust
+		{
+			let st = hlt.0.borrow();
+			st.line[(start as usize)..(stop as usize)].to_string()
+		}
+
+fn BytePos hl_find_byte(Highlighter hlt, string needle, int from)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let start = from as usize;
+			let hit = if start <= st.line.len() { st.line[start..].find(needle.as_str()) } else { None };
+			match hit {
+				Some(rel) => BytePos { byte_found: true, byte_idx: (start + rel) as i64 },
+				None => BytePos { byte_found: false, byte_idx: 0 },
+			}
+		}
+
+fn bool hl_byte_is(Highlighter hlt, int idx, string chr)
+	rust
+		{
+			let st = hlt.0.borrow();
+			let bytes = st.line.as_bytes();
+			let at = idx as usize;
+			at < bytes.len() && !chr.is_empty() && bytes[at] == chr.as_bytes()[0]
+		}
+
+# Tabs are expanded to real tab stops (not a flat N spaces) so the highlighted
+# output stays in the same column space s_visual_col assumes when it maps
+# cursor/click positions -- see src/consts.deor's TAB_WIDTH. Kept in Rust: a
+# Deor version would have to allocate a String per character.
+fn string hl_expand_tabs(string line, int tab_width)
+	rust
+		{
+			let width = tab_width as usize;
+			let mut out = String::with_capacity(line.len());
+			let mut col: usize = 0;
+			for ch in line.chars() {
+				if ch == '\t' {
+					let next_col = (col / width + 1) * width;
+					for _ in col..next_col {
+						out.push(' ');
+					}
+					col = next_col;
+				} else {
+					out.push(ch);
+					col += 1;
+				}
+			}
+			out
+		}
+
+# Appends to whichever rule list xs_sub_begin/xs_sub_end has made current.
+fn Highlighter hl_add_rule(Highlighter hlt, HlRule rule)
+	rust
+		{
+			{
+				let mut st = hlt.0.borrow_mut();
+				let target = st.target;
+				if target < 0 {
+					st.rules.push(rule);
+				} else {
+					st.sub_rules[target as usize].push(rule);
+				}
+			}
+			hlt
+		}
+
+# Registers a sub-grammar and makes it the current append target.
+fn Highlighter hl_add_sub(Highlighter hlt, SubMeta meta)
+	rust
+		{
+			{
+				let mut st = hlt.0.borrow_mut();
+				st.sub_meta.push(meta);
+				st.sub_rules.push(Vec::new());
+				st.target = (st.sub_meta.len() - 1) as i64;
+			}
+			hlt
+		}
+
+fn Highlighter hl_clear_target(Highlighter hlt)
+	rust
+		{
+			hlt.0.borrow_mut().target = -1;
+			hlt
+		}
+
+fn Highlighter hl_enable_jsx(Highlighter hlt)
+	rust
+		{
+			hlt.0.borrow_mut().jsx_expr = true;
+			hlt
+		}
+
+fn ruleList hl_host_rules(Highlighter hlt)
+	rust
+		hlt.0.borrow().rules.clone()
+
+fn ruleList hl_sub_rules(Highlighter hlt, int slot)
+	rust
+		hlt.0.borrow().sub_rules[slot as usize].clone()
+
+fn subMetaList hl_sub_metas(Highlighter hlt)
+	rust
+		hlt.0.borrow().sub_meta.clone()
+
+fn HlConfig hl_config(Highlighter hlt)
+	rust
+		{
+			let st = hlt.0.borrow();
+			HlConfig { cfg_tab_width: st.tab_width, cfg_jsx_expr: st.jsx_expr }
+		}
+
+fn frameList hl_state_at(Highlighter hlt, int row)
+	rust
+		{
+			let st = hlt.0.borrow();
+			match st.line_state.get(row as usize) {
+				Some(frames) => frames.clone(),
+				None => vec![Frame {
+					frame_kind: FrameKind::CodeFrame,
+					tag_closing: false,
+					tag_name: String::new(),
+					expr_depth: 0,
+					frame_idx: 0,
+				}],
+			}
+		}
+
+fn Highlighter hl_state_store(Highlighter hlt, frameListList states)
+	rust
+		{
+			hlt.0.borrow_mut().line_state = states;
+			hlt
+		}
+
+# Deor string literals have no \x1b escape (see the spec's Strings page), so
+# the escape byte itself comes from here; which color goes with which token is
+# decided in Deor by hl_color_code.
+fn string hl_ansi(string body)
+	rust
+		format!("\x1b[{}m", body)

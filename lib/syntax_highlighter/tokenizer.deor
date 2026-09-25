@@ -1,0 +1,361 @@
+# The tokenizer
+
+# Tokenizes one already-tab-expanded line, given whatever scope stack (if any)
+# was left open by the previous line. Returns the colored spans plus the stack
+# left open at the end of this line.
+#
+# For any grammar that never registers a tag rule, the stack never grows past
+# its permanent CodeFrame floor and this behaves like a flat keyword/bounded
+# scan -- the branching below only matters for markup grammars that opt into
+# tag scoping via xs_add_tag/xs_enable_jsx_expr, and for grammars with a
+# sub-grammar region.
+fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList start_stack)
+	(gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens) in gram
+
+	tokenList out_tokens = empty
+	frameList out_stack = start_stack
+	int stack_size = len(out_stack)
+	if stack_size is 0
+		Frame floor_frame = hl_frame_code()
+		out_stack at end = floor_frame
+
+	SubRef opening_ref = hl_active_sub(out_stack)
+	(sub_active, sub_slot) in opening_ref
+	bool cur_in_sub = sub_active
+	int cur_sub = sub_slot
+
+	ruleList active = gr_host
+	if cur_in_sub
+		active = hl_sub_rules(hlt, cur_sub)
+
+	int pos = 0
+	for if pos < gr_len
+		int top_idx = len(out_stack) - 1
+		Frame top = out_stack at top_idx
+		(frame_kind, tag_closing, tag_name, expr_depth, frame_idx) in top
+
+		if frame_kind is BoundedFrame
+			HlRule open_rule = active at frame_idx
+			(rule_color, stop_rx, escapable) in open_rule
+			int stop_slot = stop_rx
+			bool stop_escapable = escapable
+			int stop_from = pos
+			StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+			RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+			(rx_found, rx_start, rx_stop) in stop_hit
+			int span_end = gr_len
+			if rx_found
+				span_end = rx_stop
+			if gr_tokens
+				string tok_text = hl_slice(hlt, pos, span_end)
+				ColorId tok_color = rule_color
+				Token tok = (tok_text, tok_color)
+				out_tokens at end = tok
+			pos = span_end
+			if rx_found
+				out_stack remove at top_idx
+
+		else if frame_kind is TextFrame
+			int spot_pos = pos
+			int spot_row = gr_row
+			bool spot_jsx = gr_jsx
+			bool spot_in_tag = false
+			bool spot_in_expr = false
+			bool spot_in_code = false
+			bool spot_in_sub = cur_in_sub
+			int spot_sub = cur_sub
+			Spot spot = (spot_pos, spot_row, spot_jsx, spot_in_tag, spot_in_expr, spot_in_code, spot_in_sub, spot_sub)
+			Best best = hl_best_text(hlt, active, spot)
+			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best
+
+			if hit_kind is HitNone
+				if gr_tokens
+					string tok_text = hl_slice(hlt, pos, gr_len)
+					ColorId tok_color = NoColor
+					Token tok = (tok_text, tok_color)
+					out_tokens at end = tok
+				pos = gr_len
+			else
+				if hit_start > pos
+					if gr_tokens
+						string tok_text = hl_slice(hlt, pos, hit_start)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+
+				if hit_kind is HitTag
+					string matched = hl_slice(hlt, hit_start, hit_stop)
+					# a fragment ("<>" / "</>") matches with its ">" -- give
+					# that back so the InTagFrame below closes on it normally
+					fragment_close as ">"
+					if s_ends_with(matched, fragment_close)
+						hit_stop = hit_stop - 1
+						matched = hl_slice(hlt, hit_start, hit_stop)
+					close_prefix as "</"
+					bool is_closing = s_starts_with(matched, close_prefix)
+					string body_name = hl_tag_body_lower(matched)
+					HlRule tag_rule = active at hit_rule
+					(rule_color) in tag_rule
+					if gr_tokens
+						string tok_text = matched
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					Frame tag_frame = hl_frame_tag(is_closing, body_name, hit_rule)
+					out_stack at end = tag_frame
+					pos = hit_stop
+
+				else if hit_kind is HitBounded
+					HlRule bounded_rule = active at hit_rule
+					(rule_color, stop_rx, escapable) in bounded_rule
+					int stop_slot = stop_rx
+					bool stop_escapable = escapable
+					int stop_from = hit_stop
+					StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+					RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+					(rx_found, rx_start, rx_stop) in stop_hit
+					int span_end = gr_len
+					if rx_found
+						span_end = rx_stop
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, span_end)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = span_end
+					if rx_found is false
+						Frame bounded_frame = hl_frame_bounded(hit_rule)
+						out_stack at end = bounded_frame
+
+				else
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					int first_depth = 1
+					Frame expr_frame = hl_frame_expr(first_depth)
+					out_stack at end = expr_frame
+					pos = hit_stop
+
+		else
+			int spot_pos = pos
+			int spot_row = gr_row
+			bool spot_jsx = gr_jsx
+			bool spot_in_tag = false
+			if frame_kind is InTagFrame
+				spot_in_tag = true
+			bool spot_in_expr = false
+			if frame_kind is ExprFrame
+				spot_in_expr = true
+			bool spot_in_code = false
+			if frame_kind is CodeFrame
+				spot_in_code = true
+			bool spot_in_sub = cur_in_sub
+			int spot_sub = cur_sub
+			Spot spot = (spot_pos, spot_row, spot_jsx, spot_in_tag, spot_in_expr, spot_in_code, spot_in_sub, spot_sub)
+
+			Best scanned = hl_best_code(hlt, active, spot)
+			Best opener = hl_sub_open_hit(hlt, gr_subs, spot)
+			Best merged = hl_pick_earlier(scanned, opener)
+			Best closer = hl_sub_close_hit(hlt, gr_subs, spot)
+			Best best = hl_pick_at_or_earlier(merged, closer)
+			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best
+
+			# a self-closing tag's "/>" is colored as one token with the tag
+			slash as "/"
+			bool self_close = false
+			if hit_kind is HitCloseAngle
+				if hit_start > pos
+					int before = hit_start - 1
+					self_close = hl_byte_is(hlt, before, slash)
+					if self_close
+						hit_start = before
+
+			if hit_kind is HitNone
+				if gr_tokens
+					string tok_text = hl_slice(hlt, pos, gr_len)
+					ColorId tok_color = NoColor
+					Token tok = (tok_text, tok_color)
+					out_tokens at end = tok
+				pos = gr_len
+			else
+				if hit_start > pos
+					if gr_tokens
+						string tok_text = hl_slice(hlt, pos, hit_start)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+
+				if hit_kind is HitSubOpen
+					SubMeta opened_meta = gr_subs at hit_sub
+					(sub_color) in opened_meta
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = sub_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					Frame sub_frame = hl_frame_sub(hit_sub)
+					out_stack at end = sub_frame
+					cur_in_sub = true
+					cur_sub = hit_sub
+					active = hl_sub_rules(hlt, hit_sub)
+
+				else if hit_kind is HitSubClose
+					SubMeta closed_meta = gr_subs at cur_sub
+					(sub_color) in closed_meta
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = sub_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int sub_top = len(out_stack) - 1
+					out_stack remove at sub_top
+					cur_in_sub = false
+					cur_sub = 0
+					active = hl_host_rules(hlt)
+
+				else if hit_kind is HitKeyword
+					HlRule word_rule = active at hit_rule
+					(rule_color) in word_rule
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+
+				else if hit_kind is HitBounded
+					HlRule bounded_rule = active at hit_rule
+					(rule_color, stop_rx, escapable) in bounded_rule
+					int stop_slot = stop_rx
+					bool stop_escapable = escapable
+					int stop_from = hit_stop
+					StopSpec stop_spec = (stop_slot, stop_escapable, stop_from)
+					RxMatch stop_hit = hl_find_stop(hlt, stop_spec)
+					(rx_found, rx_start, rx_stop) in stop_hit
+					int span_end = gr_len
+					if rx_found
+						span_end = rx_stop
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, span_end)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = span_end
+					if rx_found is false
+						Frame bounded_frame = hl_frame_bounded(hit_rule)
+						out_stack at end = bounded_frame
+
+				else if hit_kind is HitTag
+					string matched = hl_slice(hlt, hit_start, hit_stop)
+					# a fragment ("<>" / "</>") matches with its ">" -- give
+					# that back so the InTagFrame below closes on it normally
+					fragment_close as ">"
+					if s_ends_with(matched, fragment_close)
+						hit_stop = hit_stop - 1
+						matched = hl_slice(hlt, hit_start, hit_stop)
+					close_prefix as "</"
+					bool is_closing = s_starts_with(matched, close_prefix)
+					string body_name = hl_tag_body_lower(matched)
+					HlRule tag_rule = active at hit_rule
+					(rule_color) in tag_rule
+					if gr_tokens
+						string tok_text = matched
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					Frame tag_frame = hl_frame_tag(is_closing, body_name, hit_rule)
+					out_stack at end = tag_frame
+					pos = hit_stop
+
+				else if hit_kind is HitCloseAngle
+					# same color as the "<Name" that opened this tag
+					HlRule opened_rule = active at frame_idx
+					(rule_color) in opened_rule
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = rule_color
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int tag_top = len(out_stack) - 1
+					out_stack remove at tag_top
+					if tag_closing
+						# a real closing tag also ends the text/code-child
+						# scope it belongs to -- never pop the permanent floor
+						int depth_now = len(out_stack)
+						if depth_now > 1
+							int drop_idx = depth_now - 1
+							out_stack remove at drop_idx
+						SubRef after_pop = hl_active_sub(out_stack)
+						(sub_active, sub_slot) in after_pop
+						cur_in_sub = sub_active
+						cur_sub = sub_slot
+						active = hl_host_rules(hlt)
+						if cur_in_sub
+							active = hl_sub_rules(hlt, cur_sub)
+					else if self_close is false
+						# a self-closing tag has no children of its own --
+						# only a real opening tag enters a new scope
+						script_tag as "script"
+						style_tag as "style"
+						bool is_script = tag_name is script_tag
+						bool is_style = tag_name is style_tag
+						# HTML void elements (<br>, <img>, ...) never get a
+						# closing tag either. Not applied to JSX, where they
+						# must self-close and <Input> may be a component.
+						bool is_void = false
+						if gr_jsx is false
+							is_void = hl_is_void_tag(tag_name)
+						if is_void is false
+							Frame child_frame = hl_frame_text()
+							if is_script
+								child_frame = hl_frame_child()
+							else if is_style
+								child_frame = hl_frame_child()
+							out_stack at end = child_frame
+
+				else if hit_kind is HitBraceOpen
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int expr_top = len(out_stack) - 1
+					Frame expr_frame = out_stack at expr_top
+					(frame_kind, expr_depth) in expr_frame
+					if frame_kind is ExprFrame
+						int deeper = expr_depth + 1
+						Frame updated = hl_frame_expr(deeper)
+						out_stack at expr_top = updated
+					else
+						# opened from inside a tag's attributes -- nests on
+						# top of the InTagFrame and pops back to it at "}"
+						int attr_depth = 1
+						Frame attr_expr = hl_frame_expr(attr_depth)
+						out_stack at end = attr_expr
+
+				else
+					if gr_tokens
+						string tok_text = hl_slice(hlt, hit_start, hit_stop)
+						ColorId tok_color = NoColor
+						Token tok = (tok_text, tok_color)
+						out_tokens at end = tok
+					pos = hit_stop
+					int expr_top = len(out_stack) - 1
+					Frame expr_frame = out_stack at expr_top
+					(frame_kind, expr_depth) in expr_frame
+					if frame_kind is ExprFrame
+						int shallower = expr_depth - 1
+						if shallower is 0
+							out_stack remove at expr_top
+						else
+							Frame updated = hl_frame_expr(shallower)
+							out_stack at expr_top = updated
+
+	TokenizeResult result = (out_tokens, out_stack)
+	return result

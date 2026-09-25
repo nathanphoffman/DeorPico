@@ -1,0 +1,129 @@
+# Colors
+
+# Grammar files register rules with a color *name*; this interns it once, at
+# registration time, so the tokenizer never carries strings around.
+fn ColorId hl_color_id(string name)
+	keyword_name as "keyword"
+	string_name as "string"
+	comment_name as "comment"
+	number_name as "number"
+	type_name as "type"
+	function_name as "function"
+	macro_name as "macro_name"
+	invalid_name as "invalid"
+	heading_name as "heading"
+	quote_name as "quote"
+	bold_name as "bold"
+	italic_name as "italic"
+	strike_name as "strikethrough"
+	image_name as "image"
+	link_name as "link"
+	math_name as "math"
+	block_name as "block"
+	break_name as "linebreak"
+	list_name as "list"
+
+	ColorId out = NoColor
+	if name is keyword_name
+		out = KeywordHue
+	else if name is string_name
+		out = StringHue
+	else if name is comment_name
+		out = CommentHue
+	else if name is number_name
+		out = NumberHue
+	else if name is type_name
+		out = TypeHue
+	else if name is function_name
+		out = FunctionHue
+	else if name is macro_name
+		out = MacroHue
+	else if name is invalid_name
+		out = InvalidHue
+	else if name is heading_name
+		out = HeadingHue
+	else if name is quote_name
+		out = QuoteHue
+	else if name is bold_name
+		out = BoldHue
+	else if name is italic_name
+		out = ItalicHue
+	else if name is strike_name
+		out = StrikeHue
+	else if name is image_name
+		out = ImageHue
+	else if name is link_name
+		out = LinkHue
+	else if name is math_name
+		out = MathHue
+	else if name is block_name
+		out = BlockHue
+	else if name is break_name
+		out = BreakHue
+	else if name is list_name
+		out = ListHue
+	return out
+
+# Matches VS Code's default "Dark+" theme token colors (truecolor, not the
+# 16-color ANSI palette) so highlighting looks the same as the VS Code editor.
+fn string hl_color_code(ColorId color)
+	empty_code as ""
+	keyword_body as "38;2;198;120;221"
+	string_body as "38;2;206;145;120"
+	comment_body as "38;2;106;153;85"
+	number_body as "38;2;181;206;168"
+	type_body as "38;2;78;201;176"
+	function_body as "38;2;156;220;254"
+	macro_body as "38;2;125;176;203"
+	invalid_body as "38;2;244;71;71"
+	heading_body as "1;38;2;86;156;214"
+	quote_body as "3;38;2;106;153;85"
+	bold_body as "1"
+	italic_body as "3"
+	strike_body as "9"
+	link_body as "4;38;2;86;156;214"
+
+	string body = empty_code
+	if color is KeywordHue
+		body = keyword_body
+	else if color is StringHue
+		body = string_body
+	else if color is CommentHue
+		body = comment_body
+	else if color is NumberHue
+		body = number_body
+	else if color is TypeHue
+		body = type_body
+	else if color is FunctionHue
+		body = function_body
+	else if color is MacroHue
+		body = macro_body
+	else if color is InvalidHue
+		body = invalid_body
+	else if color is HeadingHue
+		body = heading_body
+	else if color is QuoteHue
+		body = quote_body
+	else if color is BoldHue
+		body = bold_body
+	else if color is ItalicHue
+		body = italic_body
+	else if color is StrikeHue
+		body = strike_body
+	else if color is ImageHue
+		body = type_body
+	else if color is LinkHue
+		body = link_body
+	else if color is MathHue
+		body = number_body
+	else if color is BlockHue
+		body = string_body
+	else if color is BreakHue
+		body = comment_body
+	else if color is ListHue
+		body = keyword_body
+
+	if body is empty_code
+		return empty_code
+	string code = hl_ansi(body)
+	return code
