@@ -764,6 +764,18 @@ fn string hl_tag_body_lower(string matched)
 	string lowered = s_to_lower(body)
 	return lowered
 
+# HTML elements that never have children or a closing tag.
+fn bool hl_is_void_tag(string name)
+	void_list as "area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr"
+	comma as ","
+	stringList void_tags = s_split(void_list, comma)
+	int count = len(void_tags)
+	for idx in range(count)
+		string void_tag = void_tags at idx
+		if name is void_tag
+			return true
+	return false
+
 # Deliberately restricted candidate set: JSX/HTML text is not code, so nothing
 # here runs the general keyword list -- that's exactly what let stray
 # apostrophes/quotes and capitalized prose words get misread as code before.
@@ -831,7 +843,7 @@ fn Best hl_best_text(Highlighter hlt, ruleList rules, Spot spot)
 # the full rule list -- InTagFrame additionally watches for the tag's own '>',
 # ExprFrame additionally tracks bare '{'/'}' depth.
 fn Best hl_best_code(Highlighter hlt, ruleList rules, Spot spot)
-	(spot_pos, spot_in_tag, spot_in_expr) in spot
+	(spot_pos, spot_jsx, spot_in_tag, spot_in_expr) in spot
 	bool found_any = false
 	HitKind win_kind = HitNone
 	int win_start = 0
@@ -916,6 +928,25 @@ fn Best hl_best_code(Highlighter hlt, ruleList rules, Spot spot)
 					win_kind = HitBraceOpen
 				else
 					win_kind = HitBraceClose
+
+	# a JSX attribute value like onClick={() => go()} -- step into it as an
+	# expression so its "=>" isn't mistaken for the tag's closing ">"
+	if spot_in_tag
+		if spot_jsx
+			open_brace as "{"
+			BytePos opened = hl_find_byte(hlt, open_brace, spot_pos)
+			(byte_found, byte_idx) in opened
+			if byte_found
+				bool better = false
+				if found_any is false
+					better = true
+				else if byte_idx < win_start
+					better = true
+				if better
+					found_any = true
+					win_kind = HitBraceOpen
+					win_start = byte_idx
+					win_stop = byte_idx + 1
 
 	HitKind hit_kind = win_kind
 	int hit_start = win_start
@@ -1115,6 +1146,12 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 
 				if hit_kind is HitTag
 					string matched = hl_slice(hlt, hit_start, hit_stop)
+					# a fragment ("<>" / "</>") matches with its ">" -- give
+					# that back so the InTagFrame below closes on it normally
+					fragment_close as ">"
+					if s_ends_with(matched, fragment_close)
+						hit_stop = hit_stop - 1
+						matched = hl_slice(hlt, hit_start, hit_stop)
 					close_prefix as "</"
 					bool is_closing = s_starts_with(matched, close_prefix)
 					string body_name = hl_tag_body_lower(matched)
@@ -1265,6 +1302,12 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 
 				else if hit_kind is HitTag
 					string matched = hl_slice(hlt, hit_start, hit_stop)
+					# a fragment ("<>" / "</>") matches with its ">" -- give
+					# that back so the InTagFrame below closes on it normally
+					fragment_close as ">"
+					if s_ends_with(matched, fragment_close)
+						hit_stop = hit_stop - 1
+						matched = hl_slice(hlt, hit_start, hit_stop)
 					close_prefix as "</"
 					bool is_closing = s_starts_with(matched, close_prefix)
 					string body_name = hl_tag_body_lower(matched)
@@ -1314,12 +1357,19 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 						style_tag as "style"
 						bool is_script = tag_name is script_tag
 						bool is_style = tag_name is style_tag
-						Frame child_frame = hl_frame_text()
-						if is_script
-							child_frame = hl_frame_child()
-						else if is_style
-							child_frame = hl_frame_child()
-						out_stack at end = child_frame
+						# HTML void elements (<br>, <img>, ...) never get a
+						# closing tag either. Not applied to JSX, where they
+						# must self-close and <Input> may be a component.
+						bool is_void = false
+						if gr_jsx is false
+							is_void = hl_is_void_tag(tag_name)
+						if is_void is false
+							Frame child_frame = hl_frame_text()
+							if is_script
+								child_frame = hl_frame_child()
+							else if is_style
+								child_frame = hl_frame_child()
+							out_stack at end = child_frame
 
 				else if hit_kind is HitBraceOpen
 					if gr_tokens
@@ -1335,6 +1385,12 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 						int deeper = expr_depth + 1
 						Frame updated = hl_frame_expr(deeper)
 						out_stack at expr_top = updated
+					else
+						# opened from inside a tag's attributes -- nests on
+						# top of the InTagFrame and pops back to it at "}"
+						int attr_depth = 1
+						Frame attr_expr = hl_frame_expr(attr_depth)
+						out_stack at end = attr_expr
 
 				else
 					if gr_tokens

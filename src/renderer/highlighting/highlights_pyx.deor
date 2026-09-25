@@ -42,12 +42,19 @@ macro highlights_pyx
 	highlighter = xs_add_keyword(highlighter, deco_name, deco_pattern)
 
 	# JSX tag names: "<" or "</" immediately followed by a tag/component
-	# name (dotted for namespaced components like <Foo.Bar>) -- the "<" is
-	# swallowed into the match since the regex crate has no lookbehind,
-	# same trick as the call-site pattern below
+	# name (dotted for namespaced components like <Foo.Bar>). xs_add_tag
+	# (rather than xs_add_keyword) also turns on tag scoping: a tag's
+	# children become a text scope where ordinary code rules don't apply --
+	# that's what keeps apostrophes and keywords like "is"/"and" in page
+	# text from being read as Python. The "|>" alternative matches
+	# fragments (<> and </>).
 	tag_name as "type"
-	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.]*"
-	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
+	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.]*|>)"
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
+
+	# lets a bare "{" inside JSX text resume full code scanning until its
+	# matching "}", instead of staying inert
+	highlighter = xs_enable_jsx_expr(highlighter)
 
 	# JSX attribute names (className=, onClick=): identifier tight against
 	# "=" with no space -- the "=" is swallowed into the match for the same

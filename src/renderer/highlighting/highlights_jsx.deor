@@ -43,8 +43,10 @@ macro highlights_jsx
 	# text scope for its children where ordinary code rules don't apply --
 	# that's what keeps quotes/apostrophes/capitalized words in JSX text
 	# from being misread as code.
+	# The "|>" alternative matches fragments (<> and </>); the tokenizer
+	# hands the ">" back so the tag scope still sees its own close.
 	tag_name as "type"
-	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.]*"
+	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.]*|>)"
 	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
 	# lets a bare "{" inside JSX text (e.g. {this.props.name}) resume full

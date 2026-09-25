@@ -66,8 +66,10 @@ macro highlights_astro
 	# scoping so a tag's children become a text scope where ordinary code
 	# rules don't apply -- that's what keeps an apostrophe in page text
 	# ("Don't") from opening a string that swallows the rest of the file.
+	# The "|>" alternative matches fragments (<> and </>); the tokenizer
+	# hands the ">" back so the tag scope still sees its own close.
 	tag_name as "type"
-	tag_pattern as "</?[A-Za-z][A-Za-z0-9_.-]*"
+	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.-]*|>)"
 	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
 	# lets a bare "{" inside markup text (e.g. {post.title}) resume full
