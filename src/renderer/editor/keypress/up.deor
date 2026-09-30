@@ -1,3 +1,0 @@
-fn int key_up_ctrl_impl(int cursor_row)
-	unsafe_macro_run use_consts
-	return cursor_row - CTRL_ARROW_Y_AMOUNT

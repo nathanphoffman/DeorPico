@@ -91,3 +91,12 @@ macro handle_arrow_nav
 		cursor_row = key_up_ctrl_impl(cursor_row)
 	else if kind is "down_ctrl"
 		cursor_row = key_down_ctrl_impl(cursor_row)
+
+# Ctrl+Up / Ctrl+Down -- jumps the cursor CTRL_ARROW_Y_AMOUNT rows at once.
+fn int key_up_ctrl_impl(int cursor_row)
+	unsafe_macro_run use_consts
+	return cursor_row - CTRL_ARROW_Y_AMOUNT
+
+fn int key_down_ctrl_impl(int cursor_row)
+	unsafe_macro_run use_consts
+	return cursor_row + CTRL_ARROW_Y_AMOUNT
