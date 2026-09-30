@@ -148,7 +148,10 @@ fn void main()
 		(lint_running) in lint
 		bool was_lint_running = lint_running
 
-		state = editor_handle_key_for_events(state, key)
+		if spreadsheet_owns_key(state, key)
+			state = spreadsheet_handle_key(state, key)
+		else
+			state = editor_handle_key_for_events(state, key)
 		(done) in state
 		if done
 			break

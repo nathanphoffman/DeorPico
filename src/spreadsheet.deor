@@ -6,19 +6,17 @@ macro toggle_spreadsheet_view_impl
 	if spreadsheet_active
 		spreadsheet_view_active = not spreadsheet_view_active
 
-# Keys/mouse while the spreadsheet view is showing (and the sidebar isn't
-# focused) -- moves the highlighted cell. Only the app-wide actions that make
-# sense without a text buffer run here; cut/paste/undo/etc. would silently
-# edit the hidden text buffer behind the sheet, so they're skipped.
+# Every key spreadsheet_handle_key receives -- moves the highlighted cell.
+# Kinds not listed here (typing, cut/paste/undo, ...) are dropped on
+# purpose: they'd otherwise silently edit the hidden text buffer behind
+# the sheet.
 macro handle_spreadsheet_mode
 	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(rows) in term_size
 	int view_rows = spreadsheet_view_rows(rows)
 
-	if kind is "quit" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
-		macro_run handle_global_actions
-	else if kind is "up"
+	if kind is "up"
 		spreadsheet_sel_row = spreadsheet_sel_row - 1
 	else if kind is "down"
 		spreadsheet_sel_row = spreadsheet_sel_row + 1
@@ -33,7 +31,7 @@ macro handle_spreadsheet_mode
 	else if kind is "home"
 		spreadsheet_sel_col = 0
 	else if kind is "mouse_down"
-		macro_run mouse_down_editor_impl
+		macro_run spreadsheet_mouse_down
 	else if kind is "mouse_scroll_up"
 		spreadsheet_scroll_row = spreadsheet_scroll_row - SCROLL_WHEEL_AMOUNT
 	else if kind is "mouse_scroll_down"
@@ -51,7 +49,7 @@ macro handle_spreadsheet_mode
 			spreadsheet_scroll_row = max_scroll_row
 		if spreadsheet_scroll_row < 0
 			spreadsheet_scroll_row = 0
-	else if kind is not "tick"
+	else
 		macro_run scroll_spreadsheet_to_selection
 
 # Keeps the selected cell inside the sheet -- rows can have different cell
@@ -88,23 +86,27 @@ macro scroll_spreadsheet_to_selection
 	if spreadsheet_sel_col > spreadsheet_scroll_col + visible_cols - 1
 		spreadsheet_scroll_col = spreadsheet_sel_col - visible_cols + 1
 
-# Selects the cell under a click -- `col` is already content-relative
-# (mouse_down_editor_impl subtracts sidebar_width before calling in).
+# Selects the cell under a click (spreadsheet_owns_key only routes clicks
+# right of the sidebar here) and takes keyboard focus off the sidebar.
 # Clicks on the status/notice rows or below the last data row are ignored.
 macro spreadsheet_mouse_down
 	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
-	(rows) in term_size
+	(cols, rows) in term_size
 	int view_rows = spreadsheet_view_rows(rows)
+	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
+	int sidebar_width = cols - content_width
+	int content_col = col - sidebar_width
 	int clicked_row = spreadsheet_scroll_row + row
 	int row_count = len(spreadsheet_rows)
+	sidebar_focused = false
 
 	# Each cell is drawn as SEPARATOR + cell, so shifting past the leading
 	# separator and dividing by the stride gives the column; a click on a
 	# separator counts toward the cell to its left.
 	int separator_width = len(SPREADSHEET_SEPARATOR)
 	int cell_stride = SPREADSHEET_COLUMN_WIDTH + separator_width
-	int cell_x = col - separator_width
+	int cell_x = content_col - separator_width
 	int clicked_col = spreadsheet_scroll_col
 	if cell_x > 0
 		clicked_col = spreadsheet_scroll_col + cell_x / cell_stride
@@ -217,3 +219,49 @@ fn int spreadsheet_visible_columns(int content_width)
 	if visible_cols < 1
 		visible_cols = 1
 	return visible_cols
+
+# Whether the spreadsheet handles this key itself (spreadsheet_handle_key)
+# or main() hands it to the normal editor handler. Only while the sheet is
+# actually showing -- and even then, app-wide actions (quit, F1, ^D, ^T,
+# F5, lint ticks) and anything the focused sidebar handles still go to the
+# editor handler, which already owns them. A click right of the sidebar
+# always belongs to the sheet, even while the sidebar has focus.
+fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
+	(browser, main_panel, spreadsheet) in state
+	(sidebar_focused) in browser
+	(diff) in main_panel
+	(diffing) in diff
+	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
+	(kind, col) in key
+
+	if not spreadsheet_active or not spreadsheet_view_active or diffing
+		return false
+
+	if kind is "mouse_down"
+		TermSize term_size = xt_size()
+		(cols, rows) in term_size
+		int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
+		int sidebar_width = cols - content_width
+		return col >= sidebar_width
+
+	if sidebar_focused
+		return false
+
+	if kind is "tick" or kind is "quit" or kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
+		return false
+	return true
+
+# The spreadsheet's own key handler -- only unpacks the sidebar focus flag
+# and the spreadsheet state, leaving the text editor's state untouched.
+fn AppState spreadsheet_handle_key(AppState state, KeyEvent key)
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col) in spreadsheet
+	(sidebar_focused) in browser
+	(kind, col, row) in key
+
+	macro_run handle_spreadsheet_mode
+
+	SidebarState browser = browser with (sidebar_focused)
+	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	return next_state
