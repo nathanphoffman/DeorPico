@@ -1,7 +1,7 @@
 
 # ^A while the sidebar has keyboard focus -- toggles stage/unstage on
 # whichever entry is highlighted, in the <GIT> section or the Files tree
-# (see git_stage_toggle in browse.deor). A no-op on the <GIT> header itself
+# (see git_stage_toggle in browse_git_actions.deor). A no-op on the <GIT> header itself
 # (git_selected is -1 there) -- there's no single file to stage.
 macro sidebar_stage_toggle
 	if sidebar_on_git
@@ -15,7 +15,7 @@ macro sidebar_stage_toggle
 		macro_run git_stage_toggle
 
 # ^K while the sidebar has keyboard focus -- see file_delete_entry
-# in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
+# in browse_delete.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
 macro sidebar_delete_entry
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)
@@ -28,7 +28,7 @@ macro sidebar_delete_entry
 		macro_run file_delete_entry
 
 # ^U while the sidebar has keyboard focus -- see discard_git_changes_entry
-# in browse.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
+# in browse_git_actions.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
 macro sidebar_discard_git_changes
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)

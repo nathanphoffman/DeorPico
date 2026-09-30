@@ -7,7 +7,7 @@
 macro handle_sidebar_focus_mode
 	macro_run handle_global_actions
 	# Frozen while notify_unsaved_changes' notice is up -- see sidebar_locked's
-	# declaration in browser_state.deor. ^S/^Del already ran above
+	# declaration in sidebar_state.deor. ^S/^Del already ran above
 	# (handle_global_actions), so everything below is skipped until one of
 	# those resolves it; this is what stops the highlighted row from
 	# drifting off the still-open file while the notice sits unresolved.

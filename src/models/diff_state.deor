@@ -6,7 +6,7 @@ struct DiffState
 
 	# Which wrap segment of diff_scroll_row is topmost -- same idea as
 	# BufferState's scroll_wrap_seg, for the read-only diff view's own
-	# scrolling (see rust_diff.deor).
+	# scrolling (see diff_view.deor).
 	int diff_scroll_wrap_seg
 
 	# True when diffing was entered by opening a deleted git-changed file

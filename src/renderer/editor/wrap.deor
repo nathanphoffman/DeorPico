@@ -10,7 +10,7 @@ struct WrapPosition
 # skip block as render_visible_line). Because of that split, this walks a
 # raw buffer line (tab branch fires, ANSI branch never does) and a
 # highlighted display line (ANSI branch fires, tab branch never does --
-# synoptic already expanded its own tabs to spaces) equally well, as long
+# the syntax highlighter already expanded tabs to spaces) equally well, as long
 # as both call sites pass the same `width`.
 #
 # Remembers the most recent whitespace visual-column seen since the last

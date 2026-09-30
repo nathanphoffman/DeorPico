@@ -8,7 +8,7 @@ macro toggle_spreadsheet_view_impl
 
 # Which file extensions open into the spreadsheet view instead of the
 # normal text editor -- checked both at launch (state_init.deor) and on
-# every mid-session file open (browse.deor's load_file_into_buffer).
+# every mid-session file open (load_file_into_buffer in browser/keypress/browse_open.deor).
 fn bool f_is_spreadsheet_ext(string ext)
 	if ext is "csv"
 		return true

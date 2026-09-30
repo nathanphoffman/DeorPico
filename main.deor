@@ -61,7 +61,7 @@ macro refresh_highlighter_for_file_change
 		last_highlighted_lines = cleared_highlighted_lines
 
 # Raw lines, before tab-expansion, so the on-screen cursor/selection columns
-# can be derived to match what synoptic does to the displayed text below.
+# can be derived to match what the syntax highlighter does to the displayed text below.
 # unsafe_macro because cursor_visual_col/sel_anchor_visual_col need to
 # outlive this call for draw_frame to use.
 unsafe_macro compute_cursor_visual_columns

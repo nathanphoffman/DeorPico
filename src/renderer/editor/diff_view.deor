@@ -159,8 +159,8 @@ macro render_diff_status_and_notice
 	screen = s_join([screen, notice_padded])
 
 # Strips the leading +/-/space marker byte and expands raw tabs (diff
-# lines come straight from git output, unlike buffer lines which synoptic
-# already tab-expands -- see main.deor's render_frame) from every diff
+# lines come straight from git output, unlike buffer lines which the syntax
+# highlighter already tab-expands -- see main.deor's render_frame) from every diff
 # line, producing the plain content wrap_break_visual_cols/render_visible_line
 # expect. Shared by render_diff_rows and clamp_diff_scroll (diff.deor) so
 # both agree on exactly what's being wrapped.

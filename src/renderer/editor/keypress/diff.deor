@@ -40,7 +40,7 @@ macro toggle_diff_impl
 			diff_lines = raw_diff
 			diffing = true
 			# The sidebar panel stays visible in diff mode (see
-			# rust_diff.deor) but shouldn't keep keyboard focus -- without
+			# diff_view.deor) but shouldn't keep keyboard focus -- without
 			# this, Up/Down/PageUp/PageDown after ^D from a focused sidebar
 			# (the default on launch) silently scroll the file list instead
 			# of the diff, which looks like the diff pane is frozen/broken.
@@ -131,7 +131,7 @@ macro clamp_diff_scroll
 	TermSize size = xt_size()
 	(cols, rows) in size
 
-	# The diff view's own minimap (g_diff_minimap_raw, see rust_diff.deor)
+	# The diff view's own minimap (g_diff_minimap_raw, see diff_view.deor)
 	# has no buffer to map onto, so its presence only depends on
 	# diff_lines/cols -- editor_diff_has_minimap mirrors that guard exactly
 	# (unlike editor_has_minimap, which also checks a buffer line count that

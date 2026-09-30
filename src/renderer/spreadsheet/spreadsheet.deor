@@ -7,7 +7,7 @@
 # sheet either -- row_offset maps straight onto spreadsheet_rows). Owns a
 # full self-contained render path rather than sharing render_buffer_rows'
 # fused loop, same as the diff view does (see editor_render_diff in
-# rust_diff.deor) -- the two views only ever differ in what goes in the
+# diff_view.deor) -- the two views only ever differ in what goes in the
 # content column, and duplicating that column's handful of lines is
 # cheaper than threading a third render mode through the already-fragile
 # row-fusion loop.

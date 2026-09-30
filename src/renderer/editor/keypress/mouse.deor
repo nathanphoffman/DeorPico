@@ -199,7 +199,7 @@ macro mouse_drag_main_impl
 # nothing there to place a cursor in. sidebar_width only ever depends on
 # sidebar_focused (see compute_editor_layout), so total_line_count/
 # show_line_numbers/lint_output_visible/diff_lines here don't need to match
-# what rust_diff.deor itself passes for its own has_minimap/view_rows math --
+# what diff_view.deor itself passes for its own has_minimap/view_rows math --
 # only sidebar_width is read out of `layout` below.
 macro mouse_down_diff_impl
 	unsafe_macro_run use_consts
