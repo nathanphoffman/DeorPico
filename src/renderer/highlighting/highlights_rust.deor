@@ -1,16 +1,9 @@
 macro highlights_rust
 	# block comments
-	name as "comment"
-	start as "/\\*"
-	stop as "\\*/"
-	BoundedSpec bc_spec = (name, start, stop)
-	bc_escapable as false
-	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+	macro_run shared_highlighting_comment_block
 
 	# line comments
-	comment_name as "comment"
-	comment_pattern as "//.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_slashes
 
 	# strings -- deliberately no char-literal ('x') bounded rule: Rust also
 	# uses a leading single-quote for lifetimes ('a, 'static), and a bounded
@@ -18,12 +11,7 @@ macro highlights_rust
 	# without lookahead. Same tradeoff as skipping regex-literals in the TS
 	# rules -- leaving char literals uncolored is cheaper than the
 	# whole-file miscoloring an unterminated-quote misread would cause.
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec str_spec = (name, start, stop)
-	str_escapable as true
-	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+	macro_run shared_highlighting_string_double
 
 	# macro invocations (println!, vec!, ...) -- stops at "!", so it never
 	# overlaps the call-site rule below (which requires letters directly
@@ -33,9 +21,7 @@ macro highlights_rust
 	highlighter = xs_add_keyword(highlighter, macro_call_name, macro_call_pattern)
 
 	# call sites
-	call_name as "function"
-	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
-	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+	macro_run shared_highlighting_call
 
 	kw_name as "keyword"
 	kw_pattern as "\\b(as|async|await|break|const|continue|crate|dyn|else|enum|extern|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|type|unsafe|use|where|while|yield)\\b"
@@ -47,9 +33,7 @@ macro highlights_rust
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
 	# PascalCase user types, wherever used
-	struct_name as "type"
-	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
-	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+	macro_run shared_highlighting_type_pascal
 
 	# numeric literals, underscores and type suffixes allowed
 	num_name as "number"

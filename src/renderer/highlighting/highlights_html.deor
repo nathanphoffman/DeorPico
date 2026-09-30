@@ -1,26 +1,10 @@
 macro highlights_html
 	# comments -- text-reachable since these appear directly in page text
-	name as "comment"
-	start as "<!--"
-	stop as "-->"
-	BoundedSpec bc_spec = (name, start, stop)
-	bc_escapable as false
-	highlighter = xs_add_bounded_text(highlighter, bc_spec, bc_escapable)
+	macro_run shared_highlighting_comment_html
 
 	# attribute values
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double_raw
+	macro_run shared_highlighting_string_single_raw
 
 	# tag names -- xs_add_tag turns on tag scoping so a tag's children
 	# become a text scope where ordinary rules (including the string rules
@@ -36,6 +20,4 @@ macro highlights_html
 	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
 
 	# entities
-	entity_name as "macro_name"
-	entity_pattern as "&[A-Za-z#0-9]+;"
-	highlighter = xs_add_keyword(highlighter, entity_name, entity_pattern)
+	macro_run shared_highlighting_html_entity

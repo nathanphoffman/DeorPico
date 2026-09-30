@@ -10,12 +10,7 @@ macro highlights_json
 	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
 
 	# string values
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec str_spec = (name, start, stop)
-	str_escapable as true
-	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+	macro_run shared_highlighting_string_double
 
 	# literals
 	kw_name as "keyword"

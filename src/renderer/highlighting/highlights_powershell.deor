@@ -8,25 +8,12 @@ macro highlights_powershell
 	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
 
 	# line comments
-	comment_name as "comment"
-	comment_pattern as "#.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_hash
 
 	# strings -- double-quoted supports $var interpolation, single-quoted
 	# is fully literal
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
 
 	# variables -- $var and ${var}
 	var_name as "type"
@@ -54,6 +41,4 @@ macro highlights_powershell
 	highlighter = xs_add_keyword(highlighter, cmdlet_name, cmdlet_pattern)
 
 	# numeric literals
-	num_name as "number"
-	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
-	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+	macro_run shared_highlighting_number

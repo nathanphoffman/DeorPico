@@ -6,12 +6,7 @@ macro highlights_asm
 	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
 
 	# strings (db "...")
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec str_spec = (name, start, stop)
-	str_escapable as true
-	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+	macro_run shared_highlighting_string_double
 
 	# labels -- "^" anchors to the start of the current line, which is
 	# exactly what the highlighter tokenizes one row at a time anyway

@@ -1,24 +1,11 @@
 macro highlights_bash
 	# line comments -- Bash has no block comment
-	comment_name as "comment"
-	comment_pattern as "#.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_hash
 
 	# strings -- double-quoted supports $var interpolation and backslash
 	# escapes, single-quoted is fully literal (no escapes at all)
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
 
 	# variables -- $VAR and ${VAR}
 	var_name as "type"
@@ -26,9 +13,7 @@ macro highlights_bash
 	highlighter = xs_add_keyword(highlighter, var_name, var_pattern)
 
 	# function definitions / call sites
-	call_name as "function"
-	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
-	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+	macro_run shared_highlighting_call
 
 	kw_name as "keyword"
 	kw_pattern as "\\b(if|then|elif|else|fi|for|while|until|do|done|case|esac|function|select|in|time|coproc|break|continue|return|exit|export|local|readonly|declare|typeset|unset|shift|source|trap|eval|exec|wait)\\b"

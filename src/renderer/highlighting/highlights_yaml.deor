@@ -9,9 +9,7 @@ macro highlights_yaml
 	highlighter = xs_add_keyword(highlighter, doc_name, doc_pattern)
 
 	# comments
-	comment_name as "comment"
-	comment_pattern as "#.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_hash
 
 	# anchors (&name), aliases (*name), and tags (!!str, !CustomTag)
 	anchor_name as "type"
@@ -50,22 +48,12 @@ macro highlights_yaml
 	highlighter = xs_add_keyword_group(highlighter, flow_key_name, flow_key_pattern)
 
 	# double-quoted strings (backslash-escapable)
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
+	macro_run shared_highlighting_string_double
 
 	# single-quoted strings -- YAML escapes an embedded ' by doubling it
 	# ('') rather than with a backslash, so this is not escapable, same as
 	# TOML's literal strings.
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_single_raw
 
 	# booleans and null
 	kw_name as "keyword"

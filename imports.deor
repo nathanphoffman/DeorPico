@@ -161,6 +161,8 @@ import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/spreadsheet/calculation.deor"
 import "src/renderer/spreadsheet/spreadsheet.deor"
 
+# shared rule macros -- must be loaded before the per-language files that macro_run them
+import "src/renderer/highlighting/highlights_common.deor"
 import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"
 import "src/renderer/highlighting/highlights_jsx.deor"

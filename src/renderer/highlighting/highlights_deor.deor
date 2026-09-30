@@ -20,9 +20,7 @@ macro highlights_deor
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
 	# PascalCase user types (struct/enum/type-validator names), wherever used
-	struct_name as "type"
-	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
-	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)
+	macro_run shared_highlighting_type_pascal
 
 	# camelCase shape names (stringList, filterFunc, ...)
 	shape_name as "type"
@@ -36,14 +34,10 @@ macro highlights_deor
 	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
 
 	# numeric literals, underscores allowed as separators
-	num_name as "number"
-	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?\\b"
-	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+	macro_run shared_highlighting_number
 
 	# # line comments
-	comment_name as "comment"
-	comment_pattern as "#.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_hash
 
 	# flag C-style operators Deor doesn't use (is/is not/and/or replace these)
 	invalid_name as "invalid"
@@ -51,9 +45,4 @@ macro highlights_deor
 	highlighter = xs_add_keyword(highlighter, invalid_name, invalid_pattern)
 
 	# double-quoted strings, backslash-escapable
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec str_spec = (name, start, stop)
-	str_escapable as true
-	highlighter = xs_add_bounded(highlighter, str_spec, str_escapable)
+	macro_run shared_highlighting_string_double

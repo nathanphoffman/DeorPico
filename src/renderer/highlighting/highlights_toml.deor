@@ -1,8 +1,6 @@
 macro highlights_toml
 	# comments
-	comment_name as "comment"
-	comment_pattern as "#.*"
-	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
+	macro_run shared_highlighting_comment_hash
 
 	# table headers -- [section] and [[array of tables]], anchored to the
 	# start of the line so a "[" inside an inline array value never matches
@@ -13,12 +11,7 @@ macro highlights_toml
 	# triple-quoted multi-line strings -- registered before the plain
 	# single/double-quote rules below so they win the tokenizer's
 	# first-atom-registered tiebreak at the same opening-quote position
-	name as "string"
-	start as "\"\"\""
-	stop as "\"\"\""
-	BoundedSpec mstr_spec = (name, start, stop)
-	mstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, mstr_spec, mstr_escapable)
+	macro_run shared_highlighting_string_triple_double
 
 	name as "string"
 	start as "'''"
@@ -37,19 +30,8 @@ macro highlights_toml
 
 	# basic strings (escapable) and literal strings (not escapable, TOML
 	# has no backslash-escapes inside single quotes)
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
 
 	# booleans
 	kw_name as "keyword"

@@ -1,26 +1,10 @@
 macro highlights_css
 	# comments
-	name as "comment"
-	start as "/\\*"
-	stop as "\\*/"
-	BoundedSpec bc_spec = (name, start, stop)
-	bc_escapable as false
-	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
+	macro_run shared_highlighting_comment_block
 
 	# strings
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as true
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
 
 	# hex colors -- registered before the id-selector rule below so a color
 	# like #fff wins the tiebreak over being read as an id selector

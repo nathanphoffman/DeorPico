@@ -6,24 +6,11 @@ macro highlights_fortran90
 
 	# strings -- Fortran escapes a quote by doubling it, not with a
 	# backslash, same known limitation noted for C#'s verbatim strings
-	name as "string"
-	start as "\""
-	stop as "\""
-	BoundedSpec dstr_spec = (name, start, stop)
-	dstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)
-
-	name as "string"
-	start as "'"
-	stop as "'"
-	BoundedSpec sstr_spec = (name, start, stop)
-	sstr_escapable as false
-	highlighter = xs_add_bounded(highlighter, sstr_spec, sstr_escapable)
+	macro_run shared_highlighting_string_double_raw
+	macro_run shared_highlighting_string_single_raw
 
 	# call sites
-	call_name as "function"
-	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("
-	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
+	macro_run shared_highlighting_call
 
 	# Fortran is case-insensitive
 	kw_name as "keyword"
