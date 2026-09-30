@@ -1,0 +1,5 @@
+# numeric literals, no underscore separators
+macro shared_highlighting_number_plain
+	num_name as "number"
+	num_pattern as "\\b\\d+(\\.\\d+)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)

@@ -1,0 +1,5 @@
+# same as shared_highlighting_call, but "$" is allowed in the name (JS/TS)
+macro shared_highlighting_call_js
+	call_name as "function"
+	call_pattern as "\\b[A-Za-z_$][A-Za-z0-9_$]*\\("
+	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)

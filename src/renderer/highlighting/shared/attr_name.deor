@@ -1,0 +1,6 @@
+# attribute names tight against "=" (className=, onClick=) -- the "=" is
+# swallowed into the match since the regex crate has no lookahead
+macro shared_highlighting_attr_name
+	attr_name as "function"
+	attr_pattern as "\\b[a-zA-Z_][a-zA-Z0-9_-]*="
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)

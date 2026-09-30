@@ -1,0 +1,6 @@
+# JSX tag names ("<Foo", "</Foo", dotted "<Foo.Bar"), plus the fragment forms
+# "<>" and "</>". xs_add_tag also turns on tag scoping -- see the callers.
+macro shared_highlighting_jsx_tag
+	tag_name as "type"
+	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.]*|>)"
+	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)

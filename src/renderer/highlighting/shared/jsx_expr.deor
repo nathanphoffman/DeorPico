@@ -1,0 +1,3 @@
+# lets a bare "{" inside JSX text resume full code scanning until its matching "}"
+macro shared_highlighting_jsx_expr
+	highlighter = xs_enable_jsx_expr(highlighter)

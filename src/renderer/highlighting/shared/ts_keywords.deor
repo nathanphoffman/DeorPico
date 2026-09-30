@@ -1,0 +1,5 @@
+# TypeScript keywords
+macro shared_highlighting_ts_keywords
+	kw_name as "keyword"
+	kw_pattern as "\\b(abstract|as|asserts|async|await|break|case|catch|class|const|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|infer|instanceof|interface|is|keyof|let|module|namespace|new|null|of|out|override|private|protected|public|readonly|return|satisfies|set|static|super|switch|this|throw|true|try|type|typeof|undefined|unique|var|void|while|with|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)

@@ -1,0 +1,8 @@
+# `...` template literals -- ${} interpolation isn't separately colored
+macro shared_highlighting_string_backtick
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec tstr_spec = (name, start, stop)
+	tstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, tstr_spec, tstr_escapable)

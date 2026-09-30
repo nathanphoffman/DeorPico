@@ -1,0 +1,5 @@
+# @decorator / @Annotation
+macro shared_highlighting_decorator
+	anno_name as "macro_name"
+	anno_pattern as "@[A-Za-z_][A-Za-z0-9_.]*"
+	highlighter = xs_add_keyword(highlighter, anno_name, anno_pattern)

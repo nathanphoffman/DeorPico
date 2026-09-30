@@ -1,0 +1,8 @@
+# <!-- ... --> -- text-reachable, so it still matches inside tag text
+macro shared_highlighting_comment_html
+	name as "comment"
+	start as "<!--"
+	stop as "-->"
+	BoundedSpec html_bc_spec = (name, start, stop)
+	html_bc_escapable as false
+	highlighter = xs_add_bounded_text(highlighter, html_bc_spec, html_bc_escapable)

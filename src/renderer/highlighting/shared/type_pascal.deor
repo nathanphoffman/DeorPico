@@ -1,0 +1,5 @@
+# PascalCase identifiers, colored as types
+macro shared_highlighting_type_pascal
+	struct_name as "type"
+	struct_pattern as "\\b[A-Z][A-Za-z0-9_]*\\b"
+	highlighter = xs_add_keyword(highlighter, struct_name, struct_pattern)

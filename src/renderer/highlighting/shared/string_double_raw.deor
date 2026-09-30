@@ -1,0 +1,8 @@
+# "..." with no escapes (a backslash is just a character)
+macro shared_highlighting_string_double_raw
+	name as "string"
+	start as "\""
+	stop as "\""
+	BoundedSpec dstr_spec = (name, start, stop)
+	dstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, dstr_spec, dstr_escapable)

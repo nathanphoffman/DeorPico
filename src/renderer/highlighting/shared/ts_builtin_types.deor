@@ -1,0 +1,5 @@
+# TypeScript builtin primitive/utility types
+macro shared_highlighting_ts_builtin_types
+	builtin_name as "type"
+	builtin_pattern as "\\b(string|number|boolean|any|unknown|never|object|symbol|bigint)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)

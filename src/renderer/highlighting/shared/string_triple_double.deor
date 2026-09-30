@@ -1,0 +1,9 @@
+# """...""" -- register before shared_highlighting_string_double so it wins the
+# tokenizer's first-atom-registered tiebreak at the same opening quote
+macro shared_highlighting_string_triple_double
+	name as "string"
+	start as "\"\"\""
+	stop as "\"\"\""
+	BoundedSpec dtstr_spec = (name, start, stop)
+	dtstr_escapable as true
+	highlighter = xs_add_bounded(highlighter, dtstr_spec, dtstr_escapable)

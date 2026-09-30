@@ -161,8 +161,34 @@ import "src/renderer/editor/rust_diff.deor"
 import "src/renderer/spreadsheet/calculation.deor"
 import "src/renderer/spreadsheet/spreadsheet.deor"
 
-# shared rule macros -- must be loaded before the per-language files that macro_run them
-import "src/renderer/highlighting/highlights_common.deor"
+# Rules that are identical across several languages, one macro per file.
+# Each highlights_<language> macro macro_runs the ones it needs, in the
+# order it wants them registered -- order matters, since the tokenizer keeps
+# whichever rule was registered first when two match at the same position.
+# Must be loaded before the per-language files below.
+import "src/renderer/highlighting/shared/string_double.deor"
+import "src/renderer/highlighting/shared/string_double_raw.deor"
+import "src/renderer/highlighting/shared/string_single.deor"
+import "src/renderer/highlighting/shared/string_single_raw.deor"
+import "src/renderer/highlighting/shared/string_backtick.deor"
+import "src/renderer/highlighting/shared/string_triple_double.deor"
+import "src/renderer/highlighting/shared/comment_block.deor"
+import "src/renderer/highlighting/shared/comment_slashes.deor"
+import "src/renderer/highlighting/shared/comment_hash.deor"
+import "src/renderer/highlighting/shared/comment_html.deor"
+import "src/renderer/highlighting/shared/type_pascal.deor"
+import "src/renderer/highlighting/shared/call.deor"
+import "src/renderer/highlighting/shared/call_js.deor"
+import "src/renderer/highlighting/shared/number.deor"
+import "src/renderer/highlighting/shared/number_plain.deor"
+import "src/renderer/highlighting/shared/attr_name.deor"
+import "src/renderer/highlighting/shared/decorator.deor"
+import "src/renderer/highlighting/shared/html_entity.deor"
+import "src/renderer/highlighting/shared/jsx_tag.deor"
+import "src/renderer/highlighting/shared/jsx_expr.deor"
+import "src/renderer/highlighting/shared/ts_keywords.deor"
+import "src/renderer/highlighting/shared/ts_builtin_types.deor"
+
 import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"
 import "src/renderer/highlighting/highlights_jsx.deor"

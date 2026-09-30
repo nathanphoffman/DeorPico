@@ -1,0 +1,5 @@
+# entities (&amp; &#169; ...)
+macro shared_highlighting_html_entity
+	entity_name as "macro_name"
+	entity_pattern as "&[A-Za-z#0-9]+;"
+	highlighter = xs_add_keyword(highlighter, entity_name, entity_pattern)

@@ -1,0 +1,5 @@
+# // to end of line
+macro shared_highlighting_comment_slashes
+	comment_name as "comment"
+	comment_pattern as "//.*"
+	highlighter = xs_add_keyword(highlighter, comment_name, comment_pattern)
