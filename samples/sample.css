@@ -1,0 +1,23 @@
+/* CSS sample */
+@import url("theme.css");
+
+:root {
+  --accent: #ff8800;
+  --gap: 1.5rem;
+}
+
+body, .page > h1#top {
+  margin: 0 auto;
+  font-family: "Helvetica Neue", sans-serif;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+a:hover::after {
+  content: '→';
+  transition: opacity 250ms ease-in-out !important;
+}
+
+@media (max-width: 600px) {
+  .page { padding: calc(var(--gap) * 2) 10%; }
+}

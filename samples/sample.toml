@@ -1,0 +1,23 @@
+# TOML sample
+title = "Sample"
+enabled = true
+count = 1_000
+ratio = 3.14
+released = 2026-09-30T12:00:00Z
+
+[package]
+name = "sample"
+authors = ["Ada", 'Grace']
+"quoted key" = 'literal string'
+
+[dependencies.regex]
+version = "1.12"
+features = ["unicode", "perf"]
+
+[[bin]]
+name = "sample"
+path = "src/main.rs"
+
+description = """
+multi-line
+string"""

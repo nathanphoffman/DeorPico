@@ -1,0 +1,21 @@
+# YAML sample
+---
+name: sample
+version: "1.0.0"
+enabled: true
+retries: 3
+ratio: 0.75
+nothing: null
+single: 'literal string'
+anchors:
+  base: &base
+    image: alpine:3.20
+  child:
+    <<: *base
+    ports: [80, 443]
+steps:
+  - run: echo "hello"
+  - name: multi-line
+    script: |
+      make build
+      make test

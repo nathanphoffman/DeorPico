@@ -1,0 +1,23 @@
+# Deor sample -- comments, macros, structs, shapes, calls, numbers
+import "lib/string.deor"
+
+struct Point
+	int x
+	int y
+
+macro reset_point
+	x = 0
+	y = 0
+
+fn int add_points(Point first, Point second)
+	(x, y) in first
+	int total = x + y + 1_000
+	stringList names = ["alpha", "beta"]
+	for name in names
+		if name is not "alpha" and total > 2.5
+			total = total + len(name)
+	macro_run reset_point
+	return total
+
+# the next line shows the "invalid" color for C-style operators
+if total == 3 && done != true

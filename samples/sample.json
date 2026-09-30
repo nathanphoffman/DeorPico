@@ -1,0 +1,13 @@
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "private": true,
+  "count": 42,
+  "ratio": -3.14e2,
+  "nothing": null,
+  "tags": ["alpha", "beta"],
+  "nested": {
+    "enabled": false,
+    "escaped": "a \"quoted\" word"
+  }
+}

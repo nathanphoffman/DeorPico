@@ -1,0 +1,22 @@
+---
+// Astro sample -- TypeScript frontmatter
+import Layout from '../layouts/Layout.astro';
+import Counter from '../components/Counter.tsx';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props as Props;
+const posts: Array<string> = await fetchPosts(10);
+---
+<!-- markup below the fence -->
+<Layout title={title}>
+  <h1 class="heading">Don't miss {title} &amp; more</h1>
+  <Counter client:load start={1_000} />
+  <ul>
+    {posts.map((post) => <li set:html={post} />)}
+  </ul>
+  <pre is:raw>{ not an expression }</pre>
+  <>Fragment text</>
+</Layout>
