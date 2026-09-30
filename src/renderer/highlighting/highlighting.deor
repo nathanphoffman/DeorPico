@@ -74,9 +74,7 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_env
 	else if ext is PRISMA
 		macro_run highlights_prisma
-	else
-		# No custom rules for this extension yet -- plain, uncolored text.
-		highlighter = xs_make(TAB_WIDTH)
+	# Any other extension keeps the empty highlighter -- plain, uncolored text.
 
     return highlighter
 

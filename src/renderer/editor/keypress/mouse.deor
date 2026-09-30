@@ -124,7 +124,7 @@ macro mouse_down_editor_impl
 
 		# sidebar_key_activate drops focus after opening a file so keyboard
 		# Enter can start typing right away -- a mouse click should instead
-		# behave like F1 plus a selection: it stays focused so ^A/^K/^U can
+		# behave like F1 plus a selection: it stays focused so ^G/^K/^U can
 		# act on whatever was just clicked without a second click to refocus.
 		sidebar_focused = true
 	else if col is scrollbar_col
@@ -217,6 +217,6 @@ macro mouse_down_diff_impl
 		sidebar_focused = true
 		macro_run sidebar_activate_index
 
-		# Same as mouse_down_editor -- stay focused so ^A/^K/^U work on
+		# Same as mouse_down_editor -- stay focused so ^G/^K/^U work on
 		# whatever was just clicked without a second click to refocus.
 		sidebar_focused = true

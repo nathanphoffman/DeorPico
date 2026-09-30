@@ -1,6 +1,6 @@
 # Re-tags browse_entries/git_changes' git-status colors (not the tree
 # structure -- depth/expanded/name/path are untouched). Run whenever the
-# displayed git state might be stale: after a ^A stage/unstage (see
+# displayed git state might be stale: after a ^G stage/unstage (see
 # git_stage_toggle) and after a file is created/deleted/discarded.
 macro refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)

@@ -1,41 +1,47 @@
 
-# ^A while the sidebar has keyboard focus -- toggles stage/unstage on
-# whichever entry is highlighted, in the <GIT> section or the Files tree
-# (see git_stage_toggle in browse_git_actions.deor). A no-op on the <GIT> header itself
-# (git_selected is -1 there) -- there's no single file to stage.
-macro sidebar_stage_toggle
+# Binds path/is_dir/git_status from whichever entry is highlighted, in the
+# <GIT> section or the Files tree. has_selected_entry is false on the <GIT>
+# header (git_selected is -1 there) and on the root row -- there's no single
+# file to act on.
+unsafe_macro bind_highlighted_sidebar_entry
+	bool has_selected_entry = false
+	FileEntry selected = blank_file_entry()
 	if sidebar_on_git
 		if git_selected > (0 - 1) and git_selected < len(git_changes)
-			FileEntry selected = git_changes at git_selected
-			(path, is_dir, git_status) in selected
-			macro_run git_stage_toggle
+			selected = git_changes at git_selected
+			has_selected_entry = true
 	else if not sidebar_on_root and len(browse_entries) > 0
-		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir, git_status) in selected
+		selected = browse_entries at browse_selected
+		has_selected_entry = true
+	(path, is_dir, git_status) in selected
+
+# ^G while the sidebar has keyboard focus -- toggles stage/unstage on the
+# highlighted entry (see git_stage_toggle in browse_git_actions.deor).
+macro sidebar_stage_toggle
+	unsafe_macro_run bind_highlighted_sidebar_entry
+	if has_selected_entry
 		macro_run git_stage_toggle
 
 # ^K while the sidebar has keyboard focus -- see file_delete_entry
-# in browse_delete.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
+# in browse_delete.deor.
 macro sidebar_delete_entry
-	if sidebar_on_git
-		if git_selected > (0 - 1) and git_selected < len(git_changes)
-			FileEntry selected = git_changes at git_selected
-			(path, is_dir) in selected
-			macro_run file_delete_entry
-	else if not sidebar_on_root and len(browse_entries) > 0
-		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir) in selected
+	unsafe_macro_run bind_highlighted_sidebar_entry
+	if has_selected_entry
 		macro_run file_delete_entry
 
 # ^U while the sidebar has keyboard focus -- see discard_git_changes_entry
-# in browse_git_actions.deor. A no-op on the <GIT> header, same as sidebar_stage_toggle.
+# in browse_git_actions.deor.
 macro sidebar_discard_git_changes
-	if sidebar_on_git
-		if git_selected > (0 - 1) and git_selected < len(git_changes)
-			FileEntry selected = git_changes at git_selected
-			(path, is_dir, git_status) in selected
-			macro_run discard_git_changes_entry
-	else if not sidebar_on_root and len(browse_entries) > 0
-		FileEntry selected = browse_entries at browse_selected
-		(path, is_dir, git_status) in selected
+	unsafe_macro_run bind_highlighted_sidebar_entry
+	if has_selected_entry
 		macro_run discard_git_changes_entry
+
+# A FileEntry with every field empty -- stands in when nothing is highlighted.
+fn FileEntry blank_file_entry()
+	string name = ""
+	string path = ""
+	bool is_dir = false
+	int depth = 0
+	bool expanded = false
+	string git_status = ""
+	return (name, path, is_dir, depth, expanded, git_status)

@@ -6,31 +6,29 @@ install_dir := env_var('HOME') / '.local/bin'
 
 import? 'justfile.local'
 
-run *args:
+# Transpiles the Deor source into build/main.rs, which cargo then compiles.
+transpile:
     mkdir -p build
     DEOR_LIB=lib deor main.deor build/main.rs
+
+run *args: transpile
     cargo run -- {{args}}
 
-build:
-    mkdir -p build
-    DEOR_LIB=lib deor main.deor build/main.rs
+build: transpile
     cargo build
 
 # Wipes build/ (deor's transpiled output) and target/ (cargo's incremental
 # cache) first -- `build` on its own always regenerates build/main.rs fresh
 # but reuses target/ incrementally, so this is the one to reach for when
 # ruling out a stale Cargo cache as a variable.
-rebuild:
+rebuild: clean build
+
+clean:
     rm -rf build target
-    mkdir -p build
-    DEOR_LIB=lib deor main.deor build/main.rs
-    cargo build
 
 # Builds a release binary and installs it as `dpico` on your PATH --
 # usage: dpico [filename] [working_folder]
-install:
-    mkdir -p build
-    DEOR_LIB=lib deor main.deor build/main.rs
+install: transpile
     cargo build --release
     mkdir -p {{install_dir}}
     cp target/release/DeorPico {{install_dir}}/dpico
