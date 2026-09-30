@@ -16,5 +16,3 @@ macro handle_page_and_mouse
 		macro_run scroll_up_impl
 	else if kind is "mouse_scroll_down"
 		macro_run scroll_down_impl
-    #else if kind if "shift_mouse_down"
-     #   macro_run shift_mouse_down
