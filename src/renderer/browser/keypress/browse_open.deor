@@ -53,6 +53,10 @@ macro load_file_into_buffer
 		opened_rows = csv_parse_rows(filename)
 	spreadsheet_rows = opened_rows
 	spreadsheet_view_active = spreadsheet_active
+	spreadsheet_sel_row = 0
+	spreadsheet_sel_col = 0
+	spreadsheet_scroll_row = 0
+	spreadsheet_scroll_col = 0
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

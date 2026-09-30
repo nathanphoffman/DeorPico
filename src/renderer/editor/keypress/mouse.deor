@@ -127,6 +127,12 @@ macro mouse_down_editor_impl
 		# behave like F1 plus a selection: it stays focused so ^G/^K/^U can
 		# act on whatever was just clicked without a second click to refocus.
 		sidebar_focused = true
+	# The spreadsheet view has no scrollbar or text buffer -- every click
+	# right of the sidebar picks a cell instead.
+	else if spreadsheet_active and spreadsheet_view_active
+		col = col - sidebar_width
+		sidebar_focused = false
+		macro_run spreadsheet_mouse_down
 	else if col is scrollbar_col
 		sidebar_focused = false
 		scrollbar_dragging = true

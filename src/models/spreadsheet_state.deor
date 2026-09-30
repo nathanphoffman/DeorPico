@@ -26,3 +26,13 @@ struct SpreadsheetState
 	# this; opening any file resets it back to true (default to
 	# spreadsheet) regardless of what it was left at for the previous file.
 	bool spreadsheet_view_active
+
+	# The highlighted cell (row/column index into spreadsheet_rows), moved
+	# by the arrow keys or a mouse click -- see handle_spreadsheet_mode.
+	int spreadsheet_sel_row
+	int spreadsheet_sel_col
+
+	# First data row / first column drawn at the top-left of the sheet,
+	# kept following the selected cell (see scroll_spreadsheet_to_selection).
+	int spreadsheet_scroll_row
+	int spreadsheet_scroll_col

@@ -101,7 +101,11 @@ unsafe_macro initialize_spreadsheet
 		spreadsheet_rows = csv_parse_rows(filename)
 	string spreadsheet_path = s_join([filename])
 	bool spreadsheet_view_active = spreadsheet_active
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active)
+	spreadsheet_sel_row as 0
+	spreadsheet_sel_col as 0
+	spreadsheet_scroll_row as 0
+	spreadsheet_scroll_col as 0
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col)
 
 unsafe_macro initialize_filter
 	filter_active as false

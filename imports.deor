@@ -20,7 +20,6 @@ import "lib/lint.deor"
 import "lib/dirsearch.deor"
 
 import "src/rust_helper.deor"
-import "src/spreadsheet.deor"
 
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"
@@ -44,6 +43,7 @@ import "src/models/app_state.deor"
 # Macros must be loaded first
 import "src/consts.deor"
 import "src/keymap.deor"
+import "src/spreadsheet.deor"
 
 # Per-key-action logic, organized by which part of the screen it affects --
 # events.deor macro_runs these directly, no pass-through layer.

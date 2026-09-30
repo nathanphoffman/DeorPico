@@ -1,10 +1,9 @@
 
 # Spreadsheet view (opened for .csv files, see f_is_spreadsheet_ext) --
 # renders the sidebar exactly like the normal editor view, and one
-# spreadsheet_rows row per screen row in the content area, each row's
-# cells joined with " | " rather than laid out in real fixed-width
-# columns (no per-column width computation yet, no scrolling within the
-# sheet either -- row_offset maps straight onto spreadsheet_rows). Owns a
+# spreadsheet_rows row per screen row in the content area, laid out in
+# fixed-width cells (no per-column width computation yet), scrolled so the
+# selected cell stays visible (see scroll_spreadsheet_to_selection). Owns a
 # full self-contained render path rather than sharing render_buffer_rows'
 # fused loop, same as the diff view does (see editor_render_diff in
 # diff_view.deor) -- the two views only ever differ in what goes in the
@@ -14,18 +13,9 @@
 unsafe_macro setup_spreadsheet_view_layout
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
-
-	bool show_line_numbers = false
-	bool lint_output_visible = false
-	bool search_active = false
-	int total_line_count = 0
-	stringList diff_lines = empty
-	EditorLayoutInput layout_input = (rows, cols, total_line_count, show_line_numbers, lint_output_visible, diff_lines, sidebar_focused, search_active)
-	EditorLayout layout = compute_editor_layout(layout_input)
-	(sidebar_width) in layout
-	int content_width = cols - sidebar_width
-	if content_width < 1
-		content_width = 1
+	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
+	int sidebar_width = cols - content_width
+	int visible_cols = spreadsheet_visible_columns(content_width)
 
 	string screen = ANSI_HOME
 
@@ -36,49 +26,64 @@ macro render_spreadsheet_sidebar_column
 	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 	screen = s_join([screen, sidebar_row_piece(row_input)])
 
-# Content column piece for the current row_offset -- that row's cells
-# (spreadsheet_rows at row_offset) joined with " | ", blank-padded once
-# row_offset runs past the sheet's last row.
+# Content column piece for the current row_offset -- the cells of
+# spreadsheet_rows at (spreadsheet_scroll_row + row_offset), starting from
+# spreadsheet_scroll_col, each padded to SPREADSHEET_COLUMN_WIDTH between
+# separators; blank once past the sheet's last row. Built as plain text
+# first so truncating/padding to content_width can use len(), then the
+# selected cell's span gets wrapped in reverse video afterward.
 macro render_spreadsheet_row
-
-	const int COLUMN_WIDTH = 20
-	const string SPACE = " "
-	const string PIPE = " | "
+	int separator_width = len(SPREADSHEET_SEPARATOR)
+	int cell_stride = SPREADSHEET_COLUMN_WIDTH + separator_width
+	int data_row = spreadsheet_scroll_row + row_offset
 
 	string content = ""
-	if row_offset < spreadsheet_row_count
-		stringList row_cells = spreadsheet_rows at row_offset
+	if data_row < spreadsheet_row_count
+		stringList row_cells = spreadsheet_rows at data_row
+		int cell_count = len(row_cells)
 
-		int count_idx = 0
-		for cell in row_cells
-			string cell_content = format_cell(row_cells, cell, count_idx)
-			content_length as len(cell_content)
-			if content_length > COLUMN_WIDTH
+		# One extra column past what fully fits, so a partly visible cell
+		# at the right edge still shows its start.
+		int draw_count = spreadsheet_column_count_all - spreadsheet_scroll_col
+		if draw_count > visible_cols + 1
+			draw_count = visible_cols + 1
+
+		content = s_join([SPREADSHEET_SEPARATOR])
+		for draw_idx in range(draw_count)
+			int col_idx = spreadsheet_scroll_col + draw_idx
+			string cell_content = ""
+			if col_idx < cell_count
+				string raw_cell = row_cells at col_idx
+				cell_content = format_cell(row_cells, raw_cell, col_idx)
+			if len(cell_content) > SPREADSHEET_COLUMN_WIDTH
 				cell_content = "ERROR"
+			cell_content = s_pad_right(cell_content, SPREADSHEET_COLUMN_WIDTH)
+			content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
 
-			for idx in range(COLUMN_WIDTH - content_length)
-				cell_content = s_join([cell_content, SPACE])
-
-			content = s_join([content, cell_content, PIPE])
-			count_idx = count_idx + 1
-
-		content = s_join([PIPE, content])
-
-		# content = s_join_with(row_cells, separator)
 	if len(content) > content_width
 		int trunc_start = 0
 		content = s_substring(content, trunc_start, content_width)
 	content = s_pad_right(content, content_width)
+
+	bool is_selected_row = data_row is spreadsheet_sel_row and data_row < spreadsheet_row_count
+	if is_selected_row and spreadsheet_sel_col >= spreadsheet_scroll_col
+		int sel_start = separator_width + (spreadsheet_sel_col - spreadsheet_scroll_col) * cell_stride
+		int sel_stop = sel_start + SPREADSHEET_COLUMN_WIDTH
+		if sel_stop > content_width
+			sel_stop = content_width
+		if sel_start < content_width
+			int line_start = 0
+			string before_sel = s_substring(content, line_start, sel_start)
+			string sel_text = s_substring(content, sel_start, sel_stop)
+			string after_sel = s_substring(content, sel_stop, content_width)
+			content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
+
 	screen = s_join([screen, content])
 
 # Iterates every visible row, appending the sidebar column then the content
 # column, same shape as render_buffer_rows' main loop.
 macro render_spreadsheet_rows
-	bool has_minimap = false
-	bool lint_output_visible = false
-	bool search_active = false
-	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible, search_active)
-	int view_rows = editor_view_rows(rows, reserved_rows)
+	int view_rows = spreadsheet_view_rows(rows)
 
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
@@ -93,6 +98,7 @@ macro render_spreadsheet_rows
 	filterMatchList filter_matches = empty
 
 	int spreadsheet_row_count = len(spreadsheet_rows)
+	int spreadsheet_column_count_all = spreadsheet_column_count(spreadsheet_rows)
 
 	for row_offset in range(view_rows)
 		bool is_top_row = row_offset is 0
@@ -105,7 +111,11 @@ macro render_spreadsheet_rows
 		screen = s_join([screen, ANSI_CRLF])
 
 macro render_spreadsheet_status_and_notice
-	string status_line = s_join(["-- ", spreadsheet_path, " (spreadsheet, placeholder) --"])
+	int display_row = spreadsheet_sel_row + 1
+	int display_col = spreadsheet_sel_col + 1
+	string row_text = c_int_to_string(display_row)
+	string col_text = c_int_to_string(display_col)
+	string status_line = s_join(["-- ", spreadsheet_path, " (spreadsheet) -- row ", row_text, ", col ", col_text, " --"])
 	if len(status_line) > cols
 		int status_trunc_start = 0
 		status_line = s_substring(status_line, status_trunc_start, cols)
@@ -124,7 +134,7 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col) in spreadsheet
 	(notice) in state
 	unsafe_macro_run use_consts
 	unsafe_macro_run use_ansi_codes
