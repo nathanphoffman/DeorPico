@@ -1,6 +1,6 @@
 
-# One row of a parsed .csv -- each element is a cell, split naively on
-# commas (see csv_parse_rows). Nesting stringList as a shape's element
+# One row of a parsed .csv -- each element is a cell, split on commas
+# outside quotes (see csv_split_line). Nesting stringList as a shape's element
 # type is fine; Deor just needs a named type, not a primitive.
 shape csvRowList = list of stringList
 

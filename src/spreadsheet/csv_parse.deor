@@ -1,0 +1,68 @@
+
+# Reading .csv files into spreadsheet_rows.
+
+# One character inside a quoted cell: a lone quote closes the cell's
+# quoting, a doubled quote ("") is a literal " (skip_next steps over the
+# second one), anything else -- commas included -- is part of the cell.
+macro csv_read_quoted_char
+	if chr is QUOTE
+		int next_idx = idx + 1
+		string next_chr = ""
+		if next_idx < char_count
+			next_chr = line_chars at next_idx
+		if next_chr is QUOTE
+			current = s_join([current, QUOTE])
+			skip_next = true
+		else
+			in_quotes = false
+	else
+		current = s_join([current, chr])
+
+# Which file extensions open into the spreadsheet view instead of the
+# normal text editor -- checked both at launch (state_init.deor) and on
+# every mid-session file open (load_file_into_buffer in browser/keypress/browse_open.deor).
+fn bool f_is_spreadsheet_ext(string ext)
+	if ext is "csv"
+		return true
+	return false
+
+# Whole-file parse, one line per row -- see csv_split_line for how each
+# line is split into cells. A quoted field spanning multiple lines isn't
+# supported yet (each line is still parsed on its own).
+fn csvRowList csv_parse_rows(string path)
+	stringList file_lines = f_lines(path)
+	csvRowList rows = empty
+	for line in file_lines
+		stringList cells = csv_split_line(line)
+		rows at end = cells
+	return rows
+
+# Splits one CSV line into cells: commas separate cells unless inside
+# double quotes, the quotes themselves are dropped, and a doubled quote
+# ("") inside a quoted cell is a literal " character.
+fn stringList csv_split_line(string line)
+	const string QUOTE = "\""
+	const string COMMA = ","
+	stringList line_chars = s_chars(line)
+	int char_count = len(line_chars)
+
+	stringList cells = empty
+	string current = ""
+	bool in_quotes = false
+	bool skip_next = false
+	for idx in range(char_count)
+		if skip_next
+			skip_next = false
+		else
+			string chr = line_chars at idx
+			if in_quotes
+				macro_run csv_read_quoted_char
+			else if chr is QUOTE
+				in_quotes = true
+			else if chr is COMMA
+				cells at end = current
+				current = ""
+			else
+				current = s_join([current, chr])
+	cells at end = current
+	return cells

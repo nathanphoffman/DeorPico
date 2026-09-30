@@ -1,0 +1,48 @@
+
+# Entry points main() uses to route keys to the spreadsheet instead of
+# the text editor.
+
+# Whether the spreadsheet handles this key itself (spreadsheet_handle_key)
+# or main() hands it to the normal editor handler. Only while the sheet is
+# actually showing -- and even then, app-wide actions (quit, F1, ^D, ^T,
+# F5, lint ticks) and anything the focused sidebar handles still go to the
+# editor handler, which already owns them. A click right of the sidebar
+# always belongs to the sheet, even while the sidebar has focus.
+fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
+	(browser, main_panel, spreadsheet) in state
+	(sidebar_focused) in browser
+	(diff) in main_panel
+	(diffing) in diff
+	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
+	(kind, col) in key
+
+	if not spreadsheet_active or not spreadsheet_view_active or diffing
+		return false
+
+	if kind is "mouse_down"
+		TermSize term_size = xt_size()
+		(cols, rows) in term_size
+		int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
+		return col >= sidebar_width
+
+	if sidebar_focused
+		return false
+
+	if kind is "tick" or kind is "quit" or kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
+		return false
+	return true
+
+# The spreadsheet's own key handler -- only unpacks the sidebar focus flag
+# and the spreadsheet state, leaving the text editor's state untouched.
+fn AppState spreadsheet_handle_key(AppState state, KeyEvent key)
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col) in spreadsheet
+	(sidebar_focused) in browser
+	(kind, col, row) in key
+
+	macro_run handle_spreadsheet_mode
+
+	SidebarState browser = browser with (sidebar_focused)
+	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	return next_state

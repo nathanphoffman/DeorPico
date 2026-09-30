@@ -1,0 +1,28 @@
+
+# Selects the cell under a click (spreadsheet_owns_key only routes clicks
+# right of the sidebar here) and takes keyboard focus off the sidebar.
+# Clicks on the status/notice rows or below the last data row are ignored.
+macro spreadsheet_mouse_down
+	unsafe_macro_run use_consts
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+	int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
+	int content_col = col - sidebar_width
+	int clicked_row = spreadsheet_scroll_row + row
+	int row_count = len(spreadsheet_rows)
+	sidebar_focused = false
+
+	# Each cell is drawn as SEPARATOR + cell, so shifting past the leading
+	# separator and dividing by the stride gives the column; a click on a
+	# separator counts toward the cell to its left.
+	int separator_width = len(SPREADSHEET_SEPARATOR)
+	int cell_stride = SPREADSHEET_COLUMN_WIDTH + separator_width
+	int cell_x = content_col - separator_width
+	int clicked_col = spreadsheet_scroll_col
+	if cell_x > 0
+		clicked_col = spreadsheet_scroll_col + cell_x / cell_stride
+
+	if row < view_rows and clicked_row < row_count
+		spreadsheet_sel_row = clicked_row
+		spreadsheet_sel_col = clicked_col

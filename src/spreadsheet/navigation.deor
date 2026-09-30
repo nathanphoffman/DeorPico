@@ -1,0 +1,95 @@
+
+# ^T -- swaps the main panel between the spreadsheet placeholder and the
+# normal text editor for the currently open .csv. No-op on a non-.csv file
+# (spreadsheet_active false) since there's nothing to swap to/from.
+macro toggle_spreadsheet_view_impl
+	if spreadsheet_active
+		spreadsheet_view_active = not spreadsheet_view_active
+
+# Every key spreadsheet_handle_key receives -- moves the highlighted cell.
+# Kinds not listed here (typing, cut/paste/undo, ...) are dropped on
+# purpose: they'd otherwise silently edit the hidden text buffer behind
+# the sheet.
+macro handle_spreadsheet_mode
+	unsafe_macro_run use_consts
+	TermSize term_size = xt_size()
+	(rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+
+	if kind is "up"
+		spreadsheet_sel_row = spreadsheet_sel_row - 1
+	else if kind is "down"
+		spreadsheet_sel_row = spreadsheet_sel_row + 1
+	else if kind is "left"
+		spreadsheet_sel_col = spreadsheet_sel_col - 1
+	else if kind is "right" or kind is "tab"
+		spreadsheet_sel_col = spreadsheet_sel_col + 1
+	else if kind is "page_up"
+		spreadsheet_sel_row = spreadsheet_sel_row - view_rows
+	else if kind is "page_down"
+		spreadsheet_sel_row = spreadsheet_sel_row + view_rows
+	else if kind is "home"
+		spreadsheet_sel_col = 0
+	else if kind is "mouse_down"
+		macro_run spreadsheet_mouse_down
+	else if kind is "mouse_scroll_up"
+		spreadsheet_scroll_row = spreadsheet_scroll_row - SCROLL_WHEEL_AMOUNT
+	else if kind is "mouse_scroll_down"
+		spreadsheet_scroll_row = spreadsheet_scroll_row + SCROLL_WHEEL_AMOUNT
+
+	macro_run clamp_spreadsheet_selection
+
+	# The wheel scrolls the sheet on its own without dragging the selection
+	# along, same as the text editor -- everything else (key moves, clicks)
+	# pulls the view back to wherever the selected cell is.
+	if kind is "mouse_scroll_up" or kind is "mouse_scroll_down"
+		macro_run clamp_spreadsheet_scroll
+	else
+		macro_run scroll_spreadsheet_to_selection
+
+# Keeps the selected cell inside the sheet -- rows can have different cell
+# counts, so the column is bounded by the widest row rather than the
+# selected row itself (short rows just draw empty cells past their end).
+macro clamp_spreadsheet_selection
+	int row_count = len(spreadsheet_rows)
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	if spreadsheet_sel_row > row_count - 1
+		spreadsheet_sel_row = row_count - 1
+	if spreadsheet_sel_row < 0
+		spreadsheet_sel_row = 0
+	if spreadsheet_sel_col > column_count - 1
+		spreadsheet_sel_col = column_count - 1
+	if spreadsheet_sel_col < 0
+		spreadsheet_sel_col = 0
+
+# Keeps a wheel scroll between the top of the sheet and its last row
+# sitting at the bottom of the screen.
+macro clamp_spreadsheet_scroll
+	TermSize term_size = xt_size()
+	(rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+	int row_count = len(spreadsheet_rows)
+	int max_scroll_row = row_count - view_rows
+	if spreadsheet_scroll_row > max_scroll_row
+		spreadsheet_scroll_row = max_scroll_row
+	if spreadsheet_scroll_row < 0
+		spreadsheet_scroll_row = 0
+
+# Scrolls just far enough that the selected cell is on screen, both
+# vertically (rows) and horizontally (whole columns).
+macro scroll_spreadsheet_to_selection
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
+	int visible_cols = spreadsheet_visible_columns(content_width)
+
+	if spreadsheet_sel_row < spreadsheet_scroll_row
+		spreadsheet_scroll_row = spreadsheet_sel_row
+	if spreadsheet_sel_row > spreadsheet_scroll_row + view_rows - 1
+		spreadsheet_scroll_row = spreadsheet_sel_row - view_rows + 1
+
+	if spreadsheet_sel_col < spreadsheet_scroll_col
+		spreadsheet_scroll_col = spreadsheet_sel_col
+	if spreadsheet_sel_col > spreadsheet_scroll_col + visible_cols - 1
+		spreadsheet_scroll_col = spreadsheet_sel_col - visible_cols + 1
