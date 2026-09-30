@@ -1,0 +1,11 @@
+id,name,department,salary,start_date,active
+1,Alice Johnson,Engineering,98000,2019-03-15,true
+2,Bob Smith,Marketing,72000,2020-07-01,true
+3,Carol White,Engineering,105000,2017-11-20,true
+4,Dan Brown,Sales,64000,2021-02-10,false
+5,Eve Davis,Sales,69500,2018-05-30,true
+6,Frank Miller,Support,51000,2022-09-12,true
+7,Grace Lee,Engineering,112000,2016-01-04,true
+8,Henry Wilson,Marketing,,2023-04-18,true
+9,"Ivy Chen, PhD",Research,121000,2015-08-22,true
+10,Jack Taylor,Support,48500,2024-01-08,false
