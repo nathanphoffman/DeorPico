@@ -37,7 +37,7 @@ fn RenderedLine render_visible_line(string line, VisibleColRange visible_range, 
 	(hl_start, hl_end) in highlight
 	(start_visible_col, end_visible_col) in visible_range
 
-    const string ANSI_ESCAPE_CHARACTER = "m"
+	const string ANSI_ESCAPE_CHARACTER = "m"
 
 	stringList chars = s_chars(line)
 	int char_count = len(chars)

@@ -66,11 +66,11 @@ macro render_buffer_rows
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
 
-        macro_run render_sidebar_column
+		macro_run render_sidebar_column
 
 		int buffer_row_index = buffer_row
 		bool is_first_segment = seg_index is 0
-        macro_run render_gutter_column
+		macro_run render_gutter_column
 
 		int row_visible_cols = 0
 		bool is_eof_padding_row = false

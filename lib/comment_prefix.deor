@@ -3,51 +3,51 @@
 # two stay in agreement about which extension means which language without
 # coupling their actual behavior together.
 unsafe_macro language_ext_consts
-    const string DEOR = "deor"
-    const string CSHARP = "cs"
-    const string JSX = "jsx"
-    const string TYPESCRIPT = "ts"
-    const string TSX = "tsx"
-    const string JAVASCRIPT = "js"
-    const string MJS = "mjs"
-    const string HTML = "html"
-    const string HTM = "htm"
-    const string VUE = "vue"
-    const string ASTRO = "astro"
-    const string CSS = "css"
-    const string PYTHON = "py"
-    const string PYX = "pyx"
-    const string RUST = "rs"
-    const string C_SRC = "c"
-    const string C_HEADER = "h"
-    const string CPP1 = "cpp"
-    const string CPP2 = "cc"
-    const string CPP3 = "cxx"
-    const string CPP_HEADER1 = "hpp"
-    const string CPP_HEADER2 = "hh"
-    const string FORTRAN90 = "f90"
-    const string REXX1 = "rexx"
-    const string REXX2 = "rex"
-    const string CMM = "cmm"
-    const string MOJO = "mojo"
-    const string GOLANG = "go"
-    const string ASM1 = "asm"
-    const string ASM2 = "s"
-    const string BASH1 = "sh"
-    const string BASH2 = "bash"
-    const string PHP = "php"
-    const string JAVA = "java"
-    const string POWERSHELL = "ps1"
-    const string MARKDOWN1 = "md"
-    const string MARKDOWN2 = "markdown"
-    const string JSON = "json"
-    const string TOML = "toml"
-    const string MTS = "mts"
-    const string SWCRC = "swcrc"
-    const string ENV = "env"
-    const string YML = "yml"
-    const string YAML = "yaml"
-    const string PRISMA = "prisma"
+	const string DEOR = "deor"
+	const string CSHARP = "cs"
+	const string JSX = "jsx"
+	const string TYPESCRIPT = "ts"
+	const string TSX = "tsx"
+	const string JAVASCRIPT = "js"
+	const string MJS = "mjs"
+	const string HTML = "html"
+	const string HTM = "htm"
+	const string VUE = "vue"
+	const string ASTRO = "astro"
+	const string CSS = "css"
+	const string PYTHON = "py"
+	const string PYX = "pyx"
+	const string RUST = "rs"
+	const string C_SRC = "c"
+	const string C_HEADER = "h"
+	const string CPP1 = "cpp"
+	const string CPP2 = "cc"
+	const string CPP3 = "cxx"
+	const string CPP_HEADER1 = "hpp"
+	const string CPP_HEADER2 = "hh"
+	const string FORTRAN90 = "f90"
+	const string REXX1 = "rexx"
+	const string REXX2 = "rex"
+	const string CMM = "cmm"
+	const string MOJO = "mojo"
+	const string GOLANG = "go"
+	const string ASM1 = "asm"
+	const string ASM2 = "s"
+	const string BASH1 = "sh"
+	const string BASH2 = "bash"
+	const string PHP = "php"
+	const string JAVA = "java"
+	const string POWERSHELL = "ps1"
+	const string MARKDOWN1 = "md"
+	const string MARKDOWN2 = "markdown"
+	const string JSON = "json"
+	const string TOML = "toml"
+	const string MTS = "mts"
+	const string SWCRC = "swcrc"
+	const string ENV = "env"
+	const string YML = "yml"
+	const string YAML = "yaml"
+	const string PRISMA = "prisma"
 
 # Extension for highlighting/comment-prefix purposes, given a full path.
 #
@@ -59,64 +59,64 @@ unsafe_macro language_ext_consts
 # unrecognized/no-highlighting fallback. This special-cases their basenames
 # before falling back to the normal extension for everything else.
 fn string resolve_highlight_ext(string filename)
-    unsafe_macro_run language_ext_consts
+	unsafe_macro_run language_ext_consts
 
-    string base = f_basename(filename)
-    env_dot as ".env"
-    env_prefix as ".env."
-    swcrc_dot as ".swcrc"
+	string base = f_basename(filename)
+	env_dot as ".env"
+	env_prefix as ".env."
+	swcrc_dot as ".swcrc"
 
-    if base is env_dot or s_starts_with(base, env_prefix)
-        return ENV
-    else if base is swcrc_dot
-        return SWCRC
-    else
-        return f_extension(filename)
+	if base is env_dot or s_starts_with(base, env_prefix)
+		return ENV
+	else if base is swcrc_dot
+		return SWCRC
+	else
+		return f_extension(filename)
 
 # Returns the line-comment prefix for a file extension (e.g. "//" for "rs"),
 # or "" if the language has no single-line comment form (or is unrecognized).
 fn string comment_prefix_for_ext(string ext)
-    unsafe_macro_run language_ext_consts
+	unsafe_macro_run language_ext_consts
 
-    hash as "#"
-    slash as "//"
-    semi as ";"
-    bang as "!"
+	hash as "#"
+	slash as "//"
+	semi as ";"
+	bang as "!"
 
-    StringMap prefixes = h_make()
-    prefixes = h_set(prefixes, DEOR, hash)
-    prefixes = h_set(prefixes, PYTHON, hash)
-    prefixes = h_set(prefixes, PYX, hash)
-    prefixes = h_set(prefixes, MOJO, hash)
-    prefixes = h_set(prefixes, BASH1, hash)
-    prefixes = h_set(prefixes, BASH2, hash)
-    prefixes = h_set(prefixes, POWERSHELL, hash)
-    prefixes = h_set(prefixes, TOML, hash)
-    prefixes = h_set(prefixes, ENV, hash)
-    prefixes = h_set(prefixes, YML, hash)
-    prefixes = h_set(prefixes, YAML, hash)
-    prefixes = h_set(prefixes, CSHARP, slash)
-    prefixes = h_set(prefixes, JSX, slash)
-    prefixes = h_set(prefixes, TYPESCRIPT, slash)
-    prefixes = h_set(prefixes, TSX, slash)
-    prefixes = h_set(prefixes, MTS, slash)
-    prefixes = h_set(prefixes, JAVASCRIPT, slash)
-    prefixes = h_set(prefixes, MJS, slash)
-    prefixes = h_set(prefixes, RUST, slash)
-    prefixes = h_set(prefixes, C_SRC, slash)
-    prefixes = h_set(prefixes, C_HEADER, slash)
-    prefixes = h_set(prefixes, CPP1, slash)
-    prefixes = h_set(prefixes, CPP2, slash)
-    prefixes = h_set(prefixes, CPP3, slash)
-    prefixes = h_set(prefixes, CPP_HEADER1, slash)
-    prefixes = h_set(prefixes, CPP_HEADER2, slash)
-    prefixes = h_set(prefixes, GOLANG, slash)
-    prefixes = h_set(prefixes, JAVA, slash)
-    prefixes = h_set(prefixes, PHP, slash)
-    prefixes = h_set(prefixes, CMM, slash)
-    prefixes = h_set(prefixes, PRISMA, slash)
-    prefixes = h_set(prefixes, ASM1, semi)
-    prefixes = h_set(prefixes, ASM2, semi)
-    prefixes = h_set(prefixes, FORTRAN90, bang)
+	StringMap prefixes = h_make()
+	prefixes = h_set(prefixes, DEOR, hash)
+	prefixes = h_set(prefixes, PYTHON, hash)
+	prefixes = h_set(prefixes, PYX, hash)
+	prefixes = h_set(prefixes, MOJO, hash)
+	prefixes = h_set(prefixes, BASH1, hash)
+	prefixes = h_set(prefixes, BASH2, hash)
+	prefixes = h_set(prefixes, POWERSHELL, hash)
+	prefixes = h_set(prefixes, TOML, hash)
+	prefixes = h_set(prefixes, ENV, hash)
+	prefixes = h_set(prefixes, YML, hash)
+	prefixes = h_set(prefixes, YAML, hash)
+	prefixes = h_set(prefixes, CSHARP, slash)
+	prefixes = h_set(prefixes, JSX, slash)
+	prefixes = h_set(prefixes, TYPESCRIPT, slash)
+	prefixes = h_set(prefixes, TSX, slash)
+	prefixes = h_set(prefixes, MTS, slash)
+	prefixes = h_set(prefixes, JAVASCRIPT, slash)
+	prefixes = h_set(prefixes, MJS, slash)
+	prefixes = h_set(prefixes, RUST, slash)
+	prefixes = h_set(prefixes, C_SRC, slash)
+	prefixes = h_set(prefixes, C_HEADER, slash)
+	prefixes = h_set(prefixes, CPP1, slash)
+	prefixes = h_set(prefixes, CPP2, slash)
+	prefixes = h_set(prefixes, CPP3, slash)
+	prefixes = h_set(prefixes, CPP_HEADER1, slash)
+	prefixes = h_set(prefixes, CPP_HEADER2, slash)
+	prefixes = h_set(prefixes, GOLANG, slash)
+	prefixes = h_set(prefixes, JAVA, slash)
+	prefixes = h_set(prefixes, PHP, slash)
+	prefixes = h_set(prefixes, CMM, slash)
+	prefixes = h_set(prefixes, PRISMA, slash)
+	prefixes = h_set(prefixes, ASM1, semi)
+	prefixes = h_set(prefixes, ASM2, semi)
+	prefixes = h_set(prefixes, FORTRAN90, bang)
 
-    return h_get(prefixes, ext)
+	return h_get(prefixes, ext)

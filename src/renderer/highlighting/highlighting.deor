@@ -1,12 +1,12 @@
 
 struct HighlightRange
-    int start_row
-    int end_row
+	int start_row
+	int end_row
 
 
 fn Highlighter initialize_highlighter(string ext)
-    unsafe_macro_run use_consts
-    unsafe_macro_run language_ext_consts
+	unsafe_macro_run use_consts
+	unsafe_macro_run language_ext_consts
 	Highlighter highlighter = xs_make(TAB_WIDTH)
 
 	if ext is DEOR
@@ -76,7 +76,7 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_prisma
 	# Any other extension keeps the empty highlighter -- plain, uncolored text.
 
-    return highlighter
+	return highlighter
 
 
 # Colors only [start_row, end_row) -- the rows actually on screen this frame
@@ -85,12 +85,12 @@ fn Highlighter initialize_highlighter(string ext)
 # recoloring all 12k+ lines of a big file on every keystroke just to show ~50
 # of them was the main source of editor lag on large files.
 fn stringList get_highlighted_lines_range(stringList line_list, Highlighter hlt, HighlightRange bounds)
-    (start_row, end_row) in bounds
+	(start_row, end_row) in bounds
 
-    stringList new_line_list = move line_list
-    for idx in range(start_row, end_row)
-        string line = new_line_list at idx
-        string line_with_colors = xs_line(hlt, idx, line)
-        new_line_list at idx = line_with_colors
+	stringList new_line_list = move line_list
+	for idx in range(start_row, end_row)
+		string line = new_line_list at idx
+		string line_with_colors = xs_line(hlt, idx, line)
+		new_line_list at idx = line_with_colors
 
-    return new_line_list
+	return new_line_list

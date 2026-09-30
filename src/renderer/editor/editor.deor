@@ -29,7 +29,7 @@ fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visu
 
 	unsafe_macro_run calculate_viewport_dimensions
 
-    # main macros to setup editor:
+	# main macros to setup editor:
 	unsafe_macro_run setup_minimap_and_gutters
 	macro_run render_buffer_rows
 	macro_run render_lint_output_section

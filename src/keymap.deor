@@ -37,8 +37,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 		# overlap since only one of those views handles keys at a time.
 		else if chr is "f"
 			kind = "ctrl_f"
-        else if chr is "r"
-            kind = "rename_file"
+		else if chr is "r"
+			kind = "rename_file"
 		else if chr is "k"
 			kind = "delete_entry"
 		else if chr is "u"

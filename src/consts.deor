@@ -1,34 +1,34 @@
 
 unsafe_macro use_consts
-    const int PAGE_DOWN_UP_AMOUNT = 30
+	const int PAGE_DOWN_UP_AMOUNT = 30
 
-    # Must match the tab width the syntax highlighter expands tabs to when producing
-    # highlighted lines for display -- used to convert a raw cursor_col
-    # (one tab = one character) into the on-screen column (one tab = several).
-    const int TAB_WIDTH = 4
-    const string TAB_STRING = "    "
+	# Must match the tab width the syntax highlighter expands tabs to when producing
+	# highlighted lines for display -- used to convert a raw cursor_col
+	# (one tab = one character) into the on-screen column (one tab = several).
+	const int TAB_WIDTH = 4
+	const string TAB_STRING = "    "
 
-    const int CTRL_ARROW_X_AMOUNT = 15
-    const int CTRL_ARROW_Y_AMOUNT = 8
+	const int CTRL_ARROW_X_AMOUNT = 15
+	const int CTRL_ARROW_Y_AMOUNT = 8
 
-    const int SCROLL_WHEEL_AMOUNT = 3
+	const int SCROLL_WHEEL_AMOUNT = 3
 
-    # Fixed height of the ctrl+e raw lint output popup -- longer output is
-    # cut off rather than making the popup scrollable.
-    const int LINT_POPUP_HEIGHT = 10
+	# Fixed height of the ctrl+e raw lint output popup -- longer output is
+	# cut off rather than making the popup scrollable.
+	const int LINT_POPUP_HEIGHT = 10
 
-    # Fixed width of the persistent Files-tree sidebar (see sidebar.deor) --
-    # always claims exactly this many columns so the text buffer's own
-    # width is predictable frame to frame.
-    const int SIDEBAR_WIDTH = 30
+	# Fixed width of the persistent Files-tree sidebar (see sidebar.deor) --
+	# always claims exactly this many columns so the text buffer's own
+	# width is predictable frame to frame.
+	const int SIDEBAR_WIDTH = 30
 
-    # Width the sidebar widens to while it has keyboard focus (F1) -- gives
-    # long file/directory names more room to display without truncation.
-    const int SIDEBAR_WIDTH_FOCUSED = 46
+	# Width the sidebar widens to while it has keyboard focus (F1) -- gives
+	# long file/directory names more room to display without truncation.
+	const int SIDEBAR_WIDTH_FOCUSED = 46
 
-    # One column reserved at the right edge of the text area for the
-    # vertical scrollbar (see scrollbar.deor).
-    const int SCROLLBAR_WIDTH = 1
+	# One column reserved at the right edge of the text area for the
+	# vertical scrollbar (see scrollbar.deor).
+	const int SCROLLBAR_WIDTH = 1
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,

@@ -6,11 +6,11 @@ macro reset_file_create
 	create_parent_dir = ""
 
 macro perform_move
-    unsafe_macro_run resolve_move_destination
+	unsafe_macro_run resolve_move_destination
 	macro_run write_move_to_disk
 	if not error
-        # Updates browse_entries in place so the tree reflects the    
-        # move without a full rescan: drops the source row (and its
+		# Updates browse_entries in place so the tree reflects the
+		# move without a full rescan: drops the source row (and its
 		# children, if it was a directory), then re-inserts it
 		# under the destination if the destination is expanded.
 		macro_run remove_move_source_entry
@@ -24,7 +24,7 @@ macro perform_move
 			browse_entries = e_insert_children(browse_entries, index, one_entry)
 
 		macro_run clamp_browse_selection_after_move
-        macro_run reset_file_create
+		macro_run reset_file_create
 		macro_run refresh_all_git_status
 		macro_run report_move_success
 
@@ -83,9 +83,8 @@ macro confirm_move_request
 			notice = "Multiple matches -- be more specific"
 			error = true
 		else
-            macro_run perform_move
+			macro_run perform_move
 
 
 
 
-			

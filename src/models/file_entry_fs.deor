@@ -74,8 +74,8 @@ fn bool f_move(string source, string dest_dir)
 		}
 
 fn bool f_rename(string source, string dest_path)
-    rust
-        std::fs::rename(&source, &dest_path).is_ok()
+	rust
+		std::fs::rename(&source, &dest_path).is_ok()
 
 # Joins `dir` and `name` the same way std::path::Path::join would -- used to
 # build a new file's full path from its parent directory and typed name

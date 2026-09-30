@@ -58,11 +58,11 @@ macro append_cursor_and_output
 macro position_and_output_cursor
 	unsafe_macro_run use_consts
 
-    unsafe_macro_run calculate_clamped_cursor_row
-    unsafe_macro_run calculate_cursor_screen_column
+	unsafe_macro_run calculate_clamped_cursor_row
+	unsafe_macro_run calculate_cursor_screen_column
 
-    # the cursor position is outputted to the terminal as a string
-    #  effectively the entire output to the terminal needs to be a string
-    #  so cursor moves are a sequence on the end of that string
-    unsafe_macro_run format_cursor_escape_code
+	# the cursor position is outputted to the terminal as a string
+	#  effectively the entire output to the terminal needs to be a string
+	#  so cursor moves are a sequence on the end of that string
+	unsafe_macro_run format_cursor_escape_code
 	macro_run append_cursor_and_output

@@ -217,22 +217,22 @@ fn int diff_content_width_for(int rows, int cols, bool sidebar_focused)
 
 fn void editor_render_diff(AppState state)
 
-    (browser) in state
-    (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-    (new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-    (main_panel) in state
-    (core) in main_panel
-    (filename) in core
-    (diff) in main_panel
-    (diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
-    (notice) in state
-    unsafe_macro_run use_consts
-    unsafe_macro_run use_ansi_codes
-    unsafe_macro_run use_diff_marker_ansi
+	(browser) in state
+	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
+	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+	(main_panel) in state
+	(core) in main_panel
+	(filename) in core
+	(diff) in main_panel
+	(diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
+	(notice) in state
+	unsafe_macro_run use_consts
+	unsafe_macro_run use_ansi_codes
+	unsafe_macro_run use_diff_marker_ansi
 
-    unsafe_macro_run setup_diff_view_layout
-    macro_run render_diff_rows
-    macro_run append_diff_minimap
-    macro_run render_diff_status_and_notice
+	unsafe_macro_run setup_diff_view_layout
+	macro_run render_diff_rows
+	macro_run append_diff_minimap
+	macro_run render_diff_status_and_notice
 
-    xt_flush_print(screen)
+	xt_flush_print(screen)

@@ -41,30 +41,30 @@ macro render_spreadsheet_sidebar_column
 # row_offset runs past the sheet's last row.
 macro render_spreadsheet_row
 
-    const int COLUMN_WIDTH = 20
-    const string SPACE = " "
-    const string PIPE = " | "
-    
+	const int COLUMN_WIDTH = 20
+	const string SPACE = " "
+	const string PIPE = " | "
+
 	string content = ""
 	if row_offset < spreadsheet_row_count
 		stringList row_cells = spreadsheet_rows at row_offset
-	    
-        int count_idx = 0
-        for cell in row_cells
-            string cell_content = format_cell(row_cells, cell, count_idx)
-            content_length as len(cell_content)
-            if content_length > COLUMN_WIDTH
-                cell_content = "ERROR"
 
-            for idx in range(COLUMN_WIDTH - content_length)
-                cell_content = s_join([cell_content, SPACE])
+		int count_idx = 0
+		for cell in row_cells
+			string cell_content = format_cell(row_cells, cell, count_idx)
+			content_length as len(cell_content)
+			if content_length > COLUMN_WIDTH
+				cell_content = "ERROR"
 
-            content = s_join([content, cell_content, PIPE])
-            count_idx = count_idx + 1
+			for idx in range(COLUMN_WIDTH - content_length)
+				cell_content = s_join([cell_content, SPACE])
 
-        content = s_join([PIPE, content])
+			content = s_join([content, cell_content, PIPE])
+			count_idx = count_idx + 1
 
-        # content = s_join_with(row_cells, separator)
+		content = s_join([PIPE, content])
+
+		# content = s_join_with(row_cells, separator)
 	if len(content) > content_width
 		int trunc_start = 0
 		content = s_substring(content, trunc_start, content_width)

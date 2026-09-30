@@ -2,7 +2,7 @@ struct KeyEvent
 	string kind
 	string chr
 	bool shift
-    bool alt
+	bool alt
 
 	# Only meaningful when kind is one of the "mouse_*" kinds below --
 	# 0-indexed terminal column/row the mouse event happened at.
@@ -138,51 +138,51 @@ fn KeyEvent xt_read_key()
 							{ kind: "ctrl_delete".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Right
-						if ctrl => break KeyEvent 
+						if ctrl => break KeyEvent
 							{ kind: "right_ctrl".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
+
 					crossterm::event::KeyCode::Left
-						if ctrl => break KeyEvent 
+						if ctrl => break KeyEvent
 							{ kind: "left_ctrl".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Down
-						if ctrl => break KeyEvent 
+						if ctrl => break KeyEvent
 							{ kind: "down_ctrl".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Up
-						if ctrl => break KeyEvent 
+						if ctrl => break KeyEvent
 							{ kind: "up_ctrl".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
 					crossterm::event::KeyCode::Char(c) =>
 						break KeyEvent { kind: "char".to_string(), chr: c.to_string(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Enter => 
+
+					crossterm::event::KeyCode::Enter =>
 						break KeyEvent { kind: "enter".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
-					crossterm::event::KeyCode::Backspace => 
+					crossterm::event::KeyCode::Backspace =>
 						break KeyEvent { kind: "backspace".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Delete => 
+
+					crossterm::event::KeyCode::Delete =>
 						break KeyEvent { kind: "delete".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Left => 
+
+					crossterm::event::KeyCode::Left =>
 						break KeyEvent { kind: "left".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Right => 
+
+					crossterm::event::KeyCode::Right =>
 						break KeyEvent { kind: "right".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Up => 
+
+					crossterm::event::KeyCode::Up =>
 						break KeyEvent { kind: "up".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Down => 
+
+					crossterm::event::KeyCode::Down =>
 						break KeyEvent { kind: "down".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::Tab => 
+
+					crossterm::event::KeyCode::Tab =>
 						break KeyEvent { kind: "tab".to_string(), chr: TAB_SPACES.to_string(), shift, alt, col: 0, row: 0 },
-					
-					crossterm::event::KeyCode::PageUp => 
+
+					crossterm::event::KeyCode::PageUp =>
 						break KeyEvent { kind: "page_up".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
-					
+
 					crossterm::event::KeyCode::PageDown =>
 						break KeyEvent { kind: "page_down".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
@@ -194,13 +194,13 @@ fn KeyEvent xt_read_key()
 					crossterm::event::KeyCode::F(n) =>
 						break KeyEvent { kind: "function_key".to_string(), chr: n.to_string(), shift, alt, col: 0, row: 0 },
 
-					crossterm::event::KeyCode::Esc => 
+					crossterm::event::KeyCode::Esc =>
 						break KeyEvent { kind: "escape".to_string(), chr: String::new(), shift, alt, col: 0, row: 0 },
 
 					_ => continue,
 				}
 			}
-        
+
 			crossterm::event::Event::Paste(text) =>
 				break KeyEvent { kind: "paste_text".to_string(), chr: text, shift: false, alt: false, col: 0, row: 0 },
 
@@ -208,8 +208,8 @@ fn KeyEvent xt_read_key()
 				let col = m.column as i64;
 				let row = m.row as i64;
 
-                let alt = m.modifiers.contains(crossterm::event::KeyModifiers::ALT);
-                let shift = m.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
+				let alt = m.modifiers.contains(crossterm::event::KeyModifiers::ALT);
+				let shift = m.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
 				match m.kind {
 					crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) =>
 						break KeyEvent { kind: "mouse_down".to_string(), chr: String::new(), shift, col, alt, row },

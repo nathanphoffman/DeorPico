@@ -1,25 +1,25 @@
 
 # Prevents the cursor from going too far to the right, left, bottom, or top
 macro back_stop
-    int line_count = len(lines)
+	int line_count = len(lines)
 
-    cursor_row = clamp_row_to_buffer(cursor_row, line_count)
-    current_line as lines at cursor_row
-    current_line_length as len(current_line)
-    cursor_col = clamp_col_to_line(cursor_col, current_line_length)
+	cursor_row = clamp_row_to_buffer(cursor_row, line_count)
+	current_line as lines at cursor_row
+	current_line_length as len(current_line)
+	cursor_col = clamp_col_to_line(cursor_col, current_line_length)
 
-    # sel_anchor_row/col are read unconditionally every render frame
-    # (main.deor) regardless of has_selection, so a stale anchor left
-    # pointing past the end of a buffer that just got shorter (deleting
-    # lines near the bottom) crashes the next render with an out-of-bounds
-    # index -- clamp it the same way cursor_row/cursor_col are clamped above.
-    sel_anchor_row = clamp_row_to_buffer(sel_anchor_row, line_count)
-    anchor_line as lines at sel_anchor_row
-    anchor_line_length as len(anchor_line)
-    sel_anchor_col = clamp_col_to_line(sel_anchor_col, anchor_line_length)
+	# sel_anchor_row/col are read unconditionally every render frame
+	# (main.deor) regardless of has_selection, so a stale anchor left
+	# pointing past the end of a buffer that just got shorter (deleting
+	# lines near the bottom) crashes the next render with an out-of-bounds
+	# index -- clamp it the same way cursor_row/cursor_col are clamped above.
+	sel_anchor_row = clamp_row_to_buffer(sel_anchor_row, line_count)
+	anchor_line as lines at sel_anchor_row
+	anchor_line_length as len(anchor_line)
+	sel_anchor_col = clamp_col_to_line(sel_anchor_col, anchor_line_length)
 
 macro register_events
-    macro_run handle_global_actions
+	macro_run handle_global_actions
 	macro_run handle_search_trigger
 	macro_run handle_arrow_nav
 	macro_run handle_text_edit
@@ -29,19 +29,19 @@ macro register_events
 
 # Clamps a row into [0, line_count - 1].
 fn int clamp_row_to_buffer(int row, int line_count)
-    if row < 0
-        return 0
-    if row > line_count - 1
-        return line_count - 1
-    return row
+	if row < 0
+		return 0
+	if row > line_count - 1
+		return line_count - 1
+	return row
 
 # Clamps a column into [0, line_length] -- one past the last character is valid.
 fn int clamp_col_to_line(int col, int line_length)
-    if col < 0
-        return 0
-    if col > line_length
-        return line_length
-    return col
+	if col < 0
+		return 0
+	if col > line_length
+		return line_length
+	return col
 
 fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	# `state`/`core`/`browser`/etc. are only read here -- every field gets
@@ -114,7 +114,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 
 	# this is the main view
 	else
-        macro_run register_events
+		macro_run register_events
 
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content)
 	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)

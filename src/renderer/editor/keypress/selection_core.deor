@@ -27,14 +27,14 @@ macro start_or_extend_selection_impl
 		has_selection = true
 
 macro key_select_all_impl
-    cursor_row = 0
-    cursor_col = 0
-    has_selection = true
+	cursor_row = 0
+	cursor_col = 0
+	has_selection = true
 
-    int total_line_count = len(lines)
-    sel_anchor_row = total_line_count
-    last_line as lines at (total_line_count - 1)
-    sel_anchor_col = len(last_line)
+	int total_line_count = len(lines)
+	sel_anchor_row = total_line_count
+	last_line as lines at (total_line_count - 1)
+	sel_anchor_col = len(last_line)
 
 fn bool clear_selection_impl()
 	return false
