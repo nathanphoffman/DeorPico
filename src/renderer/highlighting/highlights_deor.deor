@@ -1,48 +1,47 @@
-macro highlights_deor
-# macro definitions/invocations, name included since the regex crate has
-	# no lookbehind to highlight just the name after "macro"/"macro_run" --
-	# must be registered before the general "keyword" bucket below, since
-	# both match starting at the same "macro"/"macro_run" position and the
-	# synoptic tokenizer keeps whichever atom was registered first,
-	# discarding the other rather than layering them
+# macro/macro_run plus the name after it -- must run before the keyword rule to win ties
+macro deor_highlighting_macro_keyword_with_macro_name
 	macro_name_name as "macro_name"
 	macro_name_pattern as "\\b(macro_run|macro|unsafe_macro|unsafe_macro_run)\\s+[a-z_][a-z0-9_]*\\b"
 	highlighter = xs_add_keyword(highlighter, macro_name_name, macro_name_pattern)
 
-	# control/storage/other keywords, constants -- lumped into one bucket
+# control/storage keywords and constants
+macro deor_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(macro_run|unsafe_macro_run|macro|unsafe_macro|fn|if|else|for|return|avow|break|continue|move|const|and|or|not|is|in|as|with|at|end|of|to|import|struct|shape|enum|type|block|rust|remove|where|true|false|valid|empty)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin primitive/shape-kind type keywords
+# builtin primitive/shape-kind types
+macro deor_highlighting_builtin_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(int|float|bool|string|list|func|void|raw)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase user types (struct/enum/type-validator names), wherever used
-	macro_run shared_highlighting_type_pascal
-
-	# camelCase shape names (stringList, filterFunc, ...)
+# camelCase shape names (stringList, filterFunc, ...)
+macro deor_highlighting_camel_case_shape_name
 	shape_name as "type"
 	shape_pattern as "\\b[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*\\b"
 	highlighter = xs_add_keyword(highlighter, shape_name, shape_pattern)
 
-	# function call sites: name immediately followed by ( -- no lookahead support
-	# in the regex crate, so the ( is matched (and colored) as part of the token
+# call sites: lowercase name immediately followed by "("
+macro deor_highlighting_function_call_lowercase
 	call_name as "function"
 	call_pattern as "\\b[a-z_][a-z0-9_]*\\("
 	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
 
-	# numeric literals, underscores allowed as separators
-	macro_run shared_highlighting_number
-
-	# # line comments
-	macro_run shared_highlighting_comment_hash
-
-	# flag C-style operators Deor doesn't use (is/is not/and/or replace these)
+# flags C-style operators Deor doesn't use (== != && ||)
+macro deor_highlighting_invalid_c_style_operators
 	invalid_name as "invalid"
 	invalid_pattern as "==|!=|&&|\\|\\|"
 	highlighter = xs_add_keyword(highlighter, invalid_name, invalid_pattern)
 
-	# double-quoted strings, backslash-escapable
+macro highlights_deor
+	macro_run deor_highlighting_macro_keyword_with_macro_name
+	macro_run deor_highlighting_keywords
+	macro_run deor_highlighting_builtin_types
+	macro_run shared_highlighting_type_pascal
+	macro_run deor_highlighting_camel_case_shape_name
+	macro_run deor_highlighting_function_call_lowercase
+	macro_run shared_highlighting_number
+	macro_run shared_highlighting_comment_hash
+	macro_run deor_highlighting_invalid_c_style_operators
 	macro_run shared_highlighting_string_double

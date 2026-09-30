@@ -1,23 +1,19 @@
-macro highlights_html
-	# comments -- text-reachable since these appear directly in page text
-	macro_run shared_highlighting_comment_html
-
-	# attribute values
-	macro_run shared_highlighting_string_double_raw
-	macro_run shared_highlighting_string_single_raw
-
-	# tag names -- xs_add_tag turns on tag scoping so a tag's children
-	# become a text scope where ordinary rules (including the string rules
-	# above) don't apply, which is what keeps a stray apostrophe in page
-	# text ("Don't") from opening a string that swallows the rest of the file
+# tag names (<div, </div) -- xs_add_tag makes tag children plain text, so "Don't" can't open a string
+macro html_highlighting_tag_name_with_tag_scoping
 	tag_name as "type"
 	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
 	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
-	# attribute names tight against "=" -- same lookahead workaround
+# attribute names tight against "=" (":" and "." allowed for namespaced names)
+macro html_highlighting_attribute_name
 	attr_name as "function"
 	attr_pattern as "\\b[a-zA-Z_:][a-zA-Z0-9_:.-]*="
 	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
 
-	# entities
+macro highlights_html
+	macro_run shared_highlighting_comment_html
+	macro_run shared_highlighting_string_double_raw
+	macro_run shared_highlighting_string_single_raw
+	macro_run html_highlighting_tag_name_with_tag_scoping
+	macro_run html_highlighting_attribute_name
 	macro_run shared_highlighting_html_entity

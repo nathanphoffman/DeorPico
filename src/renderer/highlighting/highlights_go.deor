@@ -1,11 +1,5 @@
-macro highlights_go
-	# block comments
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# raw strings (backtick-delimited) -- no escape sequences at all
+# raw strings (backtick-delimited) -- no escape sequences
+macro go_highlighting_string_raw_backtick
 	name as "string"
 	start as "`"
 	stop as "`"
@@ -13,23 +7,25 @@ macro highlights_go
 	rstr_escapable as false
 	highlighter = xs_add_bounded(highlighter, rstr_spec, rstr_escapable)
 
-	# interpreted strings
-	macro_run shared_highlighting_string_double
-
-	# call sites
-	macro_run shared_highlighting_call
-
+# Go keywords
+macro go_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin primitive types
+# builtin primitive types
+macro go_highlighting_builtin_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(any|bool|byte|complex64|complex128|error|float32|float64|int|int8|int16|int32|int64|rune|string|uint|uint8|uint16|uint32|uint64|uintptr)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase (exported) identifiers, wherever used
+macro highlights_go
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run go_highlighting_string_raw_backtick
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_call
+	macro_run go_highlighting_keywords
+	macro_run go_highlighting_builtin_types
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

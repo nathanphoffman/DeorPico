@@ -1,20 +1,21 @@
-macro highlights_cmm
-	# "C--" isn't one standardized language -- several unrelated toy
-	# languages share the name (compiler-course subsets of C, and the
-	# Peyton Jones/Ramsey portable IL). This covers the common subset
-	# nearly all of them share: C-style comments/strings/control-flow,
-	# with no preprocessor, structs, or pointers.
-	macro_run shared_highlighting_comment_block
-	macro_run shared_highlighting_comment_slashes
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_call
-
+# control-flow keywords
+macro cmm_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(if|else|while|for|return|break|continue)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
+# builtin primitive types
+macro cmm_highlighting_builtin_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(int|float|char|void|bool)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
+# "C--" covers several toy languages -- this is the C-style subset they share (no preprocessor/structs/pointers)
+macro highlights_cmm
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_call
+	macro_run cmm_highlighting_keywords
+	macro_run cmm_highlighting_builtin_types
 	macro_run shared_highlighting_number

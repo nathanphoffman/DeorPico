@@ -1,33 +1,29 @@
-macro highlights_java
-	# block comments
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# annotations
-	macro_run shared_highlighting_decorator
-
-	# strings and char literals
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-
-	# call sites
-	macro_run shared_highlighting_call
-
+# Java keywords
+macro java_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(abstract|assert|break|case|catch|class|const|continue|default|do|else|enum|extends|final|finally|for|goto|if|implements|import|instanceof|interface|native|new|package|private|protected|public|record|return|sealed|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|volatile|while|yield)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin primitive types and common boxed/core types
+# builtin primitive types and common boxed/core types
+macro java_highlighting_builtin_and_boxed_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(boolean|byte|char|double|float|int|long|short|void|String|Object|Integer|Long|Double|Float|Boolean|Character)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase class/interface names, wherever used
-	macro_run shared_highlighting_type_pascal
-
-	# numeric literals
+# numeric literals with underscores and an optional f/d/l suffix
+macro java_highlighting_number_with_type_suffix
 	num_name as "number"
 	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?[fFdDlL]?\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+macro highlights_java
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_decorator
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_call
+	macro_run java_highlighting_keywords
+	macro_run java_highlighting_builtin_and_boxed_types
+	macro_run shared_highlighting_type_pascal
+	macro_run java_highlighting_number_with_type_suffix

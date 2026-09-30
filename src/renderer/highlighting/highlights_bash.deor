@@ -1,30 +1,33 @@
-macro highlights_bash
-	# line comments -- Bash has no block comment
-	macro_run shared_highlighting_comment_hash
-
-	# strings -- double-quoted supports $var interpolation and backslash
-	# escapes, single-quoted is fully literal (no escapes at all)
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single_raw
-
-	# variables -- $VAR and ${VAR}
+# variables: $VAR and ${VAR}
+macro bash_highlighting_dollar_variable
 	var_name as "type"
 	var_pattern as "\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?"
 	highlighter = xs_add_keyword(highlighter, var_name, var_pattern)
 
-	# function definitions / call sites
-	macro_run shared_highlighting_call
-
+# shell keywords and declaration commands
+macro bash_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(if|then|elif|else|fi|for|while|until|do|done|case|esac|function|select|in|time|coproc|break|continue|return|exit|export|local|readonly|declare|typeset|unset|shift|source|trap|eval|exec|wait)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# common builtins/commands
+# common builtins/commands (echo, cd, read, ...)
+macro bash_highlighting_common_builtin_commands
 	builtin_name as "function"
 	builtin_pattern as "\\b(echo|printf|read|cd|pwd|test|set|alias|unalias)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# numeric literals
+# whole-number literals
+macro bash_highlighting_integer_number
 	num_name as "number"
 	num_pattern as "\\b\\d[\\d]*\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+macro highlights_bash
+	macro_run shared_highlighting_comment_hash
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
+	macro_run bash_highlighting_dollar_variable
+	macro_run shared_highlighting_call
+	macro_run bash_highlighting_keywords
+	macro_run bash_highlighting_common_builtin_commands
+	macro_run bash_highlighting_integer_number

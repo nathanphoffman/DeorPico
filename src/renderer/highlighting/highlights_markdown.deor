@@ -1,15 +1,5 @@
-macro highlights_markdown
-	# YAML frontmatter: the "--- ... ---" block at the very top of the file
-	# (the Jekyll convention, also used by Hugo, Astro, Eleventy and
-	# Obsidian). Its body is scanned with the real yaml grammar instead of
-	# markdown's rules -- see xs_sub_begin. The rules can't just be added to
-	# markdown's own list: yaml's key rule would light up ordinary prose like
-	# "Note: see below", and its "#" comment rule would collide with markdown
-	# headings.
-	#
-	# first_row_only is what keeps this honest -- a "---" anywhere further
-	# down a document is a horizontal rule or a setext heading underline, and
-	# would otherwise flip the rest of the file into yaml mode.
+# YAML frontmatter ("--- ... ---") scanned with the yaml rules -- first row only, a later "---" is a rule line
+macro markdown_highlighting_yaml_frontmatter_on_first_row
 	name as "macro_name"
 	start as "^---\\s*$"
 	stop as "^---\\s*$"
@@ -19,10 +9,8 @@ macro highlights_markdown
 	macro_run highlights_yaml
 	highlighter = xs_sub_end(highlighter)
 
-	# TOML frontmatter ("+++ ... +++", the other convention Hugo accepts).
-	# Same mechanism, and unambiguous besides -- "+++" means nothing else in
-	# markdown -- but still row-0 only, since frontmatter is by definition the
-	# head of the file.
+# TOML frontmatter ("+++ ... +++") scanned with the toml rules -- first row only
+macro markdown_highlighting_toml_frontmatter_on_first_row
 	name as "macro_name"
 	start as "^\\+\\+\\+\\s*$"
 	stop as "^\\+\\+\\+\\s*$"
@@ -32,9 +20,8 @@ macro highlights_markdown
 	macro_run highlights_toml
 	highlighter = xs_sub_end(highlighter)
 
-	# fenced code blocks -- registered before the inline single-backtick
-	# rule below so a real ``` fence wins the tokenizer's
-	# first-atom-registered tiebreak at the same opening backtick
+# ``` fenced code blocks -- must run before the inline-code rule to win ties
+macro markdown_highlighting_fenced_code_block
 	name as "block"
 	start as "```"
 	stop as "```"
@@ -42,7 +29,8 @@ macro highlights_markdown
 	fence_escapable as false
 	highlighter = xs_add_bounded(highlighter, fence_spec, fence_escapable)
 
-	# inline code
+# `inline code`
+macro markdown_highlighting_inline_code
 	name as "block"
 	start as "`"
 	stop as "`"
@@ -50,47 +38,71 @@ macro highlights_markdown
 	code_escapable as false
 	highlighter = xs_add_bounded(highlighter, code_spec, code_escapable)
 
-	# headings, blockquotes, list items -- anchored to the start of the
-	# line, registered before the inline emphasis rules below so a line
-	# like "* some *emphasis*" reads its leading "*" as a list marker
-	# rather than the opening of an italic span
+# headings: 1 to 6 "#" at the start of a line
+macro markdown_highlighting_heading
 	heading_name as "heading"
 	heading_pattern as "^#{1,6} .*"
 	highlighter = xs_add_keyword(highlighter, heading_name, heading_pattern)
 
+# blockquotes: ">" at the start of a line
+macro markdown_highlighting_blockquote
 	quote_name as "quote"
 	quote_pattern as "^>\\s?.*"
 	highlighter = xs_add_keyword(highlighter, quote_name, quote_pattern)
 
+# list markers (-, *, +, 1.) -- must run before italic so a leading "*" isn't read as emphasis
+macro markdown_highlighting_list_marker
 	list_name as "list"
 	list_pattern as "^\\s*([-*+]|\\d+\\.) "
 	highlighter = xs_add_keyword(highlighter, list_name, list_pattern)
 
-	# images -- registered before links since "![...]" starts one
-	# character earlier than the "[...]" a link rule would also match
+# images ![alt](url) -- must run before the link rule, which matches one character later
+macro markdown_highlighting_image
 	image_name as "image"
 	image_pattern as "!\\[[^\\]]*\\]\\([^)]*\\)"
 	highlighter = xs_add_keyword(highlighter, image_name, image_pattern)
 
+# links [text](url)
+macro markdown_highlighting_link
 	link_name as "link"
 	link_pattern as "\\[[^\\]]*\\]\\([^)]*\\)"
 	highlighter = xs_add_keyword(highlighter, link_name, link_pattern)
 
-	# bold before italic -- both start matching at the same leading "*",
-	# and the tokenizer's tiebreak is by registration order
+# **bold** and __bold__ -- must run before italic to win ties
+macro markdown_highlighting_bold
 	bold_name as "bold"
 	bold_pattern as "(\\*\\*[^*]+\\*\\*|__[^_]+__)"
 	highlighter = xs_add_keyword(highlighter, bold_name, bold_pattern)
 
+# *italic* and _italic_
+macro markdown_highlighting_italic
 	italic_name as "italic"
 	italic_pattern as "(\\*[^*]+\\*|_[^_]+_)"
 	highlighter = xs_add_keyword(highlighter, italic_name, italic_pattern)
 
+# ~~strikethrough~~
+macro markdown_highlighting_strikethrough
 	strike_name as "strikethrough"
 	strike_pattern as "~~[^~]+~~"
 	highlighter = xs_add_keyword(highlighter, strike_name, strike_pattern)
 
-	# inline math ($...$)
+# inline math ($...$)
+macro markdown_highlighting_inline_math
 	math_name as "math"
 	math_pattern as "\\$[^$]+\\$"
 	highlighter = xs_add_keyword(highlighter, math_name, math_pattern)
+
+macro highlights_markdown
+	macro_run markdown_highlighting_yaml_frontmatter_on_first_row
+	macro_run markdown_highlighting_toml_frontmatter_on_first_row
+	macro_run markdown_highlighting_fenced_code_block
+	macro_run markdown_highlighting_inline_code
+	macro_run markdown_highlighting_heading
+	macro_run markdown_highlighting_blockquote
+	macro_run markdown_highlighting_list_marker
+	macro_run markdown_highlighting_image
+	macro_run markdown_highlighting_link
+	macro_run markdown_highlighting_bold
+	macro_run markdown_highlighting_italic
+	macro_run markdown_highlighting_strikethrough
+	macro_run markdown_highlighting_inline_math

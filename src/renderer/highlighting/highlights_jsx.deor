@@ -1,49 +1,19 @@
-macro highlights_jsx
-	# block comments (also covers JSX's {/* ... */} form -- the braces
-	# aren't part of the comment syntax so this matches inside them fine)
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# double/single/template-literal strings -- template ${} interpolation
-	# isn't separately colored, the whole literal is just one string token
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-	macro_run shared_highlighting_string_backtick
-
-	# JSX tag names: "<" or "</" immediately followed by a tag/component
-	# name (dotted for namespaced components like <Foo.Bar>). xs_add_tag
-	# (rather than xs_add_keyword) also turns on tag scoping: a match opens
-	# an attribute scope that, once the tag's closing ">" is found, enters a
-	# text scope for its children where ordinary code rules don't apply --
-	# that's what keeps quotes/apostrophes/capitalized words in JSX text
-	# from being misread as code.
-	# The "|>" alternative matches fragments (<> and </>); the tokenizer
-	# hands the ">" back so the tag scope still sees its own close.
-	macro_run shared_highlighting_jsx_tag
-
-	# lets a bare "{" inside JSX text (e.g. {this.props.name}) resume full
-	# code scanning until its matching "}", instead of staying inert
-	macro_run shared_highlighting_jsx_expr
-
-	# JSX attribute names (className=, onClick=): identifier tight against
-	# "=" with no space, which in practice only really happens for JSX
-	# attributes and tight assignments -- the "=" is swallowed into the
-	# match for the same lookahead reason as above
-	macro_run shared_highlighting_attr_name
-
-	# call sites: name immediately followed by "(" -- both cases allowed
-	# since components (PascalCase) are sometimes invoked directly too
-	macro_run shared_highlighting_call_js
-
+# JavaScript keywords
+macro jsx_highlighting_javascript_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|false|finally|for|from|function|get|if|import|in|instanceof|let|new|null|of|return|set|static|super|switch|this|throw|true|try|typeof|undefined|var|void|while|with|yield)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# PascalCase identifiers (React components, imported classes), wherever
-	# used outside a JSX tag -- e.g. "const Foo = () => ..." definitions
+macro highlights_jsx
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_string_backtick
+	macro_run shared_highlighting_jsx_tag
+	macro_run shared_highlighting_jsx_expr
+	macro_run shared_highlighting_attr_name
+	macro_run shared_highlighting_call_js
+	macro_run jsx_highlighting_javascript_keywords
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

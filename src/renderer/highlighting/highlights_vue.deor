@@ -1,19 +1,5 @@
-macro highlights_vue
-	# HTML comments (used in <template>) -- text-reachable since these can
-	# appear directly in template markup, not just inside a mustache
-	macro_run shared_highlighting_comment_html
-
-	# JS/TS block comments (used in <script>)
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# mustache interpolation -- registered before the string/attribute rules
-	# below so "{{ someObj.value }}" reads as one span rather than tripping
-	# the attribute or member-access rules inside it. Text-reachable so it's
-	# still recognized as its own span when it appears directly in template
-	# text, which is most of the time.
+# {{ mustache }} spans, also matched inside template text -- must run before the string/attribute rules
+macro vue_highlighting_mustache_interpolation
 	name as "block"
 	start as "\\{\\{"
 	stop as "\\}\\}"
@@ -21,59 +7,45 @@ macro highlights_vue
 	mustache_escapable as false
 	highlighter = xs_add_bounded_text(highlighter, mustache_spec, mustache_escapable)
 
-	# double/single/template-literal strings -- covers both HTML attribute
-	# values and JS string literals in <script>; template ${} interpolation
-	# isn't separately colored, the whole literal is just one string token
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-	macro_run shared_highlighting_string_backtick
-
-	# tag names -- xs_add_tag turns on tag scoping so a tag's children (the
-	# text between its open and close tag) become a text scope where
-	# ordinary rules don't apply, which is what keeps a stray apostrophe in
-	# template text ("Don't") from opening a JS string that swallows the
-	# rest of the file
+# tag names (<div, </div) -- xs_add_tag makes tag children plain text, so "Don't" can't open a string
+macro vue_highlighting_tag_name_with_tag_scoping
 	tag_name as "type"
 	tag_pattern as "</?[A-Za-z][A-Za-z0-9-]*"
 	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
-	# Vue directives (v-if=, v-for=, v-bind:class=, v-on:click.stop=, ...),
-	# registered before the generic attribute rule below so they win the
-	# tokenizer's first-atom-registered tiebreak and get the "special
-	# syntax" color instead of the plain attribute color
+# Vue directives (v-if=, v-bind:class=, v-on:click.stop=) -- must run before the attribute rule
+macro vue_highlighting_directive
 	vdir_name as "macro_name"
 	vdir_pattern as "\\bv-[a-zA-Z-]+(:[a-zA-Z0-9_.:-]+)?(\\.[a-zA-Z-]+)*="
 	highlighter = xs_add_keyword(highlighter, vdir_name, vdir_pattern)
 
-	# shorthand bind/event attributes (:prop=, @click.stop=) -- no leading
-	# \b since ":" and "@" aren't word characters so a boundary assertion
-	# would never match right before them
+# shorthand bind/event attributes (:prop=, @click.stop=)
+macro vue_highlighting_shorthand_bind_and_event_attribute
 	shorthand_name as "macro_name"
 	shorthand_pattern as "[:@][a-zA-Z_][a-zA-Z0-9_.:-]*="
 	highlighter = xs_add_keyword(highlighter, shorthand_name, shorthand_pattern)
 
-	# plain HTML attribute names tight against "=", same lookahead
-	# workaround as highlights_html
-	macro_run shared_highlighting_attr_name
-
-	# entities
-	macro_run shared_highlighting_html_entity
-
-	# call sites: name immediately followed by "(" -- registered before the
-	# keyword/type rules below so conventional camelCase/PascalCase call
-	# sites win the tiebreak
-	macro_run shared_highlighting_call_js
-
+# JS/TS keywords used in <script>
+macro vue_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(abstract|as|async|await|break|case|catch|class|const|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|instanceof|interface|let|new|null|of|private|protected|public|readonly|return|set|static|super|switch|this|throw|true|try|type|typeof|undefined|var|void|while|with|yield)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin TS primitive/utility types (for <script lang="ts">)
+macro highlights_vue
+	macro_run shared_highlighting_comment_html
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run vue_highlighting_mustache_interpolation
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_string_backtick
+	macro_run vue_highlighting_tag_name_with_tag_scoping
+	macro_run vue_highlighting_directive
+	macro_run vue_highlighting_shorthand_bind_and_event_attribute
+	macro_run shared_highlighting_attr_name
+	macro_run shared_highlighting_html_entity
+	macro_run shared_highlighting_call_js
+	macro_run vue_highlighting_keywords
 	macro_run shared_highlighting_ts_builtin_types
-
-	# PascalCase identifiers (component names, imported types), wherever
-	# used outside a tag
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

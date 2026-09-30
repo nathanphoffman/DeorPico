@@ -1,41 +1,35 @@
-macro highlights_rust
-	# block comments
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# strings -- deliberately no char-literal ('x') bounded rule: Rust also
-	# uses a leading single-quote for lifetimes ('a, 'static), and a bounded
-	# rule can't tell "'a" (lifetime, never closes) from "'a'" (char literal)
-	# without lookahead. Same tradeoff as skipping regex-literals in the TS
-	# rules -- leaving char literals uncolored is cheaper than the
-	# whole-file miscoloring an unterminated-quote misread would cause.
-	macro_run shared_highlighting_string_double
-
-	# macro invocations (println!, vec!, ...) -- stops at "!", so it never
-	# overlaps the call-site rule below (which requires letters directly
-	# against "(", and here a "!" sits in between)
+# macro invocations (println!, vec!, ...)
+macro rust_highlighting_macro_invocation
 	macro_call_name as "macro_name"
 	macro_call_pattern as "\\b[a-z_][a-z0-9_]*!"
 	highlighter = xs_add_keyword(highlighter, macro_call_name, macro_call_pattern)
 
-	# call sites
-	macro_run shared_highlighting_call
-
+# Rust keywords
+macro rust_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(as|async|await|break|const|continue|crate|dyn|else|enum|extern|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|type|unsafe|use|where|while|yield)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin primitive/std types
+# builtin primitive types and common std types
+macro rust_highlighting_builtin_and_std_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|bool|char|str|String|Vec|Option|Result|Box|Rc|Arc)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase user types, wherever used
-	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores and type suffixes allowed
+# numeric literals with underscores and an optional type suffix (1_000u32, 2.5f64)
+macro rust_highlighting_number_with_type_suffix
 	num_name as "number"
 	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64)?\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+# No char-literal ('x') rule on purpose -- it can't be told apart from a lifetime ('a) without lookahead
+macro highlights_rust
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_string_double
+	macro_run rust_highlighting_macro_invocation
+	macro_run shared_highlighting_call
+	macro_run rust_highlighting_keywords
+	macro_run rust_highlighting_builtin_and_std_types
+	macro_run shared_highlighting_type_pascal
+	macro_run rust_highlighting_number_with_type_suffix

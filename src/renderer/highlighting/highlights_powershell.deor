@@ -1,5 +1,5 @@
-macro highlights_powershell
-	# block comments
+# <# ... #> block comments
+macro powershell_highlighting_comment_block
 	name as "comment"
 	start as "<#"
 	stop as "#>"
@@ -7,38 +7,44 @@ macro highlights_powershell
 	bc_escapable as false
 	highlighter = xs_add_bounded(highlighter, bc_spec, bc_escapable)
 
-	# line comments
-	macro_run shared_highlighting_comment_hash
-
-	# strings -- double-quoted supports $var interpolation, single-quoted
-	# is fully literal
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single_raw
-
-	# variables -- $var and ${var}
+# variables: $var and ${var}
+macro powershell_highlighting_dollar_variable
 	var_name as "type"
 	var_pattern as "\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?"
 	highlighter = xs_add_keyword(highlighter, var_name, var_pattern)
 
-	# call sites (function definitions/invocations)
+# call sites: name (dashes allowed) immediately followed by "("
+macro powershell_highlighting_function_call_allowing_dashes
 	call_name as "function"
 	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_-]*\\("
 	highlighter = xs_add_keyword(highlighter, call_name, call_pattern)
 
-	# PowerShell is case-insensitive
+# keywords, case-insensitive
+macro powershell_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "(?i)\\b(begin|break|catch|class|continue|data|define|do|dynamicparam|else|elseif|end|enum|exit|filter|finally|for|foreach|from|function|if|in|param|process|return|switch|throw|trap|try|until|using|var|while|workflow)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# word-form comparison/logical operators
+# word-form operators (-eq, -and, -like, ...), case-insensitive
+macro powershell_highlighting_word_operators
 	op_name as "keyword"
 	op_pattern as "(?i)-(eq|ne|gt|lt|ge|le|like|notlike|match|notmatch|contains|notcontains|and|or|not|xor|is|isnot)\\b"
 	highlighter = xs_add_keyword(highlighter, op_name, op_pattern)
 
-	# cmdlets (Verb-Noun convention)
+# cmdlets (Verb-Noun convention, e.g. Get-ChildItem)
+macro powershell_highlighting_cmdlet_verb_noun
 	cmdlet_name as "function"
 	cmdlet_pattern as "\\b[A-Z][A-Za-z]*-[A-Z][A-Za-z]*\\b"
 	highlighter = xs_add_keyword(highlighter, cmdlet_name, cmdlet_pattern)
 
-	# numeric literals
+macro highlights_powershell
+	macro_run powershell_highlighting_comment_block
+	macro_run shared_highlighting_comment_hash
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
+	macro_run powershell_highlighting_dollar_variable
+	macro_run powershell_highlighting_function_call_allowing_dashes
+	macro_run powershell_highlighting_keywords
+	macro_run powershell_highlighting_word_operators
+	macro_run powershell_highlighting_cmdlet_verb_noun
 	macro_run shared_highlighting_number

@@ -1,27 +1,19 @@
-macro highlights_env
-	# comments
-	macro_run shared_highlighting_comment_hash
-
-	# optional shell "export" prefix, as in `export FOO=bar`
+# optional shell "export" prefix, as in `export FOO=bar`
+macro env_highlighting_export_keyword
 	kw_name as "keyword"
 	kw_pattern as "\\bexport\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# variable name tight against "=", anchored to the start of the line
-	# (optionally after "export "). Trailing "=" swallowed into the match
-	# since the regex crate has no lookahead (same trick as the JSON/TOML
-	# key rules).
+# variable name up to its "=", anchored to the start of the line
+macro env_highlighting_variable_name_at_line_start
 	key_name as "function"
 	key_pattern as "^\\s*(export\\s+)?[A-Za-z_][A-Za-z0-9_]*\\s*="
 	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
 
-	# double-quoted values (backslash-escapable, and the form that supports
-	# $VAR/${VAR} expansion in most .env loaders)
+macro highlights_env
+	macro_run shared_highlighting_comment_hash
+	macro_run env_highlighting_export_keyword
+	macro_run env_highlighting_variable_name_at_line_start
 	macro_run shared_highlighting_string_double
-
-	# single-quoted values -- treated as literal, no escapes, matching
-	# shell single-quote semantics
 	macro_run shared_highlighting_string_single_raw
-
-	# numeric literals
 	macro_run shared_highlighting_number_plain

@@ -1,12 +1,5 @@
-macro highlights_python
-	# line comments -- Python has no block comment
-	macro_run shared_highlighting_comment_hash
-
-	# triple-quoted strings/docstrings -- registered before the plain
-	# single/double-quote rules below so they win the tokenizer's
-	# first-atom-registered tiebreak at the same opening-quote position
-	macro_run shared_highlighting_string_triple_double
-
+# '''...''' -- must run before the plain single-quote rule to win ties
+macro python_highlighting_string_triple_single
 	name as "string"
 	start as "'''"
 	stop as "'''"
@@ -14,27 +7,27 @@ macro highlights_python
 	ststr_escapable as true
 	highlighter = xs_add_bounded(highlighter, ststr_spec, ststr_escapable)
 
-	# plain strings
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-
-	# decorators
-	macro_run shared_highlighting_decorator
-
-	# call sites
-	macro_run shared_highlighting_call
-
+# Python keywords
+macro python_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|match|case)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin types/constants
+# builtin types and constants (int, str, None, True, self, ...)
+macro python_highlighting_builtin_types_and_constants
 	builtin_name as "type"
 	builtin_pattern as "\\b(int|float|str|bool|list|dict|set|tuple|bytes|complex|frozenset|object|None|True|False|self|cls)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase class names, wherever used
+macro highlights_python
+	macro_run shared_highlighting_comment_hash
+	macro_run shared_highlighting_string_triple_double
+	macro_run python_highlighting_string_triple_single
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_decorator
+	macro_run shared_highlighting_call
+	macro_run python_highlighting_keywords
+	macro_run python_highlighting_builtin_types_and_constants
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

@@ -1,5 +1,4 @@
-# """...""" -- register before shared_highlighting_string_double so it wins the
-# tokenizer's first-atom-registered tiebreak at the same opening quote
+# """...""" -- must run before shared_highlighting_string_double to win ties at the opening quote
 macro shared_highlighting_string_triple_double
 	name as "string"
 	start as "\"\"\""

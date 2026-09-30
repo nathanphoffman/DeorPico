@@ -1,39 +1,27 @@
-macro highlights_prisma
-	# line comments -- covers "///" doc comments too, since the "//" rule
-	# matches at the same position and swallows the whole rest of the line
-	macro_run shared_highlighting_comment_slashes
-
-	# strings -- Prisma only has double-quoted strings
-	macro_run shared_highlighting_string_double
-
-	# attributes -- field attributes (@id, @unique), block attributes
-	# (@@index, @@map) and native database types (@db.VarChar), so the
-	# dotted tail is part of the pattern. "@@" is covered by the same rule
-	# because the second "@" is optional in it.
+# attributes: @id, @@index, and dotted native types like @db.VarChar
+macro prisma_highlighting_attribute
 	attr_name as "macro_name"
 	attr_pattern as "@@?[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*"
 	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
 
-	# call sites -- env(), now(), autoincrement(), cuid(), ... registered
-	# before the PascalCase rule below so Unsupported("...") reads as a call
-	macro_run shared_highlighting_call
-
-	# block keywords and literals -- registered before the field-name rule
-	# so "model" at the start of a line wins the tiebreak against it
+# block keywords and literals -- must run before the field-name rule so "model" wins ties
+macro prisma_highlighting_keywords_and_literals
 	kw_name as "keyword"
 	kw_pattern as "\\b(datasource|generator|model|enum|type|view|true|false|null)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# PascalCase identifiers, wherever used -- this is both the scalar types
-	# (String, Int, DateTime, ...) and the model/enum names fields refer to
-	macro_run shared_highlighting_type_pascal
-
-	# field names -- the identifier that opens a line inside a block, which
-	# is also how enum members and "key = value" config lines read. Anchored
-	# to the start of the line so a type or argument name never matches.
+# field names: the first identifier on a line inside a block
+macro prisma_highlighting_field_name_at_line_start
 	field_name as "function"
 	field_pattern as "^\\s*[A-Za-z_][A-Za-z0-9_]*"
 	highlighter = xs_add_keyword(highlighter, field_name, field_pattern)
 
-	# numeric literals
+macro highlights_prisma
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_string_double
+	macro_run prisma_highlighting_attribute
+	macro_run shared_highlighting_call
+	macro_run prisma_highlighting_keywords_and_literals
+	macro_run shared_highlighting_type_pascal
+	macro_run prisma_highlighting_field_name_at_line_start
 	macro_run shared_highlighting_number_plain

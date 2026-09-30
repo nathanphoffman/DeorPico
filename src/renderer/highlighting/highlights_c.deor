@@ -1,40 +1,42 @@
-macro highlights_c
-	# block comments
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# preprocessor directives (#include, #define, ...)
+# preprocessor directives (#include, #define, ...)
+macro c_highlighting_preprocessor_directive
 	pp_name as "macro_name"
 	pp_pattern as "#\\s*[a-zA-Z_]+"
 	highlighter = xs_add_keyword(highlighter, pp_name, pp_pattern)
 
-	# strings and char literals
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-
-	# call sites -- registered before the type/keyword rules so conventional
-	# call names win the tokenizer's first-atom-registered tiebreak
-	macro_run shared_highlighting_call
-
+# C keywords
+macro c_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(auto|break|case|const|continue|default|do|else|enum|extern|for|goto|if|inline|register|restrict|return|sizeof|static|struct|switch|typedef|union|volatile|while|_Bool|_Complex|_Imaginary)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin primitive types
+# builtin primitive types
+macro c_highlighting_builtin_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(char|double|float|int|long|short|signed|unsigned|void)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase typedef'd type names, wherever used
-	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, hex, underscores as separators
+# hex literals (0x1F)
+macro c_highlighting_hex_number
 	hex_name as "number"
 	hex_pattern as "\\b0[xX][0-9a-fA-F]+\\b"
 	highlighter = xs_add_keyword(highlighter, hex_name, hex_pattern)
 
+# decimal/float literals with underscores and optional f/l/u suffixes
+macro c_highlighting_number_with_type_suffix
 	num_name as "number"
 	num_pattern as "\\b\\d[\\d_]*(\\.[\\d_]+)?[fFlLuU]*\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+macro highlights_c
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run c_highlighting_preprocessor_directive
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_call
+	macro_run c_highlighting_keywords
+	macro_run c_highlighting_builtin_types
+	macro_run shared_highlighting_type_pascal
+	macro_run c_highlighting_hex_number
+	macro_run c_highlighting_number_with_type_suffix

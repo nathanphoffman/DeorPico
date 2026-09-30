@@ -1,66 +1,60 @@
-macro highlights_yaml
-	# document markers: "---" opens a document, "..." ends one. Multi-document
-	# streams (kubernetes manifests, docker-compose overlays) are the common
-	# case. When this grammar is running as a markdown file's frontmatter
-	# sub-grammar the closing "---" is the region terminator instead, and the
-	# tokenizer gives the terminator precedence -- see hl_tokenize_line.
+# document markers: "---" opens a document, "..." ends one
+macro yaml_highlighting_document_marker
 	doc_name as "macro_name"
 	doc_pattern as "^(---|\\.\\.\\.)\\s*$"
 	highlighter = xs_add_keyword(highlighter, doc_name, doc_pattern)
 
-	# comments
-	macro_run shared_highlighting_comment_hash
-
-	# anchors (&name), aliases (*name), and tags (!!str, !CustomTag)
+# anchors (&name)
+macro yaml_highlighting_anchor
 	anchor_name as "type"
 	anchor_pattern as "&[A-Za-z0-9_-]+"
 	highlighter = xs_add_keyword(highlighter, anchor_name, anchor_pattern)
 
+# aliases (*name)
+macro yaml_highlighting_alias
 	alias_name as "type"
 	alias_pattern as "\\*[A-Za-z0-9_-]+"
 	highlighter = xs_add_keyword(highlighter, alias_name, alias_pattern)
 
+# tags (!!str, !CustomTag)
+macro yaml_highlighting_tag
 	tag_name as "type"
 	tag_pattern as "!!?[A-Za-z0-9_/]+"
 	highlighter = xs_add_keyword(highlighter, tag_name, tag_pattern)
 
-	# mapping keys -- quoted or bare, tight against ":", anchored to the
-	# start of the line (optionally after a "- " list-item marker) so a
-	# ":" inside a value (e.g. a URL or a time) never misreads as a key.
-	# Trailing ":" is swallowed into the match since the regex crate has no
-	# lookahead (same trick as the JSON/TOML key rules). Registered before
-	# the plain string rules below so a quoted key still wins the
-	# tokenizer's first-atom-registered tiebreak at its opening quote.
+# mapping keys up to their ":" at the start of a line -- must run before the string rules
+macro yaml_highlighting_mapping_key_at_line_start
 	key_name as "function"
 	key_pattern as "^\\s*(-\\s+)?(\"[^\"]*\"|'[^']*'|[A-Za-z0-9_.<-]+)\\s*:"
 	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
 
-	# keys inside a flow mapping -- the compact inline form,
-	# "- { tag: x, note: \"y\" }". These are keys only because they follow a
-	# "{" or a "," rather than because of where they sit in the line, so the
-	# rule above (anchored to the start of the line) can never see them. The
-	# regex crate has no lookbehind, so the "{"/"," is matched but left out of
-	# capture group 1, which is the only part xs_add_keyword_group colors.
-	# Registered before the string rules below so a quoted flow key still wins
-	# the tokenizer's first-atom-registered tiebreak at its opening quote.
+# keys inside { a: 1, b: 2 } -- only capture group 1 is colored; must run before the string rules
+macro yaml_highlighting_mapping_key_inside_flow_mapping
 	flow_key_name as "function"
 	flow_key_pattern as "[{,]\\s*((?:\"[^\"]*\"|'[^']*'|[A-Za-z0-9_.<-]+)\\s*:)"
 	highlighter = xs_add_keyword_group(highlighter, flow_key_name, flow_key_pattern)
 
-	# double-quoted strings (backslash-escapable)
-	macro_run shared_highlighting_string_double
-
-	# single-quoted strings -- YAML escapes an embedded ' by doubling it
-	# ('') rather than with a backslash, so this is not escapable, same as
-	# TOML's literal strings.
-	macro_run shared_highlighting_string_single_raw
-
-	# booleans and null
+# booleans and null in their common spellings
+macro yaml_highlighting_booleans_and_null
 	kw_name as "keyword"
 	kw_pattern as "\\b(true|false|null|True|False|Null|TRUE|FALSE|NULL|yes|no|Yes|No|YES|NO)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# numeric literals, underscores allowed as separators
+# numeric literals with optional sign, underscores and exponent
+macro yaml_highlighting_number_with_sign_and_exponent
 	num_name as "number"
 	num_pattern as "[+-]?\\b\\d[\\d_]*(\\.[\\d_]+)?([eE][+-]?\\d+)?\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+macro highlights_yaml
+	macro_run yaml_highlighting_document_marker
+	macro_run shared_highlighting_comment_hash
+	macro_run yaml_highlighting_anchor
+	macro_run yaml_highlighting_alias
+	macro_run yaml_highlighting_tag
+	macro_run yaml_highlighting_mapping_key_at_line_start
+	macro_run yaml_highlighting_mapping_key_inside_flow_mapping
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single_raw
+	macro_run yaml_highlighting_booleans_and_null
+	macro_run yaml_highlighting_number_with_sign_and_exponent

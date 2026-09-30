@@ -1,37 +1,12 @@
+# No regex-literal (/x/) rule on purpose -- it can't be told apart from division "/"
 macro highlights_typescript
-	# block comments
 	macro_run shared_highlighting_comment_block
-
-	# line comments
 	macro_run shared_highlighting_comment_slashes
-
-	# double/single/template-literal strings -- template ${} interpolation
-	# isn't separately colored, the whole literal is just one string token.
-	#
-	# Deliberately NO regex-literal rule (/pattern/) here -- that's exactly
-	# what breaks synoptic's stock ts/js highlighter (see highlighting.deor):
-	# it can't tell a regex-literal "/" from a division "/", so something
-	# like `a/b` misreads as an unterminated regex and paints everything
-	# for the rest of the file as a string. Leaving "/" untagged (plain)
-	# means real regex literals don't get colored, but that's a much
-	# smaller loss than the whole-file cascade this rule caused.
 	macro_run shared_highlighting_string_double
 	macro_run shared_highlighting_string_single
 	macro_run shared_highlighting_string_backtick
-
-	# call sites: name immediately followed by "(" -- registered before the
-	# keyword/type rules below so conventional camelCase/PascalCase call
-	# sites win the tokenizer's first-atom-registered tiebreak (same
-	# reasoning as highlights_csharp's call_pattern)
 	macro_run shared_highlighting_call_js
 	macro_run shared_highlighting_ts_keywords
-
-	# builtin primitive/utility types
 	macro_run shared_highlighting_ts_builtin_types
-
-	# PascalCase identifiers (classes, interfaces, type aliases, generics),
-	# wherever used
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

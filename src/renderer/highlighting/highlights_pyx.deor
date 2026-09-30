@@ -1,12 +1,5 @@
-macro highlights_pyx
-	# line comments -- Python has no block comment
-	macro_run shared_highlighting_comment_hash
-
-	# triple-quoted strings/docstrings -- registered before the plain
-	# single/double-quote rules below so they win the tokenizer's
-	# first-atom-registered tiebreak at the same opening-quote position
-	macro_run shared_highlighting_string_triple_double
-
+# '''...''' -- must run before the plain single-quote rule to win ties
+macro pyx_highlighting_string_triple_single
 	name as "string"
 	start as "'''"
 	stop as "'''"
@@ -14,46 +7,31 @@ macro highlights_pyx
 	ststr_escapable as true
 	highlighter = xs_add_bounded(highlighter, ststr_spec, ststr_escapable)
 
-	# plain strings -- also covers JSX attribute values like className="..."
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-
-	# decorators, e.g. @component
-	macro_run shared_highlighting_decorator
-
-	# JSX tag names: "<" or "</" immediately followed by a tag/component
-	# name (dotted for namespaced components like <Foo.Bar>). xs_add_tag
-	# (rather than xs_add_keyword) also turns on tag scoping: a tag's
-	# children become a text scope where ordinary code rules don't apply --
-	# that's what keeps apostrophes and keywords like "is"/"and" in page
-	# text from being read as Python. The "|>" alternative matches
-	# fragments (<> and </>).
-	macro_run shared_highlighting_jsx_tag
-
-	# lets a bare "{" inside JSX text resume full code scanning until its
-	# matching "}", instead of staying inert
-	macro_run shared_highlighting_jsx_expr
-
-	# JSX attribute names (className=, onClick=): identifier tight against
-	# "=" with no space -- the "=" is swallowed into the match for the same
-	# lookahead reason as above
-	macro_run shared_highlighting_attr_name
-
-	# call sites
-	macro_run shared_highlighting_call
-
+# Python keywords
+macro pyx_highlighting_python_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|match|case)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin types/constants
+# builtin types and constants (int, str, None, True, self, Any, ...)
+macro pyx_highlighting_builtin_types_and_constants
 	builtin_name as "type"
 	builtin_pattern as "\\b(int|float|str|bool|list|dict|set|tuple|bytes|complex|frozenset|object|None|True|False|self|cls|Any)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase identifiers -- covers Python class names and JSX
-	# component names alike, wherever used
+# PyX: Python with JSX-style markup
+macro highlights_pyx
+	macro_run shared_highlighting_comment_hash
+	macro_run shared_highlighting_string_triple_double
+	macro_run pyx_highlighting_string_triple_single
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_decorator
+	macro_run shared_highlighting_jsx_tag
+	macro_run shared_highlighting_jsx_expr
+	macro_run shared_highlighting_attr_name
+	macro_run shared_highlighting_call
+	macro_run pyx_highlighting_python_keywords
+	macro_run pyx_highlighting_builtin_types_and_constants
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

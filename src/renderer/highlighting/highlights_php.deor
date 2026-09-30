@@ -1,34 +1,30 @@
-macro highlights_php
-	# block comments
-	macro_run shared_highlighting_comment_block
-
-	# line comments -- both // and # styles are valid PHP
-	macro_run shared_highlighting_comment_slashes
-	macro_run shared_highlighting_comment_hash
-
-	# strings
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-
-	# variables
+# variables ($name)
+macro php_highlighting_dollar_variable
 	var_name as "type"
 	var_pattern as "\\$[A-Za-z_][A-Za-z0-9_]*"
 	highlighter = xs_add_keyword(highlighter, var_name, var_pattern)
 
-	# call sites
-	macro_run shared_highlighting_call
-
+# PHP keywords
+macro php_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "\\b(abstract|and|array|as|break|callable|case|catch|class|clone|const|continue|declare|default|do|echo|else|elseif|empty|enddeclare|endfor|endforeach|endif|endswitch|endwhile|extends|final|finally|fn|for|foreach|function|global|goto|if|implements|include|include_once|instanceof|insteadof|interface|isset|list|match|namespace|new|or|print|private|protected|public|require|require_once|return|static|switch|throw|trait|try|unset|use|var|while|xor|yield)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# builtin types
+# builtin types
+macro php_highlighting_builtin_types
 	builtin_name as "type"
 	builtin_pattern as "\\b(int|float|string|bool|array|object|callable|iterable|void|mixed|null|self|parent)\\b"
 	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
 
-	# PascalCase class names, wherever used
+macro highlights_php
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run shared_highlighting_comment_hash
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run php_highlighting_dollar_variable
+	macro_run shared_highlighting_call
+	macro_run php_highlighting_keywords
+	macro_run php_highlighting_builtin_types
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals
 	macro_run shared_highlighting_number

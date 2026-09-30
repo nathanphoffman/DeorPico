@@ -1,18 +1,13 @@
-macro highlights_rexx
-	# block comments -- classic REXX has no line-comment form
-	macro_run shared_highlighting_comment_block
-
-	# strings -- REXX escapes a quote by doubling it, not with a backslash
-	macro_run shared_highlighting_string_double_raw
-	macro_run shared_highlighting_string_single_raw
-
-	# call sites
-	macro_run shared_highlighting_call
-
-	# REXX is case-insensitive
+# keywords, case-insensitive
+macro rexx_highlighting_keywords
 	kw_name as "keyword"
 	kw_pattern as "(?i)\\b(address|arg|by|call|do|drop|else|end|exit|expose|for|if|interpret|iterate|leave|nop|numeric|options|otherwise|parse|procedure|pull|push|queue|return|say|select|signal|then|to|trace|until|upper|while|with)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# numeric literals
+macro highlights_rexx
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_string_double_raw
+	macro_run shared_highlighting_string_single_raw
+	macro_run shared_highlighting_call
+	macro_run rexx_highlighting_keywords
 	macro_run shared_highlighting_number_plain

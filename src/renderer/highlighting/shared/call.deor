@@ -1,5 +1,4 @@
-# call sites: name immediately followed by "(" -- the "(" is part of the match
-# since the regex crate has no lookahead
+# call sites: name immediately followed by "(" -- the "(" is matched too, the regex crate has no lookahead
 macro shared_highlighting_call
 	call_name as "function"
 	call_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*\\("

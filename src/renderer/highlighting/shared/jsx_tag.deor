@@ -1,5 +1,4 @@
-# JSX tag names ("<Foo", "</Foo", dotted "<Foo.Bar"), plus the fragment forms
-# "<>" and "</>". xs_add_tag also turns on tag scoping -- see the callers.
+# JSX tag names (<Foo, </Foo, <Foo.Bar, <>) -- xs_add_tag makes tag children plain text, not code
 macro shared_highlighting_jsx_tag
 	tag_name as "type"
 	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.]*|>)"

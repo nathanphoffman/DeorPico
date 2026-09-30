@@ -1,81 +1,37 @@
-macro highlights_astro
-	# Astro is two grammars in one file: a TS "frontmatter" fence at the top
-	# (--- ... ---) followed by JSX-flavored markup, so these rules are the
-	# tsx set plus the HTML-only bits (markup comments, entities) and
-	# Astro's own template directives.
-
-	# HTML comments -- text-reachable since these appear directly in markup
-	# text, not just inside an expression
-	macro_run shared_highlighting_comment_html
-
-	# TS block comments (frontmatter, and inside {} expressions)
-	macro_run shared_highlighting_comment_block
-
-	# line comments
-	macro_run shared_highlighting_comment_slashes
-
-	# the frontmatter fences themselves -- a line that is nothing but "---".
-	# "^" anchors to the start of the current line, so this can't be
-	# confused with a "---" written mid-line inside markup text.
+# the frontmatter fences: a line that is nothing but "---"
+macro astro_highlighting_frontmatter_fence_line
 	fence_name as "macro_name"
 	fence_pattern as "^\\s*---\\s*$"
 	highlighter = xs_add_keyword(highlighter, fence_name, fence_pattern)
 
-	# double/single/template-literal strings -- covers both HTML attribute
-	# values and TS string literals in the frontmatter; template ${}
-	# interpolation isn't separately colored, the whole literal is one
-	# string token.
-	#
-	# Deliberately NO regex-literal rule (/pattern/), same reasoning as
-	# highlights_tsx -- it can't be told apart from division "/".
-	macro_run shared_highlighting_string_double
-	macro_run shared_highlighting_string_single
-	macro_run shared_highlighting_string_backtick
-
-	# tag names: plain HTML elements, custom elements with dashes, and
-	# dotted component references (<Foo.Bar>). xs_add_tag also turns on tag
-	# scoping so a tag's children become a text scope where ordinary code
-	# rules don't apply -- that's what keeps an apostrophe in page text
-	# ("Don't") from opening a string that swallows the rest of the file.
-	# The "|>" alternative matches fragments (<> and </>); the tokenizer
-	# hands the ">" back so the tag scope still sees its own close.
+# tag names (<div, <my-element, <Foo.Bar, <>) -- xs_add_tag makes tag children plain text
+macro astro_highlighting_tag_name_with_tag_scoping
 	tag_name as "type"
 	tag_pattern as "</?(?:[A-Za-z][A-Za-z0-9_.-]*|>)"
 	highlighter = xs_add_tag(highlighter, tag_name, tag_pattern)
 
-	# lets a bare "{" inside markup text (e.g. {post.title}) resume full
-	# code scanning until its matching "}", instead of staying inert --
-	# Astro expressions are JSX expressions
-	macro_run shared_highlighting_jsx_expr
-
-	# Astro template directives (client:load, client:visible, set:html,
-	# is:raw, transition:name, define:vars, server:defer, ...). Registered
-	# before the generic attribute rule below so they get the "special
-	# syntax" color instead of the plain attribute color. No trailing "="
-	# required since several of them are bare (client:load, is:raw).
+# Astro directives (client:load, set:html, is:raw) -- must run before the attribute rule
+macro astro_highlighting_template_directive
 	dir_name as "macro_name"
 	dir_pattern as "\\b(client|server|set|is|transition|define|slot):[a-zA-Z-]+"
 	highlighter = xs_add_keyword(highlighter, dir_name, dir_pattern)
 
-	# plain attribute names tight against "=" -- the "=" is swallowed into
-	# the match as a lookahead workaround, same as highlights_html
+# Astro: TypeScript frontmatter, then JSX-style markup plus HTML comments/entities and Astro directives
+macro highlights_astro
+	macro_run shared_highlighting_comment_html
+	macro_run shared_highlighting_comment_block
+	macro_run shared_highlighting_comment_slashes
+	macro_run astro_highlighting_frontmatter_fence_line
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run shared_highlighting_string_backtick
+	macro_run astro_highlighting_tag_name_with_tag_scoping
+	macro_run shared_highlighting_jsx_expr
+	macro_run astro_highlighting_template_directive
 	macro_run shared_highlighting_attr_name
-
-	# entities
 	macro_run shared_highlighting_html_entity
-
-	# call sites: name immediately followed by "(" -- registered before the
-	# keyword/type rules below so conventional camelCase/PascalCase call
-	# sites win the tokenizer's first-atom-registered tiebreak
 	macro_run shared_highlighting_call_js
 	macro_run shared_highlighting_ts_keywords
-
-	# builtin primitive/utility types (frontmatter is TypeScript)
 	macro_run shared_highlighting_ts_builtin_types
-
-	# PascalCase identifiers (component names, imported types), wherever
-	# used outside a tag
 	macro_run shared_highlighting_type_pascal
-
-	# numeric literals, underscores allowed as separators
 	macro_run shared_highlighting_number

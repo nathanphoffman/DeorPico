@@ -1,23 +1,23 @@
-macro highlights_json
-	# object keys -- a quoted string tight against ":", trailing colon
-	# swallowed into the match since the regex crate has no lookahead (same
-	# trick as the JSX/HTML attribute rules). Registered before the plain
-	# string rule below so keys win the tokenizer's first-atom-registered
-	# tiebreak at the same opening quote; a value string is never followed
-	# directly by ":" in valid JSON, so this never fires on values.
+# object keys: a quoted string followed by ":" -- must run before the string rule to win ties
+macro json_highlighting_object_key
 	key_name as "function"
 	key_pattern as "\"[^\"]*\"\\s*:"
 	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
 
-	# string values
-	macro_run shared_highlighting_string_double
-
-	# literals
+# the literals true, false and null
+macro json_highlighting_true_false_null
 	kw_name as "keyword"
 	kw_pattern as "\\b(true|false|null)\\b"
 	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
 
-	# numeric literals
+# numeric literals with an optional minus sign and exponent
+macro json_highlighting_number_with_exponent
 	num_name as "number"
 	num_pattern as "-?\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b"
 	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+macro highlights_json
+	macro_run json_highlighting_object_key
+	macro_run shared_highlighting_string_double
+	macro_run json_highlighting_true_false_null
+	macro_run json_highlighting_number_with_exponent
