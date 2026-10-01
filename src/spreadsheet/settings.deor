@@ -1,45 +1,81 @@
 
-# The settings row drawn above the sheet (see render_spreadsheet_settings_row)
-# -- for now just how many decimal places formula results round to. A
-# .dpv keeps it as its first line ("#round=2"), which isn't a sheet row;
-# a .csv can't hold that line without breaking the file for other
-# programs, so there it starts at SPREADSHEET_DEFAULT_ROUND_PLACES every
-# time the file is opened.
+# A .dpv's settings lines -- "#round=2" (how many decimal places numbers
+# show with, edited on the settings row above the sheet, see
+# render_spreadsheet_settings_row) and "#formulas=,,=c1*2" (each column's
+# one formula, see column_formulas.deor) -- sit above the sheet's rows,
+# in any order, and aren't sheet rows themselves. A .csv can't hold them
+# without breaking the file for other programs, so there rounding starts
+# at SPREADSHEET_DEFAULT_ROUND_PLACES every time the file is opened and
+# formulas stay in their own cells.
 
-# Whether this file saves its settings into its first line.
+# Whether this file saves its settings into its first lines.
 fn bool spreadsheet_keeps_settings(string spreadsheet_path)
 	string spreadsheet_ext = f_extension(spreadsheet_path)
 	return spreadsheet_ext is "dpv"
 
-# 1 if `lines` starts with a settings line, otherwise 0 -- how far each
-# sheet row's line sits below its row index in `lines`.
+# How many settings lines `lines` starts with -- how far each sheet row's
+# line sits below its row index in `lines`. Always 0 for a .csv.
 fn int spreadsheet_settings_line_count(string spreadsheet_path, stringList lines)
-	unsafe_macro_run use_spreadsheet_consts
-	if not spreadsheet_keeps_settings(spreadsheet_path) or lines is empty
+	if not spreadsheet_keeps_settings(spreadsheet_path)
 		return 0
-	int first_idx = 0
-	string first_line = lines at first_idx
-	if s_starts_with(first_line, SPREADSHEET_ROUND_PREFIX)
-		return 1
-	return 0
+	return spreadsheet_leading_setting_count(lines)
 
-# The sheet's rows -- `lines` without the settings line, if there is one.
+fn int spreadsheet_leading_setting_count(stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	int setting_count = 0
+	for line in lines
+		bool is_setting = s_starts_with(line, SPREADSHEET_ROUND_PREFIX) or s_starts_with(line, SPREADSHEET_FORMULAS_PREFIX)
+		if not is_setting
+			return setting_count
+		setting_count = setting_count + 1
+	return setting_count
+
+# The sheet's rows -- `lines` without the settings lines.
 fn csvRowList spreadsheet_parse_rows(string spreadsheet_path, stringList lines)
 	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
 	stringList sheet_lines = l_string_drop(lines, settings_count)
 	return csv_parse_lines(sheet_lines)
 
-# A .dpv's "#round=N", or the default when there's no (valid) settings line.
+# Index in `lines` of the settings line starting with setting_prefix, or -1.
+fn int spreadsheet_setting_line_idx(stringList lines, string setting_prefix)
+	int setting_count = spreadsheet_leading_setting_count(lines)
+	for line_idx in range(setting_count)
+		string line = lines at line_idx
+		if s_starts_with(line, setting_prefix)
+			return line_idx
+	return 0 - 1
+
+# What follows setting_prefix on its settings line, or "" if there isn't one.
+fn string spreadsheet_setting_value(stringList lines, string setting_prefix)
+	int line_idx = spreadsheet_setting_line_idx(lines, setting_prefix)
+	if line_idx < 0
+		return ""
+	string line = lines at line_idx
+	int value_start = s_char_count(setting_prefix)
+	int line_length = s_char_count(line)
+	return s_substring(line, value_start, line_length)
+
+# `lines` with setting_prefix's line set to setting_value -- replaced in
+# place, or added at the top -- or removed when setting_value is "".
+fn stringList spreadsheet_lines_with_setting(stringList lines, string setting_prefix, string setting_value)
+	int line_idx = spreadsheet_setting_line_idx(lines, setting_prefix)
+	string setting_line = s_join([setting_prefix, setting_value])
+	stringList updated_lines = lines
+	if line_idx >= 0 and setting_value is ""
+		updated_lines remove at line_idx
+	else if line_idx >= 0
+		updated_lines at line_idx = setting_line
+	else if setting_value is not ""
+		stringList setting_lines = [setting_line]
+		updated_lines = l_string_concat(setting_lines, updated_lines)
+	return updated_lines
+
+# A .dpv's "#round=N", or the default when there's no (valid) one.
 fn int spreadsheet_round_places_from_lines(string spreadsheet_path, stringList lines)
 	unsafe_macro_run use_spreadsheet_consts
-	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
-	if settings_count is 0
+	if not spreadsheet_keeps_settings(spreadsheet_path)
 		return SPREADSHEET_DEFAULT_ROUND_PLACES
-	int first_idx = 0
-	string first_line = lines at first_idx
-	int value_start = s_char_count(SPREADSHEET_ROUND_PREFIX)
-	int line_length = s_char_count(first_line)
-	string value_text = s_substring(first_line, value_start, line_length)
+	string value_text = spreadsheet_setting_value(lines, SPREADSHEET_ROUND_PREFIX)
 	int round_places = spreadsheet_parse_round_places(value_text)
 	if round_places < 0
 		return SPREADSHEET_DEFAULT_ROUND_PLACES
@@ -57,14 +93,3 @@ fn int spreadsheet_parse_round_places(string text)
 	if round_places < 0 or round_places > SPREADSHEET_MAX_ROUND_PLACES
 		return 0 - 1
 	return round_places
-
-# 2 -> "#round=2".
-fn string spreadsheet_settings_line(int round_places)
-	unsafe_macro_run use_spreadsheet_consts
-	string places_text = c_int_to_string(round_places)
-	return s_join([SPREADSHEET_ROUND_PREFIX, places_text])
-
-# `lines` with the settings line put in front.
-fn stringList spreadsheet_lines_with_settings_line(stringList lines, string setting_line)
-	stringList setting_lines = [setting_line]
-	return l_string_concat(setting_lines, lines)

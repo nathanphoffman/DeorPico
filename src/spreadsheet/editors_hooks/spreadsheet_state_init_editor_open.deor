@@ -18,6 +18,7 @@ fn SpreadsheetState spreadsheet_for_file(string filename, stringList lines)
 		spreadsheet_active = true
 		spreadsheet_rows = spreadsheet_parse_rows(spreadsheet_path, lines)
 	int spreadsheet_round_places = spreadsheet_round_places_from_lines(spreadsheet_path, lines)
+	stringList spreadsheet_column_formulas = spreadsheet_column_formulas_from_lines(spreadsheet_path, lines)
 	bool spreadsheet_view_active = spreadsheet_active
 	spreadsheet_sel_row as 0
 	spreadsheet_sel_col as 0
@@ -26,5 +27,5 @@ fn SpreadsheetState spreadsheet_for_file(string filename, stringList lines)
 	spreadsheet_editing as false
 	string spreadsheet_edit_buffer = ""
 	spreadsheet_modal_open as false
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places)
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas)
 	return spreadsheet

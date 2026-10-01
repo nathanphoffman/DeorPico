@@ -52,3 +52,7 @@ struct SpreadsheetState
 	# settings row above the sheet (spreadsheet_sel_row -1) and, for a
 	# .dpv, saved as its first line. See src/spreadsheet/settings.deor.
 	int spreadsheet_round_places
+
+	# A .dpv's one formula per column ("" for none), from its "#formulas="
+	# line -- always empty for a .csv. See column_formulas.deor.
+	stringList spreadsheet_column_formulas

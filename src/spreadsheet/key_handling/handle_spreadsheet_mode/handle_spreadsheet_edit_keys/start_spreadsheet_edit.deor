@@ -1,8 +1,13 @@
 
+# Enter starts with the cell's text -- or, below the header of a column
+# with a formula, that formula (editing any of its cells edits it).
 macro start_spreadsheet_edit_with_cell_text
 	string initial_text = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+	string column_formula = spreadsheet_column_formula(spreadsheet_column_formulas, spreadsheet_sel_col)
 	if spreadsheet_sel_row < 0
 		initial_text = c_int_to_string(spreadsheet_round_places)
+	else if spreadsheet_sel_row > 0 and column_formula is not ""
+		initial_text = column_formula
 	macro_run start_spreadsheet_edit
 
 macro start_spreadsheet_edit_replacing_cell

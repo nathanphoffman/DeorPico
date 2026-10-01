@@ -23,7 +23,8 @@ unsafe_macro locate_spreadsheet_click
 	int view_rows = spreadsheet_view_rows(rows)
 	int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
 	int content_col = col - sidebar_width
-	intList column_widths = spreadsheet_column_widths(spreadsheet_rows, spreadsheet_round_places)
+	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
+	intList column_widths = spreadsheet_column_widths(display_rows)
 	int clicked_row = spreadsheet_scroll_row + row - 1
 	if row is 0
 		clicked_row = 0 - 1

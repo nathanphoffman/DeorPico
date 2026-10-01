@@ -11,7 +11,9 @@ macro sort_spreadsheet_by_selected_column
 	int line_count = len(lines)
 	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
 	if row_count > 2 and line_count is row_count + settings_count
-		intList sort_order = csv_sort_order(spreadsheet_rows, spreadsheet_sel_col, sort_descending)
+		int exact_places = 0 - 1
+		csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, exact_places, spreadsheet_column_formulas)
+		intList sort_order = csv_sort_order(display_rows, spreadsheet_sel_col, sort_descending)
 		macro_run reorder_spreadsheet_rows_and_lines
 		macro_run announce_spreadsheet_sort
 

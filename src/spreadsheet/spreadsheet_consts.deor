@@ -21,3 +21,7 @@ unsafe_macro use_spreadsheet_consts
 	const int SPREADSHEET_DEFAULT_ROUND_PLACES = 2
 	const int SPREADSHEET_MAX_ROUND_PLACES = 10
 	const string SPREADSHEET_ROUND_PREFIX = "#round="
+
+	# A .dpv's one formula per column, as a CSV row ("#formulas=,,=c1*2")
+	# -- see column_formulas.deor.
+	const string SPREADSHEET_FORMULAS_PREFIX = "#formulas="

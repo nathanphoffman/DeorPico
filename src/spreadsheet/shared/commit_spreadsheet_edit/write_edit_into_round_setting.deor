@@ -16,13 +16,8 @@ macro write_edit_into_round_setting
 
 # Replaces the .dpv's "#round=N" line, or adds one above the sheet.
 macro write_round_setting_into_lines
-	string setting_line = spreadsheet_settings_line(spreadsheet_round_places)
-	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	string places_text = c_int_to_string(spreadsheet_round_places)
 	stringList updated_lines = move lines
-	if settings_count > 0
-		int first_idx = 0
-		updated_lines at first_idx = setting_line
-	else
-		updated_lines = spreadsheet_lines_with_settings_line(updated_lines, setting_line)
+	updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_ROUND_PREFIX, places_text)
 	lines = move updated_lines
 	dirty = true

@@ -1,0 +1,37 @@
+
+# An edit below the header of a .dpv column (see read_column_formula_edit):
+# text starting with "=" becomes the column's one formula; anything else
+# in a column that had a formula turns it back into a normal column, with
+# the typed text (if any) going into the edited cell.
+macro write_edit_into_column_formula
+	if typed_is_formula
+		macro_run set_column_formula
+	else
+		macro_run write_edit_if_cell_changed
+		string new_formula = ""
+		macro_run replace_column_formula
+
+# A column can only get a formula once its other cells are empty -- the
+# edited cell's own text is cleared, since the formula fills it now.
+macro set_column_formula
+	bool other_data = spreadsheet_column_has_data(spreadsheet_rows, spreadsheet_sel_col, spreadsheet_sel_row)
+	if not column_has_formula and other_data
+		notice = "Clear this column's other cells before giving it a formula"
+		error = true
+	else
+		spreadsheet_edit_buffer = ""
+		macro_run write_edit_if_cell_changed
+		string new_formula = typed_text
+		macro_run replace_column_formula
+
+# Sets the column's formula to `new_formula` (declared by the caller -- ""
+# to remove it) and rewrites the .dpv's "#formulas=" line to match.
+macro replace_column_formula
+	unsafe_macro_run use_spreadsheet_consts
+	if new_formula is not column_formula
+		spreadsheet_column_formulas = spreadsheet_formulas_with(spreadsheet_column_formulas, spreadsheet_sel_col, new_formula)
+		string formulas_value = spreadsheet_formulas_setting_value(spreadsheet_column_formulas)
+		stringList updated_lines = move lines
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_FORMULAS_PREFIX, formulas_value)
+		lines = move updated_lines
+		dirty = true

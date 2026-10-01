@@ -1,12 +1,15 @@
 
 # Ends the edit, writing the typed text into the selected cell (or the
-# settings row's setting) -- skipped (and the buffer stays not-dirty) if
-# the text didn't actually change.
+# settings row's setting, or a .dpv column's formula) -- skipped (and the
+# buffer stays not-dirty) if the text didn't actually change.
 macro commit_spreadsheet_edit
 	if spreadsheet_editing
 		spreadsheet_editing = false
+		unsafe_macro_run read_column_formula_edit
 		if spreadsheet_sel_row < 0
 			macro_run write_edit_into_round_setting
+		else if is_column_formula_edit
+			macro_run write_edit_into_column_formula
 		else
 			macro_run write_edit_if_cell_changed
 		spreadsheet_edit_buffer = ""

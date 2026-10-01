@@ -16,7 +16,8 @@ unsafe_macro setup_spreadsheet_view_layout
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
 	int sidebar_width = cols - content_width
 	int view_rows = spreadsheet_view_rows(rows)
-	intList column_widths = spreadsheet_column_widths(spreadsheet_rows, spreadsheet_round_places)
+	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
+	intList column_widths = spreadsheet_column_widths(display_rows)
 
 	string screen = ANSI_HOME
 
@@ -38,7 +39,9 @@ unsafe_macro setup_spreadsheet_modal
 	int modal_box_width = 0
 	if spreadsheet_modal_open
 		int header_row = 0
-		string modal_text = spreadsheet_display_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+		int exact_places = 0 - 1
+		csvRowList exact_rows = spreadsheet_display_rows(spreadsheet_rows, exact_places, spreadsheet_column_formulas)
+		string modal_text = spreadsheet_cell_value(exact_rows, spreadsheet_sel_row, spreadsheet_sel_col)
 		string modal_title = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
 
 		# As narrow as the text needs (but room for the title), no wider
@@ -97,17 +100,20 @@ unsafe_macro setup_spreadsheet_modal
 # separators; blank once past the sheet's last row. Built as plain text
 # first so truncating/padding to content_width works on character counts,
 # then the selected cell's span gets colored (or the popup's line drawn
-# over it) afterward.
+# over it) afterward. While a .dpv column's formula is being edited,
+# every other cell it fills (rows below the header with a number to its
+# left) gets a tint too.
 macro render_spreadsheet_row
 	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int data_row = spreadsheet_scroll_row + sheet_offset
 	int sel_start = 0 - 1
 	int sel_stop = 0 - 1
+	int tint_start = 0 - 1
+	int tint_stop = 0 - 1
 
 	string content = ""
 	if data_row < spreadsheet_row_count
-		stringList raw_cells = spreadsheet_rows at data_row
-		stringList row_cells = spreadsheet_display_row(raw_cells, spreadsheet_round_places)
+		stringList row_cells = display_rows at data_row
 		int cell_count = len(row_cells)
 
 		content = s_join([SPREADSHEET_SEPARATOR])
@@ -132,6 +138,8 @@ macro render_spreadsheet_row
 			if data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
 				sel_start = content_x
 				sel_stop = content_x + col_width
+			else if tint_formula_column and col_idx is spreadsheet_sel_col and data_row > 0
+				macro_run tint_cell_if_formula_fills_it
 			content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
 			content_x = content_x + col_width + separator_width
 
@@ -164,6 +172,12 @@ macro render_spreadsheet_row
 			content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_DEFAULT_BG, after_sel])
 		else
 			content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
+	else if tint_start >= 0 and tint_start < content_width
+		int tint_end = m_min(tint_stop, content_width)
+		string before_tint = s_substring(content, line_start, tint_start)
+		string tint_text = s_substring(content, tint_start, tint_end)
+		string after_tint = s_substring(content, tint_end, content_width)
+		content = s_join([before_tint, ANSI_COLUMN_TINT, tint_text, ANSI_DEFAULT_BG, after_tint])
 
 	# Row 0 is always the header -- bolded, and never moved by sorting
 	# (see sort_spreadsheet_by_selected_column).
@@ -213,6 +227,11 @@ macro color_selected_settings_value
 		places_color_off = s_join([ANSI_DEFAULT_BG])
 	settings_content = s_join([before_places, places_color, places_span, places_color_off, after_places])
 
+macro tint_cell_if_formula_fills_it
+	if spreadsheet_has_number_before(row_cells, col_idx)
+		tint_start = content_x
+		tint_stop = content_x + col_width
+
 # Iterates every visible row, appending the sidebar column then the content
 # column (the settings row on the first, sheet rows below it), same shape
 # as render_buffer_rows' main loop.
@@ -231,7 +250,7 @@ macro render_spreadsheet_rows
 	filterMatchList filter_matches = empty
 
 	int spreadsheet_row_count = len(spreadsheet_rows)
-	int spreadsheet_column_count_all = spreadsheet_column_count(spreadsheet_rows)
+	int spreadsheet_column_count_all = spreadsheet_column_count(display_rows)
 
 	int screen_rows = view_rows + 1
 	for row_offset in range(screen_rows)
@@ -262,6 +281,8 @@ macro render_spreadsheet_status_and_notice
 	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^S save  ^T text view"
 	if spreadsheet_editing
 		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
+	if tint_formula_column
+		hint_text = "editing the column's formula -- Enter/Tab confirm  Esc cancel  (no leading = makes it a normal column)"
 	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- ", position_text, " -- ", hint_text])
 	int status_length = s_char_count(status_line)
 	if status_length > cols
@@ -270,11 +291,19 @@ macro render_spreadsheet_status_and_notice
 	string status_padded = s_pad_right(status_line, cols)
 	screen = s_join([screen, status_padded, ANSI_CRLF])
 
+	# A .dpv with a formula in a row (see spreadsheet_invalid_dpv_reason) is
+	# flagged in red whenever nothing else is being said.
 	string notice_text = notice
+	string invalid_reason = spreadsheet_invalid_dpv_reason(spreadsheet_path, spreadsheet_rows)
+	bool show_invalid = notice_text is "" and invalid_reason is not ""
+	if show_invalid
+		notice_text = invalid_reason
 	if len(notice_text) > cols
 		int notice_trunc_start = 0
 		notice_text = s_substring(notice_text, notice_trunc_start, cols)
 	string notice_padded = s_pad_right(notice_text, cols)
+	if show_invalid
+		notice_padded = s_join([ANSI_ERROR_BG, notice_padded, ANSI_DEFAULT_BG])
 	screen = s_join([screen, notice_padded])
 
 fn void spreadsheet_render(AppState state)
@@ -282,7 +311,7 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
 	(main_panel) in state
 	(core) in main_panel
 	(dirty) in core
@@ -290,6 +319,8 @@ fn void spreadsheet_render(AppState state)
 	unsafe_macro_run use_spreadsheet_consts
 	unsafe_macro_run use_ansi_codes
 
+	unsafe_macro_run read_column_formula_edit
+	bool tint_formula_column = spreadsheet_editing and is_column_formula_edit
 	unsafe_macro_run setup_spreadsheet_view_layout
 	unsafe_macro_run setup_spreadsheet_modal
 	macro_run render_spreadsheet_rows
@@ -378,3 +409,15 @@ fn string spreadsheet_modal_border(string label, int inner_width, bool is_top)
 	string dash = "─"
 	string fill = s_repeat(dash, fill_count)
 	return s_join([left_corner, label_part, fill, right_corner])
+
+# True if any of row_cells before col_idx is a number -- the cells a
+# column formula fills.
+fn bool spreadsheet_has_number_before(stringList row_cells, int col_idx)
+	int cell_count = len(row_cells)
+	int stop = m_min(col_idx, cell_count)
+	for cell_idx in range(stop)
+		string cell = row_cells at cell_idx
+		string trimmed = s_trim(cell)
+		if s_is_number(trimmed)
+			return true
+	return false

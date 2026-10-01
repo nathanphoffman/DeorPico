@@ -1,0 +1,99 @@
+
+# A .dpv has at most one formula per column, kept on its "#formulas="
+# settings line rather than in the rows -- every row below the header
+# with a number to the left of that column shows the formula's result
+# there (see spreadsheet_display_rows). Editing any of those cells edits
+# the column's formula (see write_edit_into_column_formula); a .csv keeps
+# its formulas in their own cells instead.
+
+# Whether the edit in progress is on a .dpv column's formula rather than
+# one cell: below the header, in a column that has a formula or with an
+# "=" typed. Leaks column_formula, typed_text, typed_is_formula,
+# column_has_formula and is_column_formula_edit -- shared by the commit
+# and the renderer (which highlights the whole column while it's true).
+unsafe_macro read_column_formula_edit
+	string column_formula = spreadsheet_column_formula(spreadsheet_column_formulas, spreadsheet_sel_col)
+	string typed_text = s_trim(spreadsheet_edit_buffer)
+	string formula_mark = "="
+	bool typed_is_formula = s_starts_with(typed_text, formula_mark)
+	bool column_has_formula = column_formula is not ""
+	bool formula_column_row = spreadsheet_keeps_settings(spreadsheet_path) and spreadsheet_sel_row > 0
+	bool is_column_formula_edit = formula_column_row and (column_has_formula or typed_is_formula)
+
+# Each column's formula ("" for none) from a .dpv's "#formulas=" line --
+# always empty for a .csv.
+fn stringList spreadsheet_column_formulas_from_lines(string spreadsheet_path, stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	stringList no_formulas = empty
+	if not spreadsheet_keeps_settings(spreadsheet_path)
+		return no_formulas
+	string formulas_text = spreadsheet_setting_value(lines, SPREADSHEET_FORMULAS_PREFIX)
+	if formulas_text is ""
+		return no_formulas
+	return csv_split_line(formulas_text)
+
+# Column col_idx's formula, or "" if it has none.
+fn string spreadsheet_column_formula(stringList column_formulas, int col_idx)
+	int formula_count = len(column_formulas)
+	if col_idx < 0 or col_idx >= formula_count
+		return ""
+	string formula = column_formulas at col_idx
+	return s_trim(formula)
+
+# column_formulas with column col_idx's formula set to `formula`.
+fn stringList spreadsheet_formulas_with(stringList column_formulas, int col_idx, string formula)
+	stringList updated_formulas = column_formulas
+	int start = len(updated_formulas)
+	int stop = col_idx + 1
+	for in range(start, stop)
+		updated_formulas at end = ""
+	updated_formulas at col_idx = formula
+	return updated_formulas
+
+# What goes after "#formulas=" -- "" once no column has a formula, so the
+# line can be dropped.
+fn string spreadsheet_formulas_setting_value(stringList column_formulas)
+	int keep_count = 0
+	int formula_count = len(column_formulas)
+	for col_idx in range(formula_count)
+		string formula = column_formulas at col_idx
+		if formula is not ""
+			keep_count = col_idx + 1
+	if keep_count is 0
+		return ""
+	stringList kept_formulas = l_string_take(column_formulas, keep_count)
+	return csv_join_row(kept_formulas)
+
+# True if any row below the header other than skip_row has something in
+# column col_idx -- a column has to be empty before it gets a formula.
+fn bool spreadsheet_column_has_data(csvRowList rows, int col_idx, int skip_row)
+	int row_count = len(rows)
+	int start = 1
+	for row_idx in range(start, row_count)
+		string cell = spreadsheet_cell_value(rows, row_idx, col_idx)
+		string trimmed = s_trim(cell)
+		if row_idx is not skip_row and trimmed is not ""
+			return true
+	return false
+
+# Why a .dpv isn't valid -- a row with its own formula -- or "" if it's
+# fine (always "" for a .csv).
+fn string spreadsheet_invalid_dpv_reason(string spreadsheet_path, csvRowList rows)
+	const string FORMULA_PREFIX = "="
+	if not spreadsheet_keeps_settings(spreadsheet_path)
+		return ""
+	int row_count = len(rows)
+	int start = 1
+	for row_idx in range(start, row_count)
+		stringList row_cells = rows at row_idx
+		int cell_count = len(row_cells)
+		for col_idx in range(cell_count)
+			string cell = row_cells at col_idx
+			string trimmed = s_trim(cell)
+			if s_starts_with(trimmed, FORMULA_PREFIX)
+				int shown_row = row_idx + 1
+				int shown_col = col_idx + 1
+				string row_text = c_int_to_string(shown_row)
+				string col_text = c_int_to_string(shown_col)
+				return s_join(["Not a valid .dpv: row ", row_text, ", col ", col_text, " has its own formula (a .dpv keeps one formula per column)"])
+	return ""

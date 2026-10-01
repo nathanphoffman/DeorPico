@@ -7,15 +7,23 @@
 # results, so "=+(c*n)" is c1*1 + c2*2 + ... The file keeps the formula;
 # the sheet shows its result.
 
-# Works out what `cell` shows, then -- if that's a number -- adds it to
-# left_values so formulas further right can use it (a formula's result
-# counts as a numeric cell too, unrounded). Any number -- typed or worked
-# out -- shows rounded; the file and the edit box keep the typed text.
+# Works out what column col_idx shows, then -- if that's a number -- adds
+# it to left_values so formulas further right can use it (a formula's
+# result counts as a numeric cell too, unrounded). A column formula (a
+# .dpv's, see column_formulas.deor) fills the cell only once there's a
+# number to its left. Any number -- typed or worked out -- shows rounded;
+# the file and the edit box keep the typed text.
 macro add_cell_to_display_row
+	string cell = spreadsheet_cell_in_row(row_cells, col_idx)
+	string column_formula = spreadsheet_column_formula(column_formulas, col_idx)
 	string cell_value = s_join([cell])
 	const string FORMULA_PREFIX = "="
 	string trimmed = s_trim(cell)
-	if s_starts_with(trimmed, FORMULA_PREFIX)
+	if column_formula is not "" and left_values is empty
+		cell_value = ""
+	else if column_formula is not ""
+		cell_value = spreadsheet_evaluate_formula(column_formula, left_values)
+	else if s_starts_with(trimmed, FORMULA_PREFIX)
 		cell_value = spreadsheet_evaluate_formula(trimmed, left_values)
 	string value_trimmed = s_trim(cell_value)
 	string shown = cell_value
@@ -27,15 +35,39 @@ macro add_cell_to_display_row
 		float number_value = c_string_to_float(value_trimmed)
 		left_values at end = number_value
 
-# Every cell of one row as it shows on screen, left to right -- numbers
-# shown with exactly `round_places` decimals, or as written/worked out
-# when it's -1.
-fn stringList spreadsheet_display_row(stringList row_cells, int round_places)
+# Every row as it shows on screen -- the header never gets column formulas.
+fn csvRowList spreadsheet_display_rows(csvRowList rows, int round_places, stringList column_formulas)
+	csvRowList display_rows = empty
+	stringList no_formulas = empty
+	int row_count = len(rows)
+	for row_idx in range(row_count)
+		stringList row_cells = rows at row_idx
+		if row_idx is 0
+			stringList header_cells = spreadsheet_display_row(row_cells, round_places, no_formulas)
+			display_rows at end = header_cells
+		else
+			stringList display_cells = spreadsheet_display_row(row_cells, round_places, column_formulas)
+			display_rows at end = display_cells
+	return display_rows
+
+# Every cell of one row as it shows on screen, left to right (as far as
+# the row or the last column formula goes) -- numbers shown with exactly
+# `round_places` decimals, or as written/worked out when it's -1.
+fn stringList spreadsheet_display_row(stringList row_cells, int round_places, stringList column_formulas)
 	stringList display_cells = empty
 	floatList left_values = empty
-	for cell in row_cells
+	int cell_count = len(row_cells)
+	int formula_count = len(column_formulas)
+	int column_count = m_max(cell_count, formula_count)
+	for col_idx in range(column_count)
 		macro_run add_cell_to_display_row
 	return display_cells
+
+fn string spreadsheet_cell_in_row(stringList row_cells, int col_idx)
+	int cell_count = len(row_cells)
+	if col_idx >= cell_count
+		return ""
+	return row_cells at col_idx
 
 # A number with exactly `round_places` decimals ("39" -> "39.00")
 # -- errors like #ERR, and anything when round_places is -1, unchanged.

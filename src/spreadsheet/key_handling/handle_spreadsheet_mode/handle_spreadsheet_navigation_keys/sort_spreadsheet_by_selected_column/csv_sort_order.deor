@@ -3,7 +3,7 @@
 # in column `col_idx` as shown (a formula sorts by its result): empty, a
 # number (keyed by its value) or text (keyed by its lowercase form).
 macro add_row_to_sort_group
-	string raw_cell = spreadsheet_display_value(rows, row_idx, col_idx)
+	string raw_cell = spreadsheet_cell_value(display_rows, row_idx, col_idx)
 	string cell = s_trim(raw_cell)
 	if cell is ""
 		empty_indices at end = row_idx
@@ -31,17 +31,18 @@ macro append_sort_groups_in_order
 	for row_idx in empty_indices
 		order at end = row_idx
 
-# Row indices of `rows` in sorted order by column `col_idx`, with the
+# Row indices of `display_rows` (from spreadsheet_display_rows, unrounded)
+# in sorted order by column `col_idx`, with the
 # header (index 0) always first. Numbers compare numerically, text
 # case-insensitively. The sorts are stable (see l_sort_indices_by_*), so
 # sorting by one column then another keeps ties in the previous order.
-fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
+fn intList csv_sort_order(csvRowList display_rows, int col_idx, bool descending)
 	intList number_indices = empty
 	floatList number_keys = empty
 	intList text_indices = empty
 	stringList text_keys = empty
 	intList empty_indices = empty
-	int row_count = len(rows)
+	int row_count = len(display_rows)
 	int start = 1
 	for row_idx in range(start, row_count)
 		macro_run add_row_to_sort_group
