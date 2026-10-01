@@ -1,44 +1,31 @@
 
-# Expecting a number: "+" / "-" before it are signs ("=-c1", "=c1*-2"),
-# anything else must be `c`, `cN` or a plain number.
-macro read_formula_operand
-	if token is "-"
-		sign = 0.0 - sign
-	else if token is "*" or token is "/"
-		formula_error = "#ERR"
-	else if token is not "+"
-		string operand_error = formula_operand_error(token, left_values)
-		if operand_error is not ""
-			formula_error = operand_error
-		else
-			float operand_value = formula_operand_value(token, left_values)
-			term_values at end = operand_value * sign
-			sign = 1.0
-			expecting_operand = false
-
-# Expecting an operator between two numbers.
-macro read_formula_operator
-	if token is "+" or token is "-" or token is "*" or token is "/"
-		term_ops at end = token
-		expecting_operand = true
-	else
-		formula_error = "#ERR"
-
-# Turns the tokens into numbers and the operators between them, stopping
-# at the first problem. An empty formula or one ending in an operator is
-# an error too.
-fn FormulaTerms formula_resolve(stringList tokens, floatList left_values)
+# The empty lists formula_resolve fills in, plus its running state --
+# leaked so the loop below can use them.
+unsafe_macro start_with_no_terms_and_positive_sign
 	floatList term_values = empty
 	stringList term_ops = empty
 	string formula_error = ""
 	float sign = 1.0
 	bool expecting_operand = true
-	for token in tokens
-		if formula_error is ""
-			if expecting_operand
-				macro_run read_formula_operand
-			else
-				macro_run read_formula_operator
+
+# Numbers and operators have to alternate, starting with a number.
+macro read_token_as_number_or_operator
+	if expecting_operand
+		macro_run read_token_as_sign_or_number
+	else
+		macro_run read_token_as_operator_between_numbers
+
+# An empty formula, or one ending in an operator ("=c1+"), is an error.
+macro fail_if_formula_ends_without_a_number
 	if formula_error is "" and expecting_operand
 		formula_error = "#ERR"
+
+# Turns the tokens into numbers and the operators between them, stopping
+# at the first problem.
+fn FormulaTerms formula_resolve(stringList tokens, floatList left_values)
+	unsafe_macro_run start_with_no_terms_and_positive_sign
+	for token in tokens
+		if formula_error is ""
+			macro_run read_token_as_number_or_operator
+	macro_run fail_if_formula_ends_without_a_number
 	return (term_values, term_ops, formula_error)

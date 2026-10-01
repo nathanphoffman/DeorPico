@@ -53,6 +53,10 @@ import "src/spreadsheet/csv_parse.deor"
 # that calls it, and shared/ holds macros called from several branches.
 # Imported deepest-first so every macro is defined before its callers.
 import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/formula_operand.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/read_token_as_sign_or_number.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/read_token_as_operator_between_numbers.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine/apply_multiply_divide_or_save_add_subtract.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine/add_or_subtract_next_saved_value.deor"
 import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve.deor"
 import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_tokens.deor"
 import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine.deor"

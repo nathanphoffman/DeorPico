@@ -1,0 +1,25 @@
+
+# One operator and the number to its right: * and / are applied straight
+# away; + and - are saved (with their number) for afterward.
+macro apply_multiply_divide_or_save_add_subtract
+	string operator = term_ops at operator_idx
+	int right_idx = operator_idx + 1
+	float right_side = term_values at right_idx
+	if operator is "*" or operator is "/"
+		macro_run merge_multiply_or_divide_into_previous_value
+	else
+		running_ops at end = operator
+		running_values at end = right_side
+
+# Replaces the last saved value with it times/divided by right_side.
+# Dividing by zero is an error.
+macro merge_multiply_or_divide_into_previous_value
+	int last_idx = len(running_values) - 1
+	float left_side = running_values at last_idx
+	float combined = left_side * right_side
+	if operator is "/"
+		if right_side is 0.0
+			formula_error = "#DIV/0"
+		else
+			combined = left_side / right_side
+	running_values at last_idx = combined

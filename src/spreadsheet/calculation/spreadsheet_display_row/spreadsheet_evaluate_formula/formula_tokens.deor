@@ -2,7 +2,7 @@
 # One character of a formula: an operator is a token of its own, a space
 # just ends the current token, anything else is part of a name or number
 # ("c", "c12", "2.5").
-macro add_formula_char
+macro split_on_operator_or_extend_current_token
 	if chr is "+" or chr is "-" or chr is "*" or chr is "/" or chr is " "
 		if current is not ""
 			tokens at end = current
@@ -12,19 +12,21 @@ macro add_formula_char
 	else
 		current = s_join([current, chr])
 
-# Splits "=+c-c1*2" into ["+", "c", "-", "c1", "*", "2"] -- the leading
-# "=" is dropped and names are lowercased, so "C1" works too.
+# Splits "=+c-c1*2" into ["+", "c", "-", "c1", "*", "2"].
 fn stringList formula_tokens(string formula)
-	int formula_length = s_char_count(formula)
-	int body_start = 1
-	string body = s_substring(formula, body_start, formula_length)
-	string lowered = s_to_lower(body)
-	stringList body_chars = s_chars(lowered)
-
+	string body = formula_text_after_equals_sign(formula)
+	stringList body_chars = s_chars(body)
 	stringList tokens = empty
 	string current = ""
 	for chr in body_chars
-		macro_run add_formula_char
+		macro_run split_on_operator_or_extend_current_token
 	if current is not ""
 		tokens at end = current
 	return tokens
+
+# "=+C1*2" -> "+c1*2" -- lowercased so "C1" works the same as "c1".
+fn string formula_text_after_equals_sign(string formula)
+	int formula_length = s_char_count(formula)
+	int body_start = 1
+	string body = s_substring(formula, body_start, formula_length)
+	return s_to_lower(body)

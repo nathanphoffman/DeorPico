@@ -1,49 +1,31 @@
 
-# Folds a * or / into the last running value, so they happen before any
-# + or - (normal math order). Dividing by zero is an error.
-macro apply_formula_mul_div
-	int last_idx = len(running_values) - 1
-	float left_side = running_values at last_idx
-	float combined = left_side * right_side
-	if operator is "/"
-		if right_side is 0.0
-			formula_error = "#DIV/0"
-		else
-			combined = left_side / right_side
-	running_values at last_idx = combined
+# Does every * and / first, keeping track of the + and - to apply after
+# (normal math order) -- running_values/running_ops are what's left.
+macro do_multiplication_and_division_first
+	int first_idx = 0
+	float first_value = term_values at first_idx
+	running_values at end = first_value
+	int operator_count = len(term_ops)
+	for operator_idx in range(operator_count)
+		macro_run apply_multiply_divide_or_save_add_subtract
 
-# Works out the formula's result: first every * and /, then the + and -
-# left to right.
+# Then the remaining + and - from left to right, into `total`.
+macro do_addition_and_subtraction_left_to_right
+	int first_idx = 0
+	total = running_values at first_idx
+	int sum_count = len(running_ops)
+	for sum_idx in range(sum_count)
+		macro_run add_or_subtract_next_saved_value
+
+# Works out the formula's result as the cell shows it, or #DIV/0.
 fn string formula_combine(FormulaTerms terms)
 	(term_values, term_ops) in terms
 	string formula_error = ""
-
-	int first_idx = 0
-	float first_value = term_values at first_idx
 	floatList running_values = empty
-	running_values at end = first_value
 	stringList running_ops = empty
-	int op_count = len(term_ops)
-	for op_idx in range(op_count)
-		string operator = term_ops at op_idx
-		int right_idx = op_idx + 1
-		float right_side = term_values at right_idx
-		if operator is "*" or operator is "/"
-			macro_run apply_formula_mul_div
-		else
-			running_ops at end = operator
-			running_values at end = right_side
+	macro_run do_multiplication_and_division_first
 	if formula_error is not ""
 		return formula_error
-
-	float total = running_values at first_idx
-	int sum_count = len(running_ops)
-	for sum_idx in range(sum_count)
-		string sum_op = running_ops at sum_idx
-		int value_idx = sum_idx + 1
-		float next_value = running_values at value_idx
-		if sum_op is "+"
-			total = total + next_value
-		else
-			total = total - next_value
+	float total = 0.0
+	macro_run do_addition_and_subtraction_left_to_right
 	return s_format_number(total)

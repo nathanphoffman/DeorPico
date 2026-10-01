@@ -1,0 +1,8 @@
+
+# Expecting an operator between two numbers -- anything else is an error.
+macro read_token_as_operator_between_numbers
+	if token is "+" or token is "-" or token is "*" or token is "/"
+		term_ops at end = token
+		expecting_operand = true
+	else
+		formula_error = "#ERR"

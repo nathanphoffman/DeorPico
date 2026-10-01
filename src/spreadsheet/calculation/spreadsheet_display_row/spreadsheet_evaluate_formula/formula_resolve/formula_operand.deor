@@ -1,39 +1,50 @@
 
 # Why a formula operand can't be used, or "" if it's fine: `c` always
-# works (no numeric cells to the left just sums to 0), `cN` needs at least
-# N numeric cells to the left (#REF otherwise), and anything else has to
-# be a plain number.
+# works (no numeric cells to the left just sums to 0), `cN` is checked by
+# formula_cell_reference_error, and anything else has to be a plain number.
 fn string formula_operand_error(string token, floatList left_values)
 	const string CELL_PREFIX = "c"
 	if token is CELL_PREFIX
 		return ""
 	if s_starts_with(token, CELL_PREFIX)
-		int token_length = s_char_count(token)
-		int index_start = 1
-		string index_text = s_substring(token, index_start, token_length)
-		if not s_is_number(index_text)
-			return "#ERR"
-		int ref_number = c_string_to_int(index_text)
-		int value_count = len(left_values)
-		if ref_number < 1 or ref_number > value_count
-			return "#REF"
-		return ""
+		return formula_cell_reference_error(token, left_values)
 	if s_is_number(token)
 		return ""
 	return "#ERR"
 
-# An operand's value -- only called once formula_operand_error said it's fine.
+# `cN` needs a whole number N, and at least N numeric cells to the left.
+fn string formula_cell_reference_error(string token, floatList left_values)
+	int ref_number = formula_number_after_c(token)
+	int value_count = len(left_values)
+	if ref_number < 0
+		return "#ERR"
+	if ref_number < 1 or ref_number > value_count
+		return "#REF"
+	return ""
+
+# An operand's value -- only called once formula_operand_error said it's
+# fine: `c` is every numeric cell to the left summed, `cN` the Nth one.
 fn float formula_operand_value(string token, floatList left_values)
 	const string CELL_PREFIX = "c"
 	if token is CELL_PREFIX
-		float total = 0.0
-		for left_value in left_values
-			total = total + left_value
-		return total
+		return formula_sum_of_all_left_values(left_values)
 	if s_starts_with(token, CELL_PREFIX)
-		int token_length = s_char_count(token)
-		int index_start = 1
-		string index_text = s_substring(token, index_start, token_length)
-		int value_idx = c_string_to_int(index_text) - 1
+		int value_idx = formula_number_after_c(token) - 1
 		return left_values at value_idx
 	return c_string_to_float(token)
+
+# "c12" -> 12, or -1 if what follows the c isn't a whole number ("c1.5").
+fn int formula_number_after_c(string token)
+	const string DECIMAL_POINT = "."
+	int token_length = s_char_count(token)
+	int number_start = 1
+	string number_text = s_substring(token, number_start, token_length)
+	if not s_is_number(number_text) or s_contains(number_text, DECIMAL_POINT)
+		return 0 - 1
+	return c_string_to_int(number_text)
+
+fn float formula_sum_of_all_left_values(floatList left_values)
+	float total = 0.0
+	for left_value in left_values
+		total = total + left_value
+	return total

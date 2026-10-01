@@ -1,0 +1,22 @@
+
+# Expecting a number: "+" / "-" before it are signs ("=-c1", "=c1*-2"),
+# a * or / here is an error, anything else must be `c`, `cN` or a number.
+macro read_token_as_sign_or_number
+	if token is "-"
+		sign = 0.0 - sign
+	else if token is "*" or token is "/"
+		formula_error = "#ERR"
+	else if token is not "+"
+		macro_run add_signed_number_to_terms
+
+# Looks up the token's value (or why it can't be used), applies the sign
+# collected before it, and moves on to expecting an operator.
+macro add_signed_number_to_terms
+	string operand_error = formula_operand_error(token, left_values)
+	if operand_error is not ""
+		formula_error = operand_error
+	else
+		float operand_value = formula_operand_value(token, left_values)
+		term_values at end = operand_value * sign
+		sign = 1.0
+		expecting_operand = false
