@@ -8,13 +8,19 @@ macro add_row_to_sort_group
 	if cell is ""
 		empty_indices at end = row_idx
 	else if s_is_number(cell)
-		float number_key = c_string_to_float(cell)
-		number_indices at end = row_idx
-		number_keys at end = number_key
+		macro_run add_row_to_number_group
 	else
-		string text_key = s_to_lower(cell)
-		text_indices at end = row_idx
-		text_keys at end = text_key
+		macro_run add_row_to_text_group
+
+macro add_row_to_number_group
+	float number_key = c_string_to_float(cell)
+	number_indices at end = row_idx
+	number_keys at end = number_key
+
+macro add_row_to_text_group
+	string text_key = s_to_lower(cell)
+	text_indices at end = row_idx
+	text_keys at end = text_key
 
 # Joins the sorted groups after the header: numbers then text ascending,
 # text then numbers descending, and empty cells always last.
@@ -24,6 +30,9 @@ macro append_sort_groups_in_order
 	if descending
 		first_group = sorted_text
 		second_group = sorted_numbers
+	macro_run append_groups_then_empty_cells
+
+macro append_groups_then_empty_cells
 	for row_idx in first_group
 		order at end = row_idx
 	for row_idx in second_group

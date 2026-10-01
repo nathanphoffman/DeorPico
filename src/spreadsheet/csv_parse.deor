@@ -6,17 +6,20 @@
 # second one), anything else -- commas included -- is part of the cell.
 macro csv_read_quoted_char
 	if chr is QUOTE
-		int next_idx = idx + 1
-		string next_chr = ""
-		if next_idx < char_count
-			next_chr = line_chars at next_idx
-		if next_chr is QUOTE
-			current = s_join([current, QUOTE])
-			skip_next = true
-		else
-			in_quotes = false
+		macro_run csv_end_quotes_or_read_doubled_quote
 	else
 		current = s_join([current, chr])
+
+macro csv_end_quotes_or_read_doubled_quote
+	int next_idx = idx + 1
+	string next_chr = ""
+	if next_idx < char_count
+		next_chr = line_chars at next_idx
+	if next_chr is QUOTE
+		current = s_join([current, QUOTE])
+		skip_next = true
+	else
+		in_quotes = false
 
 # One character outside quotes: a quote starts a quoted section, a comma
 # ends the current cell, anything else is part of the cell.

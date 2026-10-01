@@ -4,17 +4,20 @@
 # the outermost group closes, it's worked out as a single number.
 macro collect_token_into_open_group
 	bool opens = token is "(" or (token is "|" and group_expecting_operand)
-	bool closes = not opens and (token is ")" or token is "|")
 	string closed_opener = ""
-	if opens
-		group_openers at end = token
-	else if closes
-		macro_run close_innermost_group
+	macro_run open_or_close_inner_group
 	group_expecting_operand = opens or formula_is_operator(token)
 	if group_openers is empty
 		macro_run add_finished_group_to_terms
 	else
 		group_tokens at end = token
+
+macro open_or_close_inner_group
+	bool closes = not opens and (token is ")" or token is "|")
+	if opens
+		group_openers at end = token
+	else if closes
+		macro_run close_innermost_group
 
 # `)` has to close a `(` and `|` a `|` -- "(c1|" is an error.
 macro close_innermost_group

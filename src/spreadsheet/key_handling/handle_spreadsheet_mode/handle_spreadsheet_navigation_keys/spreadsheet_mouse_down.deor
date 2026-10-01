@@ -12,22 +12,26 @@ macro spreadsheet_mouse_down
 		if chr is "ctrl" and clicked_row >= 0
 			spreadsheet_modal_open = true
 
-# Works out which cell a click landed on -- `col` is the raw terminal
-# column, so the sidebar's width comes off first. Leaks clicked_row,
+# Works out which cell a click landed on. Leaks clicked_row,
 # clicked_col and click_on_sheet (false for a click on the status/notice
 # rows or below the last data row) to the caller. Screen row 0 is the
 # settings row (clicked_row -1); sheet rows start below it.
 unsafe_macro locate_spreadsheet_click
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
+	int clicked_row = spreadsheet_scroll_row + row - 1
+	if row is 0
+		clicked_row = 0 - 1
+	int clicked_col = 0
+	macro_run locate_clicked_column
 	int view_rows = spreadsheet_view_rows(rows)
+	int row_count = len(spreadsheet_rows)
+	bool click_on_sheet = row <= view_rows and clicked_row < row_count
+
+# `col` is the raw terminal column, so the sidebar's width comes off first.
+macro locate_clicked_column
 	int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
 	int content_col = col - sidebar_width
 	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
 	intList column_widths = spreadsheet_column_widths(display_rows)
-	int clicked_row = spreadsheet_scroll_row + row - 1
-	if row is 0
-		clicked_row = 0 - 1
-	int clicked_col = spreadsheet_column_at_x(column_widths, spreadsheet_scroll_col, content_col)
-	int row_count = len(spreadsheet_rows)
-	bool click_on_sheet = row <= view_rows and clicked_row < row_count
+	clicked_col = spreadsheet_column_at_x(column_widths, spreadsheet_scroll_col, content_col)

@@ -26,18 +26,23 @@ macro reorder_spreadsheet_rows_and_lines
 	stringList sorted_lines = l_string_take(lines, settings_count)
 	bool order_changed = false
 	for position in range(row_count)
-		int source_idx = sort_order at position
-		stringList source_row = spreadsheet_rows at source_idx
-		int source_line_idx = source_idx + settings_count
-		string source_line = lines at source_line_idx
-		sorted_rows at end = source_row
-		sorted_lines at end = source_line
-		if source_idx is not position
-			order_changed = true
+		macro_run add_sorted_row_and_line
 	spreadsheet_rows = move sorted_rows
 	lines = move sorted_lines
 	if order_changed
 		dirty = true
+
+# The row (and its line, below the settings lines) that sorts into
+# `position`.
+macro add_sorted_row_and_line
+	int source_idx = sort_order at position
+	stringList source_row = spreadsheet_rows at source_idx
+	int source_line_idx = source_idx + settings_count
+	string source_line = lines at source_line_idx
+	sorted_rows at end = source_row
+	sorted_lines at end = source_line
+	if source_idx is not position
+		order_changed = true
 
 # "Sorted by salary (ascending)" in the notice line.
 macro announce_spreadsheet_sort

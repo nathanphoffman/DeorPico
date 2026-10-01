@@ -15,8 +15,20 @@
 # the file and the edit box keep the typed text.
 macro add_cell_to_display_row
 	string cell = spreadsheet_cell_in_row(row_cells, col_idx)
-	string column_formula = spreadsheet_column_formula(column_formulas, col_idx)
 	string cell_value = s_join([cell])
+	macro_run work_out_cell_value
+	string value_trimmed = s_trim(cell_value)
+	string shown = cell_value
+	if s_is_number(value_trimmed)
+		shown = spreadsheet_rounded_result(value_trimmed, round_places)
+		float number_value = c_string_to_float(value_trimmed)
+		left_values at end = number_value
+	display_cells at end = shown
+
+# The column's formula (blank until there's a number to its left), the
+# cell's own "=" formula, or just its text.
+macro work_out_cell_value
+	string column_formula = spreadsheet_column_formula(column_formulas, col_idx)
 	const string FORMULA_PREFIX = "="
 	string trimmed = s_trim(cell)
 	if column_formula is not "" and left_values is empty
@@ -25,15 +37,6 @@ macro add_cell_to_display_row
 		cell_value = spreadsheet_evaluate_formula(column_formula, left_values)
 	else if s_starts_with(trimmed, FORMULA_PREFIX)
 		cell_value = spreadsheet_evaluate_formula(trimmed, left_values)
-	string value_trimmed = s_trim(cell_value)
-	string shown = cell_value
-	if s_is_number(value_trimmed)
-		shown = spreadsheet_rounded_result(value_trimmed, round_places)
-	display_cells at end = shown
-
-	if s_is_number(value_trimmed)
-		float number_value = c_string_to_float(value_trimmed)
-		left_values at end = number_value
 
 # Every row as it shows on screen -- the header never gets column formulas.
 fn csvRowList spreadsheet_display_rows(csvRowList rows, int round_places, stringList column_formulas)

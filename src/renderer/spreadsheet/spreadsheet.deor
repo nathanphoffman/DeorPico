@@ -38,60 +38,79 @@ unsafe_macro setup_spreadsheet_modal
 	int modal_top = 0
 	int modal_box_width = 0
 	if spreadsheet_modal_open
-		int header_row = 0
-		int exact_places = 0 - 1
-		csvRowList exact_rows = spreadsheet_display_rows(spreadsheet_rows, exact_places, spreadsheet_column_formulas)
-		string modal_text = spreadsheet_cell_value(exact_rows, spreadsheet_sel_row, spreadsheet_sel_col)
-		string modal_title = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+		macro_run build_spreadsheet_modal
 
-		# As narrow as the text needs (but room for the title), no wider
-		# than SPREADSHEET_MODAL_MAX_WIDTH or the sheet area itself.
-		const int BORDER_WIDTH = 4
-		const int MIN_INNER_WIDTH = 20
-		int inner_width = s_char_count(modal_text)
-		int title_width = s_char_count(modal_title) + BORDER_WIDTH
-		inner_width = m_max(inner_width, title_width)
-		inner_width = m_max(inner_width, MIN_INNER_WIDTH)
-		int max_inner_width = SPREADSHEET_MODAL_MAX_WIDTH - BORDER_WIDTH
-		int fit_inner_width = content_width - BORDER_WIDTH - 2
-		inner_width = m_min(inner_width, max_inner_width)
-		inner_width = m_min(inner_width, fit_inner_width)
-		if inner_width < 1
-			inner_width = 1
-		modal_box_width = inner_width + BORDER_WIDTH
+# The popup shows the cell's exact (unrounded) value.
+macro build_spreadsheet_modal
+	int header_row = 0
+	int exact_places = 0 - 1
+	csvRowList exact_rows = spreadsheet_display_rows(spreadsheet_rows, exact_places, spreadsheet_column_formulas)
+	string modal_text = spreadsheet_cell_value(exact_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+	string modal_title = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+	int inner_width = 0
+	macro_run fit_modal_width_to_text
+	macro_run add_modal_box_lines
+	macro_run center_modal_on_sheet
 
-		# Rows past what fits on screen are dropped, with "…" on the last one kept.
-		stringList body_lines = spreadsheet_wrap_text(modal_text, inner_width)
-		int max_body_lines = view_rows - 2
-		int body_count = len(body_lines)
-		if body_count > max_body_lines and max_body_lines > 0
-			stringList kept_lines = empty
-			for keep_idx in range(max_body_lines)
-				string kept_line = body_lines at keep_idx
-				kept_lines at end = kept_line
-			int last_kept = max_body_lines - 1
-			string last_line = kept_lines at last_kept
-			int cut_width = inner_width - 1
-			string cut_line = spreadsheet_fit_cell(last_line, cut_width)
-			kept_lines at last_kept = s_join([cut_line, "…"])
-			body_lines = kept_lines
+# As narrow as the text needs (but room for the title), no wider than
+# SPREADSHEET_MODAL_MAX_WIDTH or the sheet area itself.
+macro fit_modal_width_to_text
+	const int BORDER_WIDTH = 4
+	macro_run widen_modal_for_text_and_title
+	macro_run narrow_modal_to_fit_sheet
+	modal_box_width = inner_width + BORDER_WIDTH
 
-		const string FOOTER = "any key closes"
-		bool is_top = true
-		string top_border = spreadsheet_modal_border(modal_title, inner_width, is_top)
-		is_top = false
-		string bottom_border = spreadsheet_modal_border(FOOTER, inner_width, is_top)
-		modal_lines at end = top_border
-		for body_line in body_lines
-			string padded_body = s_pad_right(body_line, inner_width)
-			modal_lines at end = s_join(["│ ", padded_body, " │"])
-		modal_lines at end = bottom_border
+macro widen_modal_for_text_and_title
+	const int MIN_INNER_WIDTH = 20
+	int title_width = s_char_count(modal_title) + BORDER_WIDTH
+	inner_width = s_char_count(modal_text)
+	inner_width = m_max(inner_width, title_width)
+	inner_width = m_max(inner_width, MIN_INNER_WIDTH)
 
-		int modal_height = len(modal_lines)
-		modal_left = (content_width - modal_box_width) / 2
-		modal_top = (view_rows - modal_height) / 2
-		if modal_top < 0
-			modal_top = 0
+macro narrow_modal_to_fit_sheet
+	int max_inner_width = SPREADSHEET_MODAL_MAX_WIDTH - BORDER_WIDTH
+	int fit_inner_width = content_width - BORDER_WIDTH - 2
+	inner_width = m_min(inner_width, max_inner_width)
+	inner_width = m_min(inner_width, fit_inner_width)
+	if inner_width < 1
+		inner_width = 1
+
+macro add_modal_box_lines
+	stringList body_lines = spreadsheet_wrap_text(modal_text, inner_width)
+	macro_run cut_modal_body_to_screen
+	macro_run add_modal_borders_around_body
+
+# Rows past what fits on screen are dropped, with "…" on the last one kept.
+macro cut_modal_body_to_screen
+	int max_body_lines = view_rows - 2
+	int body_count = len(body_lines)
+	if body_count > max_body_lines and max_body_lines > 0
+		stringList kept_lines = l_string_take(body_lines, max_body_lines)
+		int last_kept = max_body_lines - 1
+		string last_line = kept_lines at last_kept
+		int cut_width = inner_width - 1
+		string cut_line = spreadsheet_fit_cell(last_line, cut_width)
+		kept_lines at last_kept = s_join([cut_line, "…"])
+		body_lines = kept_lines
+
+macro add_modal_borders_around_body
+	const string FOOTER = "any key closes"
+	bool is_top = true
+	string top_border = spreadsheet_modal_border(modal_title, inner_width, is_top)
+	is_top = false
+	string bottom_border = spreadsheet_modal_border(FOOTER, inner_width, is_top)
+	modal_lines at end = top_border
+	for body_line in body_lines
+		string padded_body = s_pad_right(body_line, inner_width)
+		modal_lines at end = s_join(["│ ", padded_body, " │"])
+	modal_lines at end = bottom_border
+
+macro center_modal_on_sheet
+	int modal_height = len(modal_lines)
+	modal_left = (content_width - modal_box_width) / 2
+	modal_top = (view_rows - modal_height) / 2
+	if modal_top < 0
+		modal_top = 0
 
 # Content column piece for the screen row at sheet_offset below the
 # settings row -- the cells of spreadsheet_rows at
@@ -104,20 +123,22 @@ unsafe_macro setup_spreadsheet_modal
 # every other cell it fills (rows below the header with a number to its
 # left) gets a tint too.
 macro render_spreadsheet_row
-	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int data_row = spreadsheet_scroll_row + sheet_offset
 	int sel_start = 0 - 1
 	int sel_stop = 0 - 1
 	int tint_start = 0 - 1
 	int tint_stop = 0 - 1
-
 	string content = ""
+	macro_run add_spreadsheet_row_cells
+	content = spreadsheet_fit_line(content, content_width)
+	macro_run color_spreadsheet_row
+	screen = s_join([screen, content])
+
+macro add_spreadsheet_row_cells
 	if data_row < spreadsheet_row_count
 		stringList row_cells = display_rows at data_row
-		int cell_count = len(row_cells)
-
 		content = s_join([SPREADSHEET_SEPARATOR])
-		int content_x = separator_width
+		int content_x = s_char_count(SPREADSHEET_SEPARATOR)
 		int start = spreadsheet_scroll_col
 		int stop = spreadsheet_column_count_all
 		for col_idx in range(start, stop)
@@ -125,118 +146,122 @@ macro render_spreadsheet_row
 			# straddles it still shows its start.
 			if content_x >= content_width
 				break
-			int col_width = column_widths at col_idx
-			string cell_content = ""
-			bool is_edit_cell = spreadsheet_editing and data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
-			if is_edit_cell
-				cell_content = spreadsheet_edit_display(spreadsheet_edit_buffer, col_width)
-			else if col_idx < cell_count
-				string raw_cell = row_cells at col_idx
-				string formatted_cell = format_cell(row_cells, raw_cell, col_idx)
-				cell_content = spreadsheet_fit_cell(formatted_cell, col_width)
-			cell_content = s_pad_right(cell_content, col_width)
-			if data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
-				sel_start = content_x
-				sel_stop = content_x + col_width
-			else if tint_formula_column and col_idx is spreadsheet_sel_col and data_row > 0
-				macro_run tint_cell_if_formula_fills_it
-			content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
-			content_x = content_x + col_width + separator_width
+			macro_run add_spreadsheet_cell
 
-	int content_length = s_char_count(content)
-	if content_length > content_width
-		int trunc_start = 0
-		content = s_substring(content, trunc_start, content_width)
-	content = s_pad_right(content, content_width)
+# One cell padded to its column's width, then the separator after it.
+macro add_spreadsheet_cell
+	int col_width = column_widths at col_idx
+	string cell_content = ""
+	macro_run pick_spreadsheet_cell_content
+	macro_run mark_selected_or_tinted_cell
+	content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
+	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
+	content_x = content_x + col_width + separator_width
 
-	int line_start = 0
-	int modal_line_idx = sheet_offset - modal_top
-	int modal_line_count = len(modal_lines)
-	if modal_line_idx >= 0 and modal_line_idx < modal_line_count
-		# The popup covers this row -- draw its line over the sheet and skip
-		# the selection color (the popup has the focus).
-		string modal_line = modal_lines at modal_line_idx
-		int modal_right = modal_left + modal_box_width
-		string before_modal = s_substring(content, line_start, modal_left)
-		string after_modal = s_substring(content, modal_right, content_width)
-		content = s_join([before_modal, ANSI_STATUS_BG, modal_line, ANSI_DEFAULT_BG, after_modal])
-	else if sel_start >= 0 and sel_start < content_width
-		if sel_stop > content_width
-			sel_stop = content_width
-		string before_sel = s_substring(content, line_start, sel_start)
-		string sel_text = s_substring(content, sel_start, sel_stop)
-		string after_sel = s_substring(content, sel_stop, content_width)
-		# Blue while typing into the cell (same as the search bar), reverse
-		# video while it's just selected.
-		if spreadsheet_editing
-			content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_DEFAULT_BG, after_sel])
-		else
-			content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
-	else if tint_start >= 0 and tint_start < content_width
-		int tint_end = m_min(tint_stop, content_width)
-		string before_tint = s_substring(content, line_start, tint_start)
-		string tint_text = s_substring(content, tint_start, tint_end)
-		string after_tint = s_substring(content, tint_end, content_width)
-		content = s_join([before_tint, ANSI_COLUMN_TINT, tint_text, ANSI_DEFAULT_BG, after_tint])
+# The edit text for the cell being typed into, otherwise its shown value
+# cut to the column's width.
+macro pick_spreadsheet_cell_content
+	bool is_edit_cell = spreadsheet_editing and data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
+	int cell_count = len(row_cells)
+	if is_edit_cell
+		cell_content = spreadsheet_edit_display(spreadsheet_edit_buffer, col_width)
+	else if col_idx < cell_count
+		string raw_cell = row_cells at col_idx
+		string formatted_cell = format_cell(row_cells, raw_cell, col_idx)
+		cell_content = spreadsheet_fit_cell(formatted_cell, col_width)
+	cell_content = s_pad_right(cell_content, col_width)
 
-	# Row 0 is always the header -- bolded, and never moved by sorting
-	# (see sort_spreadsheet_by_selected_column).
-	if data_row is 0 and spreadsheet_row_count > 0
-		content = s_join([ANSI_BOLD_ON, content, ANSI_BOLD_OFF])
-
-	screen = s_join([screen, content])
-
-# The settings row pinned above the sheet -- "Round results to [2  ]
-# decimal places", the number selectable and editable like a cell
-# (spreadsheet_sel_row -1, see write_edit_into_round_setting).
-macro render_spreadsheet_settings_row
-	const int PLACES_WIDTH = 3
-	const string SETTINGS_LABEL = " Round results to ["
-	bool settings_selected = spreadsheet_sel_row < 0
-	string places_text = c_int_to_string(spreadsheet_round_places)
-	if settings_selected and spreadsheet_editing
-		places_text = spreadsheet_edit_display(spreadsheet_edit_buffer, PLACES_WIDTH)
-	string places_cell = s_pad_right(places_text, PLACES_WIDTH)
-	string places_suffix = "] decimal places"
-	if not spreadsheet_keeps_settings(spreadsheet_path)
-		places_suffix = "] decimal places (not saved in a .csv)"
-	string settings_content = s_join([SETTINGS_LABEL, places_cell, places_suffix])
-	int settings_length = s_char_count(settings_content)
-	if settings_length > content_width
-		int settings_trunc_start = 0
-		settings_content = s_substring(settings_content, settings_trunc_start, content_width)
-	settings_content = s_pad_right(settings_content, content_width)
-	int places_start = s_char_count(SETTINGS_LABEL)
-	if settings_selected and places_start < content_width
-		macro_run color_selected_settings_value
-	screen = s_join([screen, settings_content])
-
-# Same colors as a selected sheet cell: blue while typing, reverse video
-# while just selected.
-macro color_selected_settings_value
-	int places_end = places_start + PLACES_WIDTH
-	int places_stop = m_min(places_end, content_width)
-	int settings_line_start = 0
-	string before_places = s_substring(settings_content, settings_line_start, places_start)
-	string places_span = s_substring(settings_content, places_start, places_stop)
-	string after_places = s_substring(settings_content, places_stop, content_width)
-	string places_color = s_join([ANSI_REVERSE_ON])
-	string places_color_off = s_join([ANSI_REVERSE_OFF])
-	if spreadsheet_editing
-		places_color = s_join([ANSI_SEARCH_BAR_BG])
-		places_color_off = s_join([ANSI_DEFAULT_BG])
-	settings_content = s_join([before_places, places_color, places_span, places_color_off, after_places])
+macro mark_selected_or_tinted_cell
+	if data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
+		sel_start = content_x
+		sel_stop = content_x + col_width
+	else if tint_formula_column and col_idx is spreadsheet_sel_col and data_row > 0
+		macro_run tint_cell_if_formula_fills_it
 
 macro tint_cell_if_formula_fills_it
 	if spreadsheet_has_number_before(row_cells, col_idx)
 		tint_start = content_x
 		tint_stop = content_x + col_width
 
-# Iterates every visible row, appending the sidebar column then the content
-# column (the settings row on the first, sheet rows below it), same shape
-# as render_buffer_rows' main loop.
-macro render_spreadsheet_rows
+# The popup's line drawn over the row if it covers it (skipping the
+# selection color -- the popup has the focus), otherwise the selected or
+# tinted cell colored. Row 0 is always the header -- bolded, and never
+# moved by sorting (see sort_spreadsheet_by_selected_column).
+macro color_spreadsheet_row
+	int modal_line_idx = sheet_offset - modal_top
+	int modal_line_count = len(modal_lines)
+	if modal_line_idx >= 0 and modal_line_idx < modal_line_count
+		macro_run draw_modal_line_over_row
+	else if sel_start >= 0 and sel_start < content_width
+		macro_run color_selected_cell
+	else if tint_start >= 0 and tint_start < content_width
+		macro_run color_tinted_cell
+	if data_row is 0 and spreadsheet_row_count > 0
+		content = s_join([ANSI_BOLD_ON, content, ANSI_BOLD_OFF])
 
+macro draw_modal_line_over_row
+	int line_start = 0
+	string modal_line = modal_lines at modal_line_idx
+	int modal_right = modal_left + modal_box_width
+	string before_modal = s_substring(content, line_start, modal_left)
+	string after_modal = s_substring(content, modal_right, content_width)
+	content = s_join([before_modal, ANSI_STATUS_BG, modal_line, ANSI_DEFAULT_BG, after_modal])
+
+macro color_selected_cell
+	int span_start = sel_start
+	int span_stop = sel_stop
+	macro_run color_selected_span
+
+macro color_tinted_cell
+	int span_start = tint_start
+	int span_stop = tint_stop
+	string span_on = s_join([ANSI_COLUMN_TINT])
+	string span_off = s_join([ANSI_DEFAULT_BG])
+	macro_run color_content_span
+
+# A selected cell's colors: blue while typing into it (same as the search
+# bar), reverse video while it's just selected.
+macro color_selected_span
+	string span_on = s_join([ANSI_REVERSE_ON])
+	string span_off = s_join([ANSI_REVERSE_OFF])
+	if spreadsheet_editing
+		span_on = s_join([ANSI_SEARCH_BAR_BG])
+		span_off = s_join([ANSI_DEFAULT_BG])
+	macro_run color_content_span
+
+# Wraps content's characters span_start..span_stop (cut at content_width)
+# in span_on / span_off.
+macro color_content_span
+	int line_start = 0
+	int span_end = m_min(span_stop, content_width)
+	string before_span = s_substring(content, line_start, span_start)
+	string span_text = s_substring(content, span_start, span_end)
+	string after_span = s_substring(content, span_end, content_width)
+	content = s_join([before_span, span_on, span_text, span_off, after_span])
+
+# The settings row pinned above the sheet -- "Round results to [2  ]
+# decimal places", the number selectable and editable like a cell
+# (spreadsheet_sel_row -1, see write_edit_into_round_setting).
+macro render_spreadsheet_settings_row
+	string places_text = c_int_to_string(spreadsheet_round_places)
+	if spreadsheet_sel_row < 0 and spreadsheet_editing
+		places_text = spreadsheet_edit_display(spreadsheet_edit_buffer, SPREADSHEET_PLACES_WIDTH)
+	string content = spreadsheet_settings_text(places_text, spreadsheet_path)
+	content = spreadsheet_fit_line(content, content_width)
+	if spreadsheet_sel_row < 0
+		macro_run color_selected_settings_value
+	screen = s_join([screen, content])
+
+# Same colors as a selected sheet cell.
+macro color_selected_settings_value
+	int span_start = s_char_count(SPREADSHEET_SETTINGS_LABEL)
+	int span_stop = span_start + SPREADSHEET_PLACES_WIDTH
+	if span_start < content_width
+		macro_run color_selected_span
+
+# What the sidebar column needs for every row -- leaked for
+# render_spreadsheet_rows.
+unsafe_macro setup_spreadsheet_sidebar_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
@@ -245,66 +270,64 @@ macro render_spreadsheet_rows
 		selected_idx = 1 + git_selected
 	else if sidebar_on_root
 		selected_idx = git_section_rows
-
 	bool filter_active = false
 	filterMatchList filter_matches = empty
 
+# Iterates every visible row, appending the sidebar column then the content
+# column (the settings row on the first, sheet rows below it), same shape
+# as render_buffer_rows' main loop.
+macro render_spreadsheet_rows
 	int spreadsheet_row_count = len(spreadsheet_rows)
 	int spreadsheet_column_count_all = spreadsheet_column_count(display_rows)
-
 	int screen_rows = view_rows + 1
 	for row_offset in range(screen_rows)
-		bool is_top_row = row_offset is 0
-		bool is_bottom_row = row_offset is (screen_rows - 1)
-		int idx = browse_scroll_row + row_offset
+		macro_run render_spreadsheet_screen_row
 
-		macro_run render_spreadsheet_sidebar_column
-		int sheet_offset = row_offset - 1
-		if is_top_row
-			macro_run render_spreadsheet_settings_row
-		else
-			macro_run render_spreadsheet_row
-
-		screen = s_join([screen, ANSI_CRLF])
+macro render_spreadsheet_screen_row
+	bool is_top_row = row_offset is 0
+	bool is_bottom_row = row_offset is (screen_rows - 1)
+	int idx = browse_scroll_row + row_offset
+	macro_run render_spreadsheet_sidebar_column
+	int sheet_offset = row_offset - 1
+	if is_top_row
+		macro_run render_spreadsheet_settings_row
+	else
+		macro_run render_spreadsheet_row
+	screen = s_join([screen, ANSI_CRLF])
 
 macro render_spreadsheet_status_and_notice
-	int display_row = spreadsheet_sel_row + 1
-	int display_col = spreadsheet_sel_col + 1
-	string row_text = c_int_to_string(display_row)
-	string col_text = c_int_to_string(display_col)
-	string position_text = s_join(["row ", row_text, ", col ", col_text])
-	if spreadsheet_sel_row < 0
-		position_text = "settings"
+	macro_run render_spreadsheet_status_line
+	macro_run render_spreadsheet_notice_line
+
+macro render_spreadsheet_status_line
+	string position_text = spreadsheet_position_text(spreadsheet_sel_row, spreadsheet_sel_col)
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
 	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
+	macro_run pick_spreadsheet_editing_hint
+	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- ", position_text, " -- ", hint_text])
+	status_line = spreadsheet_fit_line(status_line, cols)
+	screen = s_join([screen, status_line, ANSI_CRLF])
+
+macro pick_spreadsheet_editing_hint
 	if spreadsheet_editing
 		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
 	if tint_formula_column
 		hint_text = "editing the column's formula -- Enter/Tab confirm  Esc cancel  (no leading = makes it a normal column)"
-	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- ", position_text, " -- ", hint_text])
-	int status_length = s_char_count(status_line)
-	if status_length > cols
-		int status_trunc_start = 0
-		status_line = s_substring(status_line, status_trunc_start, cols)
-	string status_padded = s_pad_right(status_line, cols)
-	screen = s_join([screen, status_padded, ANSI_CRLF])
 
-	# A .dpv with a formula in a row (see spreadsheet_invalid_dpv_reason) is
-	# flagged in red whenever nothing else is being said.
+# A .dpv with a formula in a row (see spreadsheet_invalid_dpv_reason) is
+# flagged in red whenever nothing else is being said.
+macro render_spreadsheet_notice_line
 	string notice_text = notice
 	string invalid_reason = spreadsheet_invalid_dpv_reason(spreadsheet_path, spreadsheet_rows)
 	bool show_invalid = notice_text is "" and invalid_reason is not ""
 	if show_invalid
 		notice_text = invalid_reason
-	if len(notice_text) > cols
-		int notice_trunc_start = 0
-		notice_text = s_substring(notice_text, notice_trunc_start, cols)
-	string notice_padded = s_pad_right(notice_text, cols)
+	notice_text = spreadsheet_fit_line(notice_text, cols)
 	if show_invalid
-		notice_padded = s_join([ANSI_ERROR_BG, notice_padded, ANSI_DEFAULT_BG])
-	screen = s_join([screen, notice_padded])
+		notice_text = s_join([ANSI_ERROR_BG, notice_text, ANSI_DEFAULT_BG])
+	screen = s_join([screen, notice_text])
 
 fn void spreadsheet_render(AppState state)
 	(browser) in state
@@ -323,6 +346,7 @@ fn void spreadsheet_render(AppState state)
 	bool tint_formula_column = spreadsheet_editing and is_column_formula_edit
 	unsafe_macro_run setup_spreadsheet_view_layout
 	unsafe_macro_run setup_spreadsheet_modal
+	unsafe_macro_run setup_spreadsheet_sidebar_rows
 	macro_run render_spreadsheet_rows
 	macro_run render_spreadsheet_status_and_notice
 
@@ -421,3 +445,31 @@ fn bool spreadsheet_has_number_before(stringList row_cells, int col_idx)
 		if s_is_number(trimmed)
 			return true
 	return false
+
+# `text` cut or padded to exactly `width` characters.
+fn string spreadsheet_fit_line(string text, int width)
+	string fitted = text
+	if s_char_count(text) > width
+		int text_start = 0
+		fitted = s_substring(text, text_start, width)
+	return s_pad_right(fitted, width)
+
+# "row 3, col 2" for the status line, or "settings" for the settings row.
+fn string spreadsheet_position_text(int sel_row, int sel_col)
+	if sel_row < 0
+		return "settings"
+	int display_row = sel_row + 1
+	int display_col = sel_col + 1
+	string row_text = c_int_to_string(display_row)
+	string col_text = c_int_to_string(display_col)
+	return s_join(["row ", row_text, ", col ", col_text])
+
+# The settings row's text -- the label, the decimal places padded to their
+# cell, and a note that a .csv doesn't keep it.
+fn string spreadsheet_settings_text(string places_text, string spreadsheet_path)
+	unsafe_macro_run use_spreadsheet_consts
+	string places_cell = s_pad_right(places_text, SPREADSHEET_PLACES_WIDTH)
+	string places_suffix = "] decimal places"
+	if not spreadsheet_keeps_settings(spreadsheet_path)
+		places_suffix = "] decimal places (not saved in a .csv)"
+	return s_join([SPREADSHEET_SETTINGS_LABEL, places_cell, places_suffix])

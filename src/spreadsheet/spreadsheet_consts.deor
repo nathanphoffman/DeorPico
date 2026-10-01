@@ -22,6 +22,11 @@ unsafe_macro use_spreadsheet_consts
 	const int SPREADSHEET_MAX_ROUND_PLACES = 10
 	const string SPREADSHEET_ROUND_PREFIX = "#round="
 
+	# The settings row's text before the decimal places, and the width of
+	# the editable cell they sit in (see render_spreadsheet_settings_row).
+	const string SPREADSHEET_SETTINGS_LABEL = " Round results to ["
+	const int SPREADSHEET_PLACES_WIDTH = 3
+
 	# A .dpv's one formula per column, as a CSV row ("#formulas=,,=c1*2")
 	# -- see column_formulas.deor.
 	const string SPREADSHEET_FORMULAS_PREFIX = "#formulas="

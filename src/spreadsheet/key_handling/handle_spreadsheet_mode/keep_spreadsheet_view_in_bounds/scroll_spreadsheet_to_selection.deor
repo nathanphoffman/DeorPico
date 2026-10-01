@@ -31,9 +31,12 @@ macro scroll_spreadsheet_columns_to_selection
 	if spreadsheet_sel_col < spreadsheet_scroll_col
 		spreadsheet_scroll_col = spreadsheet_sel_col
 	if spreadsheet_sel_col < column_count
-		int sel_width = column_widths at spreadsheet_sel_col
-		for if spreadsheet_scroll_col < spreadsheet_sel_col
-			int sel_left_x = spreadsheet_cell_left_x(column_widths, spreadsheet_scroll_col, spreadsheet_sel_col)
-			if sel_left_x + sel_width <= content_width
-				break
-			spreadsheet_scroll_col = spreadsheet_scroll_col + 1
+		macro_run scroll_columns_until_selection_fits
+
+macro scroll_columns_until_selection_fits
+	int sel_width = column_widths at spreadsheet_sel_col
+	for if spreadsheet_scroll_col < spreadsheet_sel_col
+		int sel_left_x = spreadsheet_cell_left_x(column_widths, spreadsheet_scroll_col, spreadsheet_sel_col)
+		if sel_left_x + sel_width <= content_width
+			break
+		spreadsheet_scroll_col = spreadsheet_scroll_col + 1
