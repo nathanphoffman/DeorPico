@@ -25,7 +25,7 @@ macro git_stage_toggle
 			bool staged_ok = g_stage(browse_dir, clean_path)
 			macro_run refresh_all_git_status
 
-# ^⇧G / Alt+G -- stages every change in the repo, same as `git add -A`
+# Alt+G -- stages every change in the repo, same as `git add -A`
 # from the repo root (":/" is git's pathspec for "the whole repo", so this
 # doesn't depend on browse_dir being the root).
 macro git_stage_all

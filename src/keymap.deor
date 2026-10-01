@@ -25,11 +25,6 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "toggle_line_numbers"
 		else if chr is "e"
 			kind = "lint_output_toggle"
-		# ^⇧G stages everything (`git add -A`), plain ^G toggles the
-		# highlighted entry. Most terminals send ^⇧G as plain ^G, so Alt+G
-		# (below) is the stage-all binding that works everywhere.
-		else if (chr is "g" and shift) or chr is "G"
-			kind = "stage_all"
 		else if chr is "g"
 			kind = "stage_toggle"
 		else if chr is "t"
@@ -55,6 +50,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 		# Not ^M -- terminals send that as Enter.
 		else if chr is "l"
 			kind = "commit_prompt"
+	# Sidebar only: stages everything (`git add -A`). Not ^⇧G -- most
+	# terminals send that as plain ^G.
 	else if kind is "char" and alt and (chr is "g" or chr is "G")
 		kind = "stage_all"
 	else if kind is "ctrl_delete"
