@@ -77,6 +77,7 @@ import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_navigation_keys.deor"
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_edit_keys/start_spreadsheet_edit.deor"
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_edit_keys.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_column_keys.deor"
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/clamp_spreadsheet_selection.deor"
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/keep_spreadsheet_view_in_bounds/scroll_spreadsheet_to_selection.deor"
 import "src/spreadsheet/key_handling/handle_spreadsheet_mode/keep_spreadsheet_view_in_bounds.deor"

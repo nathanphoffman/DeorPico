@@ -304,7 +304,7 @@ macro render_spreadsheet_status_line
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
-	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
+	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  Header: Shift+Del/+/_ del/add col  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
 	macro_run pick_spreadsheet_editing_hint
 	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- ", position_text, " -- ", hint_text])
 	status_line = spreadsheet_fit_line(status_line, cols)

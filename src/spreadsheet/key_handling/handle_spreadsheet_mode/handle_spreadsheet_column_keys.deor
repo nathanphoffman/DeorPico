@@ -1,0 +1,107 @@
+
+# Column keys, only on the header row (row 0) while nothing is being
+# typed: Shift+Delete removes the selected column, + (Shift+=) adds an
+# empty column to its right and _ (Shift+-) one to its left. A .dpv's
+# column formulas move along with their columns. Formulas don't need
+# rewriting -- c1, c2, ... count the numbers to the cell's left, not
+# fixed columns.
+
+# Skipped if the rows somehow don't line up 1:1 with `lines` (see
+# csv_parse_lines) after a .dpv's settings lines, same as sorting.
+macro handle_spreadsheet_column_keys
+	int row_count = len(spreadsheet_rows)
+	int line_count = len(lines)
+	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	if row_count > 0 and line_count is row_count + settings_count
+		macro_run change_spreadsheet_columns_for_key
+
+# + selects the new column on the right; _ leaves the selection where it
+# is, which is now the new column on the left.
+macro change_spreadsheet_columns_for_key
+	if kind is "delete"
+		macro_run delete_selected_spreadsheet_column
+	else if chr is "+"
+		int insert_col = spreadsheet_sel_col + 1
+		macro_run insert_spreadsheet_column
+		spreadsheet_sel_col = insert_col
+	else
+		int insert_col = spreadsheet_sel_col
+		macro_run insert_spreadsheet_column
+
+# The last column can't go -- a sheet with no columns has no rows left
+# to show.
+macro delete_selected_spreadsheet_column
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	int header_row = 0
+	string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+	if column_count <= 1
+		notice = "Can't delete the only column"
+		error = true
+	else
+		csvRowList updated_rows = empty
+		for row_cells in spreadsheet_rows
+			stringList kept_cells = spreadsheet_row_without_cell(row_cells, spreadsheet_sel_col)
+			updated_rows at end = kept_cells
+		spreadsheet_rows = move updated_rows
+		spreadsheet_column_formulas = spreadsheet_row_without_cell(spreadsheet_column_formulas, spreadsheet_sel_col)
+		macro_run rewrite_spreadsheet_lines_from_rows
+		notice = s_join(["Deleted column ", header_name])
+		error = false
+
+# Adds an empty cell at `insert_col` (declared by the caller) in every row
+# long enough to reach it -- shorter rows already show it as empty.
+macro insert_spreadsheet_column
+	csvRowList updated_rows = empty
+	for row_cells in spreadsheet_rows
+		stringList widened_cells = spreadsheet_row_with_empty_cell(row_cells, insert_col)
+		updated_rows at end = widened_cells
+	spreadsheet_rows = move updated_rows
+	spreadsheet_column_formulas = spreadsheet_row_with_empty_cell(spreadsheet_column_formulas, insert_col)
+	macro_run rewrite_spreadsheet_lines_from_rows
+	notice = "Inserted a column"
+	error = false
+
+# Every row's line changes, so `lines` is rebuilt from spreadsheet_rows
+# below its settings lines, and a .dpv's "#formulas=" line is rewritten
+# to match the shifted formulas.
+macro rewrite_spreadsheet_lines_from_rows
+	unsafe_macro_run use_spreadsheet_consts
+	stringList updated_lines = l_string_take(lines, settings_count)
+	for row_cells in spreadsheet_rows
+		string row_line = csv_join_row(row_cells)
+		updated_lines at end = row_line
+	if spreadsheet_keeps_settings(spreadsheet_path)
+		string formulas_value = spreadsheet_formulas_setting_value(spreadsheet_column_formulas)
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_FORMULAS_PREFIX, formulas_value)
+	lines = move updated_lines
+	dirty = true
+
+# `cells` without the one at col_idx -- unchanged if it's too short to
+# have one.
+fn stringList spreadsheet_row_without_cell(stringList cells, int col_idx)
+	stringList kept_cells = cells
+	int cell_count = len(kept_cells)
+	if col_idx < cell_count
+		kept_cells remove at col_idx
+	return kept_cells
+
+# `cells` with an empty cell added at col_idx -- unchanged if it's too
+# short to reach col_idx.
+fn stringList spreadsheet_row_with_empty_cell(stringList cells, int col_idx)
+	int cell_count = len(cells)
+	if col_idx > cell_count
+		return cells
+	stringList before_cells = l_string_take(cells, col_idx)
+	stringList after_cells = l_string_drop(cells, col_idx)
+	stringList empty_cell = [""]
+	stringList widened_cells = l_string_concat(before_cells, empty_cell)
+	return l_string_concat(widened_cells, after_cells)
+
+# Whether handle_spreadsheet_action hands this key to
+# handle_spreadsheet_column_keys instead of the edit/navigation keys.
+fn bool spreadsheet_is_column_key(string kind, string chr, bool shift)
+	if kind is "delete" and shift
+		return true
+	if kind is "char" and (chr is "+" or chr is "_")
+		return true
+	return false

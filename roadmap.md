@@ -7,8 +7,7 @@ FOR NATE ONLY, DONT TOUCH THIS AI
 
 # Roadmap Editor
 
-Add a box to the commiter thing that we added to add all unadded giles "git add ." as an optional selection.
- 
+
 Working On: Implementing Basic Spreadsheets for csv
 
  Flatten and simplify the key/event routing
@@ -26,4 +25,3 @@ Working On: Implementing Basic Spreadsheets for csv
   - If possible, have handlers take and return only the state they need, not all 70 fields.
 
   Already done: the handlers are split into src/events/, and move is used so the file's lines aren't copied on every key.
-

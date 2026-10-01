@@ -12,13 +12,21 @@ macro close_spreadsheet_popup
 	if kind is not "mouse_up" and kind is not "mouse_drag"
 		spreadsheet_modal_open = false
 
-# Edits the selected cell or moves the selection, then keeps both the
-# selection and the view inside the sheet. Kinds not handled anywhere
-# below (cut/paste/undo, ...) are dropped on purpose: they'd act on the
-# text buffer behind the sheet.
+# Adds/removes columns, edits the selected cell or moves the selection,
+# then keeps both the selection and the view inside the sheet. Kinds not
+# handled anywhere below (cut/paste/undo, ...) are dropped on purpose:
+# they'd act on the text buffer behind the sheet. Column keys only count
+# on the header row, so + and _ still type into any other cell.
 macro handle_spreadsheet_action
+	bool on_header_row = spreadsheet_sel_row is 0 and not spreadsheet_editing
+	if on_header_row and spreadsheet_is_column_key(kind, chr, shift)
+		macro_run handle_spreadsheet_column_keys
+	else
+		macro_run handle_spreadsheet_cell_keys
+	macro_run clamp_spreadsheet_selection
+	macro_run keep_spreadsheet_view_in_bounds
+
+macro handle_spreadsheet_cell_keys
 	macro_run handle_spreadsheet_edit_keys
 	if not spreadsheet_editing
 		macro_run handle_spreadsheet_navigation_keys
-	macro_run clamp_spreadsheet_selection
-	macro_run keep_spreadsheet_view_in_bounds
