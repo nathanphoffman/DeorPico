@@ -4,7 +4,7 @@ id,name,department,salary,start_date,active,notes
 3,Carol White,Engineering,105000,2017-11-20,true,"Owns the build pipeline, the release process, and on-call scheduling for the whole infrastructure team"
 4,Dan Brown,Sales,64000,2021-02-10,false,
 5,Eve Davis,Sales,69500,2018-05-30,true,Top regional performer three years running
-6,Frank Miller,Support,51000,2022-09-12,true,"Customer quote: ""Frank fixed in ten minutes what took another vendor two weeks"" -- added to the case studies page"
+6,Frank Miller,Support,5555,2022-09-12,true,"Customer quote: ""Frank fixed in ten minutes what took another vendor two weeks"" -- added to the case studies page"
 7,Grace Lee,Engineering,112000,2016-01-04,true,Supercalifragilisticexpialidocious_identifier_that_has_no_spaces_at_all_to_test_hard_wrapping
 8,Henry Wilson,Marketing,,2023-04-18,true,Salary pending review
 9,"Ivy Chen, PhD",Research,121000,2015-08-22,true,"Leads the forecasting research group, publishes regularly, and is currently on a six month sabbatical, returning in the spring"

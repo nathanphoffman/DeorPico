@@ -32,8 +32,10 @@ macro csv_read_unquoted_char
 # Which file extensions open into the spreadsheet view instead of the
 # normal text editor -- checked both at launch (state_init.deor) and on
 # every mid-session file open (load_file_into_buffer in browser/keypress/browse_open.deor).
+# .dpv ("deor pico values") is DeorPico's own spreadsheet format -- for now
+# it's read and written exactly like .csv.
 fn bool f_is_spreadsheet_ext(string ext)
-	if ext is "csv"
+	if ext is "csv" or ext is "dpv"
 		return true
 	return false
 
