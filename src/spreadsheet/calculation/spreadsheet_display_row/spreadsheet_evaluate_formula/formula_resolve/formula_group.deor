@@ -1,40 +1,55 @@
 
-# A token inside an open `(...)`: nested parentheses just change the
-# depth; the `)` that closes the outermost one ends the group, which is
-# then worked out as a single number.
+# A token inside an open `(...)` or `|...|`. A `|` opens a new group when
+# a number is expected next ("|c1-|c2||") and closes one otherwise. When
+# the outermost group closes, it's worked out as a single number.
 macro collect_token_into_open_group
-	if token is "("
-		group_depth = group_depth + 1
-	if token is ")"
-		group_depth = group_depth - 1
-	if group_depth is 0
+	bool opens = token is "(" or (token is "|" and group_expecting_operand)
+	bool closes = not opens and (token is ")" or token is "|")
+	string closed_opener = ""
+	if opens
+		group_openers at end = token
+	else if closes
+		macro_run close_innermost_group
+	group_expecting_operand = opens or formula_is_operator(token)
+	if group_openers is empty
 		macro_run add_finished_group_to_terms
 	else
 		group_tokens at end = token
 
-# Works out the group, applies the sign collected before it, and moves on
-# to expecting an operator.
+# `)` has to close a `(` and `|` a `|` -- "(c1|" is an error.
+macro close_innermost_group
+	int top_idx = len(group_openers) - 1
+	closed_opener = group_openers at top_idx
+	bool matches = (closed_opener is "(" and token is ")") or (closed_opener is "|" and token is "|")
+	if matches
+		group_openers remove at top_idx
+	else
+		formula_error = "#ERR"
+
+# Works out the group, saves it with the sign collected before it, and
+# moves on to expecting an operator.
 macro add_finished_group_to_terms
-	FormulaResult group_result = formula_group_value(group_tokens, scope)
+	FormulaResult group_result = formula_group_value(group_tokens, scope, closed_opener)
 	(result_value) in group_result
 	formula_error = formula_result_error(group_result)
-	term_values at end = result_value * sign
+	term_values at end = result_value
+	term_signs at end = sign
 	sign = 1.0
 	expecting_operand = false
 
 # A group that uses `c` or `n` runs once per numeric cell to the left and
-# adds up the results -- "(c*n)" is c1*1 + c2*2 + ... Any other group is
-# just worked out first, like normal math parentheses. Inside a per-cell
-# group, nested groups are normal parentheses.
-fn FormulaResult formula_group_value(stringList group_tokens, FormulaScope scope)
+# adds up the results -- "(c*n)" is c1*1 + c2*2 + ..., "|c-3|" is
+# |c1-3| + |c2-3| + ... Any other group is just worked out first, like
+# normal math. Inside a per-cell group, nested groups are normal ones.
+fn FormulaResult formula_group_value(stringList group_tokens, FormulaScope scope, string group_kind)
 	(per_cell) in scope
 	if not per_cell and formula_tokens_use_cell(group_tokens)
-		return formula_sum_over_cells(group_tokens, scope)
-	return formula_value(group_tokens, scope)
+		return formula_sum_over_cells(group_tokens, scope, group_kind)
+	return formula_group_once(group_tokens, scope, group_kind)
 
 # The group worked out once per numeric cell to the left -- with `c` that
 # cell's value and `n` its number -- and summed. Stops at the first error.
-fn FormulaResult formula_sum_over_cells(stringList group_tokens, FormulaScope scope)
+fn FormulaResult formula_sum_over_cells(stringList group_tokens, FormulaScope scope, string group_kind)
 	(left_values) in scope
 	float result_value = 0.0
 	string formula_error = ""
@@ -46,13 +61,25 @@ fn FormulaResult formula_sum_over_cells(stringList group_tokens, FormulaScope sc
 		float cell_number = c_int_to_float(cell_position)
 		FormulaScope cell_scope = scope with (per_cell, cell_value, cell_number)
 		if formula_error is ""
-			FormulaResult cell_result = formula_value(group_tokens, cell_scope)
+			FormulaResult cell_result = formula_group_once(group_tokens, cell_scope, group_kind)
 			formula_error = formula_result_error(cell_result)
 			float cell_total = formula_result_number(cell_result)
 			result_value = result_value + cell_total
 	return (result_value, formula_error)
 
-# True if the tokens use a bare `c` or `n` anywhere (cN doesn't count).
+# The group's tokens worked out once -- made positive if it's a `|...|`.
+fn FormulaResult formula_group_once(stringList group_tokens, FormulaScope scope, string group_kind)
+	FormulaResult inner_result = formula_value(group_tokens, scope)
+	(result_value, formula_error) in inner_result
+	if group_kind is "|"
+		float positive_value = m_absf(result_value)
+		return formula_with_number(positive_value, formula_error)
+	return inner_result
+
+fn FormulaResult formula_with_number(float result_value, string formula_error)
+	return (result_value, formula_error)
+
+# True if the tokens use a bare `c` or `n` anywhere (cN and N don't count).
 fn bool formula_tokens_use_cell(stringList group_tokens)
 	for token in group_tokens
 		if token is "c" or token is "n"

@@ -1,8 +1,12 @@
 
 # Expecting an operator between two numbers -- anything else is an error.
 macro read_token_as_operator_between_numbers
-	if token is "+" or token is "-" or token is "*" or token is "/"
+	if formula_is_operator(token)
 		term_ops at end = token
 		expecting_operand = true
 	else
 		formula_error = "#ERR"
+
+fn bool formula_is_operator(string token)
+	bool is_math = token is "+" or token is "-" or token is "*" or token is "/" or token is "^"
+	return is_math or token is "_" or token is "__"

@@ -1,15 +1,18 @@
 
 # The empty lists formula_resolve fills in, plus its running state --
-# leaked so the loop below can use them. group_depth is how many `(` are
-# open; while it's above 0, tokens are saved into group_tokens instead.
+# leaked so the loop below can use them. group_openers is the `(` and `|`
+# still open, innermost last; while any are, tokens are saved into
+# group_tokens instead.
 unsafe_macro start_with_no_terms_and_positive_sign
 	floatList term_values = empty
+	floatList term_signs = empty
 	stringList term_ops = empty
 	string formula_error = ""
 	float sign = 1.0
 	bool expecting_operand = true
-	int group_depth = 0
+	stringList group_openers = empty
 	stringList group_tokens = empty
+	bool group_expecting_operand = true
 
 # Numbers and operators have to alternate, starting with a number.
 macro read_token_as_number_or_operator
@@ -18,10 +21,10 @@ macro read_token_as_number_or_operator
 	else
 		macro_run read_token_as_operator_between_numbers
 
-# Inside parentheses the token belongs to the group; outside, a `)` with
-# no `(` before it is an error.
+# Inside a group the token belongs to it; outside, a `)` with no `(`
+# before it is an error.
 macro read_token_into_group_or_terms
-	if group_depth > 0
+	if group_openers is not empty
 		macro_run collect_token_into_open_group
 	else if token is ")"
 		formula_error = "#ERR"
@@ -29,9 +32,10 @@ macro read_token_into_group_or_terms
 		macro_run read_token_as_number_or_operator
 
 # An empty formula, one ending in an operator ("=c1+"), or one with a `(`
-# never closed is an error.
+# or `|` never closed is an error.
 macro fail_if_formula_ends_without_a_number
-	if formula_error is "" and (expecting_operand or group_depth > 0)
+	bool group_left_open = group_openers is not empty
+	if formula_error is "" and (expecting_operand or group_left_open)
 		formula_error = "#ERR"
 
 # Turns the tokens into numbers and the operators between them, stopping
@@ -42,4 +46,4 @@ fn FormulaTerms formula_resolve(stringList tokens, FormulaScope scope)
 		if formula_error is ""
 			macro_run read_token_into_group_or_terms
 	macro_run fail_if_formula_ends_without_a_number
-	return (term_values, term_ops, formula_error)
+	return (term_values, term_signs, term_ops, formula_error)

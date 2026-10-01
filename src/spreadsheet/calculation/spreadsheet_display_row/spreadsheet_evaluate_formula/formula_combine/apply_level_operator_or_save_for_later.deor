@@ -1,0 +1,24 @@
+
+# One operator and the number to its right: if it's one of this pass's
+# level_ops it's applied straight away, otherwise it's saved (with its
+# number) for a later pass.
+macro apply_level_operator_or_save_for_later
+	string operator = chain_ops at operator_idx
+	int right_idx = operator_idx + 1
+	float right_side = chain_values at right_idx
+	if l_string_contains(level_ops, operator)
+		macro_run merge_operator_into_previous_value
+	else
+		running_ops at end = operator
+		running_values at end = right_side
+
+# Replaces the last saved value with it combined with right_side.
+macro merge_operator_into_previous_value
+	int last_idx = len(running_values) - 1
+	float left_side = running_values at last_idx
+	FormulaResult merged = formula_apply_operator(left_side, operator, right_side)
+	string merge_error = formula_result_error(merged)
+	if merge_error is not ""
+		formula_error = merge_error
+	float combined = formula_result_number(merged)
+	running_values at last_idx = combined

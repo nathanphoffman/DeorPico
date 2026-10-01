@@ -1,13 +1,14 @@
 
 # Why a formula operand can't be used, or "" if it's fine: `c` always
-# works (no numeric cells to the left just sums to 0), `n` only inside a
-# per-cell group like "(c*n)", `cN` is checked by
+# and `N` (how many numeric cells are to the left) always work, `n` only
+# inside a per-cell group like "(c*n)", `cN` is checked by
 # formula_cell_reference_error, and anything else has to be a plain number.
 fn string formula_operand_error(string token, FormulaScope scope)
 	const string CELL_PREFIX = "c"
 	const string CELL_NUMBER = "n"
+	const string CELL_COUNT = "N"
 	(left_values, per_cell) in scope
-	if token is CELL_PREFIX
+	if token is CELL_PREFIX or token is CELL_COUNT
 		return ""
 	if token is CELL_NUMBER
 		if per_cell
@@ -31,10 +32,12 @@ fn string formula_cell_reference_error(string token, floatList left_values)
 
 # An operand's value -- only called once formula_operand_error said it's
 # fine: `c` is every numeric cell to the left summed (or, inside a per-cell
-# group, the current cell), `n` the current cell's number, `cN` the Nth one.
+# group, the current cell), `n` the current cell's number, `N` how many
+# numeric cells there are, `cN` the Nth one.
 fn float formula_operand_value(string token, FormulaScope scope)
 	const string CELL_PREFIX = "c"
 	const string CELL_NUMBER = "n"
+	const string CELL_COUNT = "N"
 	(left_values, per_cell, cell_value, cell_number) in scope
 	if token is CELL_PREFIX and per_cell
 		return cell_value
@@ -42,6 +45,9 @@ fn float formula_operand_value(string token, FormulaScope scope)
 		return formula_sum_of_all_left_values(left_values)
 	if token is CELL_NUMBER
 		return cell_number
+	if token is CELL_COUNT
+		int value_count = len(left_values)
+		return c_int_to_float(value_count)
 	if s_starts_with(token, CELL_PREFIX)
 		int value_idx = formula_number_after_c(token) - 1
 		return left_values at value_idx

@@ -1,31 +1,108 @@
 
-# Does every * and / first, keeping track of the + and - to apply after
-# (normal math order) -- running_values/running_ops are what's left.
-macro do_multiplication_and_division_first
-	int first_idx = 0
-	float first_value = term_values at first_idx
-	running_values at end = first_value
-	int operator_count = len(term_ops)
-	for operator_idx in range(operator_count)
-		macro_run apply_multiply_divide_or_save_add_subtract
+# One `^` and the number before it, saved until the run of ^ ends so it
+# can be worked out right to left (2^3^2 is 2^9). Otherwise the run is
+# done: its result goes into the chain along with the operator after it.
+macro add_value_to_power_run
+	float run_value = term_values at value_idx
+	float run_sign = term_signs at value_idx
+	run_values at end = run_value
+	run_signs at end = run_sign
+	string next_op = ""
+	if value_idx < op_count
+		next_op = term_ops at value_idx
+	if next_op is not "^"
+		macro_run finish_power_run
 
-# Then the remaining + and - from left to right, into `total`.
-macro do_addition_and_subtraction_left_to_right
-	int first_idx = 0
-	total = running_values at first_idx
-	int sum_count = len(running_ops)
-	for sum_idx in range(sum_count)
-		macro_run add_or_subtract_next_saved_value
+macro finish_power_run
+	float run_total = formula_power_run(run_values, run_signs)
+	chain_values at end = run_total
+	if next_op is not ""
+		chain_ops at end = next_op
+	floatList no_values = empty
+	floatList no_signs = empty
+	run_values = no_values
+	run_signs = no_signs
 
-# Works out the formula's result, or #DIV/0.
+# Works out the formula's result: ^ first (right to left, each number's
+# sign applied after its power, so -2^2 is -4), then * and /, then + and
+# -, then _ (smaller of the two) and __ (larger of the two), each of
+# those left to right.
 fn FormulaResult formula_combine(FormulaTerms terms)
-	(term_values, term_ops) in terms
-	string formula_error = ""
+	FormulaChain powered = formula_apply_powers(terms)
+	stringList times_ops = ["*", "/"]
+	FormulaChain multiplied = formula_apply_operators(powered, times_ops)
+	stringList plus_ops = ["+", "-"]
+	FormulaChain added = formula_apply_operators(multiplied, plus_ops)
+	stringList pick_ops = ["_", "__"]
+	FormulaChain picked = formula_apply_operators(added, pick_ops)
+	(chain_values, formula_error) in picked
+	float result_value = 0.0
+	if formula_error is ""
+		int first_idx = 0
+		result_value = chain_values at first_idx
+	return (result_value, formula_error)
+
+# The terms with every run of ^ worked out and the signs applied.
+fn FormulaChain formula_apply_powers(FormulaTerms terms)
+	(term_values, term_signs, term_ops, formula_error) in terms
+	floatList chain_values = empty
+	stringList chain_ops = empty
+	floatList run_values = empty
+	floatList run_signs = empty
+	int op_count = len(term_ops)
+	int value_count = len(term_values)
+	for value_idx in range(value_count)
+		macro_run add_value_to_power_run
+	return (chain_values, chain_ops, formula_error)
+
+# a^b^c worked out right to left, each number's sign applied after its
+# own power -- so -2^2 is -4 and 2^-1 is 0.5.
+fn float formula_power_run(floatList run_values, floatList run_signs)
+	int last_idx = len(run_values) - 1
+	float last_value = run_values at last_idx
+	float last_sign = run_signs at last_idx
+	float total = last_value * last_sign
+	for step_idx in range(last_idx)
+		int run_idx = last_idx - 1 - step_idx
+		float base_value = run_values at run_idx
+		float base_sign = run_signs at run_idx
+		float powered = m_powf(base_value, total)
+		total = base_sign * powered
+	return total
+
+# Applies every operator in level_ops left to right, keeping the others
+# (and the numbers after them) for a later pass.
+fn FormulaChain formula_apply_operators(FormulaChain chain, stringList level_ops)
+	(chain_values, chain_ops, formula_error) in chain
+	if formula_error is not ""
+		return chain
 	floatList running_values = empty
 	stringList running_ops = empty
-	macro_run do_multiplication_and_division_first
-	float total = 0.0
-	if formula_error is ""
-		macro_run do_addition_and_subtraction_left_to_right
-	float result_value = total
+	int first_idx = 0
+	float first_value = chain_values at first_idx
+	running_values at end = first_value
+	int operator_count = len(chain_ops)
+	for operator_idx in range(operator_count)
+		macro_run apply_level_operator_or_save_for_later
+	return formula_chain(running_values, running_ops, formula_error)
+
+fn FormulaChain formula_chain(floatList chain_values, stringList chain_ops, string formula_error)
+	return (chain_values, chain_ops, formula_error)
+
+# left_side and right_side combined by one operator, or #DIV/0.
+fn FormulaResult formula_apply_operator(float left_side, string operator, float right_side)
+	string formula_error = ""
+	float result_value = left_side + right_side
+	if operator is "-"
+		result_value = left_side - right_side
+	else if operator is "*"
+		result_value = left_side * right_side
+	else if operator is "/" and right_side is 0.0
+		formula_error = "#DIV/0"
+	else if operator is "/"
+		result_value = left_side / right_side
+	else if operator is "_"
+		result_value = m_minf(left_side, right_side)
+	else if operator is "__"
+		result_value = m_maxf(left_side, right_side)
 	return (result_value, formula_error)

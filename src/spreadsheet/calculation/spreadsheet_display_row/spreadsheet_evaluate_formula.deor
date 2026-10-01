@@ -1,10 +1,20 @@
 
 # A formula's numbers and operators in order, after `c`/`c1`/`n`/(...)
-# and leading signs are resolved -- term_values has one more entry than
-# term_ops. formula_error is "" unless something was invalid.
+# are resolved -- term_values has one more entry than term_ops, and
+# term_signs (1.0 or -1.0) is the sign written before each number, kept
+# apart so it can be applied after ^ (-2^2 is -4). formula_error is ""
+# unless something was invalid.
 struct FormulaTerms
 	floatList term_values
+	floatList term_signs
 	stringList term_ops
+	string formula_error
+
+# The numbers and operators still to combine, once ^ and signs are done
+# -- see formula_combine.
+struct FormulaChain
+	floatList chain_values
+	stringList chain_ops
 	string formula_error
 
 # What a formula (or a group inside one) is worked out against: the

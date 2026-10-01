@@ -1,18 +1,31 @@
 
-# One character of a formula: an operator or parenthesis is a token of
-# its own, a space just ends the current token, anything else is part of a
-# name or number ("c", "c12", "n", "2.5").
+# One character of a formula: an operator, parenthesis or | is a token of
+# its own (two _ in a row make one "__"), a space just ends the current
+# token, anything else is part of a name or number ("c", "c12", "n", "2.5").
 macro split_on_operator_or_extend_current_token
-	bool is_operator = chr is "+" or chr is "-" or chr is "*" or chr is "/"
-	bool is_parenthesis = chr is "(" or chr is ")"
-	if is_operator or is_parenthesis or chr is " "
-		if current is not ""
-			tokens at end = current
-			current = ""
-		if chr is not " "
-			tokens at end = chr
+	bool is_operator = chr is "+" or chr is "-" or chr is "*" or chr is "/" or chr is "^" or chr is "_"
+	bool is_bracket = chr is "(" or chr is ")" or chr is "|"
+	if is_operator or is_bracket or chr is " "
+		macro_run end_current_token
+		macro_run add_operator_token
 	else
 		current = s_join([current, chr])
+	previous_chr = s_join([chr])
+
+macro end_current_token
+	if current is not ""
+		string finished = formula_token_case(current)
+		tokens at end = finished
+		current = ""
+
+# A second _ straight after a first one turns it into "__".
+macro add_operator_token
+	if chr is "_" and previous_chr is "_"
+		int last_idx = len(tokens) - 1
+		string max_op = "__"
+		tokens at last_idx = max_op
+	else if chr is not " "
+		tokens at end = chr
 
 # Splits "=+c-c1*2" into ["+", "c", "-", "c1", "*", "2"], and "=+(c*n)"
 # into ["+", "(", "c", "*", "n", ")"].
@@ -21,15 +34,24 @@ fn stringList formula_tokens(string formula)
 	stringList body_chars = s_chars(body)
 	stringList tokens = empty
 	string current = ""
+	string previous_chr = ""
 	for chr in body_chars
 		macro_run split_on_operator_or_extend_current_token
-	if current is not ""
-		tokens at end = current
+	macro_run end_current_token
 	return tokens
 
-# "=+C1*2" -> "+c1*2" -- lowercased so "C1" works the same as "c1".
+# "=+C1*2" -> "+C1*2".
 fn string formula_text_after_equals_sign(string formula)
 	int formula_length = s_char_count(formula)
 	int body_start = 1
-	string body = s_substring(formula, body_start, formula_length)
-	return s_to_lower(body)
+	return s_substring(formula, body_start, formula_length)
+
+# "C1" works the same as "c1", but `n` (this cell's number) and `N` (how
+# many numeric cells) are different things, so only c references are
+# lowercased.
+fn string formula_token_case(string token)
+	string lowered = s_to_lower(token)
+	const string CELL_PREFIX = "c"
+	if s_starts_with(lowered, CELL_PREFIX)
+		return lowered
+	return token
