@@ -278,7 +278,7 @@ macro render_spreadsheet_status_and_notice
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
-	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^S save  ^T text view"
+	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
 	if spreadsheet_editing
 		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
 	if tint_formula_column

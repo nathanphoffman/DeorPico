@@ -4,6 +4,13 @@
 macro push_undo_snapshot
 	full_len as len(lines)
 	stringList saved_lines = l_string_take(lines, full_len)
+	macro_run push_saved_lines_to_undo
+
+# Pushes `saved_lines` (declared by the caller -- a copy of `lines` from
+# before the change) as the next undo step. The spreadsheet uses this
+# directly with a copy it took before handling a key (see
+# spreadsheet_record_undo).
+macro push_saved_lines_to_undo
 	int saved_cursor_row = cursor_row
 	int saved_cursor_col = cursor_col
 	UndoSnapshot snapshot = (saved_lines, saved_cursor_row, saved_cursor_col)

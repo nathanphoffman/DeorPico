@@ -1,0 +1,71 @@
+
+# Every sheet change -- a cell edit, a sort, a .dpv's round setting or
+# column formula -- is a change to the text buffer's `lines` (see
+# commit_spreadsheet_edit), so the sheet shares the text editor's undo
+# history rather than keeping its own: spreadsheet_main_main copies
+# `lines` before the sheet handles a key and pushes that copy as an undo
+# step if the key changed anything. ^Z/^Y go to the editor's own undo/redo
+# (see spreadsheet_key_is_editor_action), and the sheet is re-read from the
+# restored lines afterward.
+
+# A copy of `lines` while the sheet is showing, to compare against once
+# the key is handled -- empty otherwise, so normal text editing (which
+# pushes its own undo steps) doesn't pay for a copy on every key.
+fn stringList spreadsheet_lines_before_key(AppState state)
+	(main_panel) in state
+	(core) in main_panel
+	(lines) in core
+	stringList no_lines = empty
+	if not spreadsheet_main_draw_frame(state)
+		return no_lines
+	return lines
+
+# Pushes lines_before as an undo step if the sheet changed `lines`.
+fn AppState spreadsheet_record_undo(AppState state, stringList lines_before)
+	if not spreadsheet_main_draw_frame(state)
+		return state
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (core, diff, selection, undo, search, filter, lint) in main_panel
+	(lines, cursor_row, cursor_col) in core
+	move (undo_stack, redo_stack) in undo
+	# Re-declared through a local copy -- an `at end` push alone doesn't
+	# make the transpiler declare the unpacked undo_stack mutable.
+	undoList undo_history = move undo_stack
+	undoList undo_stack = move undo_history
+	if lines is not lines_before
+		stringList saved_lines = lines_before
+		macro_run push_saved_lines_to_undo
+	UndoState undo = move (undo_stack, redo_stack)
+	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	return next_state
+
+# After the editor's ^Z/^Y restored `lines`, re-reads the sheet from them.
+fn AppState spreadsheet_after_undo(AppState state, KeyEvent key)
+	(kind) in key
+	bool is_undo_key = kind is "undo" or kind is "redo"
+	if not is_undo_key or not spreadsheet_main_draw_frame(state)
+		return state
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	(core) in main_panel
+	(lines) in core
+	SpreadsheetState spreadsheet = spreadsheet_reloaded(spreadsheet, lines)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	return next_state
+
+# The sheet re-read from `lines` -- rows, and a .dpv's round setting and
+# column formulas -- with the selection kept, pulled back inside the
+# sheet if rows went away. A .csv's round setting isn't in its lines, so
+# it stays as it was.
+fn SpreadsheetState spreadsheet_reloaded(SpreadsheetState spreadsheet, stringList lines)
+	(spreadsheet_path, spreadsheet_round_places, spreadsheet_sel_row) in spreadsheet
+	csvRowList spreadsheet_rows = spreadsheet_parse_rows(spreadsheet_path, lines)
+	stringList spreadsheet_column_formulas = spreadsheet_column_formulas_from_lines(spreadsheet_path, lines)
+	if spreadsheet_keeps_settings(spreadsheet_path)
+		spreadsheet_round_places = spreadsheet_round_places_from_lines(spreadsheet_path, lines)
+	int last_row = len(spreadsheet_rows) - 1
+	spreadsheet_sel_row = m_min(spreadsheet_sel_row, last_row)
+	bool spreadsheet_editing = false
+	string spreadsheet_edit_buffer = ""
+	SpreadsheetState reloaded = spreadsheet with (spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_round_places, spreadsheet_sel_row, spreadsheet_editing, spreadsheet_edit_buffer)
+	return reloaded

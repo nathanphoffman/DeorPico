@@ -2,10 +2,16 @@
 # main()'s key dispatch: the spreadsheet handles the key itself when it
 # owns it (see spreadsheet_owns_key), otherwise the normal editor handler
 # does -- after any half-typed cell edit is committed, so e.g. ^S saves
-# what was typed.
+# what was typed. Any change the sheet makes becomes an undo step in the
+# editor's history (see spreadsheet_undo.deor) -- recorded before the
+# editor handler runs, so ^Z mid-edit undoes the just-committed edit.
 macro spreadsheet_main_main
+	stringList lines_before = spreadsheet_lines_before_key(state)
 	if spreadsheet_owns_key(state, key)
 		state = spreadsheet_handle_key(state, key)
+		state = spreadsheet_record_undo(state, lines_before)
 	else
 		state = spreadsheet_commit_pending_edit(state, key)
+		state = spreadsheet_record_undo(state, lines_before)
 		state = editor_handle_key_for_events(state, key)
+		state = spreadsheet_after_undo(state, key)

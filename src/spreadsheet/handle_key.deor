@@ -55,11 +55,14 @@ fn bool spreadsheet_click_is_on_sheet(int col, bool sidebar_focused)
 	return col >= sidebar_width
 
 # App-wide actions the normal editor handler already owns, even while the
-# sheet is showing.
+# sheet is showing -- undo/redo included, since the sheet shares the
+# editor's history (see spreadsheet_undo.deor).
 fn bool spreadsheet_key_is_editor_action(string kind)
 	if kind is "tick" or kind is "quit" or kind is "save" or kind is "discard_changes"
 		return true
 	if kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
+		return true
+	if kind is "undo" or kind is "redo"
 		return true
 	return false
 
