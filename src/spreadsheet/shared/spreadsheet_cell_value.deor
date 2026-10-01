@@ -1,0 +1,11 @@
+
+# The text in one cell, or "" past the end of the sheet or of a short row.
+fn string spreadsheet_cell_value(csvRowList rows, int row_idx, int col_idx)
+	int row_count = len(rows)
+	if row_idx < 0 or row_idx >= row_count
+		return ""
+	stringList row_cells = rows at row_idx
+	int cell_count = len(row_cells)
+	if col_idx < 0 or col_idx >= cell_count
+		return ""
+	return row_cells at col_idx

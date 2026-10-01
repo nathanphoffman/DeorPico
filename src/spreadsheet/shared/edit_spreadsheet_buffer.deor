@@ -1,0 +1,28 @@
+
+# Keys that change the text being typed.
+macro edit_spreadsheet_buffer
+	if kind is "char"
+		spreadsheet_edit_buffer = s_join([spreadsheet_edit_buffer, chr])
+	else if kind is "paste_text"
+		macro_run append_paste_to_spreadsheet_edit
+	else if kind is "backspace"
+		macro_run remove_last_spreadsheet_edit_char
+	else if kind is "escape"
+		macro_run cancel_spreadsheet_edit
+
+# A cell is one line -- pasted line breaks become spaces.
+macro append_paste_to_spreadsheet_edit
+	const string NEWLINE = "\n"
+	const string SPACE = " "
+	string pasted = s_replace(chr, NEWLINE, SPACE)
+	spreadsheet_edit_buffer = s_join([spreadsheet_edit_buffer, pasted])
+
+macro remove_last_spreadsheet_edit_char
+	int keep_count = s_char_count(spreadsheet_edit_buffer) - 1
+	if keep_count >= 0
+		int buffer_start = 0
+		spreadsheet_edit_buffer = s_substring(spreadsheet_edit_buffer, buffer_start, keep_count)
+
+macro cancel_spreadsheet_edit
+	spreadsheet_editing = false
+	spreadsheet_edit_buffer = ""

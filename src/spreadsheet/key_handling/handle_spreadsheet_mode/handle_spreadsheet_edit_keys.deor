@@ -1,0 +1,30 @@
+
+# Typing into the selected cell. Editing never writes to disk by itself:
+# a commit rewrites that row's line in the text buffer's `lines` and marks
+# it dirty, so ^S, ^Del, the unsaved-changes gate and the ^T text view all
+# keep working exactly as they do for normal text edits.
+
+# Mid-edit, typing keys change the edit text and any other key commits it
+# (and then still does its normal move -- see handle_spreadsheet_action).
+# Otherwise, a few keys start an edit.
+macro handle_spreadsheet_edit_keys
+	if spreadsheet_editing
+		macro_run continue_spreadsheet_edit
+	else
+		macro_run start_spreadsheet_edit_for_key
+
+macro continue_spreadsheet_edit
+	if kind is "char" or kind is "paste_text" or kind is "backspace" or kind is "escape"
+		macro_run edit_spreadsheet_buffer
+	else
+		macro_run commit_spreadsheet_edit
+
+# Enter edits the cell's current text, typing replaces it, and
+# Backspace/Delete clear it straight away.
+macro start_spreadsheet_edit_for_key
+	if kind is "enter"
+		macro_run start_spreadsheet_edit_with_cell_text
+	else if kind is "char" or kind is "paste_text"
+		macro_run start_spreadsheet_edit_replacing_cell
+	else if kind is "backspace" or kind is "delete"
+		macro_run clear_selected_spreadsheet_cell

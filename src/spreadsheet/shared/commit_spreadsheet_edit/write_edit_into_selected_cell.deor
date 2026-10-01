@@ -1,0 +1,29 @@
+
+# Puts the typed text into the selected row's cells, then swaps that row
+# into the sheet and its line into `lines`.
+macro write_edit_into_selected_cell
+	stringList row_cells = spreadsheet_rows at spreadsheet_sel_row
+	macro_run pad_row_to_selected_column
+	row_cells at spreadsheet_sel_col = spreadsheet_edit_buffer
+	macro_run replace_selected_spreadsheet_row
+
+# A row shorter than the selected column gets empty cells added up to it.
+macro pad_row_to_selected_column
+	int start = len(row_cells)
+	int stop = spreadsheet_sel_col + 1
+	for in range(start, stop)
+		row_cells at end = ""
+
+# Rewrites just the selected row's line in `lines` -- untouched rows keep
+# their original formatting. Goes through local copies assigned back,
+# since an `at` write alone doesn't make the transpiler declare the
+# unpacked spreadsheet_rows/lines mutable.
+macro replace_selected_spreadsheet_row
+	string row_line = csv_join_row(row_cells)
+	csvRowList updated_rows = move spreadsheet_rows
+	updated_rows at spreadsheet_sel_row = row_cells
+	spreadsheet_rows = move updated_rows
+	stringList updated_lines = move lines
+	updated_lines at spreadsheet_sel_row = row_line
+	lines = move updated_lines
+	dirty = true

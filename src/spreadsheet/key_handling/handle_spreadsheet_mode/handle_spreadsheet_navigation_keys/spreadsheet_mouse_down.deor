@@ -1,4 +1,17 @@
 
+# Selects the cell under a click (spreadsheet_owns_key only routes clicks
+# right of the sidebar here) and takes keyboard focus off the sidebar.
+# Ctrl+click also opens the full-text popup for that cell (term.deor
+# flags a ctrl-held click with chr "ctrl").
+macro spreadsheet_mouse_down
+	unsafe_macro_run locate_spreadsheet_click
+	sidebar_focused = false
+	if click_on_sheet
+		spreadsheet_sel_row = clicked_row
+		spreadsheet_sel_col = clicked_col
+		if chr is "ctrl"
+			spreadsheet_modal_open = true
+
 # Works out which cell a click landed on -- `col` is the raw terminal
 # column, so the sidebar's width comes off first. Leaks clicked_row,
 # clicked_col and click_on_sheet (false for a click on the status/notice
@@ -14,16 +27,3 @@ unsafe_macro locate_spreadsheet_click
 	int clicked_col = spreadsheet_column_at_x(column_widths, spreadsheet_scroll_col, content_col)
 	int row_count = len(spreadsheet_rows)
 	bool click_on_sheet = row < view_rows and clicked_row < row_count
-
-# Selects the cell under a click (spreadsheet_owns_key only routes clicks
-# right of the sidebar here) and takes keyboard focus off the sidebar.
-# Ctrl+click also opens the full-text popup for that cell (term.deor
-# flags a ctrl-held click with chr "ctrl").
-macro spreadsheet_mouse_down
-	unsafe_macro_run locate_spreadsheet_click
-	sidebar_focused = false
-	if click_on_sheet
-		spreadsheet_sel_row = clicked_row
-		spreadsheet_sel_col = clicked_col
-		if chr is "ctrl"
-			spreadsheet_modal_open = true

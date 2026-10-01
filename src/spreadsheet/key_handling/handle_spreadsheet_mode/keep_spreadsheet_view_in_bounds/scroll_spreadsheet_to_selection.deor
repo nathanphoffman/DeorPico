@@ -1,0 +1,34 @@
+
+# Scrolls just far enough that the selected cell is on screen.
+macro scroll_spreadsheet_to_selection
+	macro_run scroll_spreadsheet_rows_to_selection
+	macro_run scroll_spreadsheet_columns_to_selection
+
+macro scroll_spreadsheet_rows_to_selection
+	TermSize term_size = xt_size()
+	(rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+	if spreadsheet_sel_row < spreadsheet_scroll_row
+		spreadsheet_scroll_row = spreadsheet_sel_row
+	if spreadsheet_sel_row > spreadsheet_scroll_row + view_rows - 1
+		spreadsheet_scroll_row = spreadsheet_sel_row - view_rows + 1
+
+# Columns are different widths, so this steps the first drawn column right
+# one at a time until the selected cell's right edge fits (or it's the
+# first column drawn, for a cell wider than the whole screen).
+macro scroll_spreadsheet_columns_to_selection
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
+	intList column_widths = spreadsheet_column_widths(spreadsheet_rows)
+	int column_count = len(column_widths)
+
+	if spreadsheet_sel_col < spreadsheet_scroll_col
+		spreadsheet_scroll_col = spreadsheet_sel_col
+	if spreadsheet_sel_col < column_count
+		int sel_width = column_widths at spreadsheet_sel_col
+		for if spreadsheet_scroll_col < spreadsheet_sel_col
+			int sel_left_x = spreadsheet_cell_left_x(column_widths, spreadsheet_scroll_col, spreadsheet_sel_col)
+			if sel_left_x + sel_width <= content_width
+				break
+			spreadsheet_scroll_col = spreadsheet_scroll_col + 1

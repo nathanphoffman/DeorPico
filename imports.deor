@@ -47,10 +47,25 @@ import "src/keymap.deor"
 import "src/spreadsheet/spreadsheet_consts.deor"
 import "src/spreadsheet/layout.deor"
 import "src/spreadsheet/csv_parse.deor"
-import "src/spreadsheet/mouse.deor"
-import "src/spreadsheet/editing.deor"
-import "src/spreadsheet/sorting.deor"
-import "src/spreadsheet/navigation.deor"
+
+# Spreadsheet key handling -- each file holds one macro plus the macros it
+# calls directly; anything deeper sits in a subfolder named after the file
+# that calls it, and shared/ holds macros called from several branches.
+# Imported deepest-first so every macro is defined before its callers.
+import "src/spreadsheet/shared/spreadsheet_cell_value.deor"
+import "src/spreadsheet/shared/commit_spreadsheet_edit/write_edit_into_selected_cell.deor"
+import "src/spreadsheet/shared/commit_spreadsheet_edit.deor"
+import "src/spreadsheet/shared/edit_spreadsheet_buffer.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_navigation_keys/sort_spreadsheet_by_selected_column/csv_sort_order.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_navigation_keys/sort_spreadsheet_by_selected_column.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_navigation_keys/spreadsheet_mouse_down.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_navigation_keys.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_edit_keys/start_spreadsheet_edit.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/handle_spreadsheet_edit_keys.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/clamp_spreadsheet_selection.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/keep_spreadsheet_view_in_bounds/scroll_spreadsheet_to_selection.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode/keep_spreadsheet_view_in_bounds.deor"
+import "src/spreadsheet/key_handling/handle_spreadsheet_mode.deor"
 import "src/spreadsheet/handle_key.deor"
 
 # Spreadsheet hooks -- each one called from exactly one place in the

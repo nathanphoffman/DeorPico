@@ -1,0 +1,14 @@
+
+# Keeps the selected cell inside the sheet -- rows can have different cell
+# counts, so the column is bounded by the widest row rather than the
+# selected row itself (short rows just draw empty cells past their end).
+macro clamp_spreadsheet_selection
+	int row_count = len(spreadsheet_rows)
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	int max_row = row_count - 1
+	int max_col = column_count - 1
+	int min_index = 0
+	spreadsheet_sel_row = m_min(spreadsheet_sel_row, max_row)
+	spreadsheet_sel_row = m_max(spreadsheet_sel_row, min_index)
+	spreadsheet_sel_col = m_min(spreadsheet_sel_col, max_col)
+	spreadsheet_sel_col = m_max(spreadsheet_sel_col, min_index)

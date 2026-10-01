@@ -1,0 +1,21 @@
+
+# The wheel scrolls the sheet on its own without dragging the selection
+# along, same as the text editor -- everything else (key moves, clicks)
+# pulls the view back to wherever the selected cell is.
+macro keep_spreadsheet_view_in_bounds
+	if kind is "mouse_scroll_up" or kind is "mouse_scroll_down"
+		macro_run clamp_spreadsheet_scroll
+	else
+		macro_run scroll_spreadsheet_to_selection
+
+# Keeps a wheel scroll between the top of the sheet and its last row
+# sitting at the bottom of the screen.
+macro clamp_spreadsheet_scroll
+	TermSize term_size = xt_size()
+	(rows) in term_size
+	int view_rows = spreadsheet_view_rows(rows)
+	int row_count = len(spreadsheet_rows)
+	int max_scroll_row = row_count - view_rows
+	int min_scroll_row = 0
+	spreadsheet_scroll_row = m_min(spreadsheet_scroll_row, max_scroll_row)
+	spreadsheet_scroll_row = m_max(spreadsheet_scroll_row, min_scroll_row)
