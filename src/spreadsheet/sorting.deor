@@ -38,37 +38,49 @@ macro sort_spreadsheet_by_selected_column
 		error = false
 
 # Row indices of `rows` in sorted order by column `col_idx`, with the
-# header (index 0) always first. Cells that both parse as numbers compare
-# numerically, otherwise as case-insensitive text; numbers sort before
-# text, and empty/missing cells always go last in either direction. The
-# sort is stable, so sorting by one column then another keeps ties in the
-# previous order.
+# header (index 0) always first. Each data row lands in one of three
+# groups by its cell: numbers (compared numerically), text (compared
+# case-insensitively) and empty/missing (always last, in original order).
+# Ascending puts numbers before text, descending text before numbers.
+# The sorts are stable (see l_sort_indices_by_*), so sorting by one
+# column then another keeps ties in the previous order.
 fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
-	rust
-		{
-			use std::cmp::Ordering;
-			let cell = |row: &Vec<String>| -> String {
-				row.get(col_idx as usize).map(|c| c.trim().to_string()).unwrap_or_default()
-			};
-			let mut order: Vec<i64> = (1..rows.len() as i64).collect();
-			order.sort_by(|&left, &right| {
-				let left_cell = cell(&rows[left as usize]);
-				let right_cell = cell(&rows[right as usize]);
-				match (left_cell.is_empty(), right_cell.is_empty()) {
-					(true, true) => return Ordering::Equal,
-					(true, false) => return Ordering::Greater,
-					(false, true) => return Ordering::Less,
-					_ => {}
-				}
-				let ordering = match (left_cell.parse::<f64>(), right_cell.parse::<f64>()) {
-					(Ok(left_num), Ok(right_num)) => left_num.partial_cmp(&right_num).unwrap_or(Ordering::Equal),
-					(Ok(_), Err(_)) => Ordering::Less,
-					(Err(_), Ok(_)) => Ordering::Greater,
-					_ => left_cell.to_lowercase().cmp(&right_cell.to_lowercase()),
-				};
-				if descending { ordering.reverse() } else { ordering }
-			});
-			let mut result: Vec<i64> = vec![0];
-			result.extend(order);
-			result
-		}
+	intList number_indices = empty
+	floatList number_keys = empty
+	intList text_indices = empty
+	stringList text_keys = empty
+	intList empty_indices = empty
+
+	int row_count = len(rows)
+	int start = 1
+	for row_idx in range(start, row_count)
+		string raw_cell = spreadsheet_cell_value(rows, row_idx, col_idx)
+		string cell = s_trim(raw_cell)
+		if cell is ""
+			empty_indices at end = row_idx
+		else if s_is_number(cell)
+			float number_key = c_string_to_float(cell)
+			number_indices at end = row_idx
+			number_keys at end = number_key
+		else
+			string text_key = s_to_lower(cell)
+			text_indices at end = row_idx
+			text_keys at end = text_key
+
+	intList sorted_numbers = l_sort_indices_by_float(number_indices, number_keys, descending)
+	intList sorted_text = l_sort_indices_by_string(text_indices, text_keys, descending)
+
+	intList order = empty
+	order at end = 0
+	intList first_group = sorted_numbers
+	intList second_group = sorted_text
+	if descending
+		first_group = sorted_text
+		second_group = sorted_numbers
+	for row_idx in first_group
+		order at end = row_idx
+	for row_idx in second_group
+		order at end = row_idx
+	for row_idx in empty_indices
+		order at end = row_idx
+	return order

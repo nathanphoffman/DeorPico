@@ -35,3 +35,9 @@ fn string s_word_at(string line, int col)
 				chars[start as usize..=end as usize].iter().collect()
 			}
 		}
+
+# True if `str` (ignoring surrounding whitespace) parses as a number --
+# pairs with c_string_to_float, which silently turns non-numbers into 0.0.
+fn bool s_is_number(string str)
+	rust
+		str.trim().parse::<f64>().is_ok()

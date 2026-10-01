@@ -1,0 +1,32 @@
+
+# Index-sorting helpers -- the sort itself in Rust for speed, so callers
+# can keep the actual ordering rules (what to compare, grouping, etc.) in
+# Deor. Both return `indices` reordered by their matching `keys` (same
+# length, keys at i belongs to indices at i). Stable: equal keys keep their
+# original relative order, in either direction.
+
+shape intList = list of int
+shape floatList = list of float
+shape stringList = list of string
+
+fn intList l_sort_indices_by_float(intList indices, floatList keys, bool descending)
+	rust
+		{
+			let mut pairs: Vec<(i64, f64)> = indices.into_iter().zip(keys.into_iter()).collect();
+			pairs.sort_by(|left, right| {
+				let ordering = left.1.partial_cmp(&right.1).unwrap_or(std::cmp::Ordering::Equal);
+				if descending { ordering.reverse() } else { ordering }
+			});
+			pairs.into_iter().map(|pair| pair.0).collect()
+		}
+
+fn intList l_sort_indices_by_string(intList indices, stringList keys, bool descending)
+	rust
+		{
+			let mut pairs: Vec<(i64, String)> = indices.into_iter().zip(keys.into_iter()).collect();
+			pairs.sort_by(|left, right| {
+				let ordering = left.1.cmp(&right.1);
+				if descending { ordering.reverse() } else { ordering }
+			});
+			pairs.into_iter().map(|pair| pair.0).collect()
+		}
