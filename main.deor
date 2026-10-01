@@ -81,7 +81,9 @@ macro rehighlight_if_dirty
 		last_highlighted_lines = move lines_snapshot
 
 macro draw_frame
-	if diffing
+	if commit_prompt_is_open(state)
+		commit_prompt_render(state)
+	else if diffing
 		editor_render_diff(state)
 	else if spreadsheet_main_draw_frame(state)
 		spreadsheet_render(state)
@@ -147,7 +149,11 @@ fn void main()
 		(lint_running) in lint
 		bool was_lint_running = lint_running
 
-		macro_run spreadsheet_main_main
+		# The commit screen (^L) takes every key while it's open.
+		if commit_prompt_owns_key(state, key)
+			state = commit_prompt_handle_key(state, key)
+		else
+			macro_run spreadsheet_main_main
 		(done) in state
 		if done
 			break

@@ -59,6 +59,11 @@ struct SidebarState
 	bool creating_file
 	string new_file_name
 
+	# Text-cursor position inside new_file_name, 0..len(new_file_name) --
+	# Left/Right/Home move it, and typing/Backspace/Delete edit at it
+	# instead of only at the end (see placeholder_char in mutate.deor).
+	int new_file_cursor
+
 	# Directory the pending new file will be created in -- captured up front
 	# since the typed name (and so the file's eventual path) isn't known
 	# until Enter confirms.

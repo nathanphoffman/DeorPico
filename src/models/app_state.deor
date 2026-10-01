@@ -6,6 +6,7 @@ struct AppState
 	SidebarState browser
 	EditorState main_panel
 	SpreadsheetState spreadsheet
+	CommitPromptState commit_prompt
 	bool done
 
 	# Persists until replaced by another notice

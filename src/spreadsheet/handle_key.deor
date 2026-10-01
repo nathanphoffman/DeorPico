@@ -7,7 +7,7 @@
 # sidebar) and the text buffer's lines/dirty (a committed cell edit
 # rewrites its row's line -- see commit_spreadsheet_edit).
 unsafe_macro unpack_spreadsheet_key_state
-	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
 	(sidebar_focused) in browser
 	(core) in main_panel
@@ -21,7 +21,7 @@ unsafe_macro repack_spreadsheet_key_state
 	BufferState core = core with (lines, dirty)
 	EditorState main_panel = main_panel with (core)
 	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas)
-	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 
 # Whether the spreadsheet handles this key itself (spreadsheet_handle_key)
 # or main() hands it to the normal editor handler. Only while the sheet is

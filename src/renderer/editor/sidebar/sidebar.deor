@@ -21,6 +21,7 @@ struct SidebarRowInput
 	bool is_bottom_row
 	bool creating_file
 	string new_file_name
+	int new_file_cursor
 	bool filter_active
 	filterMatchList filter_matches
 
@@ -38,7 +39,7 @@ struct SidebarRowInput
 # fn, since it's untested whether a `return` inside a plain macro correctly
 # exits the fn it gets inlined into.
 fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches) in row_input
+	(browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches) in row_input
 
 	unsafe_macro_run compute_sidebar_row_layout
 

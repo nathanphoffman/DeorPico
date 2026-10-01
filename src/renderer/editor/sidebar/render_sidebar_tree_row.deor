@@ -41,9 +41,20 @@ macro render_sidebar_tree_row
 		if is_creating_row
 			SidebarBorderColors colors = use_sidebar_border_colors()
 			(ansi_reverse_on, ansi_reverse_off) in colors
-			string cursor_block = s_join([ansi_reverse_on, " ", ansi_reverse_off])
-			tree_text = s_join([text, cursor_block])
-			visible_len = visible_len + 1
+			# Cursor sitting on a character of the name highlights that
+			# character in place; at the end it's an extra blank block.
+			int cursor_at = len(indent) + len(marker) + new_file_cursor
+			if cursor_at < visible_len
+				zero as 0
+				int cursor_after = cursor_at + 1
+				string before = s_substring(text, zero, cursor_at)
+				string under = s_substring(text, cursor_at, cursor_after)
+				string after = s_substring(text, cursor_after, visible_len)
+				tree_text = s_join([before, ansi_reverse_on, under, ansi_reverse_off, after])
+			else
+				string cursor_block = s_join([ansi_reverse_on, " ", ansi_reverse_off])
+				tree_text = s_join([text, cursor_block])
+				visible_len = visible_len + 1
 		else
 			string colored = browser_colorize(text, git_status)
 			bool selected = idx is selected_idx

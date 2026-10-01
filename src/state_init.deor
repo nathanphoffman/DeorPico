@@ -39,6 +39,7 @@ unsafe_macro initialize_browser
 	sidebar_focused as true
 	creating_file as false
 	new_file_name as ""
+	new_file_cursor as 0
 	create_parent_dir as ""
 	renaming_file as false
 	string name = ""
@@ -52,7 +53,7 @@ unsafe_macro initialize_browser
 	pending_discard_path as ""
 	sidebar_locked as false
 
-	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 
 unsafe_macro initialize_diff
 	diffing as false
@@ -120,5 +121,12 @@ fn AppState editor_open(LaunchArgs launch)
 	error as false
 
 	EditorState main_panel = (core, diff, selection, undo, search, filter, lint)
-	AppState state = (browser, main_panel, spreadsheet, done, notice, error)
+	commit_prompt_open as false
+	commit_message as ""
+	commit_cursor as 0
+	stringList commit_paths = empty
+	commit_error as ""
+	CommitPromptState commit_prompt = (commit_prompt_open, commit_message, commit_cursor, commit_paths, commit_error)
+
+	AppState state = (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 	return state

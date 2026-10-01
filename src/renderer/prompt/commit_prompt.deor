@@ -1,0 +1,148 @@
+# ^L while the sidebar has focus opens a full-screen "commit staged changes"
+# prompt. Hooked straight into main()'s loop ahead of the spreadsheet/editor
+# key handlers (see main.deor) -- while open it owns every key, so nothing
+# behind it moves until Enter commits or Esc backs out.
+
+# Nothing staged means nothing to commit -- says so instead of opening an
+# empty prompt.
+macro open_commit_prompt
+	(git_changes) in browser
+	commit_paths = commit_staged_paths(git_changes)
+	if len(commit_paths) is 0
+		notice = "Nothing staged to commit -- stage files with ^G first"
+		error = true
+	else
+		commit_prompt_open = true
+		commit_message = ""
+		commit_cursor = 0
+		commit_error = ""
+
+macro confirm_commit
+	if len(commit_message) is 0
+		commit_error = "Type a commit message first"
+	else
+		(browse_dir) in browser
+		string git_error = g_commit(browse_dir, commit_message)
+		if git_error is ""
+			int committed_count = len(commit_paths)
+			string count_text = c_int_to_string(committed_count)
+			notice = s_join(["Committed ", count_text, " file(s)"])
+			error = false
+			commit_prompt_open = false
+			browser = commit_refreshed_browser(browser)
+			main_panel = commit_refreshed_main_panel(main_panel)
+		else
+			string newline = "\n"
+			string gap = "  "
+			commit_error = s_replace(git_error, newline, gap)
+
+# Typed text (or a paste, flattened onto one line) goes in at the cursor.
+macro commit_message_insert
+	string crlf = xt_crlf()
+	zero as 0
+	string carriage_return = s_char_at(crlf, zero)
+	string nothing = ""
+	string newline = "\n"
+	string space = " "
+	string typed = s_replace(chr, carriage_return, nothing)
+	typed = s_replace(typed, newline, space)
+	int message_len = len(commit_message)
+	string before = s_substring(commit_message, zero, commit_cursor)
+	string after = s_substring(commit_message, commit_cursor, message_len)
+	commit_message = s_join([before, typed, after])
+	commit_cursor = commit_cursor + len(typed)
+	commit_error = ""
+
+macro commit_message_backspace
+	if commit_cursor > 0
+		zero as 0
+		int message_len = len(commit_message)
+		int before_end = commit_cursor - 1
+		string before = s_substring(commit_message, zero, before_end)
+		string after = s_substring(commit_message, commit_cursor, message_len)
+		commit_message = s_join([before, after])
+		commit_cursor = before_end
+
+macro commit_message_delete
+	int message_len = len(commit_message)
+	if commit_cursor < message_len
+		zero as 0
+		int after_start = commit_cursor + 1
+		string before = s_substring(commit_message, zero, commit_cursor)
+		string after = s_substring(commit_message, after_start, message_len)
+		commit_message = s_join([before, after])
+
+# Whether this key belongs to the commit prompt: everything while it's
+# open, plus the ^L that opens it -- only from the sidebar, and not while
+# the sidebar's own inline name prompt (^F/^R) is mid-edit.
+fn bool commit_prompt_owns_key(AppState state, KeyEvent key)
+	(browser, commit_prompt) in state
+	(sidebar_focused, creating_file) in browser
+	(commit_prompt_open) in commit_prompt
+	(kind) in key
+	bool opens_prompt = kind is "commit_prompt" and sidebar_focused and not creating_file
+	return commit_prompt_open or opens_prompt
+
+# Paths of everything currently staged (a staged edit, a staged edit with
+# further unstaged edits on top, or a staged delete).
+fn stringList commit_staged_paths(entryList git_changes)
+	stringList paths = empty
+	for entry in git_changes
+		(path, git_status) in entry
+		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted"
+			paths at end = path
+	return paths
+
+fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
+	(kind, chr) in key
+	(browser, main_panel, commit_prompt, notice, error) in state
+	(commit_prompt_open, commit_message, commit_cursor, commit_paths, commit_error) in commit_prompt
+
+	if not commit_prompt_open
+		macro_run open_commit_prompt
+	else if kind is "escape"
+		commit_prompt_open = false
+		notice = "Commit cancelled"
+		error = false
+	else if kind is "enter"
+		macro_run confirm_commit
+	else if kind is "char" or kind is "paste_text"
+		macro_run commit_message_insert
+	else if kind is "backspace"
+		macro_run commit_message_backspace
+	else if kind is "delete"
+		macro_run commit_message_delete
+	else if kind is "left" and commit_cursor > 0
+		commit_cursor = commit_cursor - 1
+	else if kind is "right" and commit_cursor < len(commit_message)
+		commit_cursor = commit_cursor + 1
+	else if kind is "home"
+		commit_cursor = 0
+
+	CommitPromptState commit_prompt = (commit_prompt_open, commit_message, commit_cursor, commit_paths, commit_error)
+	AppState next_state = state with (browser, main_panel, commit_prompt, notice, error)
+	return next_state
+
+# Committing changes what's staged and what HEAD is -- refresh the
+# sidebar's git colors/<GIT> list...
+fn SidebarState commit_refreshed_browser(SidebarState browser)
+	(browse_dir, browse_entries, sidebar_on_git, git_selected) in browser
+	StringMap fresh_git_map = g_status(browse_dir)
+	entryList refreshed_entries = g_apply_status(browse_entries, fresh_git_map)
+	browse_entries = refreshed_entries
+	entryList git_changes = g_changed_entries(fresh_git_map)
+	int last_git = len(git_changes) - 1
+	if sidebar_on_git and git_selected > last_git
+		git_selected = last_git
+	SidebarState refreshed = browser with (browse_entries, git_changes, git_selected)
+	return refreshed
+
+# ...and the open file's diff, since that's taken against HEAD.
+fn EditorState commit_refreshed_main_panel(EditorState main_panel)
+	(core, diff) in main_panel
+	(filename) in core
+	stringList diff_lines = g_diff(filename)
+	DiffState refreshed_diff = diff with (diff_lines)
+	diff = refreshed_diff
+	EditorState refreshed = main_panel with (diff)
+	return refreshed

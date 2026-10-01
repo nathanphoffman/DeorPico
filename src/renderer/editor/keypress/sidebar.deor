@@ -22,6 +22,14 @@ macro handle_sidebar_focus_mode
 					macro_run confirm_create_file
 			else if kind is "backspace"
 				macro_run placeholder_backspace
+			else if kind is "delete"
+				macro_run placeholder_delete
+			else if kind is "left"
+				macro_run placeholder_left
+			else if kind is "right"
+				macro_run placeholder_right
+			else if kind is "home"
+				new_file_cursor = 0
 			else if kind is "char"
 				macro_run placeholder_char
 		else if filter_active

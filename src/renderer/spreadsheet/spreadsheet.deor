@@ -25,7 +25,7 @@ unsafe_macro setup_spreadsheet_view_layout
 # normal editor/diff views (see render_sidebar_column in
 # render_buffer_rows.deor).
 macro render_spreadsheet_sidebar_column
-	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
+	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches)
 	screen = s_join([screen, sidebar_row_piece(row_input)])
 
 # The full-text popup (Ctrl+click / ^O): the selected cell's text wrapped
@@ -332,7 +332,7 @@ macro render_spreadsheet_notice_line
 fn void spreadsheet_render(AppState state)
 	(browser) in state
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
 	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
 	(main_panel) in state

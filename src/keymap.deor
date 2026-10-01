@@ -46,6 +46,10 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "delete_entry"
 		else if chr is "u"
 			kind = "discard_git_changes"
+		# Sidebar only: opens the commit screen (see renderer/prompt/).
+		# Not ^M -- terminals send that as Enter.
+		else if chr is "l"
+			kind = "commit_prompt"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "function_key"

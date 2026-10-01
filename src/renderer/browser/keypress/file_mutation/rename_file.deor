@@ -20,6 +20,7 @@ macro start_file_rename
 		macro_run insert_placeholder_entry
 
 		(name) in rename_original_entry
+		new_file_cursor = len(name)
 		new_file_name = name
 		notice = "Enter new name and ENTER; Esc to cancel"
 

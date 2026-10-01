@@ -60,9 +60,11 @@ macro move_cursor_visual_row
 	cursor_row = buffer_row
 	cursor_col = s_char_index_from_visual_col(new_line, target_visual_col, TAB_WIDTH)
 
-# Shift+arrow starts or extends the selection; a plain arrow clears it.
+# Shift+arrow (or Alt+arrow, mirroring Alt+click in mouse.deor) starts or
+# extends the selection; a plain arrow clears it.
 macro extend_or_clear_selection_for_shift
-	if shift
+	(alt) in key
+	if shift or alt
 		macro_run start_or_extend_selection_impl
 	else
 		has_selection = clear_selection_impl()

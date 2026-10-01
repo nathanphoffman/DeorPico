@@ -24,7 +24,7 @@ fn stringList spreadsheet_lines_before_key(AppState state)
 fn AppState spreadsheet_record_undo(AppState state, stringList lines_before)
 	if not spreadsheet_main_draw_frame(state)
 		return state
-	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
 	(lines, cursor_row, cursor_col) in core
 	move (undo_stack, redo_stack) in undo
@@ -37,7 +37,7 @@ fn AppState spreadsheet_record_undo(AppState state, stringList lines_before)
 		macro_run push_saved_lines_to_undo
 	UndoState undo = move (undo_stack, redo_stack)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
-	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 	return next_state
 
 # After the editor's ^Z/^Y restored `lines`, re-reads the sheet from them.
@@ -46,11 +46,11 @@ fn AppState spreadsheet_after_undo(AppState state, KeyEvent key)
 	bool is_undo_key = kind is "undo" or kind is "redo"
 	if not is_undo_key or not spreadsheet_main_draw_frame(state)
 		return state
-	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 	(core) in main_panel
 	(lines) in core
 	SpreadsheetState spreadsheet = spreadsheet_reloaded(spreadsheet, lines)
-	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 	return next_state
 
 # The sheet re-read from `lines` -- rows, and a .dpv's round setting and

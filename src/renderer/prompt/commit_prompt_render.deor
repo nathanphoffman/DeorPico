@@ -1,0 +1,82 @@
+# Whether draw_frame (main.deor) should draw the commit screen instead of
+# the normal view.
+fn bool commit_prompt_is_open(AppState state)
+	(commit_prompt) in state
+	(commit_prompt_open) in commit_prompt
+	return commit_prompt_open
+
+# One screen-wide row: cut to `cols`, padded out to it, wrapped in `style`
+# (empty for no styling).
+fn string commit_prompt_row(string text, int cols, string style)
+	unsafe_macro_run use_ansi_codes
+	zero as 0
+	string cut = s_substring(text, zero, cols)
+	string padded = s_pad_right(cut, cols)
+	return s_join([style, padded, ANSI_RESET])
+
+# Full-screen commit prompt: title bar, the message line (with the real
+# terminal cursor parked in it), the staged files about to be committed,
+# then an error line and a key-hint bar pinned to the bottom.
+fn void commit_prompt_render(AppState state)
+	unsafe_macro_run use_ansi_codes
+
+	(commit_prompt) in state
+	(commit_message, commit_cursor, commit_paths, commit_error) in commit_prompt
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+
+	# Long messages scroll sideways so the cursor always stays on screen.
+	string label = " Message: "
+	int label_len = len(label)
+	int message_room = cols - label_len - 1
+	if message_room < 1
+		message_room = 1
+	int message_start = 0
+	if commit_cursor > message_room
+		message_start = commit_cursor - message_room
+	int message_len = len(commit_message)
+	string shown_message = s_substring(commit_message, message_start, message_len)
+
+	int path_count = len(commit_paths)
+	string count_text = c_int_to_string(path_count)
+
+	string no_style = ""
+	string screen = ANSI_HOME
+	string status_style = ANSI_STATUS_BG
+	string bold_style = ANSI_BOLD_ON
+	string title_text = " Commit staged changes"
+	string blank_text = ""
+	string message_text = s_join([label, shown_message])
+	string files_header_text = s_join([" Staged files (", count_text, "):"])
+	string title = commit_prompt_row(title_text, cols, status_style)
+	string blank = commit_prompt_row(blank_text, cols, no_style)
+	string message_row = commit_prompt_row(message_text, cols, no_style)
+	string files_header = commit_prompt_row(files_header_text, cols, bold_style)
+	screen = s_join([screen, title, ANSI_CRLF, blank, ANSI_CRLF, message_row, ANSI_CRLF, blank, ANSI_CRLF, files_header, ANSI_CRLF])
+
+	# 5 rows above the file list, 2 pinned below it.
+	int list_rows = rows - 7
+	for list_row in range(list_rows)
+		string list_text = ""
+		if list_row < path_count
+			string staged_path = commit_paths at list_row
+			list_text = s_join(["   ", staged_path])
+		string list_line = commit_prompt_row(list_text, cols, no_style)
+		screen = s_join([screen, list_line, ANSI_CRLF])
+
+	string error_style = no_style
+	if commit_error is not ""
+		error_style = ANSI_ERROR_BG
+	string error_text = s_join([" ", commit_error])
+	string hint_text = " Enter: commit   Esc: cancel"
+	string error_line = commit_prompt_row(error_text, cols, error_style)
+	string hint_line = commit_prompt_row(hint_text, cols, status_style)
+	screen = s_join([screen, error_line, ANSI_CRLF, hint_line])
+
+	# Message is on screen row 3 (1-based); the cursor sits right after the
+	# label, offset by how far into the visible slice it is.
+	int cursor_screen_col = label_len + commit_cursor - message_start + 1
+	string col_str = c_int_to_string(cursor_screen_col)
+	string cursor_escape = s_join([esc, "[3;", col_str, "H"])
+	screen = s_join([screen, cursor_escape])
+	xt_flush_print(screen)

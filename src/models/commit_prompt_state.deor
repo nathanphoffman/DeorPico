@@ -1,0 +1,21 @@
+# The ^L commit screen (see src/renderer/prompt/) -- sits on AppState next
+# to SpreadsheetState rather than inside the sidebar/editor branches, since
+# while it's open it takes over every key and the whole screen. Fields are
+# commit_-prefixed for the same reason SpreadsheetState's are: so they
+# can't collide with another struct's fields in a destructured scope.
+struct CommitPromptState
+	bool commit_prompt_open
+
+	# The commit message being typed, and the text-cursor position inside
+	# it (0..len(commit_message)).
+	string commit_message
+	int commit_cursor
+
+	# Staged paths captured when the screen opened -- shown as the list of
+	# what's about to be committed.
+	stringList commit_paths
+
+	# Why the last Enter didn't commit (empty message, or git's own error
+	# output) -- shown on the screen itself, since the status bar is hidden
+	# behind it. Empty means nothing to show.
+	string commit_error

@@ -296,3 +296,26 @@ fn DirGitSummary g_dir_status_summary(string repo_path, string dir_path)
 
 	DirGitSummary summary = (has_staged, has_unstaged)
 	return summary
+
+# Runs `git commit -m <message>` (^L's commit screen, see
+# src/renderer/prompt/) -- "" on success, otherwise git's own output
+# (stderr, falling back to stdout) so the screen can show why it failed.
+fn string g_commit(string repo_path, string message)
+	rust
+		match std::process::Command::new("git")
+			.args(["commit", "-m"])
+			.arg(&message)
+			.current_dir(&repo_path)
+			.output()
+		{
+			Ok(output) if output.status.success() => String::new(),
+			Ok(output) => {
+				let stderr_text = String::from_utf8_lossy(&output.stderr).trim().to_string();
+				if stderr_text.is_empty() {
+					String::from_utf8_lossy(&output.stdout).trim().to_string()
+				} else {
+					stderr_text
+				}
+			}
+			Err(err) => err.to_string(),
+		}

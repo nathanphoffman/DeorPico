@@ -62,19 +62,46 @@ macro enter_placeholder_edit_mode
 
 	creating_file = true
 	new_file_name = ""
+	new_file_cursor = 0
 	create_parent_dir = parent_dir
 	error = false
 
+# Typing/Backspace/Delete all edit at new_file_cursor rather than only at
+# the end of the name, so Left/Right can move back into it to fix a typo.
 macro placeholder_char
-	stringList extended_name_parts = [new_file_name, chr]
-	new_file_name = s_join(extended_name_parts)
+	zero as 0
+	int name_len = len(new_file_name)
+	string before = s_substring(new_file_name, zero, new_file_cursor)
+	string after = s_substring(new_file_name, new_file_cursor, name_len)
+	new_file_name = s_join([before, chr, after])
+	new_file_cursor = new_file_cursor + 1
 
 macro placeholder_backspace
-	int name_len = len(new_file_name)
-	if name_len > 0
+	if new_file_cursor > 0
 		zero as 0
-		int new_len = name_len - 1
-		new_file_name = s_substring(new_file_name, zero, new_len)
+		int name_len = len(new_file_name)
+		int before_end = new_file_cursor - 1
+		string before = s_substring(new_file_name, zero, before_end)
+		string after = s_substring(new_file_name, new_file_cursor, name_len)
+		new_file_name = s_join([before, after])
+		new_file_cursor = before_end
+
+macro placeholder_delete
+	int name_len = len(new_file_name)
+	if new_file_cursor < name_len
+		zero as 0
+		int after_start = new_file_cursor + 1
+		string before = s_substring(new_file_name, zero, new_file_cursor)
+		string after = s_substring(new_file_name, after_start, name_len)
+		new_file_name = s_join([before, after])
+
+macro placeholder_left
+	if new_file_cursor > 0
+		new_file_cursor = new_file_cursor - 1
+
+macro placeholder_right
+	if new_file_cursor < len(new_file_name)
+		new_file_cursor = new_file_cursor + 1
 
 # Esc while the name-entry prompt is open. Create/move have a fresh
 # placeholder row with nothing behind it -- just drop it

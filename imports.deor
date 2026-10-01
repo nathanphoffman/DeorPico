@@ -38,6 +38,7 @@ import "src/models/filter_state.deor"
 import "src/models/undo_snapshot.deor"
 import "src/models/undo_state.deor"
 import "src/models/spreadsheet_state.deor"
+import "src/models/commit_prompt_state.deor"
 import "src/models/editor_state.deor"
 import "src/models/app_state.deor"
 
@@ -204,6 +205,8 @@ import "src/renderer/editor/keypress/sidebar_git_actions.deor"
 import "src/renderer/editor/diff_view.deor"
 import "src/renderer/spreadsheet/calculation.deor"
 import "src/renderer/spreadsheet/spreadsheet.deor"
+import "src/renderer/prompt/commit_prompt.deor"
+import "src/renderer/prompt/commit_prompt_render.deor"
 
 # Rules that are identical across several languages, one macro per file.
 # Each highlights_<language> macro macro_runs the ones it needs, in the
