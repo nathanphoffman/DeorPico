@@ -6,7 +6,7 @@ unsafe_macro spreadsheet_state_init_editor_open
 
 # Fresh spreadsheet state for a just-opened file: spreadsheet-capable (and
 # showing the sheet rather than the text view) only for a .csv, nothing
-# selected, scrolled or being edited. `lines` is the text buffer's content
+# selected, scrolled or being edited, and its view cache built. `lines` is the text buffer's content
 # for that file -- see csv_parse_lines for why rows come from it rather
 # than from disk.
 fn SpreadsheetState spreadsheet_for_file(string filename, stringList lines)
@@ -29,5 +29,6 @@ fn SpreadsheetState spreadsheet_for_file(string filename, stringList lines)
 	spreadsheet_editing as false
 	string spreadsheet_edit_buffer = ""
 	spreadsheet_modal_open as false
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden)
-	return spreadsheet
+	SheetViewCache spreadsheet_view_cache = sv_empty()
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden, spreadsheet_view_cache)
+	return spreadsheet_with_view_cache(move spreadsheet)

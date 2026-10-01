@@ -1,0 +1,91 @@
+
+# Keeping the sheet's view cache (see sheet_view_cache.deor) up to date.
+# Every change to the sheet is either a change to the text buffer's
+# `lines` (cells, sorts, column inserts/deletes, a .dpv's settings) or to
+# one of the settings a .csv keeps only in memory (rounding, highlights,
+# hidden columns) -- so the cache is rebuilt whenever `lines` or those
+# settings differ from before the key, and never just for moving around.
+
+# What the cache is built from.
+struct SheetViewInputs
+	string spreadsheet_path
+	csvRowList spreadsheet_rows
+	int spreadsheet_round_places
+	stringList spreadsheet_column_formulas
+	stringList spreadsheet_column_highlights
+	stringList spreadsheet_column_hidden
+
+# The settings the cache depends on, as one text to compare -- written
+# into `settings_text` (declared by the caller).
+macro read_spreadsheet_view_settings
+	const string NEWLINE = "\n"
+	string round_text = c_int_to_string(spreadsheet_round_places)
+	string formulas_text = csv_join_row(spreadsheet_column_formulas)
+	string highlights_text = csv_join_row(spreadsheet_column_highlights)
+	string hidden_text = csv_join_row(spreadsheet_column_hidden)
+	settings_text = s_join([spreadsheet_path, NEWLINE, round_text, NEWLINE, formulas_text, NEWLINE, highlights_text, NEWLINE, hidden_text])
+
+# Inside spreadsheet_handle_key, once the key has done its edit/sort/
+# column change -- before the view scrolls to the selection, which uses
+# the cached column widths. view_settings_before was read as the key
+# arrived (see spreadsheet_handle_key).
+macro refresh_view_cache_if_sheet_changed
+	macro_run read_spreadsheet_view_settings
+	if lines is not lines_before or settings_text is not view_settings_before
+		SheetViewInputs view_inputs = (spreadsheet_path, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden)
+		spreadsheet_view_cache = spreadsheet_build_view_cache(move view_inputs)
+
+fn SheetViewCache spreadsheet_build_view_cache(SheetViewInputs view_inputs)
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in view_inputs
+	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
+	intList column_widths = spreadsheet_column_widths(display_rows, spreadsheet_column_hidden)
+	csvRowList level_rows = spreadsheet_visible_highlight_levels(spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_column_highlights)
+	string invalid_reason = spreadsheet_invalid_dpv_reason(spreadsheet_path, spreadsheet_rows)
+	SheetViewCache cache = sv_build(move display_rows, move column_widths, move level_rows)
+	return sv_with_invalid_reason(move cache, invalid_reason)
+
+# Each highlighted column's color levels (see
+# spreadsheet_highlight_levels), worked out from unrounded values --
+# empty, skipping the extra pass, when no column is highlighted.
+fn csvRowList spreadsheet_visible_highlight_levels(csvRowList rows, stringList column_formulas, stringList column_highlights)
+	csvRowList no_levels = empty
+	string highlights_value = spreadsheet_column_list_setting_value(column_highlights)
+	if highlights_value is ""
+		return no_levels
+	int exact_places = 0 - 1
+	csvRowList exact_rows = spreadsheet_display_rows(rows, exact_places, column_formulas)
+	return spreadsheet_highlight_levels(exact_rows, column_highlights)
+
+# `spreadsheet` with its view cache rebuilt from scratch.
+fn SpreadsheetState spreadsheet_with_view_cache(SpreadsheetState spreadsheet)
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
+	SheetViewInputs view_inputs = move (spreadsheet_path, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden)
+	SheetViewCache spreadsheet_view_cache = spreadsheet_build_view_cache(move view_inputs)
+	SpreadsheetState refreshed = spreadsheet with (spreadsheet_view_cache)
+	return refreshed
+
+# The settings text (see read_spreadsheet_view_settings) while the sheet
+# is showing, or "" while it isn't.
+fn string spreadsheet_view_settings(AppState state)
+	(spreadsheet) in state
+	(spreadsheet_active, spreadsheet_view_active, spreadsheet_path, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
+	string settings_text = ""
+	if spreadsheet_active and spreadsheet_view_active
+		macro_run read_spreadsheet_view_settings
+	return settings_text
+
+# After a key the editor handler took (see spreadsheet_main_main): rebuilds
+# the cache if the sheet is showing and `lines` or its settings changed --
+# including when it wasn't showing before the key (^T, opening a file),
+# since lines_before and view_settings_before are both empty then.
+fn AppState spreadsheet_refresh_view_cache(AppState state, stringList lines_before, string view_settings_before)
+	string view_settings = spreadsheet_view_settings(state)
+	if view_settings is ""
+		return state
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+	(core) in main_panel
+	(lines) in core
+	if lines is not lines_before or view_settings is not view_settings_before
+		spreadsheet = spreadsheet_with_view_cache(move spreadsheet)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	return next_state

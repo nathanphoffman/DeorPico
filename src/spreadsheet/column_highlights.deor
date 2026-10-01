@@ -19,6 +19,15 @@
 # are nearly the same, the curve keeps them the same color instead of
 # the rank splitting them up arbitrarily.
 
+# Writes one column's `levels` (one per row) into level_rows.
+macro copy_column_levels_into_rows
+	for row_idx in range(row_count)
+		string level = levels at row_idx
+		if level is not ""
+			stringList level_row = level_rows at row_idx
+			level_row at col_idx = level
+			level_rows at row_idx = level_row
+
 # Each column's highlighting ("" for off) from a .dpv's "#highlight="
 # line -- always off for a .csv.
 fn stringList spreadsheet_column_highlights_from_lines(string spreadsheet_path, stringList lines)
@@ -49,25 +58,33 @@ fn string spreadsheet_next_highlight(string highlight)
 	return SPREADSHEET_HIGHLIGHT_HIGH_GOOD
 
 # Each highlighted column's color level per row -- "" for none, "1" (very
-# bad) up to "5" (very good). Indexed column first: (levels at col_idx)
-# at row_idx, so spreadsheet_cell_value(levels, col_idx, row_idx) looks
-# one up. `display_rows` should be unrounded, so formula results count.
+# bad) up to "5" (very good) -- laid out like display_rows: (levels at
+# row_idx) at col_idx. Empty when no column is highlighted.
+# `display_rows` should be unrounded, so formula results count.
 fn csvRowList spreadsheet_highlight_levels(csvRowList display_rows, stringList column_highlights)
-	csvRowList column_levels = empty
+	csvRowList level_rows = empty
+	string highlights_value = spreadsheet_column_list_setting_value(column_highlights)
+	if highlights_value is ""
+		return level_rows
+	int row_count = len(display_rows)
 	int highlight_count = len(column_highlights)
+	for in range(row_count)
+		stringList blank_levels = empty
+		for in range(highlight_count)
+			blank_levels at end = ""
+		level_rows at end = blank_levels
 	for col_idx in range(highlight_count)
 		string highlight = spreadsheet_column_highlight(column_highlights, col_idx)
-		stringList levels = spreadsheet_column_highlight_levels(display_rows, col_idx, highlight)
-		column_levels at end = levels
-	return column_levels
+		if highlight is not ""
+			stringList levels = spreadsheet_column_highlight_levels(display_rows, col_idx, highlight)
+			macro_run copy_column_levels_into_rows
+	return level_rows
 
-# One column's levels (see spreadsheet_highlight_levels) -- text and
-# empty cells, and the header, get none.
+# One column's level per row (see spreadsheet_highlight_levels) -- text
+# and empty cells, and the header, get none.
 fn stringList spreadsheet_column_highlight_levels(csvRowList display_rows, int col_idx, string highlight)
 	unsafe_macro_run use_spreadsheet_consts
 	stringList levels = empty
-	if highlight is ""
-		return levels
 	int row_count = len(display_rows)
 	for in range(row_count)
 		levels at end = ""
@@ -75,7 +92,8 @@ fn stringList spreadsheet_column_highlight_levels(csvRowList display_rows, int c
 	floatList numbers = empty
 	int start = 1
 	for row_idx in range(start, row_count)
-		string raw_cell = spreadsheet_cell_value(display_rows, row_idx, col_idx)
+		stringList row_cells = display_rows at row_idx
+		string raw_cell = spreadsheet_cell_in_row(row_cells, col_idx)
 		string cell = s_trim(raw_cell)
 		if s_is_number(cell)
 			float number = c_string_to_float(cell)

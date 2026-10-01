@@ -3,7 +3,8 @@
 # in column `col_idx` as shown (a formula sorts by its result): empty, a
 # number (keyed by its value) or text (keyed by its lowercase form).
 macro add_row_to_sort_group
-	string raw_cell = spreadsheet_cell_value(display_rows, row_idx, col_idx)
+	stringList row_cells = display_rows at row_idx
+	string raw_cell = spreadsheet_cell_in_row(row_cells, col_idx)
 	string cell = s_trim(raw_cell)
 	if cell is ""
 		empty_indices at end = row_idx

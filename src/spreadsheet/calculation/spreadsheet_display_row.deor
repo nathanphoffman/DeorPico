@@ -14,7 +14,9 @@
 # number to its left. Any number -- typed or worked out -- shows rounded;
 # the file and the edit box keep the typed text.
 macro add_cell_to_display_row
-	string cell = spreadsheet_cell_in_row(row_cells, col_idx)
+	string cell = ""
+	if col_idx < cell_count
+		cell = row_cells at col_idx
 	string cell_value = s_join([cell])
 	macro_run work_out_cell_value
 	string value_trimmed = s_trim(cell_value)
@@ -66,6 +68,9 @@ fn stringList spreadsheet_display_row(stringList row_cells, int round_places, st
 		macro_run add_cell_to_display_row
 	return display_cells
 
+# One cell of one row, or "" past its end. Inside a loop over rows, read
+# each row once and use this rather than spreadsheet_cell_value -- Deor
+# copies every argument, so that one copies the whole sheet per call.
 fn string spreadsheet_cell_in_row(stringList row_cells, int col_idx)
 	int cell_count = len(row_cells)
 	if col_idx >= cell_count

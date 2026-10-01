@@ -5,13 +5,18 @@
 # what was typed. Any change the sheet makes becomes an undo step in the
 # editor's history (see spreadsheet_undo.deor) -- recorded before the
 # editor handler runs, so ^Z mid-edit undoes the just-committed edit.
+# The sheet's view cache is rebuilt if the key changed the sheet -- by the
+# sheet's own handler, or here after the editor handler (undo/redo, ^T,
+# opening a file, a commit before ^S, ...).
 macro spreadsheet_main_main
 	stringList lines_before = spreadsheet_lines_before_key(state)
 	if spreadsheet_owns_key(state, key)
-		state = spreadsheet_handle_key(state, key)
+		state = spreadsheet_handle_key(state, key, lines_before)
 		state = spreadsheet_record_undo(state, lines_before)
 	else
+		string view_settings_before = spreadsheet_view_settings(state)
 		state = spreadsheet_commit_pending_edit(state, key)
 		state = spreadsheet_record_undo(state, lines_before)
 		state = editor_handle_key_for_events(state, key)
 		state = spreadsheet_after_undo(state, key)
+		state = spreadsheet_refresh_view_cache(move state, lines_before, view_settings_before)

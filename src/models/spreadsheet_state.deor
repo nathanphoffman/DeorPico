@@ -67,3 +67,7 @@ struct SpreadsheetState
 	# Alt+U -- saved on a .dpv's "#hidden=" line, kept only in memory for
 	# a .csv. See column_hiding.deor.
 	stringList spreadsheet_column_hidden
+
+	# What the sheet looks like on screen, rebuilt only when the sheet or
+	# its settings change -- see sheet_view_cache.deor.
+	SheetViewCache spreadsheet_view_cache

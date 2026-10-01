@@ -24,6 +24,7 @@ macro handle_spreadsheet_action
 	else
 		macro_run handle_spreadsheet_cell_keys
 	macro_run clamp_spreadsheet_selection
+	macro_run refresh_view_cache_if_sheet_changed
 	macro_run keep_spreadsheet_view_in_bounds
 
 macro handle_spreadsheet_cell_keys

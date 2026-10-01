@@ -24,8 +24,7 @@ macro scroll_spreadsheet_columns_to_selection
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
-	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
-	intList column_widths = spreadsheet_column_widths(display_rows, spreadsheet_column_hidden)
+	intList column_widths = sv_column_widths(spreadsheet_view_cache)
 	int column_count = len(column_widths)
 
 	if spreadsheet_sel_col < spreadsheet_scroll_col

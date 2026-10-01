@@ -1,0 +1,81 @@
+
+# What the sheet looks like on screen, worked out once per change instead
+# of on every key and frame: each row as shown (formulas worked out,
+# numbers rounded), each column's width, each highlighted cell's color
+# level, and why a .dpv isn't valid (if it isn't). Rebuilt whenever the
+# sheet or its settings change -- see sheet_view_cache_refresh.deor.
+#
+# Rc-wrapped Rust data rather than plain Deor lists: Deor copies every
+# struct it unpacks or passes, and SpreadsheetState gets copied several
+# times per key -- this way each copy is a pointer, not the whole sheet.
+# Read it through the sv_ accessors below, one row at a time in loops.
+raw SheetViewCache
+
+rust
+	#[derive(Default)]
+	struct SheetViewCacheData {
+		display_rows: Vec<Vec<String>>,
+		column_widths: Vec<i64>,
+		level_rows: Vec<Vec<String>>,
+		invalid_reason: String,
+	}
+	#[derive(Clone, Default)]
+	struct SheetViewCache(std::rc::Rc<SheetViewCacheData>);
+
+	// SpreadsheetState (a Deor struct) embeds this, and every Deor struct
+	// derives PartialEq/Debug. Nothing compares or prints it, so these
+	// only need to exist -- equal only when they're the same cache.
+	impl std::fmt::Debug for SheetViewCache {
+		fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+			f.write_str("SheetViewCache(..)")
+		}
+	}
+
+	impl PartialEq for SheetViewCache {
+		fn eq(&self, other: &Self) -> bool {
+			std::rc::Rc::ptr_eq(&self.0, &other.0)
+		}
+	}
+
+# `level_rows` is laid out like `display_rows` (see
+# spreadsheet_highlight_levels). Pass each list with `move`.
+fn SheetViewCache sv_build(csvRowList display_rows, intList column_widths, csvRowList level_rows)
+	rust
+		SheetViewCache(std::rc::Rc::new(SheetViewCacheData { display_rows, column_widths, level_rows, invalid_reason: String::new() }))
+
+# `cache` with its invalid-.dpv reason set -- pass a just-built cache with
+# `move`, since only a cache nothing else shares can be changed.
+fn SheetViewCache sv_with_invalid_reason(SheetViewCache cache, string invalid_reason)
+	rust
+		let mut cache = cache;
+		if let Some(data) = std::rc::Rc::get_mut(&mut cache.0) {
+			data.invalid_reason = invalid_reason;
+		}
+		cache
+
+fn string sv_invalid_reason(SheetViewCache cache)
+	rust
+		cache.0.invalid_reason.clone()
+
+fn SheetViewCache sv_empty()
+	rust
+		SheetViewCache::default()
+
+fn int sv_row_count(SheetViewCache cache)
+	rust
+		cache.0.display_rows.len() as i64
+
+# Row row_idx as shown, or an empty row past the end.
+fn stringList sv_display_row(SheetViewCache cache, int row_idx)
+	rust
+		cache.0.display_rows.get(row_idx as usize).cloned().unwrap_or_default()
+
+fn intList sv_column_widths(SheetViewCache cache)
+	rust
+		cache.0.column_widths.clone()
+
+# Row row_idx's highlight levels ("" or "1".."5" per column), or an empty
+# row when nothing's highlighted.
+fn stringList sv_level_row(SheetViewCache cache, int row_idx)
+	rust
+		cache.0.level_rows.get(row_idx as usize).cloned().unwrap_or_default()

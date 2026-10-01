@@ -32,6 +32,5 @@ unsafe_macro locate_spreadsheet_click
 macro locate_clicked_column
 	int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
 	int content_col = col - sidebar_width
-	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
-	intList column_widths = spreadsheet_column_widths(display_rows, spreadsheet_column_hidden)
+	intList column_widths = sv_column_widths(spreadsheet_view_cache)
 	clicked_col = spreadsheet_column_at_x(column_widths, spreadsheet_scroll_col, content_col)

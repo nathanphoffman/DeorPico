@@ -2,7 +2,8 @@
 # Spreadsheet view (opened for .csv files, see f_is_spreadsheet_ext) --
 # renders the sidebar exactly like the normal editor view, and one
 # spreadsheet_rows row per screen row in the content area, each column
-# auto-sized to its data (see spreadsheet_column_widths), scrolled so the
+# auto-sized to its data (see spreadsheet_column_widths), all read from
+# the sheet's view cache (see sheet_view_cache.deor), scrolled so the
 # selected cell stays visible (see scroll_spreadsheet_to_selection). Owns a
 # full self-contained render path rather than sharing render_buffer_rows'
 # fused loop, same as the diff view does (see editor_render_diff in
@@ -16,9 +17,7 @@ unsafe_macro setup_spreadsheet_view_layout
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
 	int sidebar_width = cols - content_width
 	int view_rows = spreadsheet_view_rows(rows)
-	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
-	intList column_widths = spreadsheet_column_widths(display_rows, spreadsheet_column_hidden)
-	csvRowList highlight_levels = spreadsheet_visible_highlight_levels(spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_column_highlights)
+	intList column_widths = sv_column_widths(spreadsheet_view_cache)
 
 	string screen = ANSI_HOME
 
@@ -41,12 +40,18 @@ unsafe_macro setup_spreadsheet_modal
 	if spreadsheet_modal_open
 		macro_run build_spreadsheet_modal
 
-# The popup shows the cell's exact (unrounded) value.
+# The popup shows the cell's exact (unrounded) value -- only the selected
+# row is worked out (the header never gets column formulas).
 macro build_spreadsheet_modal
 	int header_row = 0
 	int exact_places = 0 - 1
-	csvRowList exact_rows = spreadsheet_display_rows(spreadsheet_rows, exact_places, spreadsheet_column_formulas)
-	string modal_text = spreadsheet_cell_value(exact_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+	stringList sel_row_cells = spreadsheet_rows at spreadsheet_sel_row
+	stringList modal_formulas = spreadsheet_column_formulas
+	if spreadsheet_sel_row is header_row
+		stringList no_formulas = empty
+		modal_formulas = move no_formulas
+	stringList exact_cells = spreadsheet_display_row(sel_row_cells, exact_places, modal_formulas)
+	string modal_text = spreadsheet_cell_in_row(exact_cells, spreadsheet_sel_col)
 	string modal_title = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
 	int inner_width = 0
 	macro_run fit_modal_width_to_text
@@ -140,7 +145,8 @@ macro render_spreadsheet_row
 # drawn where they were.
 macro add_spreadsheet_row_cells
 	if data_row < spreadsheet_row_count
-		stringList row_cells = display_rows at data_row
+		stringList row_cells = sv_display_row(spreadsheet_view_cache, data_row)
+		stringList level_row = sv_level_row(spreadsheet_view_cache, data_row)
 		int first_col = spreadsheet_scroll_col
 		int before_first = first_col - 1
 		bool hidden_at_left = spreadsheet_column_is_hidden(spreadsheet_column_hidden, first_col) or spreadsheet_column_is_hidden(spreadsheet_column_hidden, before_first)
@@ -190,7 +196,7 @@ macro pick_spreadsheet_cell_content
 # highlighted number keeps its color while selected (reverse video turns
 # it into the background) or tinted.
 macro mark_cell_colors
-	string level = spreadsheet_cell_value(highlight_levels, col_idx, data_row)
+	string level = spreadsheet_cell_in_row(level_row, col_idx)
 	string level_color = spreadsheet_highlight_color(level, esc)
 	string span_on = ""
 	string span_off = ""
@@ -328,7 +334,7 @@ unsafe_macro setup_spreadsheet_sidebar_rows
 # as render_buffer_rows' main loop.
 macro render_spreadsheet_rows
 	int spreadsheet_row_count = len(spreadsheet_rows)
-	int spreadsheet_column_count_all = spreadsheet_column_count(display_rows)
+	int spreadsheet_column_count_all = len(column_widths)
 	int screen_rows = view_rows + 1
 	for row_offset in range(screen_rows)
 		macro_run render_spreadsheet_screen_row
@@ -370,7 +376,7 @@ macro pick_spreadsheet_editing_hint
 # flagged in red whenever nothing else is being said.
 macro render_spreadsheet_notice_line
 	string notice_text = notice
-	string invalid_reason = spreadsheet_invalid_dpv_reason(spreadsheet_path, spreadsheet_rows)
+	string invalid_reason = sv_invalid_reason(spreadsheet_view_cache)
 	bool show_invalid = notice_text is "" and invalid_reason is not ""
 	if show_invalid
 		notice_text = invalid_reason
@@ -383,8 +389,8 @@ fn void spreadsheet_render(AppState state)
 	(browser) in state
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
+	move (spreadsheet) in state
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden, spreadsheet_view_cache) in spreadsheet
 	(main_panel) in state
 	(core) in main_panel
 	(dirty) in core
@@ -495,18 +501,6 @@ fn bool spreadsheet_has_number_before(stringList row_cells, int col_idx)
 		if s_is_number(trimmed)
 			return true
 	return false
-
-# Each highlighted column's color levels (see
-# spreadsheet_highlight_levels), worked out from unrounded values -- empty,
-# skipping the extra pass, when no column is highlighted.
-fn csvRowList spreadsheet_visible_highlight_levels(csvRowList rows, stringList column_formulas, stringList column_highlights)
-	csvRowList no_levels = empty
-	string highlights_value = spreadsheet_column_list_setting_value(column_highlights)
-	if highlights_value is ""
-		return no_levels
-	int exact_places = 0 - 1
-	csvRowList exact_rows = spreadsheet_display_rows(rows, exact_places, column_formulas)
-	return spreadsheet_highlight_levels(exact_rows, column_highlights)
 
 # The text color for a highlight level -- "1" very bad (red), "2" bad
 # (orange), "3" average (yellow), "4" good (green), "5" very good (blue)

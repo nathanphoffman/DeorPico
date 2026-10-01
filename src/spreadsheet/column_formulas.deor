@@ -72,7 +72,8 @@ fn bool spreadsheet_column_has_data(csvRowList rows, int col_idx, int skip_row)
 	int row_count = len(rows)
 	int start = 1
 	for row_idx in range(start, row_count)
-		string cell = spreadsheet_cell_value(rows, row_idx, col_idx)
+		stringList row_cells = rows at row_idx
+		string cell = spreadsheet_cell_in_row(row_cells, col_idx)
 		string trimmed = s_trim(cell)
 		if row_idx is not skip_row and trimmed is not ""
 			return true
