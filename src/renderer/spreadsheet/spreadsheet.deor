@@ -17,7 +17,8 @@ unsafe_macro setup_spreadsheet_view_layout
 	int sidebar_width = cols - content_width
 	int view_rows = spreadsheet_view_rows(rows)
 	csvRowList display_rows = spreadsheet_display_rows(spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
-	intList column_widths = spreadsheet_column_widths(display_rows)
+	intList column_widths = spreadsheet_column_widths(display_rows, spreadsheet_column_hidden)
+	csvRowList highlight_levels = spreadsheet_visible_highlight_levels(spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_column_highlights)
 
 	string screen = ANSI_HOME
 
@@ -118,26 +119,34 @@ macro center_modal_on_sheet
 # spreadsheet_scroll_col, each padded to its column's width between
 # separators; blank once past the sheet's last row. Built as plain text
 # first so truncating/padding to content_width works on character counts,
-# then the selected cell's span gets colored (or the popup's line drawn
-# over it) afterward. While a .dpv column's formula is being edited,
-# every other cell it fills (rows below the header with a number to its
-# left) gets a tint too.
+# then each colored cell's span gets its colors (or the popup's line
+# drawn over it) afterward -- the selected cell, a highlighted column's
+# numbers (see column_highlights.deor), and, while a .dpv column's formula
+# is being edited, every other cell it fills (rows below the header with
+# a number to its left).
 macro render_spreadsheet_row
 	int data_row = spreadsheet_scroll_row + sheet_offset
-	int sel_start = 0 - 1
-	int sel_stop = 0 - 1
-	int tint_start = 0 - 1
-	int tint_stop = 0 - 1
+	intList span_starts = empty
+	intList span_stops = empty
+	stringList span_ons = empty
+	stringList span_offs = empty
 	string content = ""
 	macro_run add_spreadsheet_row_cells
 	content = spreadsheet_fit_line(content, content_width)
 	macro_run color_spreadsheet_row
 	screen = s_join([screen, content])
 
+# Hidden columns (width 0) are skipped, with SPREADSHEET_HIDDEN_SEPARATOR
+# drawn where they were.
 macro add_spreadsheet_row_cells
 	if data_row < spreadsheet_row_count
 		stringList row_cells = display_rows at data_row
+		int first_col = spreadsheet_scroll_col
+		int before_first = first_col - 1
+		bool hidden_at_left = spreadsheet_column_is_hidden(spreadsheet_column_hidden, first_col) or spreadsheet_column_is_hidden(spreadsheet_column_hidden, before_first)
 		content = s_join([SPREADSHEET_SEPARATOR])
+		if hidden_at_left
+			content = s_join([SPREADSHEET_HIDDEN_SEPARATOR])
 		int content_x = s_char_count(SPREADSHEET_SEPARATOR)
 		int start = spreadsheet_scroll_col
 		int stop = spreadsheet_column_count_all
@@ -146,15 +155,21 @@ macro add_spreadsheet_row_cells
 			# straddles it still shows its start.
 			if content_x >= content_width
 				break
-			macro_run add_spreadsheet_cell
+			int col_width = column_widths at col_idx
+			if col_width > 0
+				macro_run add_spreadsheet_cell
 
-# One cell padded to its column's width, then the separator after it.
+# One cell padded to its column's width, then the separator after it --
+# the hidden-column one if the next column is hidden.
 macro add_spreadsheet_cell
-	int col_width = column_widths at col_idx
 	string cell_content = ""
 	macro_run pick_spreadsheet_cell_content
-	macro_run mark_selected_or_tinted_cell
-	content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
+	macro_run mark_cell_colors
+	int next_col = col_idx + 1
+	string separator = s_join([SPREADSHEET_SEPARATOR])
+	if spreadsheet_column_is_hidden(spreadsheet_column_hidden, next_col)
+		separator = s_join([SPREADSHEET_HIDDEN_SEPARATOR])
+	content = s_join([content, cell_content, separator])
 	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	content_x = content_x + col_width + separator_width
 
@@ -171,33 +186,80 @@ macro pick_spreadsheet_cell_content
 		cell_content = spreadsheet_fit_cell(formatted_cell, col_width)
 	cell_content = s_pad_right(cell_content, col_width)
 
-macro mark_selected_or_tinted_cell
+# Queues this cell's colors, if it has any, for color_spreadsheet_row. A
+# highlighted number keeps its color while selected (reverse video turns
+# it into the background) or tinted.
+macro mark_cell_colors
+	string level = spreadsheet_cell_value(highlight_levels, col_idx, data_row)
+	string level_color = spreadsheet_highlight_color(level, esc)
+	string span_on = ""
+	string span_off = ""
 	if data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
-		sel_start = content_x
-		sel_stop = content_x + col_width
+		macro_run pick_selected_cell_colors
 	else if tint_formula_column and col_idx is spreadsheet_sel_col and data_row > 0
 		macro_run tint_cell_if_formula_fills_it
+	else if level_color is not ""
+		span_on = level_color
+		span_off = s_join([ANSI_DEFAULT_FG])
+	if span_on is not ""
+		span_starts at end = content_x
+		span_stops at end = content_x + col_width
+		span_ons at end = span_on
+		span_offs at end = span_off
+
+# Blue while typing into it (same as the search bar), reverse video while
+# it's just selected.
+macro pick_selected_cell_colors
+	if spreadsheet_editing
+		span_on = s_join([ANSI_SEARCH_BAR_BG])
+		span_off = s_join([ANSI_DEFAULT_BG])
+	else
+		span_on = s_join([level_color, ANSI_REVERSE_ON])
+		span_off = s_join([ANSI_REVERSE_OFF, ANSI_DEFAULT_FG])
 
 macro tint_cell_if_formula_fills_it
 	if spreadsheet_has_number_before(row_cells, col_idx)
-		tint_start = content_x
-		tint_stop = content_x + col_width
+		span_on = s_join([ANSI_COLUMN_TINT, level_color])
+		span_off = s_join([ANSI_DEFAULT_BG, ANSI_DEFAULT_FG])
 
 # The popup's line drawn over the row if it covers it (skipping the
-# selection color -- the popup has the focus), otherwise the selected or
-# tinted cell colored. Row 0 is always the header -- bolded, and never
-# moved by sorting (see sort_spreadsheet_by_selected_column).
+# cell colors -- the popup has the focus), otherwise the cells queued by
+# mark_cell_colors colored. Row 0 is always the header -- bolded, and
+# never moved by sorting (see sort_spreadsheet_by_selected_column).
 macro color_spreadsheet_row
 	int modal_line_idx = sheet_offset - modal_top
 	int modal_line_count = len(modal_lines)
 	if modal_line_idx >= 0 and modal_line_idx < modal_line_count
 		macro_run draw_modal_line_over_row
-	else if sel_start >= 0 and sel_start < content_width
-		macro_run color_selected_cell
-	else if tint_start >= 0 and tint_start < content_width
-		macro_run color_tinted_cell
+	else
+		macro_run color_queued_spans
 	if data_row is 0 and spreadsheet_row_count > 0
 		content = s_join([ANSI_BOLD_ON, content, ANSI_BOLD_OFF])
+
+# Wraps each span queued by mark_cell_colors in its on/off codes. Spans
+# are in left-to-right order and don't overlap; one starting past the
+# right edge is dropped, one straddling it is cut there.
+macro color_queued_spans
+	string colored = ""
+	int written = 0
+	int span_count = len(span_starts)
+	for span_idx in range(span_count)
+		int span_start = span_starts at span_idx
+		if span_start >= content_width
+			break
+		macro_run add_queued_span
+	string after_spans = s_substring(content, written, content_width)
+	content = s_join([colored, after_spans])
+
+macro add_queued_span
+	int full_stop = span_stops at span_idx
+	int span_stop = m_min(full_stop, content_width)
+	string before_span = s_substring(content, written, span_start)
+	string span_text = s_substring(content, span_start, span_stop)
+	string span_on = span_ons at span_idx
+	string span_off = span_offs at span_idx
+	colored = s_join([colored, before_span, span_on, span_text, span_off])
+	written = span_stop
 
 macro draw_modal_line_over_row
 	int line_start = 0
@@ -207,20 +269,8 @@ macro draw_modal_line_over_row
 	string after_modal = s_substring(content, modal_right, content_width)
 	content = s_join([before_modal, ANSI_STATUS_BG, modal_line, ANSI_DEFAULT_BG, after_modal])
 
-macro color_selected_cell
-	int span_start = sel_start
-	int span_stop = sel_stop
-	macro_run color_selected_span
-
-macro color_tinted_cell
-	int span_start = tint_start
-	int span_stop = tint_stop
-	string span_on = s_join([ANSI_COLUMN_TINT])
-	string span_off = s_join([ANSI_DEFAULT_BG])
-	macro_run color_content_span
-
-# A selected cell's colors: blue while typing into it (same as the search
-# bar), reverse video while it's just selected.
+# The settings value's colors when selected -- same as a selected cell
+# (see pick_selected_cell_colors).
 macro color_selected_span
 	string span_on = s_join([ANSI_REVERSE_ON])
 	string span_off = s_join([ANSI_REVERSE_OFF])
@@ -304,7 +354,7 @@ macro render_spreadsheet_status_line
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
-	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  Header: Shift+Del/+/_ del/add col  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
+	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  Alt+H highlight  Alt+X/U hide/unhide col  Header: Shift+Del/+/_ del/add col  ^O/Ctrl+click full text  ^Z/^Y undo/redo  ^S save  ^T text view"
 	macro_run pick_spreadsheet_editing_hint
 	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- ", position_text, " -- ", hint_text])
 	status_line = spreadsheet_fit_line(status_line, cols)
@@ -334,7 +384,7 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
 	(main_panel) in state
 	(core) in main_panel
 	(dirty) in core
@@ -445,6 +495,37 @@ fn bool spreadsheet_has_number_before(stringList row_cells, int col_idx)
 		if s_is_number(trimmed)
 			return true
 	return false
+
+# Each highlighted column's color levels (see
+# spreadsheet_highlight_levels), worked out from unrounded values -- empty,
+# skipping the extra pass, when no column is highlighted.
+fn csvRowList spreadsheet_visible_highlight_levels(csvRowList rows, stringList column_formulas, stringList column_highlights)
+	csvRowList no_levels = empty
+	string highlights_value = spreadsheet_column_list_setting_value(column_highlights)
+	if highlights_value is ""
+		return no_levels
+	int exact_places = 0 - 1
+	csvRowList exact_rows = spreadsheet_display_rows(rows, exact_places, column_formulas)
+	return spreadsheet_highlight_levels(exact_rows, column_highlights)
+
+# The text color for a highlight level -- "1" very bad (red), "2" bad
+# (orange), "3" average (yellow), "4" good (green), "5" very good (blue)
+# -- or "" for none.
+fn string spreadsheet_highlight_color(string level, string esc)
+	string color_code = ""
+	if level is "1"
+		color_code = "196"
+	else if level is "2"
+		color_code = "208"
+	else if level is "3"
+		color_code = "226"
+	else if level is "4"
+		color_code = "46"
+	else if level is "5"
+		color_code = "39"
+	if color_code is ""
+		return ""
+	return s_join([esc, "[38;5;", color_code, "m"])
 
 # `text` cut or padded to exactly `width` characters.
 fn string spreadsheet_fit_line(string text, int width)

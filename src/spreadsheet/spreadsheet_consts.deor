@@ -30,3 +30,18 @@ unsafe_macro use_spreadsheet_consts
 	# A .dpv's one formula per column, as a CSV row ("#formulas=,,=c1*2")
 	# -- see column_formulas.deor.
 	const string SPREADSHEET_FORMULAS_PREFIX = "#formulas="
+
+	# A .dpv's highlighted columns, one value per column as a CSV row
+	# ("#highlight=,high,low") -- see column_highlights.deor. Alt+H cycles
+	# a column through high-is-good, high-is-bad and off.
+	const string SPREADSHEET_HIGHLIGHT_PREFIX = "#highlight="
+	const string SPREADSHEET_HIGHLIGHT_HIGH_GOOD = "high"
+	const string SPREADSHEET_HIGHLIGHT_HIGH_BAD = "low"
+
+	# A .dpv's hidden columns, one mark per column as a CSV row
+	# ("#hidden=,hidden") -- see column_hiding.deor. The separator drawn
+	# where hidden columns sit is the same width as SPREADSHEET_SEPARATOR,
+	# so clicks still map onto the cells drawn.
+	const string SPREADSHEET_HIDDEN_PREFIX = "#hidden="
+	const string SPREADSHEET_HIDDEN_MARK = "hidden"
+	const string SPREADSHEET_HIDDEN_SEPARATOR = " ‖ "

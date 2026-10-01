@@ -8,7 +8,7 @@
 # rewrites its row's line -- see commit_spreadsheet_edit).
 unsafe_macro unpack_spreadsheet_key_state
 	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
-	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
 	(sidebar_focused) in browser
 	(core) in main_panel
 	(lines, dirty) in core
@@ -20,7 +20,7 @@ unsafe_macro repack_spreadsheet_key_state
 	SidebarState browser = browser with (sidebar_focused)
 	BufferState core = core with (lines, dirty)
 	EditorState main_panel = main_panel with (core)
-	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas)
+	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden)
 	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 
 # Whether the spreadsheet handles this key itself (spreadsheet_handle_key)

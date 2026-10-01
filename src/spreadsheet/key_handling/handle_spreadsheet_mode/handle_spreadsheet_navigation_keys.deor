@@ -9,6 +9,12 @@ macro handle_spreadsheet_navigation_keys
 		macro_run spreadsheet_mouse_down
 	else if kind is "open_cell"
 		macro_run open_spreadsheet_popup
+	else if kind is "highlight_toggle"
+		macro_run cycle_selected_column_highlight
+	else if kind is "hide_column"
+		macro_run hide_selected_spreadsheet_column
+	else if kind is "show_all_columns"
+		macro_run show_all_spreadsheet_columns
 	else if kind is "mouse_scroll_up" or kind is "mouse_scroll_down"
 		macro_run scroll_spreadsheet_by_wheel
 	else
@@ -26,6 +32,34 @@ macro open_spreadsheet_popup
 	if row_count > 0 and spreadsheet_sel_row >= 0
 		spreadsheet_modal_open = true
 
+# Alt+H -- cycles the selected column's highlighting (see
+# column_highlights.deor). A .dpv saves it on its "#highlight=" line; a
+# .csv only keeps it until the file is closed.
+macro cycle_selected_column_highlight
+	unsafe_macro_run use_spreadsheet_consts
+	string old_highlight = spreadsheet_column_highlight(spreadsheet_column_highlights, spreadsheet_sel_col)
+	string new_highlight = spreadsheet_next_highlight(old_highlight)
+	spreadsheet_column_highlights = spreadsheet_column_list_with(spreadsheet_column_highlights, spreadsheet_sel_col, new_highlight)
+	if spreadsheet_keeps_settings(spreadsheet_path)
+		string highlights_value = spreadsheet_column_list_setting_value(spreadsheet_column_highlights)
+		stringList updated_lines = move lines
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_HIGHLIGHT_PREFIX, highlights_value)
+		lines = move updated_lines
+		dirty = true
+	macro_run announce_column_highlight
+
+# "Highlighting salary: high is good" in the notice line.
+macro announce_column_highlight
+	int header_row = 0
+	string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+	string mode_text = ": off"
+	if new_highlight is SPREADSHEET_HIGHLIGHT_HIGH_GOOD
+		mode_text = ": high is good"
+	else if new_highlight is SPREADSHEET_HIGHLIGHT_HIGH_BAD
+		mode_text = ": high is bad"
+	notice = s_join(["Highlighting ", header_name, mode_text])
+	error = false
+
 macro scroll_spreadsheet_by_wheel
 	unsafe_macro_run use_consts
 	if kind is "mouse_scroll_up"
@@ -34,22 +68,28 @@ macro scroll_spreadsheet_by_wheel
 		spreadsheet_scroll_row = spreadsheet_scroll_row + SCROLL_WHEEL_AMOUNT
 
 # Arrows, Tab/Shift+Tab, Enter, Page Up/Down and Home -- moves the
-# selection; clamp_spreadsheet_selection pulls it back inside the sheet.
+# selection, stepping over hidden columns; clamp_spreadsheet_selection
+# pulls it back inside the sheet.
 macro step_spreadsheet_selection
 	macro_run step_spreadsheet_selection_one_cell
 	macro_run step_spreadsheet_selection_one_page
 
 macro step_spreadsheet_selection_one_cell
+	int right_step = 1
+	int left_step = 0 - 1
 	if kind is "up"
 		spreadsheet_sel_row = spreadsheet_sel_row - 1
 	else if kind is "down" or kind is "enter"
 		spreadsheet_sel_row = spreadsheet_sel_row + 1
 	else if kind is "left" or kind is "shift_tab"
-		spreadsheet_sel_col = spreadsheet_sel_col - 1
+		int left_col = spreadsheet_sel_col - 1
+		spreadsheet_sel_col = spreadsheet_visible_col_from(spreadsheet_column_hidden, left_col, left_step)
 	else if kind is "right" or kind is "tab"
-		spreadsheet_sel_col = spreadsheet_sel_col + 1
+		int right_col = spreadsheet_sel_col + 1
+		spreadsheet_sel_col = spreadsheet_visible_col_from(spreadsheet_column_hidden, right_col, right_step)
 	else if kind is "home"
-		spreadsheet_sel_col = 0
+		int first_col = 0
+		spreadsheet_sel_col = spreadsheet_visible_col_from(spreadsheet_column_hidden, first_col, right_step)
 
 macro step_spreadsheet_selection_one_page
 	TermSize term_size = xt_size()

@@ -1,8 +1,8 @@
 
 # Column keys, only on the header row (row 0) while nothing is being
 # typed: Shift+Delete removes the selected column, + (Shift+=) adds an
-# empty column to its right and _ (Shift+-) one to its left. A .dpv's
-# column formulas move along with their columns. Formulas don't need
+# empty column to its right and _ (Shift+-) one to its left. Column
+# formulas, highlighting and hiding move along with their columns. Formulas don't need
 # rewriting -- c1, c2, ... count the numbers to the cell's left, not
 # fixed columns.
 
@@ -44,6 +44,8 @@ macro delete_selected_spreadsheet_column
 			updated_rows at end = kept_cells
 		spreadsheet_rows = move updated_rows
 		spreadsheet_column_formulas = spreadsheet_row_without_cell(spreadsheet_column_formulas, spreadsheet_sel_col)
+		spreadsheet_column_highlights = spreadsheet_row_without_cell(spreadsheet_column_highlights, spreadsheet_sel_col)
+		spreadsheet_column_hidden = spreadsheet_row_without_cell(spreadsheet_column_hidden, spreadsheet_sel_col)
 		macro_run rewrite_spreadsheet_lines_from_rows
 		notice = s_join(["Deleted column ", header_name])
 		error = false
@@ -57,13 +59,15 @@ macro insert_spreadsheet_column
 		updated_rows at end = widened_cells
 	spreadsheet_rows = move updated_rows
 	spreadsheet_column_formulas = spreadsheet_row_with_empty_cell(spreadsheet_column_formulas, insert_col)
+	spreadsheet_column_highlights = spreadsheet_row_with_empty_cell(spreadsheet_column_highlights, insert_col)
+	spreadsheet_column_hidden = spreadsheet_row_with_empty_cell(spreadsheet_column_hidden, insert_col)
 	macro_run rewrite_spreadsheet_lines_from_rows
 	notice = "Inserted a column"
 	error = false
 
 # Every row's line changes, so `lines` is rebuilt from spreadsheet_rows
-# below its settings lines, and a .dpv's "#formulas=" line is rewritten
-# to match the shifted formulas.
+# below its settings lines, and a .dpv's "#formulas=", "#highlight=" and
+# "#hidden=" lines are rewritten to match the shifted columns.
 macro rewrite_spreadsheet_lines_from_rows
 	unsafe_macro_run use_spreadsheet_consts
 	stringList updated_lines = l_string_take(lines, settings_count)
@@ -71,8 +75,12 @@ macro rewrite_spreadsheet_lines_from_rows
 		string row_line = csv_join_row(row_cells)
 		updated_lines at end = row_line
 	if spreadsheet_keeps_settings(spreadsheet_path)
-		string formulas_value = spreadsheet_formulas_setting_value(spreadsheet_column_formulas)
+		string formulas_value = spreadsheet_column_list_setting_value(spreadsheet_column_formulas)
 		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_FORMULAS_PREFIX, formulas_value)
+		string highlights_value = spreadsheet_column_list_setting_value(spreadsheet_column_highlights)
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_HIGHLIGHT_PREFIX, highlights_value)
+		string hidden_value = spreadsheet_column_list_setting_value(spreadsheet_column_hidden)
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_HIDDEN_PREFIX, hidden_value)
 	lines = move updated_lines
 	dirty = true
 

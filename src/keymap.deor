@@ -54,6 +54,14 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 	# terminals send that as plain ^G.
 	else if kind is "char" and alt and (chr is "g" or chr is "G")
 		kind = "stage_all"
+	# Spreadsheet view only: cycles the selected column's highlighting.
+	else if kind is "char" and alt and (chr is "h" or chr is "H")
+		kind = "highlight_toggle"
+	# Spreadsheet view only: hides the selected column / shows them all.
+	else if kind is "char" and alt and (chr is "x" or chr is "X")
+		kind = "hide_column"
+	else if kind is "char" and alt and (chr is "u" or chr is "U")
+		kind = "show_all_columns"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "function_key"

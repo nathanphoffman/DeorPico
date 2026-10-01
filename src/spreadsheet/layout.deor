@@ -46,8 +46,9 @@ fn int spreadsheet_sidebar_width(int cols, int rows, bool sidebar_focused)
 
 # Each column's on-screen width: its widest cell as shown (display_rows
 # from spreadsheet_display_rows -- a formula's result, not its text,
-# header included), clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
-fn intList spreadsheet_column_widths(csvRowList display_rows)
+# header included), clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH. A hidden
+# column is 0 (see column_hiding.deor).
+fn intList spreadsheet_column_widths(csvRowList display_rows, stringList column_hidden)
 	unsafe_macro_run use_spreadsheet_consts
 	int column_count = spreadsheet_column_count(display_rows)
 	intList widths = empty
@@ -63,18 +64,23 @@ fn intList spreadsheet_column_widths(csvRowList display_rows)
 				if cell_width > SPREADSHEET_MAX_COLUMN_WIDTH
 					cell_width = SPREADSHEET_MAX_COLUMN_WIDTH
 				widths at col_idx = cell_width
+	for col_idx in range(column_count)
+		if spreadsheet_column_is_hidden(column_hidden, col_idx)
+			widths at col_idx = 0
 	return widths
 
 # Content-area x where column `col_idx`'s text starts, with `scroll_col`
 # as the first column drawn. Each column is drawn as SEPARATOR + cell, so
-# the first one starts right after the leading separator.
+# the first one starts right after the leading separator. Hidden columns
+# (width 0) take no room at all.
 fn int spreadsheet_cell_left_x(intList widths, int scroll_col, int col_idx)
 	unsafe_macro_run use_spreadsheet_consts
 	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int left_x = separator_width
 	for walk_col in range(scroll_col, col_idx)
 		int walk_width = widths at walk_col
-		left_x = left_x + walk_width + separator_width
+		if walk_width > 0
+			left_x = left_x + walk_width + separator_width
 	return left_x
 
 # The column under content-area x `content_x` -- a click on a separator
@@ -87,6 +93,8 @@ fn int spreadsheet_column_at_x(intList widths, int scroll_col, int content_x)
 	int right_x = separator_width
 	for col_idx in range(scroll_col, column_count)
 		int col_width = widths at col_idx
+		if col_width is 0
+			continue
 		right_x = right_x + col_width + separator_width
 		if content_x < right_x
 			return col_idx

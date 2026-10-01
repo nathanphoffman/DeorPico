@@ -1,0 +1,44 @@
+
+# Alt+X / Alt+U -- hiding columns (see column_hiding.deor). Works from any
+# row of the column, the settings row included.
+
+# Hides the selected cell's column -- clamp_spreadsheet_selection then
+# moves the selection onto the nearest shown column. At least one column
+# always stays shown.
+macro hide_selected_spreadsheet_column
+	unsafe_macro_run use_spreadsheet_consts
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	int visible_count = spreadsheet_visible_column_count(spreadsheet_column_hidden, column_count)
+	int header_row = 0
+	string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+	if visible_count <= 1
+		notice = "Can't hide the last shown column"
+		error = true
+	else
+		spreadsheet_column_hidden = spreadsheet_column_list_with(spreadsheet_column_hidden, spreadsheet_sel_col, SPREADSHEET_HIDDEN_MARK)
+		macro_run save_hidden_columns_setting
+		notice = s_join(["Hid column ", header_name, " -- Alt+U shows hidden columns"])
+		error = false
+
+macro show_all_spreadsheet_columns
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	int visible_count = spreadsheet_visible_column_count(spreadsheet_column_hidden, column_count)
+	if visible_count < column_count
+		stringList none_hidden = empty
+		spreadsheet_column_hidden = move none_hidden
+		macro_run save_hidden_columns_setting
+		notice = "Showing all columns"
+	else
+		notice = "No hidden columns"
+	error = false
+
+# Rewrites a .dpv's "#hidden=" line to match -- a .csv only keeps hidden
+# columns until the file is closed.
+macro save_hidden_columns_setting
+	unsafe_macro_run use_spreadsheet_consts
+	if spreadsheet_keeps_settings(spreadsheet_path)
+		string hidden_value = spreadsheet_column_list_setting_value(spreadsheet_column_hidden)
+		stringList updated_lines = move lines
+		updated_lines = spreadsheet_lines_with_setting(updated_lines, SPREADSHEET_HIDDEN_PREFIX, hidden_value)
+		lines = move updated_lines
+		dirty = true

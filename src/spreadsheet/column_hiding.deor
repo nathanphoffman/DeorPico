@@ -1,0 +1,59 @@
+
+# Hidden columns (Alt+X hides the selected cell's column, Alt+U shows them
+# all again) aren't drawn and can't be selected -- arrows, Tab and clicks
+# skip over them, and a " ‖ " separator marks where they were. A hidden
+# column gets width 0 from spreadsheet_column_widths (a shown one is never
+# narrower than SPREADSHEET_MIN_COLUMN_WIDTH), which is how the layout
+# math and the renderer know to skip it. A .dpv keeps which columns are
+# hidden on its "#hidden=" line; a .csv shows every column when it opens.
+
+# Each column's hidden mark ("" for shown) from a .dpv's "#hidden=" line
+# -- always all shown for a .csv.
+fn stringList spreadsheet_column_hidden_from_lines(string spreadsheet_path, stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	stringList none_hidden = empty
+	if not spreadsheet_keeps_settings(spreadsheet_path)
+		return none_hidden
+	string hidden_text = spreadsheet_setting_value(lines, SPREADSHEET_HIDDEN_PREFIX)
+	if hidden_text is ""
+		return none_hidden
+	return csv_split_line(hidden_text)
+
+fn bool spreadsheet_column_is_hidden(stringList column_hidden, int col_idx)
+	int hidden_count = len(column_hidden)
+	if col_idx < 0 or col_idx >= hidden_count
+		return false
+	string mark = column_hidden at col_idx
+	string trimmed = s_trim(mark)
+	return trimmed is not ""
+
+# How many of the sheet's column_count columns are shown.
+fn int spreadsheet_visible_column_count(stringList column_hidden, int column_count)
+	int visible_count = 0
+	for col_idx in range(column_count)
+		if not spreadsheet_column_is_hidden(column_hidden, col_idx)
+			visible_count = visible_count + 1
+	return visible_count
+
+# `col_idx`, or the first shown column past it going `step` (1 right, -1
+# left). Can land past either end of the sheet -- clamp_spreadsheet_selection
+# pulls it back in.
+fn int spreadsheet_visible_col_from(stringList column_hidden, int col_idx, int step)
+	int walk_col = col_idx
+	for if spreadsheet_column_is_hidden(column_hidden, walk_col)
+		walk_col = walk_col + step
+	return walk_col
+
+# The shown column nearest `col_idx` -- itself if shown, else the first
+# one to its right, else the first one to its left -- or -1 if every
+# column is hidden.
+fn int spreadsheet_nearest_visible_col(stringList column_hidden, int col_idx, int column_count)
+	int right_step = 1
+	int left_step = 0 - 1
+	int right_col = spreadsheet_visible_col_from(column_hidden, col_idx, right_step)
+	if right_col < column_count
+		return right_col
+	int left_col = spreadsheet_visible_col_from(column_hidden, col_idx, left_step)
+	if left_col >= 0
+		return left_col
+	return 0 - 1

@@ -19,3 +19,4 @@ unsafe_macro use_ansi_codes
 	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
 	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])
 	const string ANSI_DEFAULT_BG = s_join([esc, "[49m"])
+	const string ANSI_DEFAULT_FG = s_join([esc, "[39m"])

@@ -40,29 +40,31 @@ fn string spreadsheet_column_formula(stringList column_formulas, int col_idx)
 	string formula = column_formulas at col_idx
 	return s_trim(formula)
 
-# column_formulas with column col_idx's formula set to `formula`.
-fn stringList spreadsheet_formulas_with(stringList column_formulas, int col_idx, string formula)
-	stringList updated_formulas = column_formulas
-	int start = len(updated_formulas)
+# A one-value-per-column list (column formulas, column highlights) with
+# column col_idx's value set to `value`, padded with "" up to it.
+fn stringList spreadsheet_column_list_with(stringList column_values, int col_idx, string value)
+	stringList updated_values = column_values
+	int start = len(updated_values)
 	int stop = col_idx + 1
 	for in range(start, stop)
-		updated_formulas at end = ""
-	updated_formulas at col_idx = formula
-	return updated_formulas
+		updated_values at end = ""
+	updated_values at col_idx = value
+	return updated_values
 
-# What goes after "#formulas=" -- "" once no column has a formula, so the
+# What goes after a one-value-per-column settings line's prefix
+# ("#formulas=", "#highlight=") -- "" once no column has a value, so the
 # line can be dropped.
-fn string spreadsheet_formulas_setting_value(stringList column_formulas)
+fn string spreadsheet_column_list_setting_value(stringList column_values)
 	int keep_count = 0
-	int formula_count = len(column_formulas)
-	for col_idx in range(formula_count)
-		string formula = column_formulas at col_idx
-		if formula is not ""
+	int value_count = len(column_values)
+	for col_idx in range(value_count)
+		string value = column_values at col_idx
+		if value is not ""
 			keep_count = col_idx + 1
 	if keep_count is 0
 		return ""
-	stringList kept_formulas = l_string_take(column_formulas, keep_count)
-	return csv_join_row(kept_formulas)
+	stringList kept_values = l_string_take(column_values, keep_count)
+	return csv_join_row(kept_values)
 
 # True if any row below the header other than skip_row has something in
 # column col_idx -- a column has to be empty before it gets a formula.

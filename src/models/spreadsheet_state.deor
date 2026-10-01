@@ -56,3 +56,14 @@ struct SpreadsheetState
 	# A .dpv's one formula per column ("" for none), from its "#formulas="
 	# line -- always empty for a .csv. See column_formulas.deor.
 	stringList spreadsheet_column_formulas
+
+	# Each column's highlighting ("" off, SPREADSHEET_HIGHLIGHT_HIGH_GOOD or
+	# SPREADSHEET_HIGHLIGHT_HIGH_BAD), cycled by Alt+H -- saved on a .dpv's
+	# "#highlight=" line, kept only in memory for a .csv. See
+	# column_highlights.deor.
+	stringList spreadsheet_column_highlights
+
+	# Each column's hidden mark ("" for shown), set by Alt+X and cleared by
+	# Alt+U -- saved on a .dpv's "#hidden=" line, kept only in memory for
+	# a .csv. See column_hiding.deor.
+	stringList spreadsheet_column_hidden

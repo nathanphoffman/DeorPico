@@ -1,0 +1,230 @@
+
+# Column highlighting (Alt+H): every number below the header in a
+# highlighted column is colored by how good it is next to the column's
+# other numbers -- very bad (red), bad (orange), average (yellow), good
+# (green), very good (blue). A .dpv keeps which columns are highlighted
+# on its "#highlight=" line; a .csv starts with none every time it opens.
+#
+# How a number gets its color: two scores from 0 to 1 are averaged, and
+# the result is split into five equal bands.
+#   - Its rank -- what share of the column is below it. On its own this
+#     always makes each color about a fifth of the column.
+#   - Where it sits on a bell curve (a logistic curve standing in for the
+#     normal distribution) fitted to the column's middle: centered on the
+#     median, scaled by the median distance from it (MAD), so one huge
+#     outlier can't squash everything else together.
+# On evenly spread data the two agree and the colors come out in roughly
+# equal fifths. When a few numbers are far out, the curve pushes only
+# those into red/blue and the rest drift toward yellow; when many numbers
+# are nearly the same, the curve keeps them the same color instead of
+# the rank splitting them up arbitrarily.
+
+# Each column's highlighting ("" for off) from a .dpv's "#highlight="
+# line -- always off for a .csv.
+fn stringList spreadsheet_column_highlights_from_lines(string spreadsheet_path, stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	stringList no_highlights = empty
+	if not spreadsheet_keeps_settings(spreadsheet_path)
+		return no_highlights
+	string highlights_text = spreadsheet_setting_value(lines, SPREADSHEET_HIGHLIGHT_PREFIX)
+	if highlights_text is ""
+		return no_highlights
+	return csv_split_line(highlights_text)
+
+# Column col_idx's highlighting, or "" if it's off.
+fn string spreadsheet_column_highlight(stringList column_highlights, int col_idx)
+	int highlight_count = len(column_highlights)
+	if col_idx < 0 or col_idx >= highlight_count
+		return ""
+	string highlight = column_highlights at col_idx
+	return s_trim(highlight)
+
+# Alt+H's cycle: off -> high is good -> high is bad -> off.
+fn string spreadsheet_next_highlight(string highlight)
+	unsafe_macro_run use_spreadsheet_consts
+	if highlight is SPREADSHEET_HIGHLIGHT_HIGH_GOOD
+		return SPREADSHEET_HIGHLIGHT_HIGH_BAD
+	if highlight is SPREADSHEET_HIGHLIGHT_HIGH_BAD
+		return ""
+	return SPREADSHEET_HIGHLIGHT_HIGH_GOOD
+
+# Each highlighted column's color level per row -- "" for none, "1" (very
+# bad) up to "5" (very good). Indexed column first: (levels at col_idx)
+# at row_idx, so spreadsheet_cell_value(levels, col_idx, row_idx) looks
+# one up. `display_rows` should be unrounded, so formula results count.
+fn csvRowList spreadsheet_highlight_levels(csvRowList display_rows, stringList column_highlights)
+	csvRowList column_levels = empty
+	int highlight_count = len(column_highlights)
+	for col_idx in range(highlight_count)
+		string highlight = spreadsheet_column_highlight(column_highlights, col_idx)
+		stringList levels = spreadsheet_column_highlight_levels(display_rows, col_idx, highlight)
+		column_levels at end = levels
+	return column_levels
+
+# One column's levels (see spreadsheet_highlight_levels) -- text and
+# empty cells, and the header, get none.
+fn stringList spreadsheet_column_highlight_levels(csvRowList display_rows, int col_idx, string highlight)
+	unsafe_macro_run use_spreadsheet_consts
+	stringList levels = empty
+	if highlight is ""
+		return levels
+	int row_count = len(display_rows)
+	for in range(row_count)
+		levels at end = ""
+	intList number_rows = empty
+	floatList numbers = empty
+	int start = 1
+	for row_idx in range(start, row_count)
+		string raw_cell = spreadsheet_cell_value(display_rows, row_idx, col_idx)
+		string cell = s_trim(raw_cell)
+		if s_is_number(cell)
+			float number = c_string_to_float(cell)
+			number_rows at end = row_idx
+			numbers at end = number
+	floatList scores = spreadsheet_highlight_scores(numbers)
+	int number_count = len(number_rows)
+	for number_idx in range(number_count)
+		int row_idx = number_rows at number_idx
+		float score = scores at number_idx
+		if highlight is SPREADSHEET_HIGHLIGHT_HIGH_BAD
+			score = 1.0 - score
+		string level_text = spreadsheet_highlight_level_text(score)
+		levels at row_idx = level_text
+	return levels
+
+# A 0..1 score as one of five equal bands, "1" to "5".
+fn string spreadsheet_highlight_level_text(float score)
+	const float BAND_COUNT = 5.0
+	int lowest_level = 1
+	int highest_level = 5
+	int level = m_floor(score * BAND_COUNT) + 1
+	level = m_clamp(level, lowest_level, highest_level)
+	return c_int_to_string(level)
+
+# Each number's score from 0 (lowest) to 1 (highest): its rank and its
+# place on the fitted curve, averaged (see the top of this file).
+fn floatList spreadsheet_highlight_scores(floatList numbers)
+	floatList ranks = spreadsheet_percentile_ranks(numbers)
+	floatList sorted_numbers = spreadsheet_sorted_floats(numbers)
+	float center = spreadsheet_median_of_sorted(sorted_numbers)
+	float spread = spreadsheet_robust_spread(numbers, center)
+	floatList scores = empty
+	int number_count = len(numbers)
+	for idx in range(number_count)
+		float number = numbers at idx
+		float rank = ranks at idx
+		float curve = 0.5
+		if spread > 0.0
+			float distance = (number - center) / spread
+			curve = spreadsheet_bell_curve_share(distance)
+		float score = (rank + curve) / 2.0
+		scores at end = score
+	return scores
+
+# Share of a normal distribution below `distance` standard deviations --
+# the logistic curve 1 / (1 + e^(-1.702 x)) is within 1% of it.
+fn float spreadsheet_bell_curve_share(float distance)
+	const float EULER = 2.718281828459045
+	const float STEEPNESS = 1.702
+	float exponent = 0.0 - STEEPNESS * distance
+	float falloff = m_powf(EULER, exponent)
+	return 1.0 / (1.0 + falloff)
+
+# What a standard deviation would be without outliers pulling on it: the
+# median distance from the median, scaled (by 1.4826) to match a standard
+# deviation on normal data. Falls back to the plain standard deviation
+# when over half the numbers are identical (that median distance is 0),
+# and is 0 only when every number is the same.
+fn float spreadsheet_robust_spread(floatList numbers, float center)
+	const float MAD_TO_STDDEV = 1.4826
+	floatList distances = empty
+	for number in numbers
+		float distance = m_absf(number - center)
+		distances at end = distance
+	floatList sorted_distances = spreadsheet_sorted_floats(distances)
+	float median_distance = spreadsheet_median_of_sorted(sorted_distances)
+	if median_distance > 0.0
+		return median_distance * MAD_TO_STDDEV
+	return spreadsheet_standard_deviation(numbers)
+
+fn float spreadsheet_standard_deviation(floatList numbers)
+	int number_count = len(numbers)
+	if number_count is 0
+		return 0.0
+	float count = c_int_to_float(number_count)
+	float total = 0.0
+	for number in numbers
+		total = total + number
+	float mean = total / count
+	float squared_total = 0.0
+	for number in numbers
+		float offset = number - mean
+		squared_total = squared_total + offset * offset
+	float variance = squared_total / count
+	return m_sqrt(variance)
+
+# Each number's share of the column below it, 0..1 -- tied numbers share
+# the middle of the places they take up, so equal numbers always score
+# the same.
+fn floatList spreadsheet_percentile_ranks(floatList numbers)
+	int number_count = len(numbers)
+	floatList ranks = empty
+	for in range(number_count)
+		ranks at end = 0.0
+	intList order = spreadsheet_sorted_float_order(numbers)
+	float count = c_int_to_float(number_count)
+	int run_start = 0
+	for if run_start < number_count
+		int run_stop = spreadsheet_tie_run_stop(numbers, order, run_start)
+		float middle_place = c_int_to_float(run_start + run_stop - 1) / 2.0
+		float rank = (middle_place + 0.5) / count
+		for position in range(run_start, run_stop)
+			int number_idx = order at position
+			ranks at number_idx = rank
+		run_start = run_stop
+	return ranks
+
+# Where the run of numbers equal to the one at `run_start` (in sorted
+# `order`) ends.
+fn int spreadsheet_tie_run_stop(floatList numbers, intList order, int run_start)
+	int number_count = len(order)
+	int first_idx = order at run_start
+	float run_value = numbers at first_idx
+	int run_stop = run_start + 1
+	for position in range(run_stop, number_count)
+		int number_idx = order at position
+		float number = numbers at number_idx
+		if number is not run_value
+			return position
+	return number_count
+
+# Indices of `numbers`, lowest number first.
+fn intList spreadsheet_sorted_float_order(floatList numbers)
+	intList indices = empty
+	int number_count = len(numbers)
+	for idx in range(number_count)
+		indices at end = idx
+	bool descending = false
+	return l_sort_indices_by_float(indices, numbers, descending)
+
+fn floatList spreadsheet_sorted_floats(floatList numbers)
+	intList order = spreadsheet_sorted_float_order(numbers)
+	floatList sorted_numbers = empty
+	int number_count = len(order)
+	for position in range(number_count)
+		int idx = order at position
+		float number = numbers at idx
+		sorted_numbers at end = number
+	return sorted_numbers
+
+fn float spreadsheet_median_of_sorted(floatList sorted_numbers)
+	int number_count = len(sorted_numbers)
+	if number_count is 0
+		return 0.0
+	int middle = number_count / 2
+	float upper = sorted_numbers at middle
+	if middle * 2 is not number_count
+		return upper
+	int lower_idx = middle - 1
+	float lower = sorted_numbers at lower_idx
+	return (lower + upper) / 2.0

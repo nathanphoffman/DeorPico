@@ -53,19 +53,22 @@ fn AppState spreadsheet_after_undo(AppState state, KeyEvent key)
 	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 	return next_state
 
-# The sheet re-read from `lines` -- rows, and a .dpv's round setting and
-# column formulas -- with the selection kept, pulled back inside the
-# sheet if rows went away. A .csv's round setting isn't in its lines, so
-# it stays as it was.
+# The sheet re-read from `lines` -- rows, and a .dpv's round setting,
+# column formulas, highlights and hidden columns -- with the selection
+# kept, pulled back inside the sheet if rows went away. A .csv's round
+# setting, highlights and hidden columns aren't in its lines, so they
+# stay as they were.
 fn SpreadsheetState spreadsheet_reloaded(SpreadsheetState spreadsheet, stringList lines)
-	(spreadsheet_path, spreadsheet_round_places, spreadsheet_sel_row) in spreadsheet
+	(spreadsheet_path, spreadsheet_round_places, spreadsheet_column_highlights, spreadsheet_column_hidden, spreadsheet_sel_row) in spreadsheet
 	csvRowList spreadsheet_rows = spreadsheet_parse_rows(spreadsheet_path, lines)
 	stringList spreadsheet_column_formulas = spreadsheet_column_formulas_from_lines(spreadsheet_path, lines)
 	if spreadsheet_keeps_settings(spreadsheet_path)
 		spreadsheet_round_places = spreadsheet_round_places_from_lines(spreadsheet_path, lines)
+		spreadsheet_column_highlights = spreadsheet_column_highlights_from_lines(spreadsheet_path, lines)
+		spreadsheet_column_hidden = spreadsheet_column_hidden_from_lines(spreadsheet_path, lines)
 	int last_row = len(spreadsheet_rows) - 1
 	spreadsheet_sel_row = m_min(spreadsheet_sel_row, last_row)
 	bool spreadsheet_editing = false
 	string spreadsheet_edit_buffer = ""
-	SpreadsheetState reloaded = spreadsheet with (spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_round_places, spreadsheet_sel_row, spreadsheet_editing, spreadsheet_edit_buffer)
+	SpreadsheetState reloaded = spreadsheet with (spreadsheet_rows, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden, spreadsheet_round_places, spreadsheet_sel_row, spreadsheet_editing, spreadsheet_edit_buffer)
 	return reloaded

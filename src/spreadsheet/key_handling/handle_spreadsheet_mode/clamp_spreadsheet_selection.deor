@@ -2,7 +2,9 @@
 # Keeps the selected cell inside the sheet -- rows can have different cell
 # counts, so the column is bounded by the widest row rather than the
 # selected row itself (short rows just draw empty cells past their end).
-# Row -1 is the settings row above the header.
+# Row -1 is the settings row above the header. A hidden column can't be
+# selected, so the selection moves onto the nearest shown one (and if a
+# column insert/delete somehow left none shown, they all come back).
 macro clamp_spreadsheet_selection
 	int row_count = len(spreadsheet_rows)
 	int column_count = spreadsheet_column_count(spreadsheet_rows)
@@ -14,3 +16,13 @@ macro clamp_spreadsheet_selection
 	spreadsheet_sel_row = m_max(spreadsheet_sel_row, settings_row)
 	spreadsheet_sel_col = m_min(spreadsheet_sel_col, max_col)
 	spreadsheet_sel_col = m_max(spreadsheet_sel_col, min_index)
+	macro_run move_selection_off_hidden_column
+
+macro move_selection_off_hidden_column
+	int column_count = spreadsheet_column_count(spreadsheet_rows)
+	int visible_col = spreadsheet_nearest_visible_col(spreadsheet_column_hidden, spreadsheet_sel_col, column_count)
+	if visible_col >= 0
+		spreadsheet_sel_col = visible_col
+	else
+		stringList none_hidden = empty
+		spreadsheet_column_hidden = move none_hidden

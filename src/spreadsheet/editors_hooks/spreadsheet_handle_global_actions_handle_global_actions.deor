@@ -9,14 +9,16 @@ macro spreadsheet_handle_global_actions_handle_global_actions
 # so edits made in the text view (a .dpv's settings lines included) show
 # up in the sheet.
 fn SpreadsheetState spreadsheet_toggled_view(SpreadsheetState spreadsheet, stringList lines)
-	(spreadsheet_path, spreadsheet_active, spreadsheet_view_active, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas) in spreadsheet
+	(spreadsheet_path, spreadsheet_active, spreadsheet_view_active, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden) in spreadsheet
 	if spreadsheet_active
 		spreadsheet_view_active = not spreadsheet_view_active
 		if spreadsheet_view_active
 			spreadsheet_rows = spreadsheet_parse_rows(spreadsheet_path, lines)
 		if spreadsheet_view_active and spreadsheet_keeps_settings(spreadsheet_path)
 			spreadsheet_round_places = spreadsheet_round_places_from_lines(spreadsheet_path, lines)
+			spreadsheet_column_highlights = spreadsheet_column_highlights_from_lines(spreadsheet_path, lines)
+			spreadsheet_column_hidden = spreadsheet_column_hidden_from_lines(spreadsheet_path, lines)
 		if spreadsheet_view_active
 			spreadsheet_column_formulas = spreadsheet_column_formulas_from_lines(spreadsheet_path, lines)
-	SpreadsheetState toggled = spreadsheet with (spreadsheet_view_active, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas)
+	SpreadsheetState toggled = spreadsheet with (spreadsheet_view_active, spreadsheet_rows, spreadsheet_round_places, spreadsheet_column_formulas, spreadsheet_column_highlights, spreadsheet_column_hidden)
 	return toggled
