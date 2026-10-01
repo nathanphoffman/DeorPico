@@ -2,7 +2,7 @@
 # editor_handle_key() dispatches on. This is where DeorPico's actual
 # keybindings live -- add or rebind an action here, not in term.deor.
 fn KeyEvent editor_translate_key(KeyEvent key)
-	(kind, chr, shift, col, row) in key
+	(kind, chr, shift, alt, col, row) in key
 
 	if kind is "ctrl_char"
 		if chr is "q"
@@ -25,6 +25,11 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "toggle_line_numbers"
 		else if chr is "e"
 			kind = "lint_output_toggle"
+		# ^⇧G stages everything (`git add -A`), plain ^G toggles the
+		# highlighted entry. Most terminals send ^⇧G as plain ^G, so Alt+G
+		# (below) is the stage-all binding that works everywhere.
+		else if (chr is "g" and shift) or chr is "G"
+			kind = "stage_all"
 		else if chr is "g"
 			kind = "stage_toggle"
 		else if chr is "t"
@@ -50,6 +55,8 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 		# Not ^M -- terminals send that as Enter.
 		else if chr is "l"
 			kind = "commit_prompt"
+	else if kind is "char" and alt and (chr is "g" or chr is "G")
+		kind = "stage_all"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "function_key"

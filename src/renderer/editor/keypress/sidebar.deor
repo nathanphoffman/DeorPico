@@ -71,6 +71,8 @@ macro handle_sidebar_focus_mode
 			macro_run sidebar_key_activate
 		else if kind is "stage_toggle"
 			macro_run sidebar_stage_toggle
+		else if kind is "stage_all"
+			macro_run git_stage_all
 		else if kind is "delete_entry"
 			macro_run sidebar_delete_entry
 		else if kind is "discard_git_changes"
