@@ -44,22 +44,7 @@ macro load_file_into_buffer
 	if diffing
 		macro_run refresh_diff_for_new_file
 
-	spreadsheet_path = s_join([filename])
-	string opened_ext = f_extension(filename)
-	spreadsheet_active = false
-	csvRowList opened_rows = empty
-	if f_is_spreadsheet_ext(opened_ext)
-		spreadsheet_active = true
-		opened_rows = csv_parse_lines(lines)
-	spreadsheet_rows = opened_rows
-	spreadsheet_view_active = spreadsheet_active
-	spreadsheet_sel_row = 0
-	spreadsheet_sel_col = 0
-	spreadsheet_scroll_row = 0
-	spreadsheet_scroll_col = 0
-	spreadsheet_editing = false
-	spreadsheet_edit_buffer = ""
-	spreadsheet_modal_open = false
+	macro_run spreadsheet_browse_open
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

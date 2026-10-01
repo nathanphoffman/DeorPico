@@ -92,24 +92,6 @@ unsafe_macro initialize_search
 	search_match_index as 0
 	SearchState search = (search_buffer, search_active, search_editing, search_matches, search_match_index)
 
-unsafe_macro initialize_spreadsheet
-	string spreadsheet_ext = f_extension(filename)
-	bool spreadsheet_active = false
-	csvRowList spreadsheet_rows = empty
-	if f_is_spreadsheet_ext(spreadsheet_ext)
-		spreadsheet_active = true
-		spreadsheet_rows = csv_parse_lines(lines)
-	string spreadsheet_path = s_join([filename])
-	bool spreadsheet_view_active = spreadsheet_active
-	spreadsheet_sel_row as 0
-	spreadsheet_sel_col as 0
-	spreadsheet_scroll_row as 0
-	spreadsheet_scroll_col as 0
-	spreadsheet_editing as false
-	string spreadsheet_edit_buffer = ""
-	spreadsheet_modal_open as false
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open)
-
 unsafe_macro initialize_filter
 	filter_active as false
 	filter_query as ""
@@ -131,7 +113,7 @@ fn AppState editor_open(LaunchArgs launch)
 	unsafe_macro_run initialize_search
 	unsafe_macro_run initialize_filter
 	unsafe_macro_run initialize_lint
-	unsafe_macro_run initialize_spreadsheet
+	unsafe_macro_run spreadsheet_state_init
 
 	done as false
 	notice as ""

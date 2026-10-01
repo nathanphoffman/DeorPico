@@ -44,6 +44,7 @@ import "src/models/app_state.deor"
 # Macros must be loaded first
 import "src/consts.deor"
 import "src/keymap.deor"
+import "src/spreadsheet/spreadsheet_consts.deor"
 import "src/spreadsheet/layout.deor"
 import "src/spreadsheet/csv_parse.deor"
 import "src/spreadsheet/mouse.deor"
@@ -51,6 +52,11 @@ import "src/spreadsheet/editing.deor"
 import "src/spreadsheet/sorting.deor"
 import "src/spreadsheet/navigation.deor"
 import "src/spreadsheet/handle_key.deor"
+import "src/spreadsheet/spreadsheet_state_init.deor"
+import "src/spreadsheet/spreadsheet_browse_open.deor"
+import "src/spreadsheet/spreadsheet_view_toggle.deor"
+import "src/spreadsheet/spreadsheet_route_key.deor"
+import "src/spreadsheet/spreadsheet_is_showing.deor"
 
 # Per-key-action logic, organized by which part of the screen it affects --
 # events.deor macro_runs these directly, no pass-through layer.

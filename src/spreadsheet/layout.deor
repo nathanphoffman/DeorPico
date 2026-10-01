@@ -45,7 +45,7 @@ fn int spreadsheet_sidebar_width(int cols, int rows, bool sidebar_focused)
 # Each column's on-screen width: its widest cell (header included),
 # clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
 fn intList spreadsheet_column_widths(csvRowList rows)
-	unsafe_macro_run use_consts
+	unsafe_macro_run use_spreadsheet_consts
 	int column_count = spreadsheet_column_count(rows)
 	intList widths = empty
 	for in range(column_count)
@@ -66,7 +66,7 @@ fn intList spreadsheet_column_widths(csvRowList rows)
 # as the first column drawn. Each column is drawn as SEPARATOR + cell, so
 # the first one starts right after the leading separator.
 fn int spreadsheet_cell_left_x(intList widths, int scroll_col, int col_idx)
-	unsafe_macro_run use_consts
+	unsafe_macro_run use_spreadsheet_consts
 	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int left_x = separator_width
 	for walk_col in range(scroll_col, col_idx)
@@ -78,7 +78,7 @@ fn int spreadsheet_cell_left_x(intList widths, int scroll_col, int col_idx)
 # counts toward the cell to its left, and anything past the last column
 # resolves to the last column.
 fn int spreadsheet_column_at_x(intList widths, int scroll_col, int content_x)
-	unsafe_macro_run use_consts
+	unsafe_macro_run use_spreadsheet_consts
 	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int column_count = len(widths)
 	int right_x = separator_width

@@ -235,7 +235,7 @@ fn void spreadsheet_render(AppState state)
 	(core) in main_panel
 	(dirty) in core
 	(notice) in state
-	unsafe_macro_run use_consts
+	unsafe_macro_run use_spreadsheet_consts
 	unsafe_macro_run use_ansi_codes
 
 	unsafe_macro_run setup_spreadsheet_view_layout

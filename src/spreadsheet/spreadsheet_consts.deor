@@ -1,0 +1,16 @@
+
+# Spreadsheet-only constants -- kept apart from the editor's use_consts so
+# everything spreadsheet-specific lives under src/spreadsheet/.
+unsafe_macro use_spreadsheet_consts
+	# Columns auto-size to their widest cell (see spreadsheet_column_widths),
+	# kept within these bounds -- a cell wider than the max is cut off with
+	# "…" (Ctrl+click / ^O shows it in full).
+	const int SPREADSHEET_MIN_COLUMN_WIDTH = 3
+	const int SPREADSHEET_MAX_COLUMN_WIDTH = 30
+
+	# Drawn before/after every cell -- shared by spreadsheet_render and the
+	# spreadsheet mouse handler so a click maps onto the cell actually drawn.
+	const string SPREADSHEET_SEPARATOR = " | "
+
+	# Widest the full-cell-text popup gets (border included).
+	const int SPREADSHEET_MODAL_MAX_WIDTH = 70

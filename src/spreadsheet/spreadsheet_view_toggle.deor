@@ -1,0 +1,17 @@
+
+# ^T (see handle_global_actions) -- swaps the main panel between the
+# spreadsheet and the normal text editor for the currently open .csv.
+macro spreadsheet_view_toggle
+	spreadsheet = spreadsheet_toggled_view(spreadsheet, lines)
+
+# No-op on a non-.csv file (spreadsheet_active false) since there's
+# nothing to swap to/from. Switching back to the sheet re-parses `lines`,
+# so edits made in the text view show up in the sheet.
+fn SpreadsheetState spreadsheet_toggled_view(SpreadsheetState spreadsheet, stringList lines)
+	(spreadsheet_active, spreadsheet_view_active, spreadsheet_rows) in spreadsheet
+	if spreadsheet_active
+		spreadsheet_view_active = not spreadsheet_view_active
+		if spreadsheet_view_active
+			spreadsheet_rows = csv_parse_lines(lines)
+	SpreadsheetState toggled = spreadsheet with (spreadsheet_view_active, spreadsheet_rows)
+	return toggled

@@ -1,0 +1,29 @@
+
+# The spreadsheet's part of editor_open (state_init.deor) -- declares
+# `spreadsheet` for the AppState being built there.
+unsafe_macro spreadsheet_state_init
+	SpreadsheetState spreadsheet = spreadsheet_for_file(filename, lines)
+
+# Fresh spreadsheet state for a just-opened file: spreadsheet-capable (and
+# showing the sheet rather than the text view) only for a .csv, nothing
+# selected, scrolled or being edited. `lines` is the text buffer's content
+# for that file -- see csv_parse_lines for why rows come from it rather
+# than from disk.
+fn SpreadsheetState spreadsheet_for_file(string filename, stringList lines)
+	string spreadsheet_ext = f_extension(filename)
+	bool spreadsheet_active = false
+	csvRowList spreadsheet_rows = empty
+	if f_is_spreadsheet_ext(spreadsheet_ext)
+		spreadsheet_active = true
+		spreadsheet_rows = csv_parse_lines(lines)
+	string spreadsheet_path = s_join([filename])
+	bool spreadsheet_view_active = spreadsheet_active
+	spreadsheet_sel_row as 0
+	spreadsheet_sel_col as 0
+	spreadsheet_scroll_row as 0
+	spreadsheet_scroll_col as 0
+	spreadsheet_editing as false
+	string spreadsheet_edit_buffer = ""
+	spreadsheet_modal_open as false
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open)
+	return spreadsheet

@@ -1,0 +1,11 @@
+
+# main()'s key dispatch: the spreadsheet handles the key itself when it
+# owns it (see spreadsheet_owns_key), otherwise the normal editor handler
+# does -- after any half-typed cell edit is committed, so e.g. ^S saves
+# what was typed.
+macro spreadsheet_route_key
+	if spreadsheet_owns_key(state, key)
+		state = spreadsheet_handle_key(state, key)
+	else
+		state = spreadsheet_commit_pending_edit(state, key)
+		state = editor_handle_key_for_events(state, key)
