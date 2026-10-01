@@ -47,3 +47,21 @@ fn bool s_is_number(string str)
 fn int s_char_count(string str)
 	rust
 		str.chars().count() as i64
+
+# A computed number as a cell shows it: whole numbers without a decimal
+# point ("42"), others with trailing zeros trimmed ("3.5") -- rounded to 10
+# decimal places first so float noise (0.1 + 0.2) doesn't show up.
+fn string s_format_number(float val)
+	rust
+		{
+			if !val.is_finite() {
+				"#ERR".to_string()
+			} else {
+				let rounded = (val * 1e10).round() / 1e10;
+				if rounded.fract() == 0.0 {
+					format!("{}", rounded as i64)
+				} else {
+					format!("{:.10}", rounded).trim_end_matches('0').trim_end_matches('.').to_string()
+				}
+			}
+		}

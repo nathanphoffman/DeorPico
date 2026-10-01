@@ -1,0 +1,29 @@
+
+# Row calculations: a cell starting with "=" is a formula over the numeric
+# cells to its left in the same row -- `c` is all of them summed, `c1` the
+# first, `c2` the second, and so on, combined with + - * / (and plain
+# numbers). The file keeps the formula; the sheet shows its result.
+
+# Works out what `cell` shows, then -- if that's a number -- adds it to
+# left_values so formulas further right can use it (a formula's result
+# counts as a numeric cell too).
+macro add_cell_to_display_row
+	string shown = s_join([cell])
+	const string FORMULA_PREFIX = "="
+	string trimmed = s_trim(cell)
+	if s_starts_with(trimmed, FORMULA_PREFIX)
+		shown = spreadsheet_evaluate_formula(trimmed, left_values)
+	display_cells at end = shown
+
+	string shown_trimmed = s_trim(shown)
+	if s_is_number(shown_trimmed)
+		float shown_value = c_string_to_float(shown_trimmed)
+		left_values at end = shown_value
+
+# Every cell of one row as it shows on screen, left to right.
+fn stringList spreadsheet_display_row(stringList row_cells)
+	stringList display_cells = empty
+	floatList left_values = empty
+	for cell in row_cells
+		macro_run add_cell_to_display_row
+	return display_cells

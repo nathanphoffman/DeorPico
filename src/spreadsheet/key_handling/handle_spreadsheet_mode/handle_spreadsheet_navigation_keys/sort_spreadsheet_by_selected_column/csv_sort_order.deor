@@ -1,9 +1,9 @@
 
 # Puts row `row_idx` into one of csv_sort_order's three groups by its cell
-# in column `col_idx`: empty, a number (keyed by its value) or text (keyed
-# by its lowercase form).
+# in column `col_idx` as shown (a formula sorts by its result): empty, a
+# number (keyed by its value) or text (keyed by its lowercase form).
 macro add_row_to_sort_group
-	string raw_cell = spreadsheet_cell_value(rows, row_idx, col_idx)
+	string raw_cell = spreadsheet_display_value(rows, row_idx, col_idx)
 	string cell = s_trim(raw_cell)
 	if cell is ""
 		empty_indices at end = row_idx

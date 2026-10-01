@@ -1,0 +1,17 @@
+
+# A formula's numbers and operators in order, after `c`/`c1`/... and
+# leading signs are resolved -- term_values has one more entry than
+# term_ops. formula_error is "" unless something was invalid.
+struct FormulaTerms
+	floatList term_values
+	stringList term_ops
+	string formula_error
+
+# The text a formula cell shows: its result, or #ERR / #REF / #DIV/0.
+fn string spreadsheet_evaluate_formula(string formula, floatList left_values)
+	stringList tokens = formula_tokens(formula)
+	FormulaTerms terms = formula_resolve(tokens, left_values)
+	(formula_error) in terms
+	if formula_error is not ""
+		return formula_error
+	return formula_combine(terms)

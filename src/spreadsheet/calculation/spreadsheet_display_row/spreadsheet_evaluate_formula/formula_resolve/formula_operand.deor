@@ -1,0 +1,39 @@
+
+# Why a formula operand can't be used, or "" if it's fine: `c` always
+# works (no numeric cells to the left just sums to 0), `cN` needs at least
+# N numeric cells to the left (#REF otherwise), and anything else has to
+# be a plain number.
+fn string formula_operand_error(string token, floatList left_values)
+	const string CELL_PREFIX = "c"
+	if token is CELL_PREFIX
+		return ""
+	if s_starts_with(token, CELL_PREFIX)
+		int token_length = s_char_count(token)
+		int index_start = 1
+		string index_text = s_substring(token, index_start, token_length)
+		if not s_is_number(index_text)
+			return "#ERR"
+		int ref_number = c_string_to_int(index_text)
+		int value_count = len(left_values)
+		if ref_number < 1 or ref_number > value_count
+			return "#REF"
+		return ""
+	if s_is_number(token)
+		return ""
+	return "#ERR"
+
+# An operand's value -- only called once formula_operand_error said it's fine.
+fn float formula_operand_value(string token, floatList left_values)
+	const string CELL_PREFIX = "c"
+	if token is CELL_PREFIX
+		float total = 0.0
+		for left_value in left_values
+			total = total + left_value
+		return total
+	if s_starts_with(token, CELL_PREFIX)
+		int token_length = s_char_count(token)
+		int index_start = 1
+		string index_text = s_substring(token, index_start, token_length)
+		int value_idx = c_string_to_int(index_text) - 1
+		return left_values at value_idx
+	return c_string_to_float(token)

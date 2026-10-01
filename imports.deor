@@ -52,6 +52,13 @@ import "src/spreadsheet/csv_parse.deor"
 # calls directly; anything deeper sits in a subfolder named after the file
 # that calls it, and shared/ holds macros called from several branches.
 # Imported deepest-first so every macro is defined before its callers.
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/formula_operand.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_tokens.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_value.deor"
 import "src/spreadsheet/shared/spreadsheet_cell_value.deor"
 import "src/spreadsheet/shared/commit_spreadsheet_edit/write_edit_into_selected_cell.deor"
 import "src/spreadsheet/shared/commit_spreadsheet_edit.deor"

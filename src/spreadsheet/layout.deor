@@ -42,15 +42,17 @@ fn int spreadsheet_sidebar_width(int cols, int rows, bool sidebar_focused)
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
 	return cols - content_width
 
-# Each column's on-screen width: its widest cell (header included),
-# clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
+# Each column's on-screen width: its widest cell as shown (a formula's
+# result, not its text -- header included), clamped to
+# SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
 fn intList spreadsheet_column_widths(csvRowList rows)
 	unsafe_macro_run use_spreadsheet_consts
 	int column_count = spreadsheet_column_count(rows)
 	intList widths = empty
 	for in range(column_count)
 		widths at end = SPREADSHEET_MIN_COLUMN_WIDTH
-	for row_cells in rows
+	for raw_cells in rows
+		stringList row_cells = spreadsheet_display_row(raw_cells)
 		int cell_count = len(row_cells)
 		for col_idx in range(cell_count)
 			string cell = row_cells at col_idx
