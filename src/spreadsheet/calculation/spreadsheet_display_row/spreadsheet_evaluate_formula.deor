@@ -1,17 +1,46 @@
 
-# A formula's numbers and operators in order, after `c`/`c1`/... and
-# leading signs are resolved -- term_values has one more entry than
+# A formula's numbers and operators in order, after `c`/`c1`/`n`/(...)
+# and leading signs are resolved -- term_values has one more entry than
 # term_ops. formula_error is "" unless something was invalid.
 struct FormulaTerms
 	floatList term_values
 	stringList term_ops
 	string formula_error
 
+# What a formula (or a group inside one) is worked out against: the
+# numeric cells to the left, and -- inside a `(...)` group that runs once
+# per numeric cell -- that cell's value (`c`) and its number (`n`, 1 for
+# the first numeric cell, 2 for the second, ...).
+struct FormulaScope
+	floatList left_values
+	bool per_cell
+	float cell_value
+	float cell_number
+
+# A formula's (or group's) number, or why it couldn't be worked out.
+struct FormulaResult
+	float result_value
+	string formula_error
+
 # The text a formula cell shows: its result, or #ERR / #REF / #DIV/0.
 fn string spreadsheet_evaluate_formula(string formula, floatList left_values)
 	stringList tokens = formula_tokens(formula)
-	FormulaTerms terms = formula_resolve(tokens, left_values)
-	(formula_error) in terms
+	bool per_cell = false
+	float cell_value = 0.0
+	float cell_number = 0.0
+	FormulaScope scope = (left_values, per_cell, cell_value, cell_number)
+	FormulaResult result = formula_value(tokens, scope)
+	(result_value, formula_error) in result
 	if formula_error is not ""
 		return formula_error
+	return s_format_number(result_value)
+
+# Works out a list of tokens -- the whole formula, or what's inside one
+# pair of parentheses.
+fn FormulaResult formula_value(stringList tokens, FormulaScope scope)
+	FormulaTerms terms = formula_resolve(tokens, scope)
+	(formula_error) in terms
+	if formula_error is not ""
+		float result_value = 0.0
+		return (result_value, formula_error)
 	return formula_combine(terms)

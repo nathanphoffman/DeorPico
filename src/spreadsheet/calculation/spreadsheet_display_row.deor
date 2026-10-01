@@ -2,7 +2,10 @@
 # Row calculations: a cell starting with "=" is a formula over the numeric
 # cells to its left in the same row -- `c` is all of them summed, `c1` the
 # first, `c2` the second, and so on, combined with + - * / (and plain
-# numbers). The file keeps the formula; the sheet shows its result.
+# numbers) and parentheses. A group using `c` or `n` runs once per numeric
+# cell -- `c` that cell, `n` its number (1, 2, ...) -- and sums the
+# results, so "=+(c*n)" is c1*1 + c2*2 + ... The file keeps the formula;
+# the sheet shows its result.
 
 # Works out what `cell` shows, then -- if that's a number -- adds it to
 # left_values so formulas further right can use it (a formula's result

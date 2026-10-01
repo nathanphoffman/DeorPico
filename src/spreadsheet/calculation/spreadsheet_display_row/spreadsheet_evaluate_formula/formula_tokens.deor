@@ -1,9 +1,11 @@
 
-# One character of a formula: an operator is a token of its own, a space
-# just ends the current token, anything else is part of a name or number
-# ("c", "c12", "2.5").
+# One character of a formula: an operator or parenthesis is a token of
+# its own, a space just ends the current token, anything else is part of a
+# name or number ("c", "c12", "n", "2.5").
 macro split_on_operator_or_extend_current_token
-	if chr is "+" or chr is "-" or chr is "*" or chr is "/" or chr is " "
+	bool is_operator = chr is "+" or chr is "-" or chr is "*" or chr is "/"
+	bool is_parenthesis = chr is "(" or chr is ")"
+	if is_operator or is_parenthesis or chr is " "
 		if current is not ""
 			tokens at end = current
 			current = ""
@@ -12,7 +14,8 @@ macro split_on_operator_or_extend_current_token
 	else
 		current = s_join([current, chr])
 
-# Splits "=+c-c1*2" into ["+", "c", "-", "c1", "*", "2"].
+# Splits "=+c-c1*2" into ["+", "c", "-", "c1", "*", "2"], and "=+(c*n)"
+# into ["+", "(", "c", "*", "n", ")"].
 fn stringList formula_tokens(string formula)
 	string body = formula_text_after_equals_sign(formula)
 	stringList body_chars = s_chars(body)

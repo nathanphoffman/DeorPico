@@ -1,0 +1,68 @@
+
+# A token inside an open `(...)`: nested parentheses just change the
+# depth; the `)` that closes the outermost one ends the group, which is
+# then worked out as a single number.
+macro collect_token_into_open_group
+	if token is "("
+		group_depth = group_depth + 1
+	if token is ")"
+		group_depth = group_depth - 1
+	if group_depth is 0
+		macro_run add_finished_group_to_terms
+	else
+		group_tokens at end = token
+
+# Works out the group, applies the sign collected before it, and moves on
+# to expecting an operator.
+macro add_finished_group_to_terms
+	FormulaResult group_result = formula_group_value(group_tokens, scope)
+	(result_value) in group_result
+	formula_error = formula_result_error(group_result)
+	term_values at end = result_value * sign
+	sign = 1.0
+	expecting_operand = false
+
+# A group that uses `c` or `n` runs once per numeric cell to the left and
+# adds up the results -- "(c*n)" is c1*1 + c2*2 + ... Any other group is
+# just worked out first, like normal math parentheses. Inside a per-cell
+# group, nested groups are normal parentheses.
+fn FormulaResult formula_group_value(stringList group_tokens, FormulaScope scope)
+	(per_cell) in scope
+	if not per_cell and formula_tokens_use_cell(group_tokens)
+		return formula_sum_over_cells(group_tokens, scope)
+	return formula_value(group_tokens, scope)
+
+# The group worked out once per numeric cell to the left -- with `c` that
+# cell's value and `n` its number -- and summed. Stops at the first error.
+fn FormulaResult formula_sum_over_cells(stringList group_tokens, FormulaScope scope)
+	(left_values) in scope
+	float result_value = 0.0
+	string formula_error = ""
+	bool per_cell = true
+	int value_count = len(left_values)
+	for value_idx in range(value_count)
+		float cell_value = left_values at value_idx
+		int cell_position = value_idx + 1
+		float cell_number = c_int_to_float(cell_position)
+		FormulaScope cell_scope = scope with (per_cell, cell_value, cell_number)
+		if formula_error is ""
+			FormulaResult cell_result = formula_value(group_tokens, cell_scope)
+			formula_error = formula_result_error(cell_result)
+			float cell_total = formula_result_number(cell_result)
+			result_value = result_value + cell_total
+	return (result_value, formula_error)
+
+# True if the tokens use a bare `c` or `n` anywhere (cN doesn't count).
+fn bool formula_tokens_use_cell(stringList group_tokens)
+	for token in group_tokens
+		if token is "c" or token is "n"
+			return true
+	return false
+
+fn string formula_result_error(FormulaResult result)
+	(formula_error) in result
+	return formula_error
+
+fn float formula_result_number(FormulaResult result)
+	(result_value) in result
+	return result_value

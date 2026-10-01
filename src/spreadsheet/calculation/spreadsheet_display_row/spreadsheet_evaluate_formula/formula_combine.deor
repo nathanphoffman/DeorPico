@@ -17,15 +17,15 @@ macro do_addition_and_subtraction_left_to_right
 	for sum_idx in range(sum_count)
 		macro_run add_or_subtract_next_saved_value
 
-# Works out the formula's result as the cell shows it, or #DIV/0.
-fn string formula_combine(FormulaTerms terms)
+# Works out the formula's result, or #DIV/0.
+fn FormulaResult formula_combine(FormulaTerms terms)
 	(term_values, term_ops) in terms
 	string formula_error = ""
 	floatList running_values = empty
 	stringList running_ops = empty
 	macro_run do_multiplication_and_division_first
-	if formula_error is not ""
-		return formula_error
 	float total = 0.0
-	macro_run do_addition_and_subtraction_left_to_right
-	return s_format_number(total)
+	if formula_error is ""
+		macro_run do_addition_and_subtraction_left_to_right
+	float result_value = total
+	return (result_value, formula_error)
