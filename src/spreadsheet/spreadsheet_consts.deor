@@ -14,3 +14,10 @@ unsafe_macro use_spreadsheet_consts
 
 	# Widest the full-cell-text popup gets (border included).
 	const int SPREADSHEET_MODAL_MAX_WIDTH = 70
+
+	# Decimal places formula results are shown with (see
+	# spreadsheet_round_places_from_lines) -- a .dpv can set its own on a
+	# "#round=N" first line, from 0 up to the max.
+	const int SPREADSHEET_DEFAULT_ROUND_PLACES = 2
+	const int SPREADSHEET_MAX_ROUND_PLACES = 10
+	const string SPREADSHEET_ROUND_PREFIX = "#round="

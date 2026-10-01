@@ -1,0 +1,70 @@
+
+# The settings row drawn above the sheet (see render_spreadsheet_settings_row)
+# -- for now just how many decimal places formula results round to. A
+# .dpv keeps it as its first line ("#round=2"), which isn't a sheet row;
+# a .csv can't hold that line without breaking the file for other
+# programs, so there it starts at SPREADSHEET_DEFAULT_ROUND_PLACES every
+# time the file is opened.
+
+# Whether this file saves its settings into its first line.
+fn bool spreadsheet_keeps_settings(string spreadsheet_path)
+	string spreadsheet_ext = f_extension(spreadsheet_path)
+	return spreadsheet_ext is "dpv"
+
+# 1 if `lines` starts with a settings line, otherwise 0 -- how far each
+# sheet row's line sits below its row index in `lines`.
+fn int spreadsheet_settings_line_count(string spreadsheet_path, stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	if not spreadsheet_keeps_settings(spreadsheet_path) or lines is empty
+		return 0
+	int first_idx = 0
+	string first_line = lines at first_idx
+	if s_starts_with(first_line, SPREADSHEET_ROUND_PREFIX)
+		return 1
+	return 0
+
+# The sheet's rows -- `lines` without the settings line, if there is one.
+fn csvRowList spreadsheet_parse_rows(string spreadsheet_path, stringList lines)
+	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	stringList sheet_lines = l_string_drop(lines, settings_count)
+	return csv_parse_lines(sheet_lines)
+
+# A .dpv's "#round=N", or the default when there's no (valid) settings line.
+fn int spreadsheet_round_places_from_lines(string spreadsheet_path, stringList lines)
+	unsafe_macro_run use_spreadsheet_consts
+	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	if settings_count is 0
+		return SPREADSHEET_DEFAULT_ROUND_PLACES
+	int first_idx = 0
+	string first_line = lines at first_idx
+	int value_start = s_char_count(SPREADSHEET_ROUND_PREFIX)
+	int line_length = s_char_count(first_line)
+	string value_text = s_substring(first_line, value_start, line_length)
+	int round_places = spreadsheet_parse_round_places(value_text)
+	if round_places < 0
+		return SPREADSHEET_DEFAULT_ROUND_PLACES
+	return round_places
+
+# "3" -> 3, or -1 unless it's a whole number from 0 to
+# SPREADSHEET_MAX_ROUND_PLACES.
+fn int spreadsheet_parse_round_places(string text)
+	unsafe_macro_run use_spreadsheet_consts
+	const string DECIMAL_POINT = "."
+	string trimmed = s_trim(text)
+	if not s_is_number(trimmed) or s_contains(trimmed, DECIMAL_POINT)
+		return 0 - 1
+	int round_places = c_string_to_int(trimmed)
+	if round_places < 0 or round_places > SPREADSHEET_MAX_ROUND_PLACES
+		return 0 - 1
+	return round_places
+
+# 2 -> "#round=2".
+fn string spreadsheet_settings_line(int round_places)
+	unsafe_macro_run use_spreadsheet_consts
+	string places_text = c_int_to_string(round_places)
+	return s_join([SPREADSHEET_ROUND_PREFIX, places_text])
+
+# `lines` with the settings line put in front.
+fn stringList spreadsheet_lines_with_settings_line(stringList lines, string setting_line)
+	stringList setting_lines = [setting_line]
+	return l_string_concat(setting_lines, lines)

@@ -19,10 +19,11 @@ macro sort_spreadsheet_on_shift_arrow
 	bool sort_descending = kind is "up"
 	macro_run sort_spreadsheet_by_selected_column
 
-# Ctrl+O -- shows the selected cell's full text (an empty sheet has none).
+# Ctrl+O -- shows the selected cell's full text (an empty sheet, or the
+# settings row, has none).
 macro open_spreadsheet_popup
 	int row_count = len(spreadsheet_rows)
-	if row_count > 0
+	if row_count > 0 and spreadsheet_sel_row >= 0
 		spreadsheet_modal_open = true
 
 macro scroll_spreadsheet_by_wheel

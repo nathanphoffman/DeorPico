@@ -1,3 +1,4 @@
+#round=3
 month,units_sold,unit_price,revenue,cost,profit,margin_pct,returns,growth_pct,check_profit,total
 1,1240,19.99,24787.60,15200.00,9587.60,38.68,31,0.00,=c4-c5,=+c
 2,1315,19.99,26286.85,15900.50,10386.35,39.51,28,6.05,=c4-c5,=+c

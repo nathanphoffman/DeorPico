@@ -1,12 +1,23 @@
 
-# Ends the edit, writing the typed text into the selected cell -- skipped
-# (and the buffer stays not-dirty) if the text didn't actually change.
+# Ends the edit, writing the typed text into the selected cell (or the
+# settings row's setting) -- skipped (and the buffer stays not-dirty) if
+# the text didn't actually change.
 macro commit_spreadsheet_edit
 	if spreadsheet_editing
 		spreadsheet_editing = false
-		string old_value = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
-		bool changed = spreadsheet_edit_buffer is not old_value
-		int line_count = len(lines)
-		if changed and spreadsheet_sel_row < line_count
-			macro_run write_edit_into_selected_cell
+		if spreadsheet_sel_row < 0
+			macro_run write_edit_into_round_setting
+		else
+			macro_run write_edit_if_cell_changed
 		spreadsheet_edit_buffer = ""
+
+# A .dpv's settings line sits above the sheet's rows in `lines`, so each
+# row's line is that much further down.
+macro write_edit_if_cell_changed
+	string old_value = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+	bool changed = spreadsheet_edit_buffer is not old_value
+	int line_count = len(lines)
+	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	int line_idx = spreadsheet_sel_row + settings_count
+	if changed and line_idx < line_count
+		macro_run write_edit_into_selected_cell

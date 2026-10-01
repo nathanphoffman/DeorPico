@@ -65,3 +65,20 @@ fn string s_format_number(float val)
 				}
 			}
 		}
+
+# `val` with exactly `places` decimals ("39.00" for 39 at 2 places) --
+# never "-0.00", and "#ERR" for a non-finite number.
+fn string s_format_fixed(float val, int places)
+	rust
+		{
+			if !val.is_finite() {
+				"#ERR".to_string()
+			} else {
+				let text = format!("{:.*}", places.max(0) as usize, val);
+				if text.starts_with('-') && text.chars().all(|c| c == '-' || c == '0' || c == '.') {
+					text[1..].to_string()
+				} else {
+					text
+				}
+			}
+		}

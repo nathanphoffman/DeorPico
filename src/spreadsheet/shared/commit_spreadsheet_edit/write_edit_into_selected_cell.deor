@@ -24,6 +24,6 @@ macro replace_selected_spreadsheet_row
 	updated_rows at spreadsheet_sel_row = row_cells
 	spreadsheet_rows = move updated_rows
 	stringList updated_lines = move lines
-	updated_lines at spreadsheet_sel_row = row_line
+	updated_lines at line_idx = row_line
 	lines = move updated_lines
 	dirty = true

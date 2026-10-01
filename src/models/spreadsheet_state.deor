@@ -47,3 +47,8 @@ struct SpreadsheetState
 	# True while the selected cell's full text is shown in a popup over the
 	# sheet (Ctrl+click or ^O) -- the next key or click closes it.
 	bool spreadsheet_modal_open
+
+	# Decimal places formula results are shown with -- edited on the
+	# settings row above the sheet (spreadsheet_sel_row -1) and, for a
+	# .dpv, saved as its first line. See src/spreadsheet/settings.deor.
+	int spreadsheet_round_places

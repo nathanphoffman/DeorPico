@@ -9,24 +9,36 @@
 
 # Works out what `cell` shows, then -- if that's a number -- adds it to
 # left_values so formulas further right can use it (a formula's result
-# counts as a numeric cell too).
+# counts as a numeric cell too, unrounded).
 macro add_cell_to_display_row
+	string cell_value = s_join([cell])
 	string shown = s_join([cell])
 	const string FORMULA_PREFIX = "="
 	string trimmed = s_trim(cell)
 	if s_starts_with(trimmed, FORMULA_PREFIX)
-		shown = spreadsheet_evaluate_formula(trimmed, left_values)
+		cell_value = spreadsheet_evaluate_formula(trimmed, left_values)
+		shown = spreadsheet_rounded_result(cell_value, round_places)
 	display_cells at end = shown
 
-	string shown_trimmed = s_trim(shown)
-	if s_is_number(shown_trimmed)
-		float shown_value = c_string_to_float(shown_trimmed)
-		left_values at end = shown_value
+	string value_trimmed = s_trim(cell_value)
+	if s_is_number(value_trimmed)
+		float number_value = c_string_to_float(value_trimmed)
+		left_values at end = number_value
 
-# Every cell of one row as it shows on screen, left to right.
-fn stringList spreadsheet_display_row(stringList row_cells)
+# Every cell of one row as it shows on screen, left to right -- formula
+# results shown with exactly `round_places` decimals, or as worked out
+# when it's -1.
+fn stringList spreadsheet_display_row(stringList row_cells, int round_places)
 	stringList display_cells = empty
 	floatList left_values = empty
 	for cell in row_cells
 		macro_run add_cell_to_display_row
 	return display_cells
+
+# A formula's result with exactly `round_places` decimals ("39" -> "39.00")
+# -- errors like #ERR, and anything when round_places is -1, unchanged.
+fn string spreadsheet_rounded_result(string result, int round_places)
+	if round_places < 0 or not s_is_number(result)
+		return result
+	float result_number = c_string_to_float(result)
+	return s_format_fixed(result_number, round_places)

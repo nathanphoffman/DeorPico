@@ -4,14 +4,18 @@ macro scroll_spreadsheet_to_selection
 	macro_run scroll_spreadsheet_rows_to_selection
 	macro_run scroll_spreadsheet_columns_to_selection
 
+# The settings row (-1) is always on screen, so selecting it scrolls back
+# to the header.
 macro scroll_spreadsheet_rows_to_selection
 	TermSize term_size = xt_size()
 	(rows) in term_size
 	int view_rows = spreadsheet_view_rows(rows)
-	if spreadsheet_sel_row < spreadsheet_scroll_row
-		spreadsheet_scroll_row = spreadsheet_sel_row
-	if spreadsheet_sel_row > spreadsheet_scroll_row + view_rows - 1
-		spreadsheet_scroll_row = spreadsheet_sel_row - view_rows + 1
+	int first_row = 0
+	int target_row = m_max(spreadsheet_sel_row, first_row)
+	if target_row < spreadsheet_scroll_row
+		spreadsheet_scroll_row = target_row
+	if target_row > spreadsheet_scroll_row + view_rows - 1
+		spreadsheet_scroll_row = target_row - view_rows + 1
 
 # Columns are different widths, so this steps the first drawn column right
 # one at a time until the selected cell's right edge fits (or it's the
@@ -20,7 +24,7 @@ macro scroll_spreadsheet_columns_to_selection
 	TermSize term_size = xt_size()
 	(cols, rows) in term_size
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
-	intList column_widths = spreadsheet_column_widths(spreadsheet_rows)
+	intList column_widths = spreadsheet_column_widths(spreadsheet_rows, spreadsheet_round_places)
 	int column_count = len(column_widths)
 
 	if spreadsheet_sel_col < spreadsheet_scroll_col

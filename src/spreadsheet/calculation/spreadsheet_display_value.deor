@@ -1,13 +1,15 @@
 
 # What one cell shows on screen -- its formula's result for a "=" cell,
 # its text otherwise -- or "" past the end of the sheet or of a short row.
-# Sorting and the full-text popup use this rather than the raw text.
+# Sorting and the full-text popup use this rather than the raw text -- a
+# result is unrounded here, so sorting goes by its exact value.
 fn string spreadsheet_display_value(csvRowList rows, int row_idx, int col_idx)
 	int row_count = len(rows)
 	if row_idx < 0 or row_idx >= row_count
 		return ""
 	stringList row_cells = rows at row_idx
-	stringList display_cells = spreadsheet_display_row(row_cells)
+	int round_places = 0 - 1
+	stringList display_cells = spreadsheet_display_row(row_cells, round_places)
 	int cell_count = len(display_cells)
 	if col_idx < 0 or col_idx >= cell_count
 		return ""

@@ -2,3 +2,4 @@ build/
 target/
 justfile.local
 deor_specification/
+samples/personal/

@@ -1,0 +1,28 @@
+
+# The settings row's edit: a whole number from 0 to
+# SPREADSHEET_MAX_ROUND_PLACES becomes the new rounding (saved into a
+# .dpv's first line); anything else is refused with a notice.
+macro write_edit_into_round_setting
+	unsafe_macro_run use_spreadsheet_consts
+	int typed_places = spreadsheet_parse_round_places(spreadsheet_edit_buffer)
+	if typed_places < 0
+		string max_text = c_int_to_string(SPREADSHEET_MAX_ROUND_PLACES)
+		notice = s_join(["Rounding has to be a whole number from 0 to ", max_text])
+		error = true
+	else if typed_places is not spreadsheet_round_places
+		spreadsheet_round_places = typed_places
+		if spreadsheet_keeps_settings(spreadsheet_path)
+			macro_run write_round_setting_into_lines
+
+# Replaces the .dpv's "#round=N" line, or adds one above the sheet.
+macro write_round_setting_into_lines
+	string setting_line = spreadsheet_settings_line(spreadsheet_round_places)
+	int settings_count = spreadsheet_settings_line_count(spreadsheet_path, lines)
+	stringList updated_lines = move lines
+	if settings_count > 0
+		int first_idx = 0
+		updated_lines at first_idx = setting_line
+	else
+		updated_lines = spreadsheet_lines_with_settings_line(updated_lines, setting_line)
+	lines = move updated_lines
+	dirty = true

@@ -12,13 +12,15 @@ fn int spreadsheet_column_count(csvRowList rows)
 	return widest
 
 # Screen rows available for sheet rows -- the spreadsheet view has no
-# minimap, lint popup or search bar, just the status and notice lines.
+# minimap, lint popup or search bar, just the status and notice lines,
+# plus the settings row pinned above the sheet.
 fn int spreadsheet_view_rows(int rows)
 	bool has_minimap = false
 	bool lint_output_visible = false
 	bool search_active = false
 	int reserved_rows = editor_reserved_rows(has_minimap, lint_output_visible, search_active)
-	return editor_view_rows(rows, reserved_rows)
+	int settings_rows = 1
+	return editor_view_rows(rows, reserved_rows) - settings_rows
 
 # Screen columns right of the sidebar -- shared by the renderer and the
 # scroll/mouse macros so they agree on what's actually drawn.
@@ -43,16 +45,16 @@ fn int spreadsheet_sidebar_width(int cols, int rows, bool sidebar_focused)
 	return cols - content_width
 
 # Each column's on-screen width: its widest cell as shown (a formula's
-# result, not its text -- header included), clamped to
-# SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
-fn intList spreadsheet_column_widths(csvRowList rows)
+# result rounded to `round_places`, not its text -- header included),
+# clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
+fn intList spreadsheet_column_widths(csvRowList rows, int round_places)
 	unsafe_macro_run use_spreadsheet_consts
 	int column_count = spreadsheet_column_count(rows)
 	intList widths = empty
 	for in range(column_count)
 		widths at end = SPREADSHEET_MIN_COLUMN_WIDTH
 	for raw_cells in rows
-		stringList row_cells = spreadsheet_display_row(raw_cells)
+		stringList row_cells = spreadsheet_display_row(raw_cells, round_places)
 		int cell_count = len(row_cells)
 		for col_idx in range(cell_count)
 			string cell = row_cells at col_idx
