@@ -1,0 +1,74 @@
+
+# Shift+Down / Shift+Up -- sorts every row below the header (row 0 is
+# always the header and never moves) by the selected cell's column.
+
+# Reorders spreadsheet_rows and the text buffer's `lines` together by the
+# same index order, so each row keeps its exact original line text (quoting
+# etc.) rather than being re-serialized. `sort_descending` is declared by
+# the caller. The selected cell stays at the same row/column position,
+# like a regular spreadsheet; marks the buffer dirty only if the order
+# actually changed.
+macro sort_spreadsheet_by_selected_column
+	int row_count = len(spreadsheet_rows)
+	int line_count = len(lines)
+	if row_count > 2 and line_count is row_count
+		intList sort_order = csv_sort_order(spreadsheet_rows, spreadsheet_sel_col, sort_descending)
+		csvRowList sorted_rows = empty
+		stringList sorted_lines = empty
+		bool order_changed = false
+		for position in range(row_count)
+			int source_idx = sort_order at position
+			stringList source_row = spreadsheet_rows at source_idx
+			string source_line = lines at source_idx
+			sorted_rows at end = source_row
+			sorted_lines at end = source_line
+			if source_idx is not position
+				order_changed = true
+		spreadsheet_rows = move sorted_rows
+		lines = move sorted_lines
+		if order_changed
+			dirty = true
+
+		int header_row = 0
+		string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+		string direction_text = "ascending"
+		if sort_descending
+			direction_text = "descending"
+		notice = s_join(["Sorted by ", header_name, " (", direction_text, ")"])
+		error = false
+
+# Row indices of `rows` in sorted order by column `col_idx`, with the
+# header (index 0) always first. Cells that both parse as numbers compare
+# numerically, otherwise as case-insensitive text; numbers sort before
+# text, and empty/missing cells always go last in either direction. The
+# sort is stable, so sorting by one column then another keeps ties in the
+# previous order.
+fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
+	rust
+		{
+			use std::cmp::Ordering;
+			let cell = |row: &Vec<String>| -> String {
+				row.get(col_idx as usize).map(|c| c.trim().to_string()).unwrap_or_default()
+			};
+			let mut order: Vec<i64> = (1..rows.len() as i64).collect();
+			order.sort_by(|&left, &right| {
+				let left_cell = cell(&rows[left as usize]);
+				let right_cell = cell(&rows[right as usize]);
+				match (left_cell.is_empty(), right_cell.is_empty()) {
+					(true, true) => return Ordering::Equal,
+					(true, false) => return Ordering::Greater,
+					(false, true) => return Ordering::Less,
+					_ => {}
+				}
+				let ordering = match (left_cell.parse::<f64>(), right_cell.parse::<f64>()) {
+					(Ok(left_num), Ok(right_num)) => left_num.partial_cmp(&right_num).unwrap_or(Ordering::Equal),
+					(Ok(_), Err(_)) => Ordering::Less,
+					(Err(_), Ok(_)) => Ordering::Greater,
+					_ => left_cell.to_lowercase().cmp(&right_cell.to_lowercase()),
+				};
+				if descending { ordering.reverse() } else { ordering }
+			});
+			let mut result: Vec<i64> = vec![0];
+			result.extend(order);
+			result
+		}

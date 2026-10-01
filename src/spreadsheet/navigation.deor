@@ -56,7 +56,13 @@ macro move_spreadsheet_selection
 	(rows) in term_size
 	int view_rows = spreadsheet_view_rows(rows)
 
-	if kind is "up"
+	if kind is "down" and shift
+		bool sort_descending = false
+		macro_run sort_spreadsheet_by_selected_column
+	else if kind is "up" and shift
+		bool sort_descending = true
+		macro_run sort_spreadsheet_by_selected_column
+	else if kind is "up"
 		spreadsheet_sel_row = spreadsheet_sel_row - 1
 	else if kind is "down" or kind is "enter"
 		spreadsheet_sel_row = spreadsheet_sel_row + 1

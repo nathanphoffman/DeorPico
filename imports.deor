@@ -47,6 +47,7 @@ import "src/spreadsheet/layout.deor"
 import "src/spreadsheet/csv_parse.deor"
 import "src/spreadsheet/mouse.deor"
 import "src/spreadsheet/editing.deor"
+import "src/spreadsheet/sorting.deor"
 import "src/spreadsheet/navigation.deor"
 import "src/spreadsheet/handle_key.deor"
 

@@ -82,9 +82,14 @@ macro render_spreadsheet_row
 			# Blue while typing into the cell (same as the search bar), reverse
 			# video while it's just selected.
 			if spreadsheet_editing
-				content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_RESET, after_sel])
+				content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_DEFAULT_BG, after_sel])
 			else
 				content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
+
+	# Row 0 is always the header -- bolded, and never moved by sorting
+	# (see sort_spreadsheet_by_selected_column).
+	if data_row is 0 and spreadsheet_row_count > 0
+		content = s_join([ANSI_BOLD_ON, content, ANSI_BOLD_OFF])
 
 	screen = s_join([screen, content])
 
@@ -126,7 +131,7 @@ macro render_spreadsheet_status_and_notice
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
-	string hint_text = "Enter edit  Del clear  ^S save  ^T text view"
+	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^S save  ^T text view"
 	if spreadsheet_editing
 		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
 	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- row ", row_text, ", col ", col_text, " -- ", hint_text])

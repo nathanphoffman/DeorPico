@@ -12,7 +12,7 @@ unsafe_macro unpack_spreadsheet_key_state
 	(sidebar_focused) in browser
 	(core) in main_panel
 	(lines, dirty) in core
-	(kind, chr, col, row) in key
+	(kind, chr, shift, col, row) in key
 
 # The reverse of unpack_spreadsheet_key_state -- leaves next_state ready
 # to return.

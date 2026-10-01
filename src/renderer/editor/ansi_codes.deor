@@ -15,3 +15,6 @@ unsafe_macro use_ansi_codes
 	const string ANSI_ERROR_BG = s_join([esc, "[48;5;52m"])
 	const string ANSI_REVERSE_ON = s_join([esc, "[7m"])
 	const string ANSI_REVERSE_OFF = s_join([esc, "[27m"])
+	const string ANSI_BOLD_ON = s_join([esc, "[1m"])
+	const string ANSI_BOLD_OFF = s_join([esc, "[22m"])
+	const string ANSI_DEFAULT_BG = s_join([esc, "[49m"])
