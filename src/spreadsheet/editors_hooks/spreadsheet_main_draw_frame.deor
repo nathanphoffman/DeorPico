@@ -1,7 +1,7 @@
 
 # Whether draw_frame (main.deor) should draw the spreadsheet instead of the
 # text editor: a .csv is open and ^T hasn't switched it to the text view.
-fn bool spreadsheet_is_showing(AppState state)
+fn bool spreadsheet_main_draw_frame(AppState state)
 	(spreadsheet) in state
 	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
 	return spreadsheet_active and spreadsheet_view_active

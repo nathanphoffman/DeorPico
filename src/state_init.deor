@@ -113,7 +113,7 @@ fn AppState editor_open(LaunchArgs launch)
 	unsafe_macro_run initialize_search
 	unsafe_macro_run initialize_filter
 	unsafe_macro_run initialize_lint
-	unsafe_macro_run spreadsheet_state_init
+	unsafe_macro_run spreadsheet_state_init_editor_open
 
 	done as false
 	notice as ""

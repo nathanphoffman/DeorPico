@@ -3,7 +3,7 @@
 # owns it (see spreadsheet_owns_key), otherwise the normal editor handler
 # does -- after any half-typed cell edit is committed, so e.g. ^S saves
 # what was typed.
-macro spreadsheet_route_key
+macro spreadsheet_main_main
 	if spreadsheet_owns_key(state, key)
 		state = spreadsheet_handle_key(state, key)
 	else

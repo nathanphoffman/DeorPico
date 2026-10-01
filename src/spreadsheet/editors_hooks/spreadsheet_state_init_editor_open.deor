@@ -1,7 +1,7 @@
 
 # The spreadsheet's part of editor_open (state_init.deor) -- declares
 # `spreadsheet` for the AppState being built there.
-unsafe_macro spreadsheet_state_init
+unsafe_macro spreadsheet_state_init_editor_open
 	SpreadsheetState spreadsheet = spreadsheet_for_file(filename, lines)
 
 # Fresh spreadsheet state for a just-opened file: spreadsheet-capable (and

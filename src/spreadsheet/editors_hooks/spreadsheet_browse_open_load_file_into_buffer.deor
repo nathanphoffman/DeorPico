@@ -2,5 +2,5 @@
 # The spreadsheet's part of load_file_into_buffer (browse_open.deor) --
 # every file open (sidebar, filter, F5 reload, ^Del discard, ...) starts
 # the sheet fresh for the new file, same as at launch.
-macro spreadsheet_browse_open
+macro spreadsheet_browse_open_load_file_into_buffer
 	spreadsheet = spreadsheet_for_file(filename, lines)

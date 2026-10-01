@@ -22,7 +22,7 @@ struct SpreadsheetState
 
 	# Which view is currently showing for a spreadsheet-capable file: true
 	# draws spreadsheet_render, false falls through to the normal editor.
-	# ^T (see toggle_spreadsheet_view_impl) is the only thing that flips
+	# ^T (see spreadsheet_handle_global_actions_handle_global_actions) is the only thing that flips
 	# this; opening any file resets it back to true (default to
 	# spreadsheet) regardless of what it was left at for the previous file.
 	bool spreadsheet_view_active

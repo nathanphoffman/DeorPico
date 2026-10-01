@@ -52,11 +52,14 @@ import "src/spreadsheet/editing.deor"
 import "src/spreadsheet/sorting.deor"
 import "src/spreadsheet/navigation.deor"
 import "src/spreadsheet/handle_key.deor"
-import "src/spreadsheet/spreadsheet_state_init.deor"
-import "src/spreadsheet/spreadsheet_browse_open.deor"
-import "src/spreadsheet/spreadsheet_view_toggle.deor"
-import "src/spreadsheet/spreadsheet_route_key.deor"
-import "src/spreadsheet/spreadsheet_is_showing.deor"
+
+# Spreadsheet hooks -- each one called from exactly one place in the
+# normal editor, named spreadsheet_{editor file}_{macro/fn it's called in}.
+import "src/spreadsheet/editors_hooks/spreadsheet_state_init_editor_open.deor"
+import "src/spreadsheet/editors_hooks/spreadsheet_browse_open_load_file_into_buffer.deor"
+import "src/spreadsheet/editors_hooks/spreadsheet_handle_global_actions_handle_global_actions.deor"
+import "src/spreadsheet/editors_hooks/spreadsheet_main_main.deor"
+import "src/spreadsheet/editors_hooks/spreadsheet_main_draw_frame.deor"
 
 # Per-key-action logic, organized by which part of the screen it affects --
 # events.deor macro_runs these directly, no pass-through layer.

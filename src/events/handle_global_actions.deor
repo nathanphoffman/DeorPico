@@ -6,7 +6,7 @@ macro handle_global_actions
 	else if kind is "diff_toggle"
 		macro_run toggle_diff_impl
 	else if kind is "spreadsheet_view_toggle"
-		macro_run spreadsheet_view_toggle
+		macro_run spreadsheet_handle_global_actions_handle_global_actions
 	else if kind is "escape" and search_active
 		macro_run search_clear_impl
 	else if kind is "toggle_line_numbers"

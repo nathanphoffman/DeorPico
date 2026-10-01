@@ -1,7 +1,7 @@
 
 # ^T (see handle_global_actions) -- swaps the main panel between the
 # spreadsheet and the normal text editor for the currently open .csv.
-macro spreadsheet_view_toggle
+macro spreadsheet_handle_global_actions_handle_global_actions
 	spreadsheet = spreadsheet_toggled_view(spreadsheet, lines)
 
 # No-op on a non-.csv file (spreadsheet_active false) since there's

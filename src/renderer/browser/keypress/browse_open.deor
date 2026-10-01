@@ -44,7 +44,7 @@ macro load_file_into_buffer
 	if diffing
 		macro_run refresh_diff_for_new_file
 
-	macro_run spreadsheet_browse_open
+	macro_run spreadsheet_browse_open_load_file_into_buffer
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

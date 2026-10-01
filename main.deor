@@ -83,7 +83,7 @@ macro rehighlight_if_dirty
 macro draw_frame
 	if diffing
 		editor_render_diff(state)
-	else if spreadsheet_is_showing(state)
+	else if spreadsheet_main_draw_frame(state)
 		spreadsheet_render(state)
 	else
 		# Only color the rows that can actually be on screen this frame
@@ -147,7 +147,7 @@ fn void main()
 		(lint_running) in lint
 		bool was_lint_running = lint_running
 
-		macro_run spreadsheet_route_key
+		macro_run spreadsheet_main_main
 		(done) in state
 		if done
 			break
