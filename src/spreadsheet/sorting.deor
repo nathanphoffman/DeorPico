@@ -2,76 +2,69 @@
 # Shift+Down / Shift+Up -- sorts every row below the header (row 0 is
 # always the header and never moves) by the selected cell's column.
 
-# Reorders spreadsheet_rows and the text buffer's `lines` together by the
-# same index order, so each row keeps its exact original line text (quoting
-# etc.) rather than being re-serialized. `sort_descending` is declared by
-# the caller. The selected cell stays at the same row/column position,
-# like a regular spreadsheet; marks the buffer dirty only if the order
-# actually changed.
+# `sort_descending` is declared by the caller. The selected cell stays at
+# the same row/column position, like a regular spreadsheet. Skipped when
+# there's nothing to sort, or if the rows somehow don't line up 1:1 with
+# `lines` (see csv_parse_lines).
 macro sort_spreadsheet_by_selected_column
 	int row_count = len(spreadsheet_rows)
 	int line_count = len(lines)
 	if row_count > 2 and line_count is row_count
 		intList sort_order = csv_sort_order(spreadsheet_rows, spreadsheet_sel_col, sort_descending)
-		csvRowList sorted_rows = empty
-		stringList sorted_lines = empty
-		bool order_changed = false
-		for position in range(row_count)
-			int source_idx = sort_order at position
-			stringList source_row = spreadsheet_rows at source_idx
-			string source_line = lines at source_idx
-			sorted_rows at end = source_row
-			sorted_lines at end = source_line
-			if source_idx is not position
-				order_changed = true
-		spreadsheet_rows = move sorted_rows
-		lines = move sorted_lines
-		if order_changed
-			dirty = true
+		macro_run reorder_spreadsheet_rows_and_lines
+		macro_run announce_spreadsheet_sort
 
-		int header_row = 0
-		string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
-		string direction_text = "ascending"
-		if sort_descending
-			direction_text = "descending"
-		notice = s_join(["Sorted by ", header_name, " (", direction_text, ")"])
-		error = false
+# Reorders spreadsheet_rows and the text buffer's `lines` together by
+# `sort_order`, so each row keeps its exact original line text (quoting
+# etc.) rather than being re-serialized. Marks the buffer dirty only if
+# the order actually changed.
+macro reorder_spreadsheet_rows_and_lines
+	csvRowList sorted_rows = empty
+	stringList sorted_lines = empty
+	bool order_changed = false
+	for position in range(row_count)
+		int source_idx = sort_order at position
+		stringList source_row = spreadsheet_rows at source_idx
+		string source_line = lines at source_idx
+		sorted_rows at end = source_row
+		sorted_lines at end = source_line
+		if source_idx is not position
+			order_changed = true
+	spreadsheet_rows = move sorted_rows
+	lines = move sorted_lines
+	if order_changed
+		dirty = true
 
-# Row indices of `rows` in sorted order by column `col_idx`, with the
-# header (index 0) always first. Each data row lands in one of three
-# groups by its cell: numbers (compared numerically), text (compared
-# case-insensitively) and empty/missing (always last, in original order).
-# Ascending puts numbers before text, descending text before numbers.
-# The sorts are stable (see l_sort_indices_by_*), so sorting by one
-# column then another keeps ties in the previous order.
-fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
-	intList number_indices = empty
-	floatList number_keys = empty
-	intList text_indices = empty
-	stringList text_keys = empty
-	intList empty_indices = empty
+# "Sorted by salary (ascending)" in the notice line.
+macro announce_spreadsheet_sort
+	int header_row = 0
+	string header_name = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+	string direction_text = "ascending"
+	if sort_descending
+		direction_text = "descending"
+	notice = s_join(["Sorted by ", header_name, " (", direction_text, ")"])
+	error = false
 
-	int row_count = len(rows)
-	int start = 1
-	for row_idx in range(start, row_count)
-		string raw_cell = spreadsheet_cell_value(rows, row_idx, col_idx)
-		string cell = s_trim(raw_cell)
-		if cell is ""
-			empty_indices at end = row_idx
-		else if s_is_number(cell)
-			float number_key = c_string_to_float(cell)
-			number_indices at end = row_idx
-			number_keys at end = number_key
-		else
-			string text_key = s_to_lower(cell)
-			text_indices at end = row_idx
-			text_keys at end = text_key
+# Puts row `row_idx` into one of csv_sort_order's three groups by its cell
+# in column `col_idx`: empty, a number (keyed by its value) or text (keyed
+# by its lowercase form).
+macro add_row_to_sort_group
+	string raw_cell = spreadsheet_cell_value(rows, row_idx, col_idx)
+	string cell = s_trim(raw_cell)
+	if cell is ""
+		empty_indices at end = row_idx
+	else if s_is_number(cell)
+		float number_key = c_string_to_float(cell)
+		number_indices at end = row_idx
+		number_keys at end = number_key
+	else
+		string text_key = s_to_lower(cell)
+		text_indices at end = row_idx
+		text_keys at end = text_key
 
-	intList sorted_numbers = l_sort_indices_by_float(number_indices, number_keys, descending)
-	intList sorted_text = l_sort_indices_by_string(text_indices, text_keys, descending)
-
-	intList order = empty
-	order at end = 0
+# Joins the sorted groups after the header: numbers then text ascending,
+# text then numbers descending, and empty cells always last.
+macro append_sort_groups_in_order
 	intList first_group = sorted_numbers
 	intList second_group = sorted_text
 	if descending
@@ -83,4 +76,26 @@ fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
 		order at end = row_idx
 	for row_idx in empty_indices
 		order at end = row_idx
+
+# Row indices of `rows` in sorted order by column `col_idx`, with the
+# header (index 0) always first. Numbers compare numerically, text
+# case-insensitively. The sorts are stable (see l_sort_indices_by_*), so
+# sorting by one column then another keeps ties in the previous order.
+fn intList csv_sort_order(csvRowList rows, int col_idx, bool descending)
+	intList number_indices = empty
+	floatList number_keys = empty
+	intList text_indices = empty
+	stringList text_keys = empty
+	intList empty_indices = empty
+	int row_count = len(rows)
+	int start = 1
+	for row_idx in range(start, row_count)
+		macro_run add_row_to_sort_group
+
+	intList sorted_numbers = l_sort_indices_by_float(number_indices, number_keys, descending)
+	intList sorted_text = l_sort_indices_by_string(text_indices, text_keys, descending)
+
+	intList order = empty
+	order at end = 0
+	macro_run append_sort_groups_in_order
 	return order

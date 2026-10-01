@@ -38,21 +38,30 @@ fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
 	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
 	(kind, col) in key
 
-	if not spreadsheet_active or not spreadsheet_view_active or diffing
+	bool sheet_showing = spreadsheet_active and spreadsheet_view_active
+	if diffing or not sheet_showing
 		return false
-
 	if kind is "mouse_down"
-		TermSize term_size = xt_size()
-		(cols, rows) in term_size
-		int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
-		return col >= sidebar_width
-
+		return spreadsheet_click_is_on_sheet(col, sidebar_focused)
 	if sidebar_focused
 		return false
+	return not spreadsheet_key_is_editor_action(kind)
 
-	if kind is "tick" or kind is "quit" or kind is "save" or kind is "discard_changes" or kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
-		return false
-	return true
+# Whether a click at terminal column `col` lands right of the sidebar.
+fn bool spreadsheet_click_is_on_sheet(int col, bool sidebar_focused)
+	TermSize term_size = xt_size()
+	(cols, rows) in term_size
+	int sidebar_width = spreadsheet_sidebar_width(cols, rows, sidebar_focused)
+	return col >= sidebar_width
+
+# App-wide actions the normal editor handler already owns, even while the
+# sheet is showing.
+fn bool spreadsheet_key_is_editor_action(string kind)
+	if kind is "tick" or kind is "quit" or kind is "save" or kind is "discard_changes"
+		return true
+	if kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
+		return true
+	return false
 
 # The spreadsheet's own key handler -- leaves the rest of the text
 # editor's state untouched.

@@ -18,6 +18,17 @@ macro csv_read_quoted_char
 	else
 		current = s_join([current, chr])
 
+# One character outside quotes: a quote starts a quoted section, a comma
+# ends the current cell, anything else is part of the cell.
+macro csv_read_unquoted_char
+	if chr is QUOTE
+		in_quotes = true
+	else if chr is COMMA
+		cells at end = current
+		current = ""
+	else
+		current = s_join([current, chr])
+
 # Which file extensions open into the spreadsheet view instead of the
 # normal text editor -- checked both at launch (state_init.deor) and on
 # every mid-session file open (load_file_into_buffer in browser/keypress/browse_open.deor).
@@ -59,13 +70,8 @@ fn stringList csv_split_line(string line)
 			string chr = line_chars at idx
 			if in_quotes
 				macro_run csv_read_quoted_char
-			else if chr is QUOTE
-				in_quotes = true
-			else if chr is COMMA
-				cells at end = current
-				current = ""
 			else
-				current = s_join([current, chr])
+				macro_run csv_read_unquoted_char
 	cells at end = current
 	return cells
 
