@@ -107,7 +107,8 @@ unsafe_macro initialize_spreadsheet
 	spreadsheet_scroll_col as 0
 	spreadsheet_editing as false
 	string spreadsheet_edit_buffer = ""
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer)
+	spreadsheet_modal_open as false
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open)
 
 unsafe_macro initialize_filter
 	filter_active as false

@@ -29,6 +29,9 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "stage_toggle"
 		else if chr is "t"
 			kind = "spreadsheet_view_toggle"
+		# Spreadsheet view only: shows the selected cell's full text.
+		else if chr is "o"
+			kind = "open_cell"
 		else if chr is "a"
 			kind = "select_all"
 		# Context-dependent: opens the search bar in the main editor view

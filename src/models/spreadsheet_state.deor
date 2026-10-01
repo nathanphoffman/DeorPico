@@ -43,3 +43,7 @@ struct SpreadsheetState
 	# Escape throws it away. See src/spreadsheet/editing.deor.
 	bool spreadsheet_editing
 	string spreadsheet_edit_buffer
+
+	# True while the selected cell's full text is shown in a popup over the
+	# sheet (Ctrl+click or ^O) -- the next key or click closes it.
+	bool spreadsheet_modal_open

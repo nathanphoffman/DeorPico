@@ -1,8 +1,8 @@
 
 # Spreadsheet view (opened for .csv files, see f_is_spreadsheet_ext) --
 # renders the sidebar exactly like the normal editor view, and one
-# spreadsheet_rows row per screen row in the content area, laid out in
-# fixed-width cells (no per-column width computation yet), scrolled so the
+# spreadsheet_rows row per screen row in the content area, each column
+# auto-sized to its data (see spreadsheet_column_widths), scrolled so the
 # selected cell stays visible (see scroll_spreadsheet_to_selection). Owns a
 # full self-contained render path rather than sharing render_buffer_rows'
 # fused loop, same as the diff view does (see editor_render_diff in
@@ -15,7 +15,8 @@ unsafe_macro setup_spreadsheet_view_layout
 	(cols, rows) in term_size
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
 	int sidebar_width = cols - content_width
-	int visible_cols = spreadsheet_visible_columns(content_width)
+	int view_rows = spreadsheet_view_rows(rows)
+	intList column_widths = spreadsheet_column_widths(spreadsheet_rows)
 
 	string screen = ANSI_HOME
 
@@ -26,65 +27,141 @@ macro render_spreadsheet_sidebar_column
 	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, filter_active, filter_matches)
 	screen = s_join([screen, sidebar_row_piece(row_input)])
 
+# The full-text popup (Ctrl+click / ^O): the selected cell's text wrapped
+# into a bordered box centered over the sheet, titled with that column's
+# header. Leaves modal_lines empty while the popup is closed --
+# render_spreadsheet_row overlays modal_lines onto the rows it covers.
+unsafe_macro setup_spreadsheet_modal
+	stringList modal_lines = empty
+	int modal_left = 0
+	int modal_top = 0
+	int modal_box_width = 0
+	if spreadsheet_modal_open
+		int header_row = 0
+		string modal_text = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+		string modal_title = spreadsheet_cell_value(spreadsheet_rows, header_row, spreadsheet_sel_col)
+
+		# As narrow as the text needs (but room for the title), no wider
+		# than SPREADSHEET_MODAL_MAX_WIDTH or the sheet area itself.
+		const int BORDER_WIDTH = 4
+		const int MIN_INNER_WIDTH = 20
+		int inner_width = s_char_count(modal_text)
+		int title_width = s_char_count(modal_title) + BORDER_WIDTH
+		inner_width = m_max(inner_width, title_width)
+		inner_width = m_max(inner_width, MIN_INNER_WIDTH)
+		int max_inner_width = SPREADSHEET_MODAL_MAX_WIDTH - BORDER_WIDTH
+		int fit_inner_width = content_width - BORDER_WIDTH - 2
+		inner_width = m_min(inner_width, max_inner_width)
+		inner_width = m_min(inner_width, fit_inner_width)
+		if inner_width < 1
+			inner_width = 1
+		modal_box_width = inner_width + BORDER_WIDTH
+
+		# Rows past what fits on screen are dropped, with "…" on the last one kept.
+		stringList body_lines = spreadsheet_wrap_text(modal_text, inner_width)
+		int max_body_lines = view_rows - 2
+		int body_count = len(body_lines)
+		if body_count > max_body_lines and max_body_lines > 0
+			stringList kept_lines = empty
+			for keep_idx in range(max_body_lines)
+				string kept_line = body_lines at keep_idx
+				kept_lines at end = kept_line
+			int last_kept = max_body_lines - 1
+			string last_line = kept_lines at last_kept
+			int cut_width = inner_width - 1
+			string cut_line = spreadsheet_fit_cell(last_line, cut_width)
+			kept_lines at last_kept = s_join([cut_line, "…"])
+			body_lines = kept_lines
+
+		const string FOOTER = "any key closes"
+		bool is_top = true
+		string top_border = spreadsheet_modal_border(modal_title, inner_width, is_top)
+		is_top = false
+		string bottom_border = spreadsheet_modal_border(FOOTER, inner_width, is_top)
+		modal_lines at end = top_border
+		for body_line in body_lines
+			string padded_body = s_pad_right(body_line, inner_width)
+			modal_lines at end = s_join(["│ ", padded_body, " │"])
+		modal_lines at end = bottom_border
+
+		int modal_height = len(modal_lines)
+		modal_left = (content_width - modal_box_width) / 2
+		modal_top = (view_rows - modal_height) / 2
+		if modal_top < 0
+			modal_top = 0
+
 # Content column piece for the current row_offset -- the cells of
 # spreadsheet_rows at (spreadsheet_scroll_row + row_offset), starting from
-# spreadsheet_scroll_col, each padded to SPREADSHEET_COLUMN_WIDTH between
+# spreadsheet_scroll_col, each padded to its column's width between
 # separators; blank once past the sheet's last row. Built as plain text
-# first so truncating/padding to content_width can use len(), then the
-# selected cell's span gets wrapped in reverse video afterward.
+# first so truncating/padding to content_width works on character counts,
+# then the selected cell's span gets colored (or the popup's line drawn
+# over it) afterward.
 macro render_spreadsheet_row
-	int separator_width = len(SPREADSHEET_SEPARATOR)
-	int cell_stride = SPREADSHEET_COLUMN_WIDTH + separator_width
+	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
 	int data_row = spreadsheet_scroll_row + row_offset
+	int sel_start = 0 - 1
+	int sel_stop = 0 - 1
 
 	string content = ""
 	if data_row < spreadsheet_row_count
 		stringList row_cells = spreadsheet_rows at data_row
 		int cell_count = len(row_cells)
 
-		# One extra column past what fully fits, so a partly visible cell
-		# at the right edge still shows its start.
-		int draw_count = spreadsheet_column_count_all - spreadsheet_scroll_col
-		if draw_count > visible_cols + 1
-			draw_count = visible_cols + 1
-
 		content = s_join([SPREADSHEET_SEPARATOR])
-		for draw_idx in range(draw_count)
-			int col_idx = spreadsheet_scroll_col + draw_idx
+		int content_x = separator_width
+		int start = spreadsheet_scroll_col
+		int stop = spreadsheet_column_count_all
+		for col_idx in range(start, stop)
+			# Drawing stops once past the right edge -- the cell that
+			# straddles it still shows its start.
+			if content_x >= content_width
+				break
+			int col_width = column_widths at col_idx
 			string cell_content = ""
 			bool is_edit_cell = spreadsheet_editing and data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
 			if is_edit_cell
-				cell_content = spreadsheet_edit_display(spreadsheet_edit_buffer)
+				cell_content = spreadsheet_edit_display(spreadsheet_edit_buffer, col_width)
 			else if col_idx < cell_count
 				string raw_cell = row_cells at col_idx
-				cell_content = format_cell(row_cells, raw_cell, col_idx)
-			if len(cell_content) > SPREADSHEET_COLUMN_WIDTH
-				cell_content = "ERROR"
-			cell_content = s_pad_right(cell_content, SPREADSHEET_COLUMN_WIDTH)
+				string formatted_cell = format_cell(row_cells, raw_cell, col_idx)
+				cell_content = spreadsheet_fit_cell(formatted_cell, col_width)
+			cell_content = s_pad_right(cell_content, col_width)
+			if data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
+				sel_start = content_x
+				sel_stop = content_x + col_width
 			content = s_join([content, cell_content, SPREADSHEET_SEPARATOR])
+			content_x = content_x + col_width + separator_width
 
-	if len(content) > content_width
+	int content_length = s_char_count(content)
+	if content_length > content_width
 		int trunc_start = 0
 		content = s_substring(content, trunc_start, content_width)
 	content = s_pad_right(content, content_width)
 
-	bool is_selected_row = data_row is spreadsheet_sel_row and data_row < spreadsheet_row_count
-	if is_selected_row and spreadsheet_sel_col >= spreadsheet_scroll_col
-		int sel_start = separator_width + (spreadsheet_sel_col - spreadsheet_scroll_col) * cell_stride
-		int sel_stop = sel_start + SPREADSHEET_COLUMN_WIDTH
+	int line_start = 0
+	int modal_line_idx = row_offset - modal_top
+	int modal_line_count = len(modal_lines)
+	if modal_line_idx >= 0 and modal_line_idx < modal_line_count
+		# The popup covers this row -- draw its line over the sheet and skip
+		# the selection color (the popup has the focus).
+		string modal_line = modal_lines at modal_line_idx
+		int modal_right = modal_left + modal_box_width
+		string before_modal = s_substring(content, line_start, modal_left)
+		string after_modal = s_substring(content, modal_right, content_width)
+		content = s_join([before_modal, ANSI_STATUS_BG, modal_line, ANSI_DEFAULT_BG, after_modal])
+	else if sel_start >= 0 and sel_start < content_width
 		if sel_stop > content_width
 			sel_stop = content_width
-		if sel_start < content_width
-			int line_start = 0
-			string before_sel = s_substring(content, line_start, sel_start)
-			string sel_text = s_substring(content, sel_start, sel_stop)
-			string after_sel = s_substring(content, sel_stop, content_width)
-			# Blue while typing into the cell (same as the search bar), reverse
-			# video while it's just selected.
-			if spreadsheet_editing
-				content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_DEFAULT_BG, after_sel])
-			else
-				content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
+		string before_sel = s_substring(content, line_start, sel_start)
+		string sel_text = s_substring(content, sel_start, sel_stop)
+		string after_sel = s_substring(content, sel_stop, content_width)
+		# Blue while typing into the cell (same as the search bar), reverse
+		# video while it's just selected.
+		if spreadsheet_editing
+			content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_DEFAULT_BG, after_sel])
+		else
+			content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
 
 	# Row 0 is always the header -- bolded, and never moved by sorting
 	# (see sort_spreadsheet_by_selected_column).
@@ -96,7 +173,6 @@ macro render_spreadsheet_row
 # Iterates every visible row, appending the sidebar column then the content
 # column, same shape as render_buffer_rows' main loop.
 macro render_spreadsheet_rows
-	int view_rows = spreadsheet_view_rows(rows)
 
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
@@ -131,11 +207,12 @@ macro render_spreadsheet_status_and_notice
 	string modified_text = ""
 	if dirty
 		modified_text = " [modified]"
-	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^S save  ^T text view"
+	string hint_text = "Enter edit  Del clear  Shift+Up/Down sort  ^O/Ctrl+click full text  ^S save  ^T text view"
 	if spreadsheet_editing
 		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
 	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- row ", row_text, ", col ", col_text, " -- ", hint_text])
-	if len(status_line) > cols
+	int status_length = s_char_count(status_line)
+	if status_length > cols
 		int status_trunc_start = 0
 		status_line = s_substring(status_line, status_trunc_start, cols)
 	string status_padded = s_pad_right(status_line, cols)
@@ -153,7 +230,7 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer, spreadsheet_modal_open) in spreadsheet
 	(main_panel) in state
 	(core) in main_panel
 	(dirty) in core
@@ -162,21 +239,90 @@ fn void spreadsheet_render(AppState state)
 	unsafe_macro_run use_ansi_codes
 
 	unsafe_macro_run setup_spreadsheet_view_layout
+	unsafe_macro_run setup_spreadsheet_modal
 	macro_run render_spreadsheet_rows
 	macro_run render_spreadsheet_status_and_notice
 
 	xt_flush_print(screen)
 
 # What the cell being edited shows: the typed text plus a "_" cursor,
-# keeping only the end of the text once it's wider than the cell so the
+# keeping only the end of the text once it's wider than the column so the
 # cursor stays in view.
-fn string spreadsheet_edit_display(string edit_buffer)
-	unsafe_macro_run use_consts
+fn string spreadsheet_edit_display(string edit_buffer, int col_width)
 	const string CURSOR = "_"
 	string shown = s_join([edit_buffer, CURSOR])
-	stringList shown_chars = s_chars(shown)
-	int shown_count = len(shown_chars)
-	if shown_count > SPREADSHEET_COLUMN_WIDTH
-		int tail_start = shown_count - SPREADSHEET_COLUMN_WIDTH
+	int shown_count = s_char_count(shown)
+	if shown_count > col_width
+		int tail_start = shown_count - col_width
 		shown = s_substring(shown, tail_start, shown_count)
 	return shown
+
+# Cuts a cell's text down to `col_width` characters, ending in "…" when
+# anything was cut off.
+fn string spreadsheet_fit_cell(string cell, int col_width)
+	int cell_count = s_char_count(cell)
+	if cell_count <= col_width
+		return cell
+	if col_width < 1
+		return ""
+	int text_start = 0
+	int keep_count = col_width - 1
+	string kept = s_substring(cell, text_start, keep_count)
+	return s_join([kept, "…"])
+
+# Splits `text` into lines of at most `width` characters, breaking between
+# words where it can and mid-word only for a word longer than a whole line.
+fn stringList spreadsheet_wrap_text(string text, int width)
+	const string SPACE = " "
+	stringList wrapped = empty
+	string current = ""
+	int current_count = 0
+	stringList words = s_split(text, SPACE)
+	for word in words
+		string remaining = s_join([word])
+		int word_count = s_char_count(remaining)
+		for if word_count > width
+			if current_count > 0
+				wrapped at end = current
+				current = ""
+				current_count = 0
+			int head_start = 0
+			string head = s_substring(remaining, head_start, width)
+			wrapped at end = head
+			remaining = s_substring(remaining, width, word_count)
+			word_count = word_count - width
+		int joined_count = current_count + 1 + word_count
+		if current_count is 0
+			current = remaining
+			current_count = word_count
+		else if joined_count > width
+			wrapped at end = current
+			current = remaining
+			current_count = word_count
+		else
+			current = s_join([current, SPACE, remaining])
+			current_count = joined_count
+	int wrapped_count = len(wrapped)
+	if current_count > 0 or wrapped_count is 0
+		wrapped at end = current
+	return wrapped
+
+# One horizontal border of the popup, `label` set into it near the left:
+# "┌─ label ───┐" on top, "└─ label ───┘" on the bottom. Exactly
+# inner_width + 4 characters, the same as each "│ text │" line.
+fn string spreadsheet_modal_border(string label, int inner_width, bool is_top)
+	string left_corner = "└─"
+	string right_corner = "┘"
+	if is_top
+		left_corner = "┌─"
+		right_corner = "┐"
+	int label_room = inner_width - 1
+	string fitted_label = spreadsheet_fit_cell(label, label_room)
+	string label_part = s_join([" ", fitted_label, " "])
+	int label_count = s_char_count(label_part)
+	int fill_count = inner_width + 1 - label_count
+	if fill_count < 0
+		fill_count = 0
+	string dash = "─"
+	string fill = s_repeat(dash, fill_count)
+	return s_join([left_corner, label_part, fill, right_corner])

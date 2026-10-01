@@ -41,3 +41,9 @@ fn string s_word_at(string line, int col)
 fn bool s_is_number(string str)
 	rust
 		str.trim().parse::<f64>().is_ok()
+
+# Number of characters (not bytes, which len() counts) -- so text with
+# accented letters or symbols like "…" still lines up on screen.
+fn int s_char_count(string str)
+	rust
+		str.chars().count() as i64

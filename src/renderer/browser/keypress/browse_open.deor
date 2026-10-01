@@ -59,6 +59,7 @@ macro load_file_into_buffer
 	spreadsheet_scroll_col = 0
 	spreadsheet_editing = false
 	spreadsheet_edit_buffer = ""
+	spreadsheet_modal_open = false
 
 # Ctrl+Delete -- reloads the current file from disk, discarding unsaved edits,
 # so a navigation blocked by notify_unsaved_changes can proceed afterward.

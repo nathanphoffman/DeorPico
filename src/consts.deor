@@ -30,11 +30,18 @@ unsafe_macro use_consts
 	# vertical scrollbar (see scrollbar.deor).
 	const int SCROLLBAR_WIDTH = 1
 
-	# Fixed on-screen width of every spreadsheet cell, and the separator
-	# drawn before/after each one -- shared by spreadsheet_render and the
+	# Spreadsheet columns auto-size to their widest cell (see
+	# spreadsheet_column_widths), kept within these bounds -- a cell wider
+	# than the max is cut off with "…" (Ctrl+click / ^O shows it in full).
+	const int SPREADSHEET_MIN_COLUMN_WIDTH = 3
+	const int SPREADSHEET_MAX_COLUMN_WIDTH = 30
+
+	# Drawn before/after every cell -- shared by spreadsheet_render and the
 	# spreadsheet mouse handler so a click maps onto the cell actually drawn.
-	const int SPREADSHEET_COLUMN_WIDTH = 20
 	const string SPREADSHEET_SEPARATOR = " | "
+
+	# Widest the full-cell-text popup gets (border included).
+	const int SPREADSHEET_MODAL_MAX_WIDTH = 70
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,

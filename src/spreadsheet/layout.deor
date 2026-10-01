@@ -42,13 +42,49 @@ fn int spreadsheet_sidebar_width(int cols, int rows, bool sidebar_focused)
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
 	return cols - content_width
 
-# How many whole cells fit in content_width (at least 1, so a very narrow
-# terminal still scrolls one column at a time).
-fn int spreadsheet_visible_columns(int content_width)
+# Each column's on-screen width: its widest cell (header included),
+# clamped to SPREADSHEET_MIN/MAX_COLUMN_WIDTH.
+fn intList spreadsheet_column_widths(csvRowList rows)
 	unsafe_macro_run use_consts
-	int separator_width = len(SPREADSHEET_SEPARATOR)
-	int cell_stride = SPREADSHEET_COLUMN_WIDTH + separator_width
-	int visible_cols = (content_width - separator_width) / cell_stride
-	if visible_cols < 1
-		visible_cols = 1
-	return visible_cols
+	int column_count = spreadsheet_column_count(rows)
+	intList widths = empty
+	for in range(column_count)
+		widths at end = SPREADSHEET_MIN_COLUMN_WIDTH
+	for row_cells in rows
+		int cell_count = len(row_cells)
+		for col_idx in range(cell_count)
+			string cell = row_cells at col_idx
+			int cell_width = s_char_count(cell)
+			int current_width = widths at col_idx
+			if cell_width > current_width
+				if cell_width > SPREADSHEET_MAX_COLUMN_WIDTH
+					cell_width = SPREADSHEET_MAX_COLUMN_WIDTH
+				widths at col_idx = cell_width
+	return widths
+
+# Content-area x where column `col_idx`'s text starts, with `scroll_col`
+# as the first column drawn. Each column is drawn as SEPARATOR + cell, so
+# the first one starts right after the leading separator.
+fn int spreadsheet_cell_left_x(intList widths, int scroll_col, int col_idx)
+	unsafe_macro_run use_consts
+	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
+	int left_x = separator_width
+	for walk_col in range(scroll_col, col_idx)
+		int walk_width = widths at walk_col
+		left_x = left_x + walk_width + separator_width
+	return left_x
+
+# The column under content-area x `content_x` -- a click on a separator
+# counts toward the cell to its left, and anything past the last column
+# resolves to the last column.
+fn int spreadsheet_column_at_x(intList widths, int scroll_col, int content_x)
+	unsafe_macro_run use_consts
+	int separator_width = s_char_count(SPREADSHEET_SEPARATOR)
+	int column_count = len(widths)
+	int right_x = separator_width
+	for col_idx in range(scroll_col, column_count)
+		int col_width = widths at col_idx
+		right_x = right_x + col_width + separator_width
+		if content_x < right_x
+			return col_idx
+	return column_count - 1

@@ -210,9 +210,14 @@ fn KeyEvent xt_read_key()
 
 				let alt = m.modifiers.contains(crossterm::event::KeyModifiers::ALT);
 				let shift = m.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
+				// KeyEvent has no ctrl flag, and mouse events never use chr
+				// otherwise -- so a ctrl-held click carries chr "ctrl" instead
+				// of growing the struct (see spreadsheet_mouse_down).
+				let ctrl = m.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+				let click_chr = if ctrl { "ctrl".to_string() } else { String::new() };
 				match m.kind {
 					crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) =>
-						break KeyEvent { kind: "mouse_down".to_string(), chr: String::new(), shift, col, alt, row },
+						break KeyEvent { kind: "mouse_down".to_string(), chr: click_chr, shift, col, alt, row },
 					crossterm::event::MouseEventKind::Up(crossterm::event::MouseButton::Left) =>
 						break KeyEvent { kind: "mouse_up".to_string(), chr: String::new(), shift, col, alt, row },
 					crossterm::event::MouseEventKind::Drag(crossterm::event::MouseButton::Left) =>

@@ -10,10 +10,20 @@ macro toggle_spreadsheet_view_impl
 		if spreadsheet_view_active
 			spreadsheet_rows = csv_parse_lines(lines)
 
-# Every key spreadsheet_handle_key receives -- edits the selected cell or
-# moves the selection. Kinds not listed here (cut/paste/undo, ...) are
-# dropped on purpose: they'd act on the text buffer behind the sheet.
+# Every key spreadsheet_handle_key receives. While the full-text popup is
+# open, any key or click just closes it -- except the mouse_up/mouse_drag
+# that finish the very Ctrl+click that opened it.
 macro handle_spreadsheet_mode
+	if spreadsheet_modal_open
+		if kind is not "mouse_up" and kind is not "mouse_drag"
+			spreadsheet_modal_open = false
+	else
+		macro_run handle_spreadsheet_action
+
+# Edits the selected cell or moves the selection. Kinds not listed here
+# (cut/paste/undo, ...) are dropped on purpose: they'd act on the text
+# buffer behind the sheet.
+macro handle_spreadsheet_action
 	# Mid-edit, typing keys change the edit text; any other key commits the
 	# edit first and then still does its normal move below (Enter moves
 	# down, Tab right, a click selects, ...), like a regular spreadsheet.
@@ -76,6 +86,10 @@ macro move_spreadsheet_selection
 		spreadsheet_sel_row = spreadsheet_sel_row + view_rows
 	else if kind is "home"
 		spreadsheet_sel_col = 0
+	else if kind is "open_cell"
+		int row_count = len(spreadsheet_rows)
+		if row_count > 0
+			spreadsheet_modal_open = true
 	else if kind is "mouse_down"
 		macro_run spreadsheet_mouse_down
 	else if kind is "mouse_scroll_up"
@@ -118,14 +132,23 @@ macro scroll_spreadsheet_to_selection
 	(cols, rows) in term_size
 	int view_rows = spreadsheet_view_rows(rows)
 	int content_width = spreadsheet_content_width(cols, rows, sidebar_focused)
-	int visible_cols = spreadsheet_visible_columns(content_width)
+	intList column_widths = spreadsheet_column_widths(spreadsheet_rows)
 
 	if spreadsheet_sel_row < spreadsheet_scroll_row
 		spreadsheet_scroll_row = spreadsheet_sel_row
 	if spreadsheet_sel_row > spreadsheet_scroll_row + view_rows - 1
 		spreadsheet_scroll_row = spreadsheet_sel_row - view_rows + 1
 
+	# Columns are different widths, so step the first drawn column right
+	# one at a time until the selected cell's right edge fits (or it's the
+	# first column drawn, for a cell wider than the whole screen).
 	if spreadsheet_sel_col < spreadsheet_scroll_col
 		spreadsheet_scroll_col = spreadsheet_sel_col
-	if spreadsheet_sel_col > spreadsheet_scroll_col + visible_cols - 1
-		spreadsheet_scroll_col = spreadsheet_sel_col - visible_cols + 1
+	int column_count = len(column_widths)
+	if spreadsheet_sel_col < column_count
+		int sel_width = column_widths at spreadsheet_sel_col
+		for if spreadsheet_scroll_col < spreadsheet_sel_col
+			int sel_left_x = spreadsheet_cell_left_x(column_widths, spreadsheet_scroll_col, spreadsheet_sel_col)
+			if sel_left_x + sel_width <= content_width
+				break
+			spreadsheet_scroll_col = spreadsheet_scroll_col + 1
