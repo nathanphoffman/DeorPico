@@ -52,7 +52,10 @@ macro render_spreadsheet_row
 		for draw_idx in range(draw_count)
 			int col_idx = spreadsheet_scroll_col + draw_idx
 			string cell_content = ""
-			if col_idx < cell_count
+			bool is_edit_cell = spreadsheet_editing and data_row is spreadsheet_sel_row and col_idx is spreadsheet_sel_col
+			if is_edit_cell
+				cell_content = spreadsheet_edit_display(spreadsheet_edit_buffer)
+			else if col_idx < cell_count
 				string raw_cell = row_cells at col_idx
 				cell_content = format_cell(row_cells, raw_cell, col_idx)
 			if len(cell_content) > SPREADSHEET_COLUMN_WIDTH
@@ -76,7 +79,12 @@ macro render_spreadsheet_row
 			string before_sel = s_substring(content, line_start, sel_start)
 			string sel_text = s_substring(content, sel_start, sel_stop)
 			string after_sel = s_substring(content, sel_stop, content_width)
-			content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
+			# Blue while typing into the cell (same as the search bar), reverse
+			# video while it's just selected.
+			if spreadsheet_editing
+				content = s_join([before_sel, ANSI_SEARCH_BAR_BG, sel_text, ANSI_RESET, after_sel])
+			else
+				content = s_join([before_sel, ANSI_REVERSE_ON, sel_text, ANSI_REVERSE_OFF, after_sel])
 
 	screen = s_join([screen, content])
 
@@ -115,7 +123,13 @@ macro render_spreadsheet_status_and_notice
 	int display_col = spreadsheet_sel_col + 1
 	string row_text = c_int_to_string(display_row)
 	string col_text = c_int_to_string(display_col)
-	string status_line = s_join(["-- ", spreadsheet_path, " (spreadsheet) -- row ", row_text, ", col ", col_text, " --"])
+	string modified_text = ""
+	if dirty
+		modified_text = " [modified]"
+	string hint_text = "Enter edit  Del clear  ^S save  ^T text view"
+	if spreadsheet_editing
+		hint_text = "editing -- Enter/Tab confirm  Esc cancel"
+	string status_line = s_join(["-- ", spreadsheet_path, modified_text, " (spreadsheet) -- row ", row_text, ", col ", col_text, " -- ", hint_text])
 	if len(status_line) > cols
 		int status_trunc_start = 0
 		status_line = s_substring(status_line, status_trunc_start, cols)
@@ -134,7 +148,10 @@ fn void spreadsheet_render(AppState state)
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
 	(spreadsheet) in state
-	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col) in spreadsheet
+	(spreadsheet_path, spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer) in spreadsheet
+	(main_panel) in state
+	(core) in main_panel
+	(dirty) in core
 	(notice) in state
 	unsafe_macro_run use_consts
 	unsafe_macro_run use_ansi_codes
@@ -144,3 +161,17 @@ fn void spreadsheet_render(AppState state)
 	macro_run render_spreadsheet_status_and_notice
 
 	xt_flush_print(screen)
+
+# What the cell being edited shows: the typed text plus a "_" cursor,
+# keeping only the end of the text once it's wider than the cell so the
+# cursor stays in view.
+fn string spreadsheet_edit_display(string edit_buffer)
+	unsafe_macro_run use_consts
+	const string CURSOR = "_"
+	string shown = s_join([edit_buffer, CURSOR])
+	stringList shown_chars = s_chars(shown)
+	int shown_count = len(shown_chars)
+	if shown_count > SPREADSHEET_COLUMN_WIDTH
+		int tail_start = shown_count - SPREADSHEET_COLUMN_WIDTH
+		shown = s_substring(shown, tail_start, shown_count)
+	return shown

@@ -98,14 +98,16 @@ unsafe_macro initialize_spreadsheet
 	csvRowList spreadsheet_rows = empty
 	if f_is_spreadsheet_ext(spreadsheet_ext)
 		spreadsheet_active = true
-		spreadsheet_rows = csv_parse_rows(filename)
+		spreadsheet_rows = csv_parse_lines(lines)
 	string spreadsheet_path = s_join([filename])
 	bool spreadsheet_view_active = spreadsheet_active
 	spreadsheet_sel_row as 0
 	spreadsheet_sel_col as 0
 	spreadsheet_scroll_row as 0
 	spreadsheet_scroll_col as 0
-	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col)
+	spreadsheet_editing as false
+	string spreadsheet_edit_buffer = ""
+	SpreadsheetState spreadsheet = (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer)
 
 unsafe_macro initialize_filter
 	filter_active as false

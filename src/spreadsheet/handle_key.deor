@@ -2,12 +2,34 @@
 # Entry points main() uses to route keys to the spreadsheet instead of
 # the text editor.
 
+# Unpacks just what the spreadsheet's key handling touches: the sheet
+# itself, the sidebar focus flag (a click on the sheet takes focus off the
+# sidebar) and the text buffer's lines/dirty (a committed cell edit
+# rewrites its row's line -- see commit_spreadsheet_edit).
+unsafe_macro unpack_spreadsheet_key_state
+	move (browser, main_panel, spreadsheet, done, notice, error) in state
+	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer) in spreadsheet
+	(sidebar_focused) in browser
+	(core) in main_panel
+	(lines, dirty) in core
+	(kind, chr, col, row) in key
+
+# The reverse of unpack_spreadsheet_key_state -- leaves next_state ready
+# to return.
+unsafe_macro repack_spreadsheet_key_state
+	SidebarState browser = browser with (sidebar_focused)
+	BufferState core = core with (lines, dirty)
+	EditorState main_panel = main_panel with (core)
+	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col, spreadsheet_editing, spreadsheet_edit_buffer)
+	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+
 # Whether the spreadsheet handles this key itself (spreadsheet_handle_key)
 # or main() hands it to the normal editor handler. Only while the sheet is
-# actually showing -- and even then, app-wide actions (quit, F1, ^D, ^T,
-# F5, lint ticks) and anything the focused sidebar handles still go to the
-# editor handler, which already owns them. A click right of the sidebar
-# always belongs to the sheet, even while the sidebar has focus.
+# actually showing -- and even then, app-wide actions (quit, save, discard,
+# F1, ^D, ^T, F5, lint ticks) and anything the focused sidebar handles
+# still go to the editor handler, which already owns them. A click right
+# of the sidebar always belongs to the sheet, even while the sidebar has
+# focus.
 fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
 	(browser, main_panel, spreadsheet) in state
 	(sidebar_focused) in browser
@@ -28,21 +50,25 @@ fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
 	if sidebar_focused
 		return false
 
-	if kind is "tick" or kind is "quit" or kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
+	if kind is "tick" or kind is "quit" or kind is "save" or kind is "discard_changes" or kind is "sidebar_toggle" or kind is "diff_toggle" or kind is "spreadsheet_view_toggle" or kind is "refresh"
 		return false
 	return true
 
-# The spreadsheet's own key handler -- only unpacks the sidebar focus flag
-# and the spreadsheet state, leaving the text editor's state untouched.
+# The spreadsheet's own key handler -- leaves the rest of the text
+# editor's state untouched.
 fn AppState spreadsheet_handle_key(AppState state, KeyEvent key)
-	move (browser, main_panel, spreadsheet, done, notice, error) in state
-	move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col) in spreadsheet
-	(sidebar_focused) in browser
-	(kind, col, row) in key
-
+	unsafe_macro_run unpack_spreadsheet_key_state
 	macro_run handle_spreadsheet_mode
+	unsafe_macro_run repack_spreadsheet_key_state
+	return next_state
 
-	SidebarState browser = browser with (sidebar_focused)
-	SpreadsheetState spreadsheet = move (spreadsheet_path, spreadsheet_rows, spreadsheet_active, spreadsheet_view_active, spreadsheet_sel_row, spreadsheet_sel_col, spreadsheet_scroll_row, spreadsheet_scroll_col)
-	AppState next_state = move (browser, main_panel, spreadsheet, done, notice, error)
+# Called by main() before handing a key to the editor handler instead --
+# commits an in-progress cell edit first, so e.g. ^S mid-edit saves what
+# was typed, and ^T/F1/^D don't leave a half-typed cell behind. Lint
+# "tick"s don't count; they arrive on their own while the user is typing.
+fn AppState spreadsheet_commit_pending_edit(AppState state, KeyEvent key)
+	unsafe_macro_run unpack_spreadsheet_key_state
+	if kind is not "tick"
+		macro_run commit_spreadsheet_edit
+	unsafe_macro_run repack_spreadsheet_key_state
 	return next_state

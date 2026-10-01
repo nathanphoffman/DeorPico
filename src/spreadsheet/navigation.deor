@@ -1,16 +1,56 @@
 
-# ^T -- swaps the main panel between the spreadsheet placeholder and the
-# normal text editor for the currently open .csv. No-op on a non-.csv file
+# ^T -- swaps the main panel between the spreadsheet and the normal text
+# editor for the currently open .csv. No-op on a non-.csv file
 # (spreadsheet_active false) since there's nothing to swap to/from.
+# Switching back to the sheet re-parses `lines`, so edits made in the
+# text view show up in the sheet.
 macro toggle_spreadsheet_view_impl
 	if spreadsheet_active
 		spreadsheet_view_active = not spreadsheet_view_active
+		if spreadsheet_view_active
+			spreadsheet_rows = csv_parse_lines(lines)
 
-# Every key spreadsheet_handle_key receives -- moves the highlighted cell.
-# Kinds not listed here (typing, cut/paste/undo, ...) are dropped on
-# purpose: they'd otherwise silently edit the hidden text buffer behind
-# the sheet.
+# Every key spreadsheet_handle_key receives -- edits the selected cell or
+# moves the selection. Kinds not listed here (cut/paste/undo, ...) are
+# dropped on purpose: they'd act on the text buffer behind the sheet.
 macro handle_spreadsheet_mode
+	# Mid-edit, typing keys change the edit text; any other key commits the
+	# edit first and then still does its normal move below (Enter moves
+	# down, Tab right, a click selects, ...), like a regular spreadsheet.
+	if spreadsheet_editing
+		if kind is "char" or kind is "paste_text" or kind is "backspace" or kind is "escape"
+			macro_run edit_spreadsheet_buffer
+		else
+			macro_run commit_spreadsheet_edit
+	else if kind is "enter"
+		string initial_text = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+		macro_run start_spreadsheet_edit
+	else if kind is "char" or kind is "paste_text"
+		# Typing over a selected cell replaces its contents.
+		string initial_text = ""
+		macro_run start_spreadsheet_edit
+		macro_run edit_spreadsheet_buffer
+	else if kind is "backspace" or kind is "delete"
+		string initial_text = ""
+		macro_run start_spreadsheet_edit
+		macro_run commit_spreadsheet_edit
+
+	if not spreadsheet_editing
+		macro_run move_spreadsheet_selection
+
+	macro_run clamp_spreadsheet_selection
+
+	# The wheel scrolls the sheet on its own without dragging the selection
+	# along, same as the text editor -- everything else (key moves, clicks)
+	# pulls the view back to wherever the selected cell is.
+	if kind is "mouse_scroll_up" or kind is "mouse_scroll_down"
+		macro_run clamp_spreadsheet_scroll
+	else
+		macro_run scroll_spreadsheet_to_selection
+
+# Selection moves -- only once no edit is in progress (see
+# handle_spreadsheet_mode).
+macro move_spreadsheet_selection
 	unsafe_macro_run use_consts
 	TermSize term_size = xt_size()
 	(rows) in term_size
@@ -18,9 +58,9 @@ macro handle_spreadsheet_mode
 
 	if kind is "up"
 		spreadsheet_sel_row = spreadsheet_sel_row - 1
-	else if kind is "down"
+	else if kind is "down" or kind is "enter"
 		spreadsheet_sel_row = spreadsheet_sel_row + 1
-	else if kind is "left"
+	else if kind is "left" or kind is "shift_tab"
 		spreadsheet_sel_col = spreadsheet_sel_col - 1
 	else if kind is "right" or kind is "tab"
 		spreadsheet_sel_col = spreadsheet_sel_col + 1
@@ -36,16 +76,6 @@ macro handle_spreadsheet_mode
 		spreadsheet_scroll_row = spreadsheet_scroll_row - SCROLL_WHEEL_AMOUNT
 	else if kind is "mouse_scroll_down"
 		spreadsheet_scroll_row = spreadsheet_scroll_row + SCROLL_WHEEL_AMOUNT
-
-	macro_run clamp_spreadsheet_selection
-
-	# The wheel scrolls the sheet on its own without dragging the selection
-	# along, same as the text editor -- everything else (key moves, clicks)
-	# pulls the view back to wherever the selected cell is.
-	if kind is "mouse_scroll_up" or kind is "mouse_scroll_down"
-		macro_run clamp_spreadsheet_scroll
-	else
-		macro_run scroll_spreadsheet_to_selection
 
 # Keeps the selected cell inside the sheet -- rows can have different cell
 # counts, so the column is bounded by the widest row rather than the

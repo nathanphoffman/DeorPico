@@ -151,6 +151,7 @@ fn void main()
 		if spreadsheet_owns_key(state, key)
 			state = spreadsheet_handle_key(state, key)
 		else
+			state = spreadsheet_commit_pending_edit(state, key)
 			state = editor_handle_key_for_events(state, key)
 		(done) in state
 		if done

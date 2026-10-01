@@ -36,3 +36,10 @@ struct SpreadsheetState
 	# kept following the selected cell (see scroll_spreadsheet_to_selection).
 	int spreadsheet_scroll_row
 	int spreadsheet_scroll_col
+
+	# True while the selected cell is being typed into -- the typed text
+	# lives in spreadsheet_edit_buffer until Enter/Tab/arrows/a click
+	# commit it into spreadsheet_rows (and the text buffer's `lines`), or
+	# Escape throws it away. See src/spreadsheet/editing.deor.
+	bool spreadsheet_editing
+	string spreadsheet_edit_buffer

@@ -26,13 +26,15 @@ fn bool f_is_spreadsheet_ext(string ext)
 		return true
 	return false
 
-# Whole-file parse, one line per row -- see csv_split_line for how each
-# line is split into cells. A quoted field spanning multiple lines isn't
-# supported yet (each line is still parsed on its own).
-fn csvRowList csv_parse_rows(string path)
-	stringList file_lines = f_lines(path)
+# Parses the text buffer's lines, one line per row -- parsing `lines`
+# rather than re-reading the file keeps spreadsheet_rows lined up 1:1 with
+# `lines`, which commit_spreadsheet_edit relies on to rewrite just the
+# edited row's line. See csv_split_line for how each line is split into
+# cells. A quoted field spanning multiple lines isn't supported yet (each
+# line is still parsed on its own).
+fn csvRowList csv_parse_lines(stringList lines)
 	csvRowList rows = empty
-	for line in file_lines
+	for line in lines
 		stringList cells = csv_split_line(line)
 		rows at end = cells
 	return rows
@@ -66,3 +68,24 @@ fn stringList csv_split_line(string line)
 				current = s_join([current, chr])
 	cells at end = current
 	return cells
+
+# The reverse of csv_split_line -- joins cells back into one CSV line,
+# quoting only the cells that need it (see csv_quote_cell).
+fn string csv_join_row(stringList cells)
+	const string COMMA = ","
+	stringList quoted_cells = empty
+	for cell in cells
+		string quoted_cell = csv_quote_cell(cell)
+		quoted_cells at end = quoted_cell
+	return s_join_with(quoted_cells, COMMA)
+
+# Wraps a cell in double quotes (doubling any quotes inside it) when it
+# contains a comma or a quote -- otherwise it's written as-is.
+fn string csv_quote_cell(string cell)
+	const string QUOTE = "\""
+	const string DOUBLED_QUOTE = "\"\""
+	const string COMMA = ","
+	if s_contains(cell, COMMA) or s_contains(cell, QUOTE)
+		string escaped = s_replace(cell, QUOTE, DOUBLED_QUOTE)
+		return s_join([QUOTE, escaped, QUOTE])
+	return cell

@@ -1,0 +1,76 @@
+
+# Typing into the selected cell. Editing never writes to disk by itself:
+# a commit rewrites that row's line in the text buffer's `lines` and marks
+# it dirty, so ^S, ^Del, the unsaved-changes gate and the ^T text view all
+# keep working exactly as they do for normal text edits.
+
+# Starts editing the selected cell with `initial_text` (declared by the
+# caller) already typed in. A sheet with no rows has no cell to edit.
+macro start_spreadsheet_edit
+	int row_count = len(spreadsheet_rows)
+	if row_count > 0
+		spreadsheet_editing = true
+		spreadsheet_edit_buffer = initial_text
+
+# Keys that change the text being typed -- everything else that reaches
+# handle_spreadsheet_mode mid-edit commits first (see there).
+macro edit_spreadsheet_buffer
+	if kind is "char"
+		spreadsheet_edit_buffer = s_join([spreadsheet_edit_buffer, chr])
+	else if kind is "paste_text"
+		# A cell is one line -- pasted line breaks become spaces.
+		const string NEWLINE = "\n"
+		const string SPACE = " "
+		string pasted = s_replace(chr, NEWLINE, SPACE)
+		spreadsheet_edit_buffer = s_join([spreadsheet_edit_buffer, pasted])
+	else if kind is "backspace"
+		stringList buffer_chars = s_chars(spreadsheet_edit_buffer)
+		int keep_count = len(buffer_chars) - 1
+		if keep_count >= 0
+			int buffer_start = 0
+			spreadsheet_edit_buffer = s_substring(spreadsheet_edit_buffer, buffer_start, keep_count)
+	else if kind is "escape"
+		spreadsheet_editing = false
+		spreadsheet_edit_buffer = ""
+
+# Writes the typed text into the selected cell, then rewrites just that
+# row's line in `lines` -- untouched rows keep their original formatting.
+# A row shorter than the selected column is padded with empty cells first.
+# No-op (and stays not-dirty) if the text didn't actually change.
+macro commit_spreadsheet_edit
+	if spreadsheet_editing
+		spreadsheet_editing = false
+		string old_value = spreadsheet_cell_value(spreadsheet_rows, spreadsheet_sel_row, spreadsheet_sel_col)
+		int line_count = len(lines)
+		bool changed = spreadsheet_edit_buffer is not old_value
+		if changed and spreadsheet_sel_row < line_count
+			stringList row_cells = spreadsheet_rows at spreadsheet_sel_row
+			int start = len(row_cells)
+			int stop = spreadsheet_sel_col + 1
+			for in range(start, stop)
+				row_cells at end = ""
+			row_cells at spreadsheet_sel_col = spreadsheet_edit_buffer
+			string row_line = csv_join_row(row_cells)
+
+			# Edited through local copies and assigned back -- an `at` write
+			# alone doesn't make the transpiler declare the unpacked
+			# spreadsheet_rows/lines mutable.
+			csvRowList updated_rows = move spreadsheet_rows
+			updated_rows at spreadsheet_sel_row = row_cells
+			spreadsheet_rows = move updated_rows
+			stringList updated_lines = move lines
+			updated_lines at spreadsheet_sel_row = row_line
+			lines = move updated_lines
+			dirty = true
+		spreadsheet_edit_buffer = ""
+
+# The text in one cell, or "" past the end of the sheet or of a short row.
+fn string spreadsheet_cell_value(csvRowList rows, int row_idx, int col_idx)
+	int row_count = len(rows)
+	if row_idx < 0 or row_idx >= row_count
+		return ""
+	stringList row_cells = rows at row_idx
+	int cell_count = len(row_cells)
+	if col_idx < 0 or col_idx >= cell_count
+		return ""
+	return row_cells at col_idx
