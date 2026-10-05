@@ -33,13 +33,14 @@ unsafe_macro repack_spreadsheet_key_state
 fn bool spreadsheet_owns_key(AppState state, KeyEvent key)
 	(browser, main_panel, spreadsheet) in state
 	(sidebar_focused) in browser
-	(diff) in main_panel
+	(core, diff) in main_panel
+	(too_large) in core
 	(diffing) in diff
 	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
 	(kind, col) in key
 
 	bool sheet_showing = spreadsheet_active and spreadsheet_view_active
-	if diffing or not sheet_showing
+	if diffing or too_large or not sheet_showing
 		return false
 	if kind is "mouse_down"
 		return spreadsheet_click_is_on_sheet(col, sidebar_focused)

@@ -30,6 +30,11 @@ unsafe_macro use_consts
 	# vertical scrollbar (see scrollbar.deor).
 	const int SCROLLBAR_WIDTH = 1
 
+# Files bigger than this (in bytes) aren't loaded -- the viewer just says the
+# file is too big. Renaming, moving and deleting still work from the sidebar.
+fn int max_open_file_bytes()
+	return 10485760
+
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
 # the lint output popup, the Ctrl+F search bar) -- any mismatch lets the

@@ -52,7 +52,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
 
-	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content) in core
+	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
 	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
 	move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
 	move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging) in selection
@@ -111,11 +111,17 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	else if search_editing
 		macro_run handle_search_edit_mode
 
+	# A too-large file has no real buffer behind it, so every edit/save/
+	# paste is ignored -- only quitting still works.
+	else if too_large
+		if kind is "quit"
+			macro_run key_quit_impl
+
 	# this is the main view
 	else
 		macro_run register_events
 
-	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content)
+	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
 	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 	DiffState diff = move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path)
 	SelectionState selection = move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)

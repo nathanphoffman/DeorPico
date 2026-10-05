@@ -18,7 +18,10 @@ macro preview_deleted_file
 # discarding any unsaved state.
 macro load_file_into_buffer
 	filename = path
-	stringList opened_lines = f_lines(filename)
+	too_large = f_size(filename) > max_open_file_bytes()
+	stringList opened_lines = empty
+	if too_large is false
+		opened_lines = f_lines(filename)
 	if len(opened_lines) is 0
 		opened_lines at end = ""
 	lines = opened_lines
@@ -29,6 +32,8 @@ macro load_file_into_buffer
 	dirty = false
 	scroll_row = 0
 	notice = "Opened"
+	if too_large
+		notice = "File too big to open"
 	error = false
 
 	# The old selection anchor can point past the end of the new file (e.g.

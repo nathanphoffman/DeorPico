@@ -1,6 +1,9 @@
 
 unsafe_macro initialize_core
-	stringList lines = f_lines(filename)
+	bool too_large = f_size(filename) > max_open_file_bytes()
+	stringList lines = empty
+	if too_large is false
+		lines = f_lines(filename)
 	if len(lines) is 0
 		lines at end = ""
 	cursor_row as 0
@@ -13,7 +16,7 @@ unsafe_macro initialize_core
 	show_line_numbers as false
 	nls as "\n"
 	string synced_content = s_join_with(lines, nls)
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content)
+	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content, too_large)
 
 unsafe_macro initialize_browser
 	entryList browse_entries = f_list_dir(initial_dir)

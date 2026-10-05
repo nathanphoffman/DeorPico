@@ -1,0 +1,7 @@
+# Extra file helpers -- lib/file.deor ships with the Deor standard library and
+# can't be edited locally.
+
+# Size of the file in bytes, or 0 if it doesn't exist / can't be read.
+fn int f_size(string path)
+	rust
+		std::fs::metadata(&path).map(|meta| meta.len() as i64).unwrap_or(0)

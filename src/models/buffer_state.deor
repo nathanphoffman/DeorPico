@@ -36,3 +36,9 @@ struct BufferState
 	# "the file changed on disk" apart from "I have local unsaved edits",
 	# since `dirty` alone conflates the two.
 	string synced_content
+
+	# True when the file on disk is bigger than max_open_file_bytes() --
+	# `lines` is left as a single empty line, the viewer shows a "too big"
+	# message instead, and editing/saving is blocked so the real file can
+	# never be overwritten with that placeholder.
+	bool too_large
