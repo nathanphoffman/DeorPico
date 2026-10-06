@@ -1,0 +1,25 @@
+# True when `line` fits in `width` visible columns, so it can't wrap. Same
+# column rules as wrap_break_visual_cols (tab = next tab stop, ANSI escape
+# sequences take no columns, everything else is one column) but a single
+# allocation-free pass -- wrap_break_visual_cols builds a list of every
+# character, which made rendering cost grow with the whole file's line count.
+fn bool wrap_line_fits(string line, int width, int tab_width)
+	rust
+		{
+			let mut visible_cols: i64 = 0;
+			let mut in_escape = false;
+			for ch in line.chars() {
+				if in_escape {
+					if ch == 'm' { in_escape = false; }
+					continue;
+				}
+				if ch == '\u{1b}' { in_escape = true; continue; }
+				if ch == '\t' {
+					visible_cols = (visible_cols / tab_width + 1) * tab_width;
+				} else {
+					visible_cols += 1;
+				}
+				if visible_cols > width { return false; }
+			}
+			true
+		}

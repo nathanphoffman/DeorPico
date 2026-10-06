@@ -24,12 +24,16 @@ unsafe_macro calculate_clamped_cursor_row
 		int max_offset = bottom_row - top_row
 		int row_offset = 0
 		bool cursor_row_found = false
+		int step_last_row = len(lines) - 1
+		int step_width = text_visible_columns
 		for if row_offset <= max_offset
 			(buffer_row, seg_index) in walk_pos
 			if buffer_row is cursor_row and seg_index is cursor_seg
 				cursor_row_found = true
 				break
-			walk_pos = wrap_step_forward(walk_pos, lines, text_visible_columns)
+			string step_line = lines at buffer_row
+			WrapStepInput walk_input = (step_line, step_last_row, step_width)
+			walk_pos = wrap_step_forward_in_line(walk_pos, walk_input)
 			row_offset = row_offset + 1
 		if cursor_row_found
 			cursor_screen_row = top_row + row_offset

@@ -45,8 +45,13 @@ fn AppState editor_scroll(AppState state)
 			int buffer_row = scroll_row
 			int seg_index = scroll_wrap_seg
 			WrapPosition last_visible_pos = (buffer_row, seg_index)
+			int step_last_row = total_line_count - 1
+			int step_width = text_visible_columns
 			for in range(back_steps)
-				last_visible_pos = wrap_step_forward(last_visible_pos, lines, text_visible_columns)
+				(buffer_row) in last_visible_pos
+				string step_line = lines at buffer_row
+				WrapStepInput step_input = (step_line, step_last_row, step_width)
+				last_visible_pos = wrap_step_forward_in_line(last_visible_pos, step_input)
 			(buffer_row, seg_index) in last_visible_pos
 
 			bool cursor_below = cursor_row > buffer_row or (cursor_row is buffer_row and cursor_seg > seg_index)
@@ -59,7 +64,12 @@ fn AppState editor_scroll(AppState state)
 				seg_index = cursor_seg
 				WrapPosition new_scroll_pos = (buffer_row, seg_index)
 				for in range(back_steps)
-					new_scroll_pos = wrap_step_backward(new_scroll_pos, lines, text_visible_columns)
+					(buffer_row) in new_scroll_pos
+					string back_prev_line = ""
+					int back_prev_row = buffer_row - 1
+					if back_prev_row >= 0
+						back_prev_line = lines at back_prev_row
+					new_scroll_pos = wrap_step_backward_in_line(new_scroll_pos, back_prev_line, text_visible_columns)
 				(buffer_row, seg_index) in new_scroll_pos
 				scroll_row = buffer_row
 				scroll_wrap_seg = seg_index

@@ -4,6 +4,14 @@ struct WrapPosition
 	int buffer_row
 	int seg_index
 
+# Input for wrap_step_forward_in_line -- the current line instead of the
+# whole file, since handing `lines` to a function copies every line on every
+# call.
+struct WrapStepInput
+	string step_line
+	int step_last_row
+	int step_width
+
 # Walks `line` once, tracking visible column: `\t` expands to the next
 # `tab_width` stop (same rule as s_visual_col in rust_helper.deor), and ANSI
 # escape sequences are skipped without counting toward the column (same
@@ -23,6 +31,11 @@ struct WrapPosition
 fn intList wrap_break_visual_cols(string line, int width, int tab_width)
 	unsafe_macro_run use_ansi_codes
 	const string ANSI_ESCAPE_CHARACTER = "m"
+
+	# Most lines fit -- skip building the per-character list for them.
+	if wrap_line_fits(line, width, tab_width)
+		intList no_breaks = empty
+		return no_breaks
 
 	stringList chars = s_chars(line)
 	int char_count = len(chars)
@@ -117,11 +130,21 @@ fn int wrap_segment_start_col(intList breaks, int seg_index)
 # line's first segment once the current line's segments are exhausted.
 # Stays put at the last segment of the last line.
 fn WrapPosition wrap_step_forward(WrapPosition pos, stringList lines, int width)
+	(buffer_row) in pos
+	string step_line = lines at buffer_row
+	int step_last_row = len(lines) - 1
+	int step_width = width
+	WrapStepInput step_input = (step_line, step_last_row, step_width)
+	return wrap_step_forward_in_line(pos, step_input)
+
+# wrap_step_forward without the whole file: callers that step in a loop
+# (once per screen row) pass just the current line (see WrapStepInput).
+fn WrapPosition wrap_step_forward_in_line(WrapPosition pos, WrapStepInput step_input)
 	unsafe_macro_run use_consts
 	(buffer_row, seg_index) in pos
+	(step_line, step_last_row, step_width) in step_input
 
-	string line = lines at buffer_row
-	intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+	intList breaks = wrap_break_visual_cols(step_line, step_width, TAB_WIDTH)
 	int seg_count = wrap_segment_count(breaks)
 	int next_seg = seg_index + 1
 	if next_seg < seg_count
@@ -129,8 +152,7 @@ fn WrapPosition wrap_step_forward(WrapPosition pos, stringList lines, int width)
 		WrapPosition next_pos = (buffer_row, seg_index)
 		return next_pos
 
-	int last_row = len(lines) - 1
-	if buffer_row < last_row
+	if buffer_row < step_last_row
 		buffer_row = buffer_row + 1
 		seg_index = 0
 		WrapPosition next_pos = (buffer_row, seg_index)
@@ -142,6 +164,16 @@ fn WrapPosition wrap_step_forward(WrapPosition pos, stringList lines, int width)
 # the previous buffer line's last segment at a line boundary. Stays put at
 # the first segment of the first line.
 fn WrapPosition wrap_step_backward(WrapPosition pos, stringList lines, int width)
+	(buffer_row) in pos
+	string prev_line = ""
+	int prev_row = buffer_row - 1
+	if prev_row >= 0
+		prev_line = lines at prev_row
+	return wrap_step_backward_in_line(pos, prev_line, width)
+
+# wrap_step_backward without the whole file -- prev_line is the line above
+# pos.buffer_row ("" at the top of the file).
+fn WrapPosition wrap_step_backward_in_line(WrapPosition pos, string prev_line, int width)
 	unsafe_macro_run use_consts
 	(buffer_row, seg_index) in pos
 
@@ -152,7 +184,6 @@ fn WrapPosition wrap_step_backward(WrapPosition pos, stringList lines, int width
 
 	if buffer_row > 0
 		buffer_row = buffer_row - 1
-		string prev_line = lines at buffer_row
 		intList prev_breaks = wrap_break_visual_cols(prev_line, width, TAB_WIDTH)
 		seg_index = wrap_segment_count(prev_breaks) - 1
 		WrapPosition prev_pos = (buffer_row, seg_index)

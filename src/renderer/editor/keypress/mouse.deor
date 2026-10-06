@@ -36,8 +36,13 @@ unsafe_macro locate_mouse_in_buffer
 		buffer_row = last_row
 		seg_index = 0
 	WrapPosition click_pos = (buffer_row, seg_index)
+	int step_last_row = last_row
+	int step_width = text_visible_columns
 	for in range(row_offset)
-		click_pos = wrap_step_forward(click_pos, lines, text_visible_columns)
+		(buffer_row) in click_pos
+		string step_line = lines at buffer_row
+		WrapStepInput click_step_input = (step_line, step_last_row, step_width)
+		click_pos = wrap_step_forward_in_line(click_pos, click_step_input)
 	(buffer_row, seg_index) in click_pos
 
 	int clicked_row = buffer_row
