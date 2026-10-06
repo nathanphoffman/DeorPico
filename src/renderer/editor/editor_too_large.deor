@@ -3,9 +3,9 @@
 # no highlighting). Works on a copy of `state` -- the file's real (empty)
 # lines are never touched.
 fn void editor_render_too_large(AppState state, string current_file)
-	int size_kb = (f_size(current_file) + 1023) / 1024
-	int limit_kb = max_open_file_bytes() / 1024
-	string size_note = s_join(["  ", c_int_to_string(size_kb), " KB file  |  limit is ", c_int_to_string(limit_kb), " KB"])
+	int size_mb = (f_size(current_file) + 1048575) / 1048576
+	int limit_mb = max_open_file_bytes() / 1048576
+	string size_note = s_join(["  ", c_int_to_string(size_mb), " MB file  |  limit is ", c_int_to_string(limit_mb), " MB"])
 	stringList lines = ["", "", "  FILE TOO BIG TO OPEN", "", size_note, "", "  You can still rename, move or delete it from the sidebar."]
 	bool show_line_numbers = false
 	(main_panel) in state

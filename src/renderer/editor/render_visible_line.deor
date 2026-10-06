@@ -37,60 +37,53 @@ fn RenderedLine render_visible_line(string line, VisibleColRange visible_range, 
 	(hl_start, hl_end) in highlight
 	(start_visible_col, end_visible_col) in visible_range
 
-	const string ANSI_ESCAPE_CHARACTER = "m"
+	# One pass over the characters with no allocation per character -- this
+	# used to split the whole line into a list of one-character strings
+	# first, which made every visual row of a very long line cost as much as
+	# the whole line.
+	rust
+		{
+			let mut out = String::with_capacity((end_visible_col - start_visible_col).max(0) as usize + 64);
+			let mut visible_cols: i64 = 0;
+			let mut highlight_open = false;
+			let mut chars = line.chars();
+			while let Some(ch) = chars.next() {
+				if ch == '\u{1b}' {
+					let mut escape_seq = String::new();
+					escape_seq.push(ch);
+					while let Some(next_char) = chars.next() {
+						escape_seq.push(next_char);
+						if next_char == 'm' { break; }
+					}
+					out.push_str(&escape_seq);
+					if highlight_open && escape_seq == ANSI_RESET {
+						out.push_str(&ANSI_REVERSE_ON);
+					}
+					continue;
+				}
 
-	stringList chars = s_chars(line)
-	int char_count = len(chars)
-	int idx = 0
-	stringList text_parts = empty
-	int visible_cols = 0
-	bool highlight_open = false
+				if visible_cols >= end_visible_col {
+					break;
+				}
 
-	for if idx < char_count
-		string current_char = chars at idx
+				if hl_start == visible_cols && !highlight_open {
+					out.push_str(&ANSI_REVERSE_ON);
+					highlight_open = true;
+				}
+				if hl_end == visible_cols && highlight_open {
+					out.push_str(&ANSI_REVERSE_OFF);
+					highlight_open = false;
+				}
 
-		if current_char is esc
-			stringList escape_parts = empty
-			escape_parts at end = current_char
-			idx = idx + 1
-			for if idx < char_count
-				string next_char = chars at idx
-				escape_parts at end = next_char
-				idx = idx + 1
-				if next_char is ANSI_ESCAPE_CHARACTER
-					break
+				if visible_cols >= start_visible_col {
+					out.push(ch);
+				}
+				visible_cols += 1;
+			}
 
-			string escape_seq = s_join(escape_parts)
-			text_parts at end = escape_seq
-			if highlight_open and escape_seq is ANSI_RESET
-				text_parts at end = ANSI_REVERSE_ON
-			continue
-
-		if visible_cols >= end_visible_col
-			break
-
-		if hl_start is visible_cols and not highlight_open
-			text_parts at end = ANSI_REVERSE_ON
-			highlight_open = true
-		if hl_end is visible_cols and highlight_open
-			text_parts at end = ANSI_REVERSE_OFF
-			highlight_open = false
-
-		if visible_cols >= start_visible_col
-			text_parts at end = current_char
-		visible_cols = visible_cols + 1
-		idx = idx + 1
-
-	if highlight_open
-		text_parts at end = ANSI_REVERSE_OFF
-
-	# Truncating mid-token (a syntax-colored span running past the viewport
-	# edge) drops that token's own trailing reset along with the rest of it,
-	# leaving color/underline state open for whatever gets drawn next --
-	# always close it here rather than relying on the token to have closed
-	# itself.
-	text_parts at end = ANSI_RESET
-
-	string text = s_join(text_parts)
-	visible_cols = visible_cols - start_visible_col
-	return (text, visible_cols)
+			if highlight_open {
+				out.push_str(&ANSI_REVERSE_OFF);
+			}
+			out.push_str(&ANSI_RESET);
+			RenderedLine { text: out, visible_cols: visible_cols - start_visible_col }
+		}

@@ -50,10 +50,14 @@ fn AppState editor_scroll(AppState state)
 			WrapPosition last_visible_pos = (buffer_row, seg_index)
 			int step_last_row = total_line_count - 1
 			int step_width = text_visible_columns
+			int cached_step_row = 0 - 1
+			int cached_seg_count = 1
 			for in range(back_steps)
 				(buffer_row) in last_visible_pos
-				string step_line = lines at buffer_row
-				WrapStepInput step_input = (step_line, step_last_row, step_width)
+				int step_row = buffer_row
+				macro_run load_step_seg_count
+				int step_seg_count = cached_seg_count
+				WrapStepInput step_input = (step_seg_count, step_last_row)
 				last_visible_pos = wrap_step_forward_in_line(last_visible_pos, step_input)
 			(buffer_row, seg_index) in last_visible_pos
 
@@ -66,13 +70,20 @@ fn AppState editor_scroll(AppState state)
 				buffer_row = cursor_row
 				seg_index = cursor_seg
 				WrapPosition new_scroll_pos = (buffer_row, seg_index)
+				int back_cached_row = 0 - 1
+				int back_cached_count = 1
 				for in range(back_steps)
 					(buffer_row) in new_scroll_pos
-					string back_prev_line = ""
-					int back_prev_row = buffer_row - 1
-					if back_prev_row >= 0
-						back_prev_line = lines at back_prev_row
-					new_scroll_pos = wrap_step_backward_in_line(new_scroll_pos, back_prev_line, text_visible_columns)
+					int back_prev_seg_count = 1
+					int step_row = buffer_row - 1
+					if step_row >= 0
+						cached_step_row = back_cached_row
+						cached_seg_count = back_cached_count
+						macro_run load_step_seg_count
+						back_cached_row = cached_step_row
+						back_cached_count = cached_seg_count
+						back_prev_seg_count = cached_seg_count
+					new_scroll_pos = wrap_step_backward_in_line(new_scroll_pos, back_prev_seg_count)
 				(buffer_row, seg_index) in new_scroll_pos
 				scroll_row = buffer_row
 				scroll_wrap_seg = seg_index

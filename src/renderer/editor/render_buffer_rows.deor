@@ -45,6 +45,12 @@ macro render_buffer_rows
 	int buffer_row = scroll_row
 	int seg_index = scroll_wrap_seg
 
+	# A wrapped line is drawn one visual row at a time -- its text and
+	# break points are worked out once, not again for every row.
+	int cached_row = 0 - 1
+	string line = ""
+	intList breaks = empty
+
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
 		int selected_idx = git_section_rows + root_section_rows + browse_selected
@@ -67,8 +73,10 @@ macro render_buffer_rows
 		int row_visible_cols = 0
 		bool is_eof_padding_row = false
 		if buffer_row_index < total_line_count
-			string line = lines at buffer_row_index
-			intList breaks = wrap_break_visual_cols(line, text_visible_columns, TAB_WIDTH)
+			if buffer_row_index is not cached_row
+				line = lines at buffer_row_index
+				breaks = wrap_break_visual_cols(line, text_visible_columns, TAB_WIDTH)
+				cached_row = buffer_row_index
 			int seg_start_col = wrap_segment_start_col(breaks, seg_index)
 			int seg_count = wrap_segment_count(breaks)
 

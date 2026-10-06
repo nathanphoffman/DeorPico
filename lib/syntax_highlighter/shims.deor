@@ -27,6 +27,17 @@ rust
 		line: String,
 		tab_width: i64,
 		jsx_expr: bool,
+		// Last search result per regex slot for the parked line, so a search
+		// that is still valid is not redone: the tokenizer asks every rule
+		// "where is your next match" at each token, and without this a rule
+		// whose next match is far away (or gone) rescans the rest of the line
+		// every time -- quadratic on a very long line. A result found by
+		// searching from `from` is still the answer for any later position up
+		// to the match's start (nothing starts in between); "no match" stays
+		// the answer for every later position. Cleared by hl_set_line.
+		find_cache: Vec<Option<(usize, Option<(usize, usize)>)>>,
+		// Same for capture group 1: (from, whole match's start, group span).
+		group_cache: Vec<Option<(usize, Option<usize>, Option<(usize, usize)>)>>,
 	}
 
 	#[derive(Clone)]
@@ -62,6 +73,8 @@ fn Highlighter xs_make(int tab_width)
 			line: String::new(),
 			tab_width: tab_width,
 			jsx_expr: false,
+			find_cache: Vec::new(),
+			group_cache: Vec::new(),
 		})))
 
 # Compiles a pattern into the handle's regex bank and returns its slot.
@@ -89,13 +102,31 @@ fn int hl_rx_add_guarded(Highlighter hlt, string pattern)
 fn RxMatch hl_rx_find(Highlighter hlt, int slot, int pos)
 	rust
 		{
-			let st = hlt.0.borrow();
+			let mut guard = hlt.0.borrow_mut();
+			let st = &mut *guard;
 			let start = pos as usize;
 			if start > st.line.len() {
 				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
 			} else {
-				match st.regexes[slot as usize].find_at(st.line.as_str(), start) {
-					Some(m) => RxMatch { rx_found: true, rx_start: m.start() as i64, rx_stop: m.end() as i64 },
+				let slot_idx = slot as usize;
+				if st.find_cache.len() <= slot_idx {
+					st.find_cache.resize(slot_idx + 1, None);
+				}
+				let cached = match st.find_cache[slot_idx] {
+					Some((from, Some((m_start, m_stop)))) if start >= from && start <= m_start => Some(Some((m_start, m_stop))),
+					Some((from, None)) if start >= from => Some(None),
+					_ => None,
+				};
+				let found = match cached {
+					Some(hit) => hit,
+					None => {
+						let hit = st.regexes[slot_idx].find_at(st.line.as_str(), start).map(|m| (m.start(), m.end()));
+						st.find_cache[slot_idx] = Some((start, hit));
+						hit
+					}
+				};
+				match found {
+					Some((m_start, m_stop)) => RxMatch { rx_found: true, rx_start: m_start as i64, rx_stop: m_stop as i64 },
 					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
 				}
 			}
@@ -106,13 +137,33 @@ fn RxMatch hl_rx_find(Highlighter hlt, int slot, int pos)
 fn RxMatch hl_rx_group(Highlighter hlt, int slot, int pos)
 	rust
 		{
-			let st = hlt.0.borrow();
+			let mut guard = hlt.0.borrow_mut();
+			let st = &mut *guard;
 			let start = pos as usize;
 			if start > st.line.len() {
 				RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 }
 			} else {
-				match st.regexes[slot as usize].captures_at(st.line.as_str(), start).and_then(|c| c.get(1)) {
-					Some(g) => RxMatch { rx_found: true, rx_start: g.start() as i64, rx_stop: g.end() as i64 },
+				let slot_idx = slot as usize;
+				if st.group_cache.len() <= slot_idx {
+					st.group_cache.resize(slot_idx + 1, None);
+				}
+				let cached = match st.group_cache[slot_idx] {
+					Some((from, Some(whole_start), group)) if start >= from && start <= whole_start => Some(group),
+					Some((from, None, _)) if start >= from => Some(None),
+					_ => None,
+				};
+				let found = match cached {
+					Some(group) => group,
+					None => {
+						let caps = st.regexes[slot_idx].captures_at(st.line.as_str(), start);
+						let whole_start = caps.as_ref().and_then(|c| c.get(0)).map(|m| m.start());
+						let group = caps.as_ref().and_then(|c| c.get(1)).map(|g| (g.start(), g.end()));
+						st.group_cache[slot_idx] = Some((start, whole_start, group));
+						group
+					}
+				};
+				match found {
+					Some((g_start, g_stop)) => RxMatch { rx_found: true, rx_start: g_start as i64, rx_stop: g_stop as i64 },
 					None => RxMatch { rx_found: false, rx_start: 0, rx_stop: 0 },
 				}
 			}
@@ -128,6 +179,8 @@ fn int hl_set_line(Highlighter hlt, string line)
 		{
 			let mut st = hlt.0.borrow_mut();
 			st.line = line;
+			st.find_cache.clear();
+			st.group_cache.clear();
 			st.line.len() as i64
 		}
 

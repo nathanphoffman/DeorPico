@@ -44,3 +44,17 @@ unsafe_macro wrap_scan_rows
 			total_visual_rows = total;
 			scroll_visual_row = if stop < lines.len() { before_scroll + scroll_wrap_seg } else { total + (scroll_row - lines.len() as i64) };
 		}
+
+# For code that steps through visual rows one at a time: sets
+# cached_seg_count to how many visual rows line `step_row` wraps into,
+# reworking the line's break points only when step_row isn't the row the last
+# call was for -- the many steps through one long line then share one pass
+# over it. Expects lines, step_row, step_width, cached_step_row and
+# cached_seg_count (start cached_step_row at 0 - 1) and the use_consts
+# constants in scope.
+macro load_step_seg_count
+	if step_row is not cached_step_row
+		string seg_line = lines at step_row
+		intList seg_breaks = wrap_break_visual_cols(seg_line, step_width, TAB_WIDTH)
+		cached_seg_count = wrap_segment_count(seg_breaks)
+		cached_step_row = step_row

@@ -38,10 +38,14 @@ unsafe_macro locate_mouse_in_buffer
 	WrapPosition click_pos = (buffer_row, seg_index)
 	int step_last_row = last_row
 	int step_width = text_visible_columns
+	int cached_step_row = 0 - 1
+	int cached_seg_count = 1
 	for in range(row_offset)
 		(buffer_row) in click_pos
-		string step_line = lines at buffer_row
-		WrapStepInput click_step_input = (step_line, step_last_row, step_width)
+		int step_row = buffer_row
+		macro_run load_step_seg_count
+		int step_seg_count = cached_seg_count
+		WrapStepInput click_step_input = (step_seg_count, step_last_row)
 		click_pos = wrap_step_forward_in_line(click_pos, click_step_input)
 	(buffer_row, seg_index) in click_pos
 
