@@ -1,10 +1,43 @@
-struct UndoSnapshot
-	# Deliberately not named `lines`/`cursor_row`/`cursor_col` -- destructuring a
-	# struct always shadows into a new binding, which can't reach back out of a
-	# nested `if` to update the real editor variables. Different names here force
-	# a genuinely new local on extraction, which can then be plainly reassigned.
-	stringList saved_lines
-	int saved_cursor_row
-	int saved_cursor_col
+# Undo/redo history, stored compactly: only the most recent entry is a full
+# copy of the buffer. Every older one is a patch -- just the lines that
+# differ -- that turns the entry above it back into itself. A full copy per
+# entry made every keystroke copy the whole file and kept hundreds of copies
+# alive, and the whole history was copied again every time the app state was.
+#
+# Deliberately not named `lines`/`cursor_row`/`cursor_col` -- destructuring a
+# struct always shadows into a new binding, which can't reach back out of a
+# nested `if` to update the real editor variables. Different names here force
+# a genuinely new local on extraction, which can then be plainly reassigned.
 
-shape undoList = list of UndoSnapshot
+# One full buffer state plus the cursor to put back with it.
+struct UndoPoint
+	stringList point_lines
+	int point_row
+	int point_col
+
+# Turns the next-newer entry's lines into this entry's: replace
+# `patch_added_len` lines starting at `patch_start` with `patch_removed`.
+struct UndoPatch
+	int patch_start
+	stringList patch_removed
+	int patch_added_len
+	int patch_cursor_row
+	int patch_cursor_col
+
+shape patchList = list of UndoPatch
+
+# patches: oldest first. top_*: the newest entry, in full (only meaningful
+# when history_has_top is true).
+struct UndoHistory
+	patchList history_patches
+	stringList history_top_lines
+	int history_top_row
+	int history_top_col
+	bool history_has_top
+
+# What undo_history_pop hands back: the history without that entry, and the
+# entry itself (popped is false when the history was empty).
+struct UndoPop
+	UndoHistory popped_history
+	UndoPoint popped_point
+	bool popped

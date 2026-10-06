@@ -1,8 +1,11 @@
 fn AppState editor_scroll(AppState state)
 	unsafe_macro_run use_consts
-	(browser, main_panel) in state
-	(core, diff, lint, search) in main_panel
-	(lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers) in core
+	# Taken apart by `move` and rebuilt at the bottom -- `(main_panel) in
+	# state` would copy every line of the file and the whole undo history
+	# on every frame.
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+	move (core, diff, selection, undo, search, filter, lint) in main_panel
+	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
 	(sidebar_focused) in browser
 	(diff_lines) in diff
 	(lint_output_visible) in lint
@@ -74,7 +77,7 @@ fn AppState editor_scroll(AppState state)
 				scroll_row = buffer_row
 				scroll_wrap_seg = seg_index
 
-	BufferState core = core with (scroll_row, scroll_wrap_seg)
-	EditorState main_panel = main_panel with (core)
-	new_state as state with (main_panel)
-	return new_state
+	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
+	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	return next_state

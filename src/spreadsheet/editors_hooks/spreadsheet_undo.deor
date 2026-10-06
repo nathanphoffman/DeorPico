@@ -27,15 +27,11 @@ fn AppState spreadsheet_record_undo(AppState state, stringList lines_before)
 	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
 	(lines, cursor_row, cursor_col) in core
-	move (undo_stack, redo_stack) in undo
-	# Re-declared through a local copy -- an `at end` push alone doesn't
-	# make the transpiler declare the unpacked undo_stack mutable.
-	undoList undo_history = move undo_stack
-	undoList undo_stack = move undo_history
+	move (undo_history, redo_history) in undo
 	if lines is not lines_before
 		stringList saved_lines = lines_before
 		macro_run push_saved_lines_to_undo
-	UndoState undo = move (undo_stack, redo_stack)
+	UndoState undo = move (undo_history, redo_history)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
 	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
 	return next_state

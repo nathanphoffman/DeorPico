@@ -11,56 +11,52 @@ macro push_undo_snapshot
 # directly with a copy it took before handling a key (see
 # spreadsheet_record_undo).
 macro push_saved_lines_to_undo
-	int saved_cursor_row = cursor_row
-	int saved_cursor_col = cursor_col
-	UndoSnapshot snapshot = (saved_lines, saved_cursor_row, saved_cursor_col)
-	undo_stack at end = snapshot
-
-	max_undo_depth as 250
-	if len(undo_stack) > max_undo_depth
-		undo_stack remove at 0
-
-	undoList cleared_redo = empty
-	redo_stack = cleared_redo
+	stringList point_lines = move saved_lines
+	int point_row = cursor_row
+	int point_col = cursor_col
+	UndoPoint snapshot = move (point_lines, point_row, point_col)
+	undo_history = undo_history_push(move undo_history, move snapshot)
+	redo_history = new_undo_history()
 
 macro do_undo_impl
-	if len(undo_stack) > 0
+	(history_has_top) in undo_history
+	if history_has_top
+		# The state being undone becomes the newest redo step.
 		full_len as len(lines)
-		stringList saved_lines = l_string_take(lines, full_len)
-		int saved_cursor_row = cursor_row
-		int saved_cursor_col = cursor_col
-		UndoSnapshot current_snapshot = (saved_lines, saved_cursor_row, saved_cursor_col)
-		redo_stack at end = current_snapshot
+		stringList point_lines = l_string_take(lines, full_len)
+		int point_row = cursor_row
+		int point_col = cursor_col
+		UndoPoint current_point = move (point_lines, point_row, point_col)
+		redo_history = undo_history_push(move redo_history, move current_point)
 
-		int last_idx = len(undo_stack) - 1
-		UndoSnapshot restored = undo_stack at last_idx
-		undo_stack remove at last_idx
-
-		(saved_lines, saved_cursor_row, saved_cursor_col) in restored
-		lines = saved_lines
-		cursor_row = saved_cursor_row
-		cursor_col = saved_cursor_col
+		UndoPop undone = undo_history_pop(move undo_history)
+		move (popped_history, popped_point) in undone
+		undo_history = move popped_history
+		move (point_lines, point_row, point_col) in popped_point
+		lines = point_lines
+		cursor_row = point_row
+		cursor_col = point_col
 		dirty = true
 		notice = "Undo"
 		error = false
 
 macro do_redo_impl
-	if len(redo_stack) > 0
+	(history_has_top) in redo_history
+	if history_has_top
 		full_len as len(lines)
-		stringList saved_lines = l_string_take(lines, full_len)
-		int saved_cursor_row = cursor_row
-		int saved_cursor_col = cursor_col
-		UndoSnapshot current_snapshot = (saved_lines, saved_cursor_row, saved_cursor_col)
-		undo_stack at end = current_snapshot
+		stringList point_lines = l_string_take(lines, full_len)
+		int point_row = cursor_row
+		int point_col = cursor_col
+		UndoPoint current_point = move (point_lines, point_row, point_col)
+		undo_history = undo_history_push(move undo_history, move current_point)
 
-		int last_idx = len(redo_stack) - 1
-		UndoSnapshot restored = redo_stack at last_idx
-		redo_stack remove at last_idx
-
-		(saved_lines, saved_cursor_row, saved_cursor_col) in restored
-		lines = saved_lines
-		cursor_row = saved_cursor_row
-		cursor_col = saved_cursor_col
+		UndoPop redone = undo_history_pop(move redo_history)
+		move (popped_history, popped_point) in redone
+		redo_history = move popped_history
+		move (point_lines, point_row, point_col) in popped_point
+		lines = point_lines
+		cursor_row = point_row
+		cursor_col = point_col
 		dirty = true
 		notice = "Redo"
 		error = false
@@ -68,7 +64,5 @@ macro do_redo_impl
 # Called when switching to a different file (e.g. via the browser) so undo
 # history from the old file can't bleed into the new one.
 macro reset_undo_history
-	undoList cleared_undo = empty
-	undoList cleared_redo = empty
-	undo_stack = cleared_undo
-	redo_stack = cleared_redo
+	undo_history = new_undo_history()
+	redo_history = new_undo_history()

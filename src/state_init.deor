@@ -84,9 +84,9 @@ unsafe_macro initialize_selection
 	SelectionState selection = (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 
 unsafe_macro initialize_undo
-	undoList undo_stack = empty
-	undoList redo_stack = empty
-	UndoState undo = (undo_stack, redo_stack)
+	UndoHistory undo_history = new_undo_history()
+	UndoHistory redo_history = new_undo_history()
+	UndoState undo = move (undo_history, redo_history)
 
 unsafe_macro initialize_search
 	search_buffer as ""

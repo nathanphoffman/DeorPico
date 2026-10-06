@@ -166,22 +166,15 @@ macro render_diff_status_and_notice
 # both agree on exactly what's being wrapped.
 fn stringList diff_wrap_content_lines(stringList diff_lines)
 	unsafe_macro_run use_consts
-	int total = len(diff_lines)
-	int diff_idx = 0
-	string tab_char = "\t"
-	stringList content_lines = empty
-	for if diff_idx < total
-		string raw_line = diff_lines at diff_idx
-		string content = ""
-		int raw_len = len(raw_line)
-		if raw_len > 0
-			int content_start = 1
-			content = s_substring(raw_line, content_start, raw_len)
-		if s_contains(content, tab_char)
-			content = s_replace(content, tab_char, TAB_STRING)
-		content_lines at end = content
-		diff_idx = diff_idx + 1
-	return content_lines
+	rust
+		diff_lines
+			.iter()
+			.map(|raw_line| {
+				let mut chars = raw_line.chars();
+				chars.next();
+				chars.as_str().replace('\t', &TAB_STRING)
+			})
+			.collect::<Vec<String>>()
 
 # Isolated in its own fn (rather than inlined into setup_diff_view_layout)
 # purely so its local `diff_lines` (the empty one EditorLayoutInput wants
@@ -217,15 +210,14 @@ fn int diff_content_width_for(int rows, int cols, bool sidebar_focused)
 
 fn void editor_render_diff(AppState state)
 
-	(browser) in state
+	# `move` for the big pieces -- `(main_panel) in state` would copy every
+	# line of the file just to read a few fields from it.
+	move (browser, main_panel, notice) in state
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-	(main_panel) in state
-	(core) in main_panel
+	move (core, diff) in main_panel
 	(filename) in core
-	(diff) in main_panel
 	(diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
-	(notice) in state
 	unsafe_macro_run use_consts
 	unsafe_macro_run use_ansi_codes
 	unsafe_macro_run use_diff_marker_ansi

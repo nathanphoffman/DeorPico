@@ -91,7 +91,7 @@ macro scrollbar_jump_to_row
 	# otherwise dragging the thumb to the bottom of the track stops short of
 	# the wheel-scroll max and the grey EOF band never comes fully into view.
 	const int EOF_PADDING_ROWS = 5
-	int total_visual_rows = wrap_total_visual_rows(lines, text_visible_columns)
+	unsafe_macro_run wrap_scan_rows
 	int scrollable_rows = total_visual_rows - view_rows + EOF_PADDING_ROWS
 	if scrollable_rows > 0 and track_bottom > 0
 		int min_scroll = 0

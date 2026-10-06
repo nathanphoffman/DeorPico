@@ -56,7 +56,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
 	move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
 	move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging) in selection
-	move (undo_stack, redo_stack) in undo
+	move (undo_history, redo_history) in undo
 	move (search_buffer, search_active, search_editing, search_matches, search_match_index) in search
 	move (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count) in filter
 	move (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible) in lint
@@ -125,7 +125,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
 	DiffState diff = move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path)
 	SelectionState selection = move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
-	UndoState undo = move (undo_stack, redo_stack)
+	UndoState undo = move (undo_history, redo_history)
 	SearchState search = move (search_buffer, search_active, search_editing, search_matches, search_match_index)
 	FilterState filter = move (filter_active, filter_query, filter_dir, filter_matches, filter_selected, filter_scroll_row, filter_truncated_count)
 	LintState lint = move (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)

@@ -1,0 +1,44 @@
+# Taking AppState apart and putting it back together by `move` -- the
+# alternative, `(main_panel) in state`, copies every line of the file and the
+# whole undo history, which adds up when it happens on every key and every
+# frame.
+
+# Declares every AppState field as a local (see events.deor for the same
+# list). Takes `state` apart: don't use `state` again until
+# repack_app_state has put it back.
+unsafe_macro unpack_app_state
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+	move (core, diff, selection, undo, search, filter, lint) in main_panel
+	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
+	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
+
+# The reverse of unpack_app_state: rebuilds `state` from the locals.
+macro repack_app_state
+	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
+	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	AppState repacked_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	state = repacked_state
+
+# After editor_render: puts back the visible rows' real text and the real
+# undo history that render_frame set aside (see RenderStash).
+fn AppState restore_after_render(AppState state, RenderStash stash)
+	move (raw_window, window_start, saved_undo) in stash
+	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+	move (core, diff, selection, search, filter, lint) in main_panel
+	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
+	# Re-declared through a local copy -- the transpiler doesn't make an
+	# unpacked variable mutable on an indexed write alone (same trick as
+	# spreadsheet_record_undo).
+	stringList lines_holder = move lines
+	stringList lines = move lines_holder
+	int window_len = len(raw_window)
+	for offset in range(window_len)
+		int row = window_start + offset
+		string raw_line = raw_window at offset
+		lines at row = raw_line
+	UndoState undo = saved_undo
+	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
+	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	return next_state

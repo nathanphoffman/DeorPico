@@ -1,0 +1,9 @@
+# What render_frame (main.deor) sets aside while it draws, so
+# restore_after_render can put it back: the real text of the visible rows
+# (the draw copy has syntax-highlight escape codes in them) and the real
+# undo history (the draw copy gets an empty one -- it's never read while
+# drawing, and copying it with the state on every frame is expensive).
+struct RenderStash
+	stringList raw_window
+	int window_start
+	UndoState saved_undo

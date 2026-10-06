@@ -1,0 +1,40 @@
+# Re-scanning only what an edit changed, instead of the whole file.
+#
+# xs_run (lib/syntax_highlighter/run.deor) records, for every row, the scope
+# stack in effect at its start. An edit only affects the rows from the first
+# changed one until the stack settles back to what it was before the edit
+# (usually the same row or the next one -- it only runs further when e.g. a
+# comment or string was opened or closed). Rows before the edit keep their
+# recorded stack as is; rows after the settling point get their old stacks
+# back, shifted if lines were added or removed.
+
+# Moves the recorded stacks of rows `from_row` and later out of the
+# highlighter and returns them; it keeps only the rows before.
+fn frameListList hl_state_take_from(Highlighter hlt, int from_row)
+	rust
+		{
+			let mut st = hlt.0.borrow_mut();
+			let cut = (from_row as usize).min(st.line_state.len());
+			st.line_state.split_off(cut)
+		}
+
+# Records `stack` as the next row's starting stack.
+fn Highlighter hl_state_push(Highlighter hlt, frameList stack)
+	rust
+		{
+			hlt.0.borrow_mut().line_state.push(stack);
+			hlt
+		}
+
+# Records `tail`'s stacks from index `from_idx` on as the following rows'.
+fn Highlighter hl_state_append_from(Highlighter hlt, frameListList tail, int from_idx)
+	rust
+		{
+			let start = (from_idx as usize).min(tail.len());
+			hlt.0.borrow_mut().line_state.extend(tail[start..].iter().cloned());
+			hlt
+		}
+
+fn bool hl_frames_equal(frameList left, frameList right)
+	rust
+		left == right

@@ -198,14 +198,13 @@ fn WrapPosition wrap_step_backward_in_line(WrapPosition pos, string prev_line, i
 # which needs true proportions once lines can span multiple rows.
 fn int wrap_total_visual_rows(stringList lines, int width)
 	unsafe_macro_run use_consts
-	int total_line_count = len(lines)
-	int row_index = 0
 	int total_visual_rows = 0
-	for if row_index < total_line_count
-		string line = lines at row_index
-		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
-		total_visual_rows = total_visual_rows + wrap_segment_count(breaks)
-		row_index = row_index + 1
+	rust
+		{
+			for line in lines.iter() {
+				total_visual_rows += wrap_break_visual_cols(line.clone(), width, TAB_WIDTH).len() as i64 + 1;
+			}
+		}
 	return total_visual_rows
 
 # Converts `pos` into its absolute visual-row index from the top of the
@@ -217,13 +216,13 @@ fn int wrap_total_visual_rows(stringList lines, int width)
 fn int wrap_visual_row_position(WrapPosition pos, stringList lines, int width)
 	unsafe_macro_run use_consts
 	(buffer_row, seg_index) in pos
-	int row_index = 0
 	int total_visual_rows = 0
-	for if row_index < buffer_row
-		string line = lines at row_index
-		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
-		total_visual_rows = total_visual_rows + wrap_segment_count(breaks)
-		row_index = row_index + 1
+	rust
+		{
+			for line in lines.iter().take(buffer_row.max(0) as usize) {
+				total_visual_rows += wrap_break_visual_cols(line.clone(), width, TAB_WIDTH).len() as i64 + 1;
+			}
+		}
 	total_visual_rows = total_visual_rows + seg_index
 	return total_visual_rows
 

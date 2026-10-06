@@ -54,7 +54,7 @@ unsafe_macro init_highlight_state
 # against the new file instead of comparing it to the old one's cache.
 macro refresh_highlighter_for_file_change
 	if filename is not current_file
-		current_file = filename
+		current_file = s_join([filename])
 		ext = resolve_highlight_ext(current_file)
 		highlighter = initialize_highlighter(ext)
 		stringList cleared_highlighted_lines = empty
@@ -76,33 +76,105 @@ unsafe_macro compute_cursor_visual_columns
 # actually changed since the last frame.
 macro rehighlight_if_dirty
 	if lines is not last_highlighted_lines
-		highlighter = xs_run(highlighter, lines)
+		macro_run rehighlight_changed_rows
 		stringList lines_snapshot = lines
 		last_highlighted_lines = move lines_snapshot
 
-# Stands in for the file's lines when it's over max_open_file_bytes() --
-# a plain message, drawn through the normal editor render (no line numbers,
-# no highlighting).
-macro draw_too_large_frame
-	int size_mb = (f_size(current_file) + 1048575) / 1048576
-	int limit_mb = max_open_file_bytes() / 1048576
-	string size_note = s_join(["  ", c_int_to_string(size_mb), " MB file  |  limit is ", c_int_to_string(limit_mb), " MB"])
-	lines = ["", "", "  FILE TOO BIG TO OPEN", "", size_note, "", "  You can still rename, move or delete it from the sidebar."]
-	bool show_line_numbers = false
-	BufferState core = core with (lines, show_line_numbers)
-	EditorState main_panel = main_panel with (core)
-	AppState render_state_message = state with (main_panel)
-	int no_cursor_col = 0
-	editor_render(move render_state_message, no_cursor_col, no_cursor_col)
+# Re-scans only the rows an edit can have changed (see
+# highlight_incremental.deor) -- the same result as xs_run over the whole
+# file. Compares `lines` with last_highlighted_lines (the text the recorded
+# stacks were computed from) in place, without copying either.
+macro rehighlight_changed_rows
+	int first_changed_row = 0
+	int new_tail_start = 0
+	int old_tail_start = 0
+	rust
+		{
+			let old_rows = &last_highlighted_lines;
+			let new_rows = &lines;
+			let shortest = old_rows.len().min(new_rows.len());
+			let mut same_head = 0;
+			while same_head < shortest && old_rows[same_head] == new_rows[same_head] {
+				same_head += 1;
+			}
+			let mut same_tail = 0;
+			while same_tail < shortest - same_head && old_rows[old_rows.len() - 1 - same_tail] == new_rows[new_rows.len() - 1 - same_tail] {
+				same_tail += 1;
+			}
+			first_changed_row = same_head as i64;
+			new_tail_start = (new_rows.len() - same_tail) as i64;
+			old_tail_start = (old_rows.len() - same_tail) as i64;
+		}
 
+	# Lines added past the old end have no recorded start stack of their own
+	# -- redo the old last row, whose end stack they start from.
+	if first_changed_row >= len(last_highlighted_lines) and first_changed_row > 0
+		first_changed_row = len(last_highlighted_lines) - 1
+
+	HlConfig scan_config = hl_config(highlighter)
+	(cfg_tab_width, cfg_jsx_expr) in scan_config
+	ruleList gr_host = hl_host_rules(highlighter)
+	subMetaList gr_subs = hl_sub_metas(highlighter)
+	bool gr_jsx = cfg_jsx_expr
+	bool gr_tokens = false
+
+	frameListList old_tail = hl_state_take_from(highlighter, first_changed_row)
+	frameList stack = empty
+	if len(old_tail) > 0
+		stack = old_tail at 0
+	else
+		Frame floor_frame = hl_frame_code()
+		stack at end = floor_frame
+
+	int row_count = len(lines)
+	int row = first_changed_row
+	for if row < row_count
+		highlighter = hl_state_push(highlighter, stack)
+		string scan_line = lines at row
+		string expanded = hl_expand_tabs(scan_line, cfg_tab_width)
+		int gr_len = hl_set_line(highlighter, expanded)
+		int gr_row = row
+		Grammar gram = (gr_host, gr_subs, gr_row, gr_len, gr_jsx, gr_tokens)
+		TokenizeResult scanned = hl_tokenize_line(highlighter, gram, stack)
+		(out_stack) in scanned
+		stack = out_stack
+		row = row + 1
+
+		# Past the edit, once the stack matches what was recorded for this
+		# row before, every later row's recorded stack is still right.
+		if row >= new_tail_start and row < row_count
+			int old_row = old_tail_start + (row - new_tail_start)
+			int tail_idx = old_row - first_changed_row
+			if tail_idx < len(old_tail)
+				frameList old_stack = old_tail at tail_idx
+				if hl_frames_equal(stack, old_stack)
+					highlighter = hl_state_append_from(highlighter, old_tail, tail_idx)
+					break
+
+# Draws whatever the current screen is. Expects the unpack_app_state locals;
+# leaves `state` repacked when it returns.
 macro draw_frame
-	if commit_prompt_is_open(state)
+	bool sheet_showing = spreadsheet_active and spreadsheet_view_active
+	if commit_prompt_open
+		macro_run repack_app_state
 		commit_prompt_render(state)
 	else if diffing
+		# Undo history isn't read while drawing (see the normal path below).
+		stringList raw_window = empty
+		int window_start = 0
+		UndoState saved_undo = move undo
+		UndoHistory undo_history = new_undo_history()
+		UndoHistory redo_history = new_undo_history()
+		UndoState undo = move (undo_history, redo_history)
+		RenderStash stash = move (raw_window, window_start, saved_undo)
+		macro_run repack_app_state
 		editor_render_diff(state)
+		state = restore_after_render(move state, move stash)
 	else if too_large
-		macro_run draw_too_large_frame
-	else if spreadsheet_main_draw_frame(state)
+		macro_run repack_app_state
+		editor_render_too_large(state, current_file)
+	else if sheet_showing
+		macro_run repack_app_state
 		spreadsheet_render(state)
 	else
 		# Only color the rows that can actually be on screen this frame
@@ -116,11 +188,25 @@ macro draw_frame
 		if end_row > total_line_count
 			end_row = total_line_count
 		HighlightRange highlight_bounds = (start_row, end_row)
+
+		# The draw copy of `lines` gets colored in place, so the real text
+		# of those rows is set aside and put back afterwards. Undo history
+		# is never read while drawing -- it's set aside too, and the draw
+		# copy gets an empty one.
+		stringList raw_window = empty
+		for row_idx in range(start_row, end_row)
+			raw_window at end = lines at row_idx
+		int window_start = start_row
+		UndoState saved_undo = move undo
+		UndoHistory undo_history = new_undo_history()
+		UndoHistory redo_history = new_undo_history()
+		UndoState undo = move (undo_history, redo_history)
+		RenderStash stash = move (raw_window, window_start, saved_undo)
+
 		lines = get_highlighted_lines_range(move lines, highlighter, highlight_bounds)
-		BufferState core = core with (lines)
-		EditorState main_panel = main_panel with (core)
-		AppState render_state_with_colors = state with (main_panel)
-		editor_render(move render_state_with_colors, cursor_visual_col, sel_anchor_visual_col)
+		macro_run repack_app_state
+		state = editor_render(move state, cursor_visual_col, sel_anchor_visual_col)
+		state = restore_after_render(move state, move stash)
 
 # Recomputes scroll, re-highlights if the buffer changed, and draws the
 # current frame. Pulled out of main()'s loop so it can be called once before
@@ -130,12 +216,11 @@ macro render_frame
 	unsafe_macro_run use_consts
 
 	state = editor_scroll(move state)
-
-	(main_panel) in state
-	(core, diff, selection) in main_panel
-	(filename, lines, cursor_row, cursor_col, scroll_row, too_large) in core
+	unsafe_macro_run unpack_app_state
 	(diffing) in diff
 	(sel_anchor_row, sel_anchor_col) in selection
+	(commit_prompt_open) in commit_prompt
+	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
 
 	macro_run refresh_highlighter_for_file_change
 	unsafe_macro_run compute_cursor_visual_columns
@@ -161,16 +246,31 @@ fn void main()
 		# with nothing running is a guaranteed no-op, so skip paying for a
 		# render on it instead of redrawing the whole screen 6-7x/second
 		# while the user isn't typing.
-		(main_panel) in state
+		#
+		# `state` is taken apart by `move` to read these few flags -- reading
+		# them with `(main_panel) in state` would copy the whole file and
+		# undo history on every key.
+		move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
 		(lint) in main_panel
 		(lint_running) in lint
 		bool was_lint_running = lint_running
+		(commit_prompt_open) in commit_prompt
+		(spreadsheet_active) in spreadsheet
+		AppState loop_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+		state = loop_state
 
-		# The commit screen (^L) takes every key while it's open.
-		if commit_prompt_owns_key(state, key)
-			state = commit_prompt_handle_key(state, key)
-		else
+		# The commit screen (^L) takes every key while it's open (and the
+		# key that opens it -- only worth the full check for those).
+		bool prompt_owns_key = false
+		if commit_prompt_open or kind is "commit_prompt"
+			prompt_owns_key = commit_prompt_owns_key(state, key)
+		if prompt_owns_key
+			state = commit_prompt_handle_key(move state, key)
+		else if spreadsheet_active
 			macro_run spreadsheet_main_main
+		else
+			state = editor_handle_key_for_events(move state, key)
+			macro_run spreadsheet_after_text_key
 		(done) in state
 		if done
 			break

@@ -1,0 +1,46 @@
+# One pass over the whole buffer for what the scrollbar and wheel-scroll
+# clamp need: total_visual_rows (every line's wrapped row count, summed) and
+# scroll_visual_row (visual-row index of the (scroll_row, scroll_wrap_seg)
+# position, or past the end for the grey EOF band). Expects `lines`,
+# text_visible_columns, scroll_row, scroll_wrap_seg and the use_consts
+# constants in scope.
+#
+# Done in a rust block that reads `lines` in place -- the same sums through
+# wrap_total_visual_rows/wrap_visual_row_position copy every line of the
+# file to hand it over, twice, on every frame. Lines that fit (nearly all of
+# them) are measured without allocating; only a line that really wraps goes
+# through wrap_break_visual_cols, so the answer is the same as theirs.
+unsafe_macro wrap_scan_rows
+	int scan_tab_width = TAB_WIDTH
+	int total_visual_rows = 0
+	int scroll_visual_row = 0
+	rust
+		{
+			let width: i64 = text_visible_columns;
+			let stop: usize = if scroll_row < 0 { 0 } else { scroll_row as usize };
+			let mut total: i64 = 0;
+			let mut before_scroll: i64 = 0;
+			for (idx, line) in lines.iter().enumerate() {
+				let mut cols: i64 = 0;
+				let mut in_escape = false;
+				let mut fits = true;
+				for ch in line.chars() {
+					if in_escape {
+						if ch == 'm' { in_escape = false; }
+						continue;
+					}
+					if ch == '\u{1b}' { in_escape = true; continue; }
+					if ch == '\t' {
+						cols = (cols / scan_tab_width + 1) * scan_tab_width;
+					} else {
+						cols += 1;
+					}
+					if cols > width { fits = false; break; }
+				}
+				let rows: i64 = if fits { 1 } else { wrap_break_visual_cols(line.clone(), width, scan_tab_width).len() as i64 + 1 };
+				if idx < stop { before_scroll += rows; }
+				total += rows;
+			}
+			total_visual_rows = total;
+			scroll_visual_row = if stop < lines.len() { before_scroll + scroll_wrap_seg } else { total + (scroll_row - lines.len() as i64) };
+		}

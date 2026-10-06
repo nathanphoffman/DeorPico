@@ -1,0 +1,17 @@
+# Stands in for the file's lines when it's over max_open_file_bytes() --
+# a plain message, drawn through the normal editor render (no line numbers,
+# no highlighting). Works on a copy of `state` -- the file's real (empty)
+# lines are never touched.
+fn void editor_render_too_large(AppState state, string current_file)
+	int size_mb = (f_size(current_file) + 1048575) / 1048576
+	int limit_mb = max_open_file_bytes() / 1048576
+	string size_note = s_join(["  ", c_int_to_string(size_mb), " MB file  |  limit is ", c_int_to_string(limit_mb), " MB"])
+	stringList lines = ["", "", "  FILE TOO BIG TO OPEN", "", size_note, "", "  You can still rename, move or delete it from the sidebar."]
+	bool show_line_numbers = false
+	(main_panel) in state
+	(core) in main_panel
+	BufferState core = core with (lines, show_line_numbers)
+	EditorState main_panel = main_panel with (core)
+	AppState render_state_message = state with (main_panel)
+	int no_cursor_col = 0
+	AppState finished = editor_render(move render_state_message, no_cursor_col, no_cursor_col)

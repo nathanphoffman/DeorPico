@@ -5,8 +5,8 @@ unsafe_macro calculate_viewport_dimensions
 	(cols, rows) in term_size
 	int max_visible_columns = cols
 	int total_line_count = len(lines)
-	SelectionRange selection = editor_selection_range(state, cursor_visual_col, sel_anchor_visual_col)
-	(has_selection) in selection
+	SelectionRangeInput range_input = (has_selection, sel_anchor_row, cursor_row, cursor_visual_col, sel_anchor_visual_col)
+	SelectionRange sel_range = editor_selection_range(range_input)
 
 # Render lint output panel if visible
 macro render_lint_output_section
@@ -14,11 +14,14 @@ macro render_lint_output_section
 		string lint_popup = editor_render_lint_output(lint_output, max_visible_columns)
 		screen = s_join([screen, lint_popup])
 
-fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visual_col)
+# Returns `state` untouched, so callers that hand it over with `move` (to
+# avoid copying every line of the file) get it back.
+fn AppState editor_render(AppState state, int cursor_visual_col, int sel_anchor_visual_col)
 	unsafe_macro_run use_ansi_codes
 
 	(browser, main_panel, notice, error) in state
-	(core, diff, search, filter, lint) in main_panel
+	(core, diff, selection, search, filter, lint) in main_panel
+	(has_selection, sel_anchor_row) in selection
 	(filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, dirty, show_line_numbers) in core
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name, new_file_cursor) in browser
 	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
@@ -28,8 +31,6 @@ fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visu
 	(issue_matches, lint_output, lint_output_visible) in lint
 
 	unsafe_macro_run calculate_viewport_dimensions
-
-	# main macros to setup editor:
 	unsafe_macro_run setup_minimap_and_gutters
 	macro_run render_buffer_rows
 	macro_run render_lint_output_section
@@ -37,3 +38,4 @@ fn void editor_render(AppState state, int cursor_visual_col, int sel_anchor_visu
 	macro_run render_search_bar
 	macro_run build_and_render_status_bar
 	macro_run position_and_output_cursor
+	return state

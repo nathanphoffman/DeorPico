@@ -20,3 +20,17 @@ macro spreadsheet_main_main
 		state = editor_handle_key_for_events(state, key)
 		state = spreadsheet_after_undo(state, key)
 		state = spreadsheet_refresh_view_cache(move state, lines_before, view_settings_before)
+
+# main()'s key dispatch for a file that isn't a spreadsheet: just the editor
+# handler -- the spreadsheet hooks above are all no-ops for it, so skipping
+# them saves copying the whole app state several times per key. The one
+# exception is the key opening a spreadsheet file (sidebar Enter, ^T, ...),
+# which needs the sheet's view cache built, same as at the end of
+# spreadsheet_main_main.
+macro spreadsheet_after_text_key
+	(spreadsheet) in state
+	(spreadsheet_active) in spreadsheet
+	if spreadsheet_active
+		stringList no_lines_before = empty
+		string no_view_settings = ""
+		state = spreadsheet_refresh_view_cache(move state, no_lines_before, no_view_settings)

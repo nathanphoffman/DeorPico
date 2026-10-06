@@ -1,3 +1,12 @@
+# What editor_selection_range needs -- plain values, so callers don't hand
+# it (and thereby copy) the whole AppState.
+struct SelectionRangeInput
+	bool has_selection
+	int sel_anchor_row
+	int cursor_row
+	int cursor_visual_col
+	int sel_anchor_visual_col
+
 struct SelectionRange
 	bool has_selection
 	int start_row
@@ -20,11 +29,8 @@ struct RowHighlight
 # counts on-screen columns after tabs are expanded, so comparing raw
 # columns against those would shift the highlight horizontally on any row
 # with a leading tab.
-fn SelectionRange editor_selection_range(AppState state, int cursor_visual_col, int sel_anchor_visual_col)
-	move (main_panel) in state
-	(core, selection) in main_panel
-	(cursor_row) in core
-	(has_selection, sel_anchor_row) in selection
+fn SelectionRange editor_selection_range(SelectionRangeInput range_input)
+	(has_selection, sel_anchor_row, cursor_row, cursor_visual_col, sel_anchor_visual_col) in range_input
 
 	bool anchor_first = sel_anchor_row < cursor_row or (sel_anchor_row is cursor_row and sel_anchor_visual_col <= cursor_visual_col)
 

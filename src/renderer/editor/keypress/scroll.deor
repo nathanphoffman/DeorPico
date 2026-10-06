@@ -45,19 +45,10 @@ macro reclamp_scroll_wrap_seg
 # status bar) never becomes reachable.
 macro clamp_scroll_to_wrapped_ceiling
 	const int EOF_PADDING_ROWS = 5
-	int total_visual_rows = wrap_total_visual_rows(lines, text_visible_columns)
+	unsafe_macro_run wrap_scan_rows
 	int max_scroll_visual_row = total_visual_rows - view_rows + EOF_PADDING_ROWS
 	if max_scroll_visual_row < 0
 		max_scroll_visual_row = 0
-
-	int scroll_visual_row = total_visual_rows
-	if scroll_row < total_line_count
-		int buffer_row = scroll_row
-		int seg_index = scroll_wrap_seg
-		WrapPosition scroll_pos = (buffer_row, seg_index)
-		scroll_visual_row = wrap_visual_row_position(scroll_pos, lines, text_visible_columns)
-	else
-		scroll_visual_row = total_visual_rows + (scroll_row - total_line_count)
 
 	if scroll_visual_row > max_scroll_visual_row
 		if max_scroll_visual_row >= total_visual_rows
