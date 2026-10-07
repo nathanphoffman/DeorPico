@@ -1,0 +1,2 @@
+*.deor linguist-language=Rust
+build/** linguist-generated
