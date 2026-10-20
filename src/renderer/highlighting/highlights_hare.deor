@@ -1,0 +1,44 @@
+# raw strings (backtick-delimited) -- no escape sequences
+macro hare_highlighting_string_raw_backtick
+	name as "string"
+	start as "`"
+	stop as "`"
+	BoundedSpec rstr_spec = (name, start, stop)
+	rstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, rstr_spec, rstr_escapable)
+
+# attributes (@test, @init, @fini, @noreturn, @symbol("name"))
+macro hare_highlighting_attribute
+	attr_name as "keyword"
+	attr_pattern as "@[a-z_]+"
+	highlighter = xs_add_keyword(highlighter, attr_name, attr_pattern)
+
+# Hare keywords
+macro hare_highlighting_keywords
+	kw_name as "keyword"
+	kw_pattern as "\\b(abort|align|alloc|append|as|assert|break|case|const|continue|def|defer|delete|done|else|enum|export|false|fn|for|free|if|insert|is|len|let|match|null|nullable|offset|return|static|struct|switch|true|type|union|use|vaarg|vaend|vastart|yield)\\b"
+	highlighter = xs_add_keyword(highlighter, kw_name, kw_pattern)
+
+# builtin primitive types
+macro hare_highlighting_builtin_types
+	builtin_name as "type"
+	builtin_pattern as "\\b(bool|f32|f64|i8|i16|i32|i64|int|never|opaque|rune|size|str|u8|u16|u32|u64|uint|uintptr|valist|void)\\b"
+	highlighter = xs_add_keyword(highlighter, builtin_name, builtin_pattern)
+
+# numeric literals: hex/binary/octal, decimals, exponents, and type suffixes (10u8, 2.5f32, 8z)
+macro hare_highlighting_number
+	num_name as "number"
+	num_pattern as "\\b(0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|\\d+(\\.\\d+)?([eE][+-]?\\d+)?)(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|i|u|z)?\\b"
+	highlighter = xs_add_keyword(highlighter, num_name, num_pattern)
+
+# No block comments in Hare. Single quotes are rune literals ('x', '\n').
+macro highlights_hare
+	macro_run shared_highlighting_comment_slashes
+	macro_run hare_highlighting_string_raw_backtick
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single
+	macro_run hare_highlighting_attribute
+	macro_run shared_highlighting_call
+	macro_run hare_highlighting_keywords
+	macro_run hare_highlighting_builtin_types
+	macro_run hare_highlighting_number

@@ -52,6 +52,8 @@ fn Highlighter initialize_highlighter(string ext)
 		macro_run highlights_mojo
 	else if ext is GOLANG
 		macro_run highlights_go
+	else if ext is HARE
+		macro_run highlights_hare
 	else if ext is ASM1 or ext is ASM2
 		macro_run highlights_asm
 	else if ext is BASH1 or ext is BASH2

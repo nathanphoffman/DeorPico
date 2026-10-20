@@ -31,6 +31,7 @@ unsafe_macro language_ext_consts
 	const string CMM = "cmm"
 	const string MOJO = "mojo"
 	const string GOLANG = "go"
+	const string HARE = "ha"
 	const string ASM1 = "asm"
 	const string ASM2 = "s"
 	const string BASH1 = "sh"
@@ -111,6 +112,7 @@ fn string comment_prefix_for_ext(string ext)
 	prefixes = h_set(prefixes, CPP_HEADER1, slash)
 	prefixes = h_set(prefixes, CPP_HEADER2, slash)
 	prefixes = h_set(prefixes, GOLANG, slash)
+	prefixes = h_set(prefixes, HARE, slash)
 	prefixes = h_set(prefixes, JAVA, slash)
 	prefixes = h_set(prefixes, PHP, slash)
 	prefixes = h_set(prefixes, CMM, slash)
