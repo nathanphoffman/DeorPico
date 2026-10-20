@@ -1,30 +1,49 @@
 
+# User-configurable numbers (see config.deor / .dpico.example), read once at
+# startup. Each is the config key and its default.
 unsafe_macro use_consts
-	const int PAGE_DOWN_UP_AMOUNT = 30
+	page_key as "page_scroll_lines"
+	page_default as 30
+	int cfg_page_scroll_lines = config_int(page_key, page_default)
 
 	# Must match the tab width the syntax highlighter expands tabs to when producing
 	# highlighted lines for display -- used to convert a raw cursor_col
 	# (one tab = one character) into the on-screen column (one tab = several).
-	const int TAB_WIDTH = 4
-	const string TAB_STRING = "    "
+	tab_key as "tab_width"
+	tab_default as 4
+	int cfg_tab_width = config_int(tab_key, tab_default)
+	space as " "
+	string cfg_tab_string = s_repeat(space, cfg_tab_width)
 
-	const int CTRL_ARROW_X_AMOUNT = 15
-	const int CTRL_ARROW_Y_AMOUNT = 8
+	arrow_x_key as "ctrl_arrow_columns"
+	arrow_x_default as 15
+	int cfg_ctrl_arrow_columns = config_int(arrow_x_key, arrow_x_default)
+	arrow_y_key as "ctrl_arrow_lines"
+	arrow_y_default as 8
+	int cfg_ctrl_arrow_lines = config_int(arrow_y_key, arrow_y_default)
 
-	const int SCROLL_WHEEL_AMOUNT = 3
+	wheel_key as "scroll_wheel_lines"
+	wheel_default as 3
+	int cfg_scroll_wheel_lines = config_int(wheel_key, wheel_default)
 
-	# Fixed height of the ctrl+e raw lint output popup -- longer output is
+	# Height of the ctrl+e raw lint output popup -- longer output is
 	# cut off rather than making the popup scrollable.
-	const int LINT_POPUP_HEIGHT = 10
+	popup_key as "lint_popup_height"
+	popup_default as 10
+	int cfg_lint_popup_height = config_int(popup_key, popup_default)
 
-	# Fixed width of the persistent Files-tree sidebar (see sidebar.deor) --
+	# Width of the persistent Files-tree sidebar (see sidebar.deor) --
 	# always claims exactly this many columns so the text buffer's own
 	# width is predictable frame to frame.
-	const int SIDEBAR_WIDTH = 30
+	sidebar_key as "sidebar_width"
+	sidebar_default as 30
+	int cfg_sidebar_width = config_int(sidebar_key, sidebar_default)
 
 	# Width the sidebar widens to while it has keyboard focus (F1) -- gives
 	# long file/directory names more room to display without truncation.
-	const int SIDEBAR_WIDTH_FOCUSED = 46
+	focused_key as "sidebar_width_focused"
+	focused_default as 46
+	int cfg_sidebar_width_focused = config_int(focused_key, focused_default)
 
 	# One column reserved at the right edge of the text area for the
 	# vertical scrollbar (see scrollbar.deor).
@@ -33,7 +52,9 @@ unsafe_macro use_consts
 # Files bigger than this (in bytes) aren't loaded -- the viewer just says the
 # file is too big. Renaming, moving and deleting still work from the sidebar.
 fn int max_open_file_bytes()
-	return 26214400
+	mb_key as "max_file_mb"
+	mb_default as 25
+	return config_int(mb_key, mb_default) * 1048576
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,
@@ -46,7 +67,7 @@ fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible, bool sea
 	if has_minimap
 		reserved_rows = reserved_rows + 1
 	if lint_output_visible
-		reserved_rows = reserved_rows + LINT_POPUP_HEIGHT
+		reserved_rows = reserved_rows + cfg_lint_popup_height
 	if search_active
 		reserved_rows = reserved_rows + 1
 	return reserved_rows

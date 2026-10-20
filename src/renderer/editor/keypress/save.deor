@@ -17,7 +17,13 @@ macro key_save_impl
 	# removed/git-staged externally, not just this one's own diff/status.
 	macro_run refresh_all_git_status
 
-	if lint_command is not ""
-		lr_run(lint_runner, lint_command, lint_working_dir)
+	working_dir as lint_working_dir
+	string ext = resolve_highlight_ext(filename)
+	key as "lint_command"
+	fallback as lint_command
+	ConfigQuery save_query = (working_dir, ext, key, fallback)
+	string save_lint_command = config_lookup(save_query)
+	if save_lint_command is not ""
+		lr_run(lint_runner, save_lint_command, lint_working_dir)
 		lint_running = true
 		notice = "Saved, linting..."

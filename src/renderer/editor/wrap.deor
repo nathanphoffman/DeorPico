@@ -116,7 +116,7 @@ fn WrapPosition wrap_step_forward(WrapPosition pos, stringList lines, int width)
 	unsafe_macro_run use_consts
 	(buffer_row) in pos
 	string step_line = lines at buffer_row
-	intList step_breaks = wrap_break_visual_cols(step_line, width, TAB_WIDTH)
+	intList step_breaks = wrap_break_visual_cols(step_line, width, cfg_tab_width)
 	int step_seg_count = wrap_segment_count(step_breaks)
 	int step_last_row = len(lines) - 1
 	WrapStepInput step_input = (step_seg_count, step_last_row)
@@ -153,7 +153,7 @@ fn WrapPosition wrap_step_backward(WrapPosition pos, stringList lines, int width
 	int prev_row = buffer_row - 1
 	if prev_row >= 0
 		string prev_line = lines at prev_row
-		intList prev_breaks = wrap_break_visual_cols(prev_line, width, TAB_WIDTH)
+		intList prev_breaks = wrap_break_visual_cols(prev_line, width, cfg_tab_width)
 		prev_seg_count = wrap_segment_count(prev_breaks)
 	return wrap_step_backward_in_line(pos, prev_seg_count)
 
@@ -187,7 +187,7 @@ fn int wrap_total_visual_rows(stringList lines, int width)
 	rust
 		{
 			for line in lines.iter() {
-				total_visual_rows += wrap_break_visual_cols(line.clone(), width, TAB_WIDTH).len() as i64 + 1;
+				total_visual_rows += wrap_break_visual_cols(line.clone(), width, cfg_tab_width).len() as i64 + 1;
 			}
 		}
 	return total_visual_rows
@@ -205,7 +205,7 @@ fn int wrap_visual_row_position(WrapPosition pos, stringList lines, int width)
 	rust
 		{
 			for line in lines.iter().take(buffer_row.max(0) as usize) {
-				total_visual_rows += wrap_break_visual_cols(line.clone(), width, TAB_WIDTH).len() as i64 + 1;
+				total_visual_rows += wrap_break_visual_cols(line.clone(), width, cfg_tab_width).len() as i64 + 1;
 			}
 		}
 	total_visual_rows = total_visual_rows + seg_index
@@ -223,7 +223,7 @@ fn WrapPosition wrap_position_for_visual_row(stringList lines, int target_visual
 	int consumed_rows = 0
 	for if buffer_row < total_line_count
 		string line = lines at buffer_row
-		intList breaks = wrap_break_visual_cols(line, width, TAB_WIDTH)
+		intList breaks = wrap_break_visual_cols(line, width, cfg_tab_width)
 		int seg_count = wrap_segment_count(breaks)
 		int next_consumed_rows = consumed_rows + seg_count
 		if target_visual_row < next_consumed_rows
@@ -235,7 +235,7 @@ fn WrapPosition wrap_position_for_visual_row(stringList lines, int target_visual
 
 	buffer_row = total_line_count - 1
 	string last_line = lines at buffer_row
-	intList last_breaks = wrap_break_visual_cols(last_line, width, TAB_WIDTH)
+	intList last_breaks = wrap_break_visual_cols(last_line, width, cfg_tab_width)
 	int seg_index = wrap_segment_count(last_breaks) - 1
 	WrapPosition pos = (buffer_row, seg_index)
 	return pos

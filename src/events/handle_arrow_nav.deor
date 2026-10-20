@@ -25,8 +25,8 @@ macro move_cursor_visual_row
 	unsafe_macro_run compute_arrow_nav_text_visible_columns
 
 	string cur_line = lines at cursor_row
-	int cursor_visual_col = s_visual_col(cur_line, cursor_col, TAB_WIDTH)
-	intList cur_breaks = wrap_break_visual_cols(cur_line, text_visible_columns, TAB_WIDTH)
+	int cursor_visual_col = s_visual_col(cur_line, cursor_col, cfg_tab_width)
+	intList cur_breaks = wrap_break_visual_cols(cur_line, text_visible_columns, cfg_tab_width)
 	int cur_seg = wrap_segment_index_for_col(cur_breaks, cursor_visual_col)
 	int cur_seg_start_col = wrap_segment_start_col(cur_breaks, cur_seg)
 	int visual_col_in_seg = cursor_visual_col - cur_seg_start_col
@@ -42,11 +42,11 @@ macro move_cursor_visual_row
 	(buffer_row, seg_index) in new_pos
 
 	string new_line = lines at buffer_row
-	intList new_breaks = wrap_break_visual_cols(new_line, text_visible_columns, TAB_WIDTH)
+	intList new_breaks = wrap_break_visual_cols(new_line, text_visible_columns, cfg_tab_width)
 	int new_seg_start_col = wrap_segment_start_col(new_breaks, seg_index)
 	int new_seg_count = wrap_segment_count(new_breaks)
 	int new_char_count = len(new_line)
-	int new_line_visual_len = s_visual_col(new_line, new_char_count, TAB_WIDTH)
+	int new_line_visual_len = s_visual_col(new_line, new_char_count, cfg_tab_width)
 
 	int new_seg_end_col = new_line_visual_len
 	int next_seg_index = seg_index + 1
@@ -58,7 +58,7 @@ macro move_cursor_visual_row
 		target_visual_col = new_seg_end_col
 
 	cursor_row = buffer_row
-	cursor_col = s_char_index_from_visual_col(new_line, target_visual_col, TAB_WIDTH)
+	cursor_col = s_char_index_from_visual_col(new_line, target_visual_col, cfg_tab_width)
 
 # Shift+arrow (or Alt+arrow, mirroring Alt+click in mouse.deor) starts or
 # extends the selection; a plain arrow clears it.
@@ -94,11 +94,11 @@ macro handle_arrow_nav
 	else if kind is "down_ctrl"
 		cursor_row = key_down_ctrl_impl(cursor_row)
 
-# Ctrl+Up / Ctrl+Down -- jumps the cursor CTRL_ARROW_Y_AMOUNT rows at once.
+# Ctrl+Up / Ctrl+Down -- jumps the cursor cfg_ctrl_arrow_lines rows at once.
 fn int key_up_ctrl_impl(int cursor_row)
 	unsafe_macro_run use_consts
-	return cursor_row - CTRL_ARROW_Y_AMOUNT
+	return cursor_row - cfg_ctrl_arrow_lines
 
 fn int key_down_ctrl_impl(int cursor_row)
 	unsafe_macro_run use_consts
-	return cursor_row + CTRL_ARROW_Y_AMOUNT
+	return cursor_row + cfg_ctrl_arrow_lines

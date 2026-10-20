@@ -199,7 +199,7 @@ macro sidebar_activate_index
 					macro_run sidebar_key_activate
 
 # F1 -- moves keyboard focus between the always-visible Files sidebar and
-# the editor. The sidebar widens while focused (see SIDEBAR_WIDTH_FOCUSED)
+# the editor. The sidebar widens while focused (see cfg_sidebar_width_focused)
 # to make room for long names, then shrinks back once focus returns.
 fn bool toggle_sidebar(bool sidebar_focused)
 	return not sidebar_focused

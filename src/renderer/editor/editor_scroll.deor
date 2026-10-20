@@ -31,8 +31,8 @@ fn AppState editor_scroll(AppState state)
 		# runs before the highlighted/tab-expanded lines exist for this
 		# frame (see draw_frame), same reasoning as compute_cursor_visual_columns.
 		string cursor_line = lines at cursor_row
-		int cursor_visual_col = s_visual_col(cursor_line, cursor_col, TAB_WIDTH)
-		intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, TAB_WIDTH)
+		int cursor_visual_col = s_visual_col(cursor_line, cursor_col, cfg_tab_width)
+		intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, cfg_tab_width)
 		int cursor_seg = wrap_segment_index_for_col(cursor_breaks, cursor_visual_col)
 
 		bool cursor_above = cursor_row < scroll_row or (cursor_row is scroll_row and cursor_seg < scroll_wrap_seg)

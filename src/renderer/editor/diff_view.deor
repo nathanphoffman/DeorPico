@@ -91,7 +91,7 @@ macro render_diff_rows
 				marker = s_char_at(raw_line, marker_idx)
 			string content = content_lines at diff_idx
 
-			intList breaks = wrap_break_visual_cols(content, diff_content_width, TAB_WIDTH)
+			intList breaks = wrap_break_visual_cols(content, diff_content_width, cfg_tab_width)
 			int seg_start_col = wrap_segment_start_col(breaks, diff_seg_index)
 			int seg_count = wrap_segment_count(breaks)
 
@@ -172,7 +172,7 @@ fn stringList diff_wrap_content_lines(stringList diff_lines)
 			.map(|raw_line| {
 				let mut chars = raw_line.chars();
 				chars.next();
-				chars.as_str().replace('\t', &TAB_STRING)
+				chars.as_str().replace('\t', &cfg_tab_string)
 			})
 			.collect::<Vec<String>>()
 

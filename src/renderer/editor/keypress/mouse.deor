@@ -2,7 +2,7 @@
 # terminal (col, row) click into buffer coordinates, using the exact same
 # EditorLayout the renderer computed for this frame (see layout.deor) so a
 # click always resolves to what's actually drawn. Doesn't call use_consts
-# itself for TAB_WIDTH (below) -- both callers (mouse_down_editor_impl via
+# itself for cfg_tab_width (below) -- both callers (mouse_down_editor_impl via
 # mouse_down_main, and mouse_drag_main_impl directly) already call it
 # before reaching here, so this stays a leaf macro without duplicating it.
 unsafe_macro locate_mouse_in_buffer
@@ -51,7 +51,7 @@ unsafe_macro locate_mouse_in_buffer
 
 	int clicked_row = buffer_row
 	string clicked_line = lines at clicked_row
-	intList clicked_breaks = wrap_break_visual_cols(clicked_line, text_visible_columns, TAB_WIDTH)
+	intList clicked_breaks = wrap_break_visual_cols(clicked_line, text_visible_columns, cfg_tab_width)
 	int segment_start_visual_col = wrap_segment_start_col(clicked_breaks, seg_index)
 
 	int visual_col = col - gutter_width
@@ -59,7 +59,7 @@ unsafe_macro locate_mouse_in_buffer
 		visual_col = 0
 
 	int target_visual_col = segment_start_visual_col + visual_col
-	int clicked_col = s_char_index_from_visual_col(clicked_line, target_visual_col, TAB_WIDTH)
+	int clicked_col = s_char_index_from_visual_col(clicked_line, target_visual_col, cfg_tab_width)
 
 # Routes a mouse_down in the main editing view to the sidebar (open file /
 # expand-collapse, see sidebar.deor) or the text buffer, depending on which

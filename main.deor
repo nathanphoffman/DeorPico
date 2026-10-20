@@ -16,6 +16,7 @@ unsafe_macro parse_launch_args
 	if second is not ""
 		initial_dir = second
 
+	bool config_loaded = config_load(initial_dir)
 	string lint_command = third
 	string lint_regex = ""
 	if len(input_list) > 3
@@ -66,10 +67,10 @@ macro refresh_highlighter_for_file_change
 # outlive this call for draw_frame to use.
 unsafe_macro compute_cursor_visual_columns
 	string raw_cursor_line = lines at cursor_row
-	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, TAB_WIDTH)
+	int cursor_visual_col = s_visual_col(raw_cursor_line, cursor_col, cfg_tab_width)
 
 	string raw_anchor_line = lines at sel_anchor_row
-	int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, TAB_WIDTH)
+	int sel_anchor_visual_col = s_visual_col(raw_anchor_line, sel_anchor_col, cfg_tab_width)
 
 # Re-tokenizing the whole file on every keystroke (including plain cursor
 # movement) is what made big files crawl -- only redo it when the content

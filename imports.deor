@@ -22,6 +22,7 @@ import "lib/lint.deor"
 import "lib/dirsearch.deor"
 
 import "src/rust_helper.deor"
+import "src/config.deor"
 
 # State/model structs -- one struct per file
 import "src/models/buffer_state.deor"

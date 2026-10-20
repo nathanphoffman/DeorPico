@@ -1,5 +1,5 @@
 # Fixed-height gray popup showing the raw stdout+stderr of the last
-# completed lint run (ctrl+e) -- output beyond LINT_POPUP_HEIGHT lines, or
+# completed lint run (ctrl+e) -- output beyond cfg_lint_popup_height lines, or
 # wider than the terminal, is simply cut off rather than made scrollable.
 fn string editor_render_lint_output(stringList lint_output, int max_visible_columns)
 	unsafe_macro_run use_ansi_codes
@@ -8,7 +8,7 @@ fn string editor_render_lint_output(stringList lint_output, int max_visible_colu
 	int output_line_count = len(lint_output)
 	string popup = ""
 
-	for popup_row in range(LINT_POPUP_HEIGHT)
+	for popup_row in range(cfg_lint_popup_height)
 		string line_text = ""
 		if output_line_count is 0
 			if popup_row is 0

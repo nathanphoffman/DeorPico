@@ -5,7 +5,7 @@ unsafe_macro calculate_clamped_cursor_row
 	# the same visual-column breaks either way (see wrap.deor), and this is
 	# the same `lines` render_buffer_rows already wrapped this frame.
 	string cursor_line = lines at cursor_row
-	intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, TAB_WIDTH)
+	intList cursor_breaks = wrap_break_visual_cols(cursor_line, text_visible_columns, cfg_tab_width)
 	int cursor_seg = wrap_segment_index_for_col(cursor_breaks, cursor_visual_col)
 
 	bool cursor_above = cursor_row < scroll_row or (cursor_row is scroll_row and cursor_seg < scroll_wrap_seg)

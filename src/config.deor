@@ -1,0 +1,108 @@
+rust
+	fn dpico_config_text(working_dir: &str) -> Option<String> {
+		let project = std::path::Path::new(working_dir).join(".dpico");
+		let user = std::env::var_os("XDG_CONFIG_HOME")
+			.map(std::path::PathBuf::from)
+			.or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config")))
+			.map(|d| d.join("dpico").join("config"));
+		std::fs::read_to_string(&project)
+			.ok()
+			.or_else(|| user.and_then(|u| std::fs::read_to_string(u).ok()))
+	}
+
+	// Top-level (before any [section]) key = value pairs, loaded once at startup
+	// by config_load -- for settings that can't change while the editor runs.
+	static DPICO_SETTINGS: std::sync::Mutex<Option<std::collections::HashMap<String, String>>> = std::sync::Mutex::new(None);
+
+# Looks up a setting in the dpico config file -- `.dpico` in the working
+# folder if there is one, else ~/.config/dpico/config. Format:
+#
+#   lint_command = just build          (before any [section]: applies to every file)
+#   lint_regex = (\S+):([0-9]+):
+#
+#   [ha]                               (applies only to files ending in .ha)
+#   lint_command = hare build
+#
+# A [ext] section wins over the top-level value, which wins over `fallback`
+# (the command-line value). The file is re-read on each call -- it's tiny and
+# only called on save, so edits to it take effect without restarting.
+struct ConfigQuery
+	string working_dir
+	string ext
+	string key
+	string fallback
+
+fn string config_lookup(ConfigQuery query)
+	(working_dir, ext, key, fallback) in query
+	rust
+		{
+			let text = dpico_config_text(&working_dir);
+			match text {
+				None => fallback,
+				Some(text) => {
+					let mut section = String::new();
+					let mut global_value: Option<String> = None;
+					let mut ext_value: Option<String> = None;
+					for raw_line in text.lines() {
+						let line = raw_line.trim();
+						if line.is_empty() || line.starts_with('#') {
+							continue;
+						}
+						if line.starts_with('[') && line.ends_with(']') {
+							section = line[1..line.len() - 1].trim().trim_start_matches('.').to_string();
+							continue;
+						}
+						if let Some((k, v)) = line.split_once('=') {
+							if k.trim() != key {
+								continue;
+							}
+							let v = v.trim().to_string();
+							if section.is_empty() {
+								global_value = Some(v);
+							} else if section == ext {
+								ext_value = Some(v);
+							}
+						}
+					}
+					ext_value.or(global_value).unwrap_or(fallback)
+				}
+			}
+		}
+
+# Reads the config file once at startup so the numeric settings below
+# (tab width, scroll amounts, sidebar width...) are available everywhere.
+# Unlike lint settings these aren't re-read, so they need a restart to change.
+fn bool config_load(string working_dir)
+	rust
+		{
+			let mut settings = std::collections::HashMap::new();
+			if let Some(text) = dpico_config_text(&working_dir) {
+				for raw_line in text.lines() {
+					let line = raw_line.trim();
+					if line.starts_with('[') {
+						break;
+					}
+					if line.is_empty() || line.starts_with('#') {
+						continue;
+					}
+					if let Some((k, v)) = line.split_once('=') {
+						settings.insert(k.trim().to_string(), v.trim().to_string());
+					}
+				}
+			}
+			*DPICO_SETTINGS.lock().unwrap() = Some(settings);
+			true
+		}
+
+# A whole-number setting from the config file, or `fallback` if it's missing,
+# isn't a number, or is below 1.
+fn int config_int(string key, int fallback)
+	rust
+		{
+			let guard = DPICO_SETTINGS.lock().unwrap();
+			guard.as_ref()
+				.and_then(|m| m.get(&key))
+				.and_then(|v| v.parse::<i64>().ok())
+				.filter(|n| *n >= 1)
+				.unwrap_or(fallback)
+		}

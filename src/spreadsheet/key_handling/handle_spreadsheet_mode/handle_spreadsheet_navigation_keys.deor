@@ -63,9 +63,9 @@ macro announce_column_highlight
 macro scroll_spreadsheet_by_wheel
 	unsafe_macro_run use_consts
 	if kind is "mouse_scroll_up"
-		spreadsheet_scroll_row = spreadsheet_scroll_row - SCROLL_WHEEL_AMOUNT
+		spreadsheet_scroll_row = spreadsheet_scroll_row - cfg_scroll_wheel_lines
 	else
-		spreadsheet_scroll_row = spreadsheet_scroll_row + SCROLL_WHEEL_AMOUNT
+		spreadsheet_scroll_row = spreadsheet_scroll_row + cfg_scroll_wheel_lines
 
 # Arrows, Tab/Shift+Tab, Enter, Page Up/Down and Home -- moves the
 # selection, stepping over hidden columns; clamp_spreadsheet_selection

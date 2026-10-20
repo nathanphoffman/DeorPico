@@ -15,5 +15,5 @@ macro key_right_impl
 
 macro key_right_ctrl_impl
 	unsafe_macro_run use_consts
-	const int HORIZONTAL_MOVE = CTRL_ARROW_X_AMOUNT
+	const int HORIZONTAL_MOVE = cfg_ctrl_arrow_columns
 	macro_run move_right

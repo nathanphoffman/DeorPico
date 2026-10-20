@@ -8,7 +8,7 @@ struct SidebarState
 
 	# True while F1 has moved keyboard focus onto the sidebar -- up/down/
 	# left/right/enter navigate and open files in the tree instead of moving
-	# the cursor, and the sidebar renders wider (SIDEBAR_WIDTH_FOCUSED) to
+	# the cursor, and the sidebar renders wider (cfg_sidebar_width_focused) to
 	# make room for long names. Cleared automatically after opening a file,
 	# or by pressing F1/Esc again.
 	bool sidebar_focused

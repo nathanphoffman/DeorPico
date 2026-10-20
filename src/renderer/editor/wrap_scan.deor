@@ -11,7 +11,7 @@
 # them) are measured without allocating; only a line that really wraps goes
 # through wrap_break_visual_cols, so the answer is the same as theirs.
 unsafe_macro wrap_scan_rows
-	int scan_tab_width = TAB_WIDTH
+	int scan_tab_width = cfg_tab_width
 	int total_visual_rows = 0
 	int scroll_visual_row = 0
 	rust
@@ -55,6 +55,6 @@ unsafe_macro wrap_scan_rows
 macro load_step_seg_count
 	if step_row is not cached_step_row
 		string seg_line = lines at step_row
-		intList seg_breaks = wrap_break_visual_cols(seg_line, step_width, TAB_WIDTH)
+		intList seg_breaks = wrap_break_visual_cols(seg_line, step_width, cfg_tab_width)
 		cached_seg_count = wrap_segment_count(seg_breaks)
 		cached_step_row = step_row

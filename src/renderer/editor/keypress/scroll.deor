@@ -22,7 +22,7 @@ macro reclamp_scroll_wrap_seg
 		scroll_wrap_seg = 0
 	else if scroll_row < total_line_count
 		string scroll_line = lines at scroll_row
-		intList scroll_breaks = wrap_break_visual_cols(scroll_line, text_visible_columns, TAB_WIDTH)
+		intList scroll_breaks = wrap_break_visual_cols(scroll_line, text_visible_columns, cfg_tab_width)
 		int max_seg = wrap_segment_count(scroll_breaks) - 1
 		if scroll_wrap_seg > max_seg
 			scroll_wrap_seg = max_seg
@@ -111,7 +111,7 @@ macro scroll_up_impl
 	else if diffing
 		macro_run diff_scroll_up_impl
 	else
-		scroll_row = scroll_row - SCROLL_WHEEL_AMOUNT
+		scroll_row = scroll_row - cfg_scroll_wheel_lines
 		macro_run clamp_scroll
 	wheel_scrolled = true
 
@@ -123,6 +123,6 @@ macro scroll_down_impl
 	else if diffing
 		macro_run diff_scroll_down_impl
 	else
-		scroll_row = scroll_row + SCROLL_WHEEL_AMOUNT
+		scroll_row = scroll_row + cfg_scroll_wheel_lines
 		macro_run clamp_scroll
 	wheel_scrolled = true

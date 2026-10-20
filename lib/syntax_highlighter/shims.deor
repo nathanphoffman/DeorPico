@@ -214,7 +214,7 @@ fn bool hl_byte_is(Highlighter hlt, int idx, string chr)
 
 # Tabs are expanded to real tab stops (not a flat N spaces) so the highlighted
 # output stays in the same column space s_visual_col assumes when it maps
-# cursor/click positions -- see src/consts.deor's TAB_WIDTH. Kept in Rust: a
+# cursor/click positions -- see src/consts.deor's cfg_tab_width. Kept in Rust: a
 # Deor version would have to allocate a String per character.
 fn string hl_expand_tabs(string line, int tab_width)
 	rust

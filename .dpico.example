@@ -1,0 +1,22 @@
+# Copy to `.dpico` in your project folder (or ~/.config/dpico/config for all projects).
+# Edits take effect on the next save -- no restart needed.
+
+# Before any [section]: used for every file type.
+lint_command = just build
+lint_regex = \[validation\] (\S+) line ([0-9]+):
+
+# Display/behavior numbers (top-level only; need an editor restart). Defaults shown.
+# tab_width = 4
+# page_scroll_lines = 30
+# ctrl_arrow_columns = 15
+# ctrl_arrow_lines = 8
+# scroll_wheel_lines = 3
+# lint_popup_height = 10
+# sidebar_width = 30
+# sidebar_width_focused = 46
+# max_file_mb = 25
+
+# [ext] sections only apply to files with that extension.
+[ha]
+lint_command = hare build
+lint_regex = (\S+):([0-9]+):
