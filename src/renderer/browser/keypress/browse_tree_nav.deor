@@ -31,3 +31,17 @@ macro browse_left
 			expanded as false
 			FileEntry updated_selected = selected with (expanded)
 			browse_entries at browse_selected = updated_selected
+		else
+			# A file or an already-collapsed folder: jump up to the folder
+			# containing it and collapse that instead, so you don't have to
+			# scroll to the top of a huge folder to close it.
+			int parent_idx = e_parent_index(browse_entries, browse_selected)
+			if parent_idx >= 0
+				FileEntry parent = browse_entries at parent_idx
+				(depth) in parent
+				browse_entries = e_remove_children(browse_entries, parent_idx, depth)
+
+				expanded as false
+				FileEntry updated_parent = parent with (expanded)
+				browse_entries at parent_idx = updated_parent
+				browse_selected = parent_idx

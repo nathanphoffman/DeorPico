@@ -1,6 +1,15 @@
-# '''...''' -- must run before the plain single-quote rule to win ties
-macro python_highlighting_string_triple_single
-	name as "string"
+# """...""" docstrings / throwaway strings, colored as comments -- must run before the plain double-quote rule to win ties
+macro python_highlighting_comment_triple_double
+	name as "comment"
+	start as "\"\"\""
+	stop as "\"\"\""
+	BoundedSpec dtcom_spec = (name, start, stop)
+	dtcom_escapable as true
+	highlighter = xs_add_bounded(highlighter, dtcom_spec, dtcom_escapable)
+
+# '''...''' docstrings, colored as comments -- must run before the plain single-quote rule to win ties
+macro python_highlighting_comment_triple_single
+	name as "comment"
 	start as "'''"
 	stop as "'''"
 	BoundedSpec ststr_spec = (name, start, stop)
@@ -21,8 +30,8 @@ macro python_highlighting_builtin_types_and_constants
 
 macro highlights_python
 	macro_run shared_highlighting_comment_hash
-	macro_run shared_highlighting_string_triple_double
-	macro_run python_highlighting_string_triple_single
+	macro_run python_highlighting_comment_triple_double
+	macro_run python_highlighting_comment_triple_single
 	macro_run shared_highlighting_string_double
 	macro_run shared_highlighting_string_single
 	macro_run shared_highlighting_decorator

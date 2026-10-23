@@ -61,6 +61,7 @@ macro handle_sidebar_focus_mode
 			git_section_collapsed = sidebar_expand_git()
 		else if kind is "left" and not sidebar_on_git and not sidebar_on_root
 			macro_run browse_left
+			macro_run sidebar_scroll_follow
 		else if kind is "right" and not sidebar_on_git and not sidebar_on_root
 			macro_run browse_right
 		else if kind is "char" and chr is ":" and not sidebar_on_git

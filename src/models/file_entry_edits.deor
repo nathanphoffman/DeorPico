@@ -26,6 +26,24 @@ fn entryList e_remove_children(entryList entries, int at_index, int min_depth)
 			result
 		}
 
+# Index of the closest entry above `at_index` with a smaller depth (the
+# directory that contains it), or -1 if it's already at the top level.
+fn int e_parent_index(entryList entries, int at_index)
+	rust
+		{
+			let depth = entries[at_index as usize].depth;
+			let mut i = at_index;
+			let mut found: i64 = -1;
+			while i > 0 {
+				i -= 1;
+				if entries[i as usize].depth < depth {
+					found = i;
+					break;
+				}
+			}
+			found
+		}
+
 # Drops the single entry at `at_index` -- used to remove the blank
 # placeholder row if ^R's create-file prompt is cancelled (see
 # start_create_file/cancel_create_file). Out-of-range is a no-op.
