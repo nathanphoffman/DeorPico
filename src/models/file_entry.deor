@@ -7,7 +7,8 @@ struct FileEntry
 
 	# "staged", "staged_edited" (staged with further worktree edits on
 	# top), "edited" (unstaged edit on a tracked file), "new" (untracked),
-	# "staged_deleted"/"deleted" (removal staged vs. not), or "" (normal) --
+	# "staged_deleted"/"deleted" (removal staged vs. not),
+	# "staged_renamed" (staged move), "conflict" (unresolved merge), or "" (normal) --
 	# set by g_apply_status
 	string git_status
 

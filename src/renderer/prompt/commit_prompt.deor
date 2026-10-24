@@ -89,7 +89,7 @@ fn stringList commit_staged_paths(entryList git_changes)
 	stringList paths = empty
 	for entry in git_changes
 		(path, git_status) in entry
-		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted"
+		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted" or git_status is "staged_renamed"
 			paths at end = path
 	return paths
 

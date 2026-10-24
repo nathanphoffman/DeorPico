@@ -1,7 +1,7 @@
 
 
 # Wraps `line` in the ANSI color for `git_status` ("staged"/"staged_edited"/
-# "edited"/"new"/"staged_deleted"/"deleted"/"ignored"), or returns it
+# "edited"/"new"/"staged_deleted"/"deleted"/"staged_renamed"/"conflict"/"ignored"), or returns it
 # unchanged for any other status (including "" for a clean file).
 # "staged_edited" (staged with further worktree edits on top) still renders
 # green like plain "staged" -- browser_edit_prefix is what actually flags
@@ -20,6 +20,10 @@ fn string browser_colorize(string line, string git_status)
 		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
 	else if git_status is "staged_edited"
 		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
+	else if git_status is "staged_renamed"
+		result = s_join([ANSI_GIT_RENAMED_ON, line, ANSI_GIT_RENAMED_OFF])
+	else if git_status is "conflict"
+		result = s_join([ANSI_GIT_CONFLICT_ON, line, ANSI_GIT_CONFLICT_OFF])
 	else if git_status is "edited"
 		result = s_join([ANSI_GIT_EDITED_ON, line, ANSI_GIT_EDITED_OFF])
 	else if git_status is "new"

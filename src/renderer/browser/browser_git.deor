@@ -72,5 +72,9 @@ fn string browser_edit_prefix(string git_status)
 		prefix = "%"
 	else if git_status is "staged_edited"
 		prefix = "%"
+	else if git_status is "staged_renamed"
+		prefix = ">"
+	else if git_status is "conflict"
+		prefix = "!"
 
 	return prefix

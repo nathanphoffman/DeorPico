@@ -81,9 +81,18 @@ fn bool g_is_repo(string repo_path)
 # staged with `git rm`/`git add` (index "D") vs. one just removed from the
 # working tree but not yet staged (worktree "D") toggle in opposite
 # directions under ^A (see git_stage_toggle), so they can't share one status.
+# "staged_renamed" is a staged move with no further edits (index "R"); "conflict"
+# is an unresolved merge conflict.
 fn string g_classify_status(string index_status, string worktree_status)
 	if index_status is "!" and worktree_status is "!"
 		return "ignored"
+
+	# Merge conflicts: any "U" column, or both sides added/deleted ("AA"/"DD").
+	# Checked before the delete cases so "DD"/"UD" don't read as plain deletes.
+	bool both_added = index_status is "A" and worktree_status is "A"
+	bool both_deleted = index_status is "D" and worktree_status is "D"
+	if index_status is "U" or worktree_status is "U" or both_added or both_deleted
+		return "conflict"
 
 	if index_status is "D"
 		return "staged_deleted"
@@ -97,6 +106,8 @@ fn string g_classify_status(string index_status, string worktree_status)
 	if index_status is not " " and index_status is not "?"
 		if worktree_status is not " "
 			return "staged_edited"
+		if index_status is "R"
+			return "staged_renamed"
 		return "staged"
 
 	if worktree_status is not " "
