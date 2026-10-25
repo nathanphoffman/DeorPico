@@ -21,3 +21,13 @@ fn int add_points(Point first, Point second)
 
 # the next line shows the "invalid" color for C-style operators
 if total == 3 && done != true
+
+fn void times_sample(list items, int total)
+	for idx 10 times
+		print(idx)
+	for idx total times
+		print(idx)
+	for idx len(items) times
+		print(idx)
+	for 10 times
+		print("hi")
