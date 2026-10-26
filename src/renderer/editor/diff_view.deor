@@ -7,6 +7,11 @@ unsafe_macro use_diff_marker_ansi
 	const string ANSI_ADD_FG = s_join([esc, "[32m"])
 	const string ANSI_DEL_FG = s_join([esc, "[31m"])
 	const string ANSI_FG_RESET = s_join([esc, "[39m"])
+	# Dark green/red row backgrounds -- the text color alone is invisible on
+	# a blank or whitespace-only +/- line, so the whole row is painted too.
+	const string ANSI_ADD_BG = s_join([esc, "[48;5;22m"])
+	const string ANSI_DEL_BG = s_join([esc, "[48;5;52m"])
+	const string ANSI_BG_RESET = s_join([esc, "[49m"])
 
 # Terminal size, the git-diff heat bar, and the resulting sidebar/content
 # column widths -- everything render_diff_rows/append_diff_minimap/
@@ -116,10 +121,16 @@ macro render_diff_rows
 				string fill = s_repeat(space, fill_width)
 				text = s_join([text, fill])
 
+			# Any full reset inside the line (syntax colors) would cancel the
+			# background, so re-apply it after each one.
 			if marker is "+"
-				text = s_join([ANSI_ADD_FG, text, ANSI_FG_RESET])
+				string reset_then_add_bg = s_join([ANSI_RESET, ANSI_ADD_BG])
+				text = s_replace(text, ANSI_RESET, reset_then_add_bg)
+				text = s_join([ANSI_ADD_BG, ANSI_ADD_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
 			else if marker is "-"
-				text = s_join([ANSI_DEL_FG, text, ANSI_FG_RESET])
+				string reset_then_del_bg = s_join([ANSI_RESET, ANSI_DEL_BG])
+				text = s_replace(text, ANSI_RESET, reset_then_del_bg)
+				text = s_join([ANSI_DEL_BG, ANSI_DEL_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
 			screen = s_join([screen, text])
 
 			if next_seg_index < seg_count
