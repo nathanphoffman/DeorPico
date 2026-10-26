@@ -6,8 +6,13 @@
 # Nothing staged means nothing to commit -- says so instead of opening an
 # empty prompt.
 macro open_commit_prompt
-	(git_changes) in browser
-	commit_paths = commit_staged_paths(git_changes)
+	(git_changes, git_history_level, git_live_changes) in browser
+	# While Alt+P's past-commits view is up, git_changes holds commits/pink
+	# files, not the live staged list.
+	entryList live_changes = git_changes
+	if git_history_level > 0
+		live_changes = git_live_changes
+	commit_paths = commit_staged_paths(live_changes)
 	if len(commit_paths) is 0
 		notice = "Nothing staged to commit -- stage files with ^G first"
 		error = true
@@ -134,7 +139,11 @@ fn SidebarState commit_refreshed_browser(SidebarState browser)
 	int last_git = len(git_changes) - 1
 	if sidebar_on_git and git_selected > last_git
 		git_selected = last_git
-	SidebarState refreshed = browser with (browse_entries, git_changes, git_selected)
+	# A commit lands on the live list, so drop out of the past-commits view.
+	int git_history_level = 0
+	string git_history_commit = ""
+	entryList git_live_changes = empty
+	SidebarState refreshed = browser with (browse_entries, git_changes, git_selected, git_history_level, git_history_commit, git_live_changes)
 	return refreshed
 
 # ...and the open file's diff, since that's taken against HEAD.

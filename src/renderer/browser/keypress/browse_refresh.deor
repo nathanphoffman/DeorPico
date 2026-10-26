@@ -5,7 +5,11 @@
 macro refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
-	git_changes = g_changed_entries(fresh_git_map)
+	entryList fresh_changes = g_changed_entries(fresh_git_map)
+	if git_history_level is 0
+		git_changes = fresh_changes
+	else
+		git_live_changes = fresh_changes
 	macro_run clamp_sidebar_selection
 
 # F5 -- unlike refresh_all_git_status, this re-scans disk from scratch (see
@@ -26,7 +30,11 @@ macro refresh_browse_tree_impl
 	entryList rebuilt = e_rebuild_tree(browse_entries, browse_dir)
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(rebuilt, fresh_git_map)
-	git_changes = g_changed_entries(fresh_git_map)
+	entryList fresh_changes = g_changed_entries(fresh_git_map)
+	if git_history_level is 0
+		git_changes = fresh_changes
+	else
+		git_live_changes = fresh_changes
 
 	if len(selected_path) > 0
 		EntryLookup lookup = e_find_by_path(browse_entries, selected_path)

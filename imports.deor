@@ -152,6 +152,7 @@ import "src/renderer/browser/keypress/file_mutation/move/clamp_browse_selection_
 
 import "src/renderer/browser/keypress/browse_refresh.deor"
 import "src/renderer/browser/keypress/browse_git_actions.deor"
+import "src/renderer/browser/keypress/browse_git_history.deor"
 import "src/renderer/browser/keypress/browse_delete.deor"
 import "src/renderer/browser/keypress/browse_tree_nav.deor"
 import "src/renderer/browser/keypress/browse_open.deor"

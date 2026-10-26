@@ -26,6 +26,72 @@ fn entryList g_changed_entries(StringMap git_map)
 	return g_sort_entries_by_path(items)
 
 
+# One sidebar row per past commit: name is the "<hash> <subject>" text shown,
+# path holds just the hash (what sidebar_key_activate hands back to
+# g_commit_file_entries), and git_status "past" is what paints the row pink.
+fn entryList g_commit_entries(string repo_path)
+	string raw_text = g_raw_log(repo_path)
+	stringList log_lines = g_split_lines(raw_text)
+
+	entryList items = empty
+	for line in log_lines
+		if line is ""
+			continue
+		string space = " "
+		int space_idx = s_index_of(line, space)
+		int zero_idx = 0
+		string hash = line
+		if space_idx > 0
+			hash = s_substring(line, zero_idx, space_idx)
+		string name = line
+		string path = hash
+		bool is_dir = false
+		int depth = 0
+		bool expanded = false
+		string git_status = "past"
+		FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
+		items at end = entry
+
+	return items
+
+
+# Files one past commit touched -- git_status is "past_new" / "past_deleted" /
+# "past" (everything else) so the rows keep an added/removed hint while all
+# staying pink. A rename/copy carries a second (new) path field -- the entry
+# points at that one, since that's the file the commit's diff is under.
+fn entryList g_commit_file_entries(string repo_path, string commit)
+	string raw_text = g_raw_commit_files(repo_path, commit)
+	stringList fields = g_split_status_entries(raw_text)
+	int field_count = len(fields)
+	int zero_idx = 0
+
+	entryList items = empty
+	int pos = 0
+	for if pos + 1 < field_count
+		string code = fields at pos
+		string path = fields at (pos + 1)
+		string letter = s_char_at(code, zero_idx)
+		pos = pos + 2
+		if letter is "R" or letter is "C"
+			if pos < field_count
+				path = fields at pos
+				pos = pos + 1
+
+		string name = f_basename(path)
+		bool is_dir = false
+		int depth = 0
+		bool expanded = false
+		string git_status = "past"
+		if letter is "A"
+			git_status = "past_new"
+		else if letter is "D"
+			git_status = "past_deleted"
+		FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
+		items at end = entry
+
+	return g_sort_entries_by_path(items)
+
+
 # Strips a leading "./" so a FileEntry.path (always rooted at the browse
 # dir, e.g. "./src/foo.rs") matches the plain-relative paths `git status`
 # reports (e.g. "src/foo.rs").
@@ -76,5 +142,9 @@ fn string browser_edit_prefix(string git_status)
 		prefix = ">"
 	else if git_status is "conflict"
 		prefix = "!"
+	else if git_status is "past_new"
+		prefix = "+"
+	else if git_status is "past_deleted"
+		prefix = "-"
 
 	return prefix

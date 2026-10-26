@@ -54,6 +54,9 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 	# terminals send that as plain ^G.
 	else if kind is "char" and alt and (chr is "g" or chr is "G")
 		kind = "stage_all"
+	# Sidebar only: toggles the <GIT> section's past-commits view.
+	else if kind is "char" and alt and (chr is "p" or chr is "P")
+		kind = "git_history"
 	# Spreadsheet view only: cycles the selected column's highlighting.
 	else if kind is "char" and alt and (chr is "h" or chr is "H")
 		kind = "highlight_toggle"

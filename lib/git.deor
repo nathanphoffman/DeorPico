@@ -178,8 +178,7 @@ fn string g_raw_diff(string path)
 # Drops the diff header (everything before the first hunk) -- only lines
 # after the first "@@" marker are real content, and the "@@" line itself is
 # never included in the result.
-fn stringList g_diff(string path)
-	string raw_text = g_raw_diff(path)
+fn stringList g_strip_diff_header(string raw_text)
 	stringList lines = g_split_lines(raw_text)
 	string marker = "@@"
 
@@ -192,6 +191,55 @@ fn stringList g_diff(string path)
 			started = true
 
 	return result
+
+
+fn stringList g_diff(string path)
+	string raw_text = g_raw_diff(path)
+	return g_strip_diff_header(raw_text)
+
+
+# What one past commit changed in `path` (that commit against its parent),
+# as the raw full-file diff -- `--pretty=format:` blanks the commit message so
+# only the diff is left for g_strip_diff_header.
+fn string g_raw_commit_diff(string repo_path, string commit, string path)
+	rust
+		std::process::Command::new("git")
+			.args(["show", "--no-color", "-U100000", "--pretty=format:", &commit, "--"])
+			.arg(&path)
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+			.unwrap_or_default()
+
+
+fn stringList g_commit_diff(string repo_path, string commit, string path)
+	string raw_text = g_raw_commit_diff(repo_path, commit, path)
+	return g_strip_diff_header(raw_text)
+
+
+# Newest-first `git log` as "<short hash> <subject>" lines, capped so a huge
+# history doesn't stall the sidebar.
+fn string g_raw_log(string repo_path)
+	rust
+		std::process::Command::new("git")
+			.args(["log", "--max-count=300", "--no-color", "--pretty=format:%h %s"])
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+			.unwrap_or_default()
+
+
+# Files one past commit touched, as NUL-separated `-z` status/path fields
+# (same unquoted-path reason as g_raw_status). --root so the very first
+# commit lists its files too.
+fn string g_raw_commit_files(string repo_path, string commit)
+	rust
+		std::process::Command::new("git")
+			.args(["diff-tree", "--root", "--no-commit-id", "--name-status", "-r", "-z", &commit])
+			.current_dir(&repo_path)
+			.output()
+			.map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+			.unwrap_or_default()
 
 
 fn int g_diff_count(stringList diff_lines)

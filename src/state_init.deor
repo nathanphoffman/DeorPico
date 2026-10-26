@@ -55,8 +55,11 @@ unsafe_macro initialize_browser
 	pending_delete_path as ""
 	pending_discard_path as ""
 	sidebar_locked as false
+	git_history_level as 0
+	git_history_commit as ""
+	entryList git_live_changes = empty
 
-	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes)
 
 unsafe_macro initialize_diff
 	diffing as false

@@ -103,3 +103,15 @@ struct SidebarState
 	# notice sits unresolved. Cleared by whichever of ^S/^Del resolves it
 	# (see key_save_impl/discard_unsaved_changes_impl).
 	bool sidebar_locked
+
+	# Alt+P's past-commits view of the <GIT> section. 0 = the normal live
+	# changes list, 1 = git_changes holds one pink row per past commit
+	# (see g_commit_entries), 2 = git_changes holds the pink files that
+	# commit touched (see g_commit_file_entries) -- Enter on one opens that
+	# commit's delta in the read-only diff view. git_history_commit is the
+	# hash picked at level 2. While level > 0 the real live list is parked
+	# in git_live_changes (every refresh writes there instead, see
+	# refresh_all_git_status) and restored on leaving history.
+	int git_history_level
+	string git_history_commit
+	entryList git_live_changes

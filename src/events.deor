@@ -53,7 +53,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
 
 	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
-	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked) in browser
+	move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes) in browser
 	move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
 	move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging) in selection
 	move (undo_history, redo_history) in undo
@@ -122,7 +122,7 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 		macro_run register_events
 
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
-	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked)
+	SidebarState browser = move (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes)
 	DiffState diff = move (diffing, diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path)
 	SelectionState selection = move (has_selection, sel_anchor_row, sel_anchor_col, text_dragging)
 	UndoState undo = move (undo_history, redo_history)

@@ -145,6 +145,8 @@ macro render_diff_status_and_notice
 	string status_line = s_join(["-- ", filename, " (diff, read-only) -- ^D/Esc/^Q back"])
 	if diff_preview
 		status_line = s_join(["-- ", diff_preview_path, " (deleted, diff, read-only) -- Esc/^Q back"])
+		if git_history_level is 2
+			status_line = s_join(["-- ", diff_preview_path, " (commit ", git_history_commit, ", diff, read-only) -- Esc back"])
 	if len(status_line) > cols
 		int status_trunc_start = 0
 		status_line = s_substring(status_line, status_trunc_start, cols)
@@ -214,7 +216,7 @@ fn void editor_render_diff(AppState state)
 	# line of the file just to read a few fields from it.
 	move (browser, main_panel, notice) in state
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, git_history_level, git_history_commit) in browser
 	move (core, diff) in main_panel
 	(filename) in core
 	(diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff

@@ -15,6 +15,8 @@ unsafe_macro use_browser_ansi_codes
 	const string ANSI_GIT_EDITED_OFF = s_join([esc, "[39m"])
 	const string ANSI_GIT_RENAMED_ON = s_join([esc, "[36m"])
 	const string ANSI_GIT_RENAMED_OFF = s_join([esc, "[39m"])
+	const string ANSI_GIT_PAST_ON = s_join([esc, "[38;5;218m"])
+	const string ANSI_GIT_PAST_OFF = s_join([esc, "[39m"])
 	const string ANSI_GIT_CONFLICT_ON = s_join([esc, "[31m"])
 	const string ANSI_GIT_CONFLICT_OFF = s_join([esc, "[39m"])
 	const string ANSI_STRIKETHROUGH_ON = s_join([esc, "[9m"])

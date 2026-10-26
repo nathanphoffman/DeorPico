@@ -1,0 +1,100 @@
+# Alt+P's past-commits view of the <GIT> section. git_changes is swapped for
+# pink commit rows (level 1), then for the pink files that commit touched
+# (level 2); the real live list waits in git_live_changes and comes back on
+# exit (see SidebarState.git_history_level).
+
+# Alt+P -- enters the commit list from the live changes, or leaves history
+# entirely from any level.
+macro git_history_toggle
+	if is_git_repo
+		if git_history_level is 0
+			git_live_changes = git_changes
+			git_changes = g_commit_entries(browse_dir)
+			git_history_level = 1
+			git_history_commit = ""
+			git_section_collapsed = false
+			sidebar_on_git = true
+			sidebar_on_root = false
+			git_selected = 0 - 1
+			if len(git_changes) > 0
+				git_selected = 0
+			notice = "Past commits -- Enter opens one, Esc/Alt+P back"
+			error = false
+		else
+			macro_run git_history_exit
+		macro_run clamp_sidebar_selection
+		macro_run sidebar_scroll_follow
+
+# Back to the live changes list. Also drops a history diff that's still
+# showing, restoring the open file's own diff_lines (the minimap reads them).
+macro git_history_exit
+	macro_run git_history_close_preview
+	git_changes = git_live_changes
+	entryList cleared = empty
+	git_live_changes = cleared
+	git_history_level = 0
+	git_history_commit = ""
+	git_selected = 0 - 1
+	notice = ""
+	error = false
+
+macro git_history_close_preview
+	if diff_preview and git_history_level > 0
+		diff_preview = false
+		diffing = false
+		stringList restored_diff = g_diff(filename)
+		diff_lines = restored_diff
+
+# Esc inside history -- from a commit's files back up to the commit list
+# (re-highlighting that commit), from the commit list back to live changes.
+macro git_history_back
+	if git_history_level is 2
+		macro_run git_history_close_preview
+		string back_commit = git_history_commit
+		git_changes = g_commit_entries(browse_dir)
+		git_history_level = 1
+		git_history_commit = ""
+		git_selected = 0
+		for idx in range(len(git_changes))
+			FileEntry candidate = git_changes at idx
+			(path) in candidate
+			if path is back_commit
+				git_selected = idx
+		notice = "Past commits -- Enter opens one, Esc/Alt+P back"
+		error = false
+	else
+		macro_run git_history_exit
+	macro_run clamp_sidebar_selection
+	macro_run sidebar_scroll_follow
+
+# Enter on a commit row (`path` is its hash) -- lists the files it changed.
+macro git_history_open_commit
+	git_changes = g_commit_file_entries(browse_dir, path)
+	git_history_level = 2
+	git_selected = 0 - 1
+	if len(git_changes) > 0
+		git_selected = 0
+	notice = s_join(["Commit ", path, " -- Enter shows a file's changes, Esc back"])
+	error = false
+	# Last, since assigning `path` moves it.
+	git_history_commit = path
+	macro_run clamp_sidebar_selection
+	macro_run sidebar_scroll_follow
+
+# Enter on a file under a commit -- shows what that commit changed in it, in
+# the same read-only diff view a deleted file uses. Sidebar focus is kept so
+# Up/Down + Enter walks through the commit's files.
+macro git_history_open_file
+	stringList commit_diff = g_commit_diff(browse_dir, git_history_commit, path)
+	if len(commit_diff) is 0
+		notice = "No text changes to show for this file"
+		error = false
+	else
+		diff_lines = commit_diff
+		diff_scroll_row = 0
+		diff_scroll_wrap_seg = 0
+		diffing = true
+		diff_preview = true
+		diff_preview_path = path
+		notice = s_join(["Commit ", git_history_commit, " (diff, read-only)"])
+		error = false
