@@ -12,6 +12,10 @@ unsafe_macro use_diff_marker_ansi
 	const string ANSI_ADD_BG = s_join([esc, "[48;5;22m"])
 	const string ANSI_DEL_BG = s_join([esc, "[48;5;52m"])
 	const string ANSI_BG_RESET = s_join([esc, "[49m"])
+	# Git's "\ No newline at end of file" line -- a final newline was added or
+	# removed, which is otherwise invisible, so it gets its own dark yellow row.
+	const string ANSI_NOTE_FG = s_join([esc, "[33m"])
+	const string ANSI_NOTE_BG = s_join([esc, "[48;5;58m"])
 
 # Terminal size, the git-diff heat bar, and the resulting sidebar/content
 # column widths -- everything render_diff_rows/append_diff_minimap/
@@ -131,6 +135,10 @@ macro render_diff_rows
 				string reset_then_del_bg = s_join([ANSI_RESET, ANSI_DEL_BG])
 				text = s_replace(text, ANSI_RESET, reset_then_del_bg)
 				text = s_join([ANSI_DEL_BG, ANSI_DEL_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
+			else if marker is "\\"
+				string reset_then_note_bg = s_join([ANSI_RESET, ANSI_NOTE_BG])
+				text = s_replace(text, ANSI_RESET, reset_then_note_bg)
+				text = s_join([ANSI_NOTE_BG, ANSI_NOTE_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
 			screen = s_join([screen, text])
 
 			if next_seg_index < seg_count
