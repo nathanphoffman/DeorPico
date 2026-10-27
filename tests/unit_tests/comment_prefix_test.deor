@@ -17,15 +17,26 @@ fn string f_extension(string path)
 	rust
 		std::path::Path::new(&path).extension().and_then(|e| e.to_str()).unwrap_or("").to_string()
 
-fn void main()
+fn void test_comment_prefixes()
 	print(comment_prefix_for_ext("rs"))
 	print(comment_prefix_for_ext("py"))
 	print(comment_prefix_for_ext("deor"))
+
+fn void test_unknown_ext_has_no_prefix()
 	print(comment_prefix_for_ext("nonsense"))
 
+fn void test_env_files_resolve_to_env()
 	print(resolve_highlight_ext("/proj/.env"))
 	print(resolve_highlight_ext("/proj/.env.local"))
+
+fn void test_normal_file_keeps_extension()
 	print(resolve_highlight_ext("/proj/main.rs"))
+
+fn void main()
+	test_comment_prefixes()
+	test_unknown_ext_has_no_prefix()
+	test_env_files_resolve_to_env()
+	test_normal_file_keeps_extension()
 
 # expect:
 # //

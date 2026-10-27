@@ -41,8 +41,12 @@ fn string f_trash(string path)
 					.or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share")));
 				if let Some(data_home) = data_home {
 					let trash_dir = data_home.join("Trash");
-					let _ = std::fs::create_dir_all(trash_dir.join("files"));
-					let _ = std::fs::create_dir_all(trash_dir.join("info"));
+					// Report a failed mkdir instead of hiding it -- the trash call below would only fail more vaguely.
+					for sub_dir in ["files", "info"] {
+						if let Err(e) = std::fs::create_dir_all(trash_dir.join(sub_dir)) {
+							return format!("could not create trash {} dir: {}", sub_dir, e);
+						}
+					}
 				}
 			}
 			match trash::delete(&path) {
