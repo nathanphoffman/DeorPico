@@ -182,6 +182,7 @@ fn stringList diff_wrap_content_lines(stringList diff_lines)
 	rust
 		diff_lines
 			.iter()
+			// Drop the first char of each raw line (the diff +/-/space marker) and expand tabs.
 			.map(|raw_line| {
 				let mut chars = raw_line.chars();
 				chars.next();

@@ -1,2 +1,5 @@
 # language samples exist to test the highlighter, not to be graded
 samples/
+
+# lib/ is the Deor standard library plus vendored helpers; deor update overwrites it
+lib/

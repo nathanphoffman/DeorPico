@@ -75,6 +75,7 @@ fn string s_format_fixed(float val, int places)
 				"#ERR".to_string()
 			} else {
 				let text = format!("{:.*}", places.max(0) as usize, val);
+				// A text like "-0.00" has only -, 0 and . in it, so drop the leading minus.
 				if text.starts_with('-') && text.chars().all(|c| c == '-' || c == '0' || c == '.') {
 					text[1..].to_string()
 				} else {

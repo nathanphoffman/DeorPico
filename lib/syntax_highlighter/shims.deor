@@ -81,6 +81,7 @@ fn Highlighter xs_make(int tab_width)
 fn int hl_rx_add(Highlighter hlt, string pattern)
 	rust
 		{
+			// Patterns come from the built-in highlight rules, so a bad one is a bug worth panicking on.
 			let re = regex::Regex::new(pattern.as_str()).unwrap();
 			let mut st = hlt.0.borrow_mut();
 			st.regexes.push(re);

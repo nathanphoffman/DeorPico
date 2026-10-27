@@ -163,6 +163,7 @@ fn matchList lr_parse_issues(stringList output_lines, LintQuery query)
 	rust
 		{
 			let mut matches: Vec<SearchMatch> = Vec::new();
+			// The regex is the user-supplied lint pattern; a bad pattern means no matches.
 			let re = match regex::Regex::new(&query.regex_pattern) {
 				Ok(r) => r,
 				Err(_) => return matches,

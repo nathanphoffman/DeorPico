@@ -106,7 +106,8 @@ fn string g_relative_path(string path)
 
 
 fn entryList g_apply_status(entryList entries, StringMap git_map)
-	int ignored_dir_limit = 50
+	const int IGNORED_DIR_LIMIT = 50
+	int ignored_dir_limit = IGNORED_DIR_LIMIT
 
 	entryList result = empty
 	for entry in entries

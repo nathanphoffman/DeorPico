@@ -51,7 +51,7 @@ macro recompute_browse_filter
 		filter_matches = x_filter_shallow(filter_dir, filter_query)
 		filter_truncated_count = 0
 	else
-		per_dir_cap as 50
+		int per_dir_cap = filter_per_dir_cap()
 		FilterOutcome outcome = x_filter_tree(filter_dir, filter_query, per_dir_cap)
 		(matches, truncated_count) in outcome
 		filter_matches = matches
@@ -66,7 +66,8 @@ macro recompute_browse_filter
 	if filter_truncated_count > 0
 		truncated_str as c_int_to_string(filter_truncated_count)
 		truncated_prefix as ", "
-		truncated_suffix as " folder(s) over 50 files truncated"
+		cap_str as c_int_to_string(filter_per_dir_cap())
+		truncated_suffix as s_join([" folder(s) over ", cap_str, " files truncated"])
 		notice_parts at end = truncated_prefix
 		notice_parts at end = truncated_str
 		notice_parts at end = truncated_suffix

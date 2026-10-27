@@ -1,12 +1,16 @@
 rust
 	fn dpico_config_text(working_dir: &str) -> Option<String> {
 		let project = std::path::Path::new(working_dir).join(".dpico");
+		// User config dir: $XDG_CONFIG_HOME if set, else $HOME/.config, then add dpico/config.
 		let user = std::env::var_os("XDG_CONFIG_HOME")
 			.map(std::path::PathBuf::from)
+			// Only runs when XDG_CONFIG_HOME is unset: use $HOME/.config instead.
 			.or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config")))
 			.map(|d| d.join("dpico").join("config"));
+		// Use the project .dpico file if it reads, otherwise fall back to the user config file.
 		std::fs::read_to_string(&project)
 			.ok()
+			// Only runs when the project file is missing: try the user config file.
 			.or_else(|| user.and_then(|u| std::fs::read_to_string(u).ok()))
 	}
 
@@ -100,6 +104,8 @@ fn int config_int(string key, int fallback)
 	rust
 		{
 			let guard = DPICO_SETTINGS.lock().unwrap();
+			// Look up the key, parse it as an int, and keep it only if it is 1 or more.
+			// Any step that fails gives None, so the caller uses the fallback.
 			guard.as_ref()
 				.and_then(|m| m.get(&key))
 				.and_then(|v| v.parse::<i64>().ok())

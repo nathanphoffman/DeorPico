@@ -34,8 +34,10 @@ fn string f_trash(string path)
 		{
 			#[cfg(target_os = "linux")]
 			{
+				// Data dir: $XDG_DATA_HOME if set, else $HOME/.local/share.
 				let data_home = std::env::var_os("XDG_DATA_HOME")
 					.map(std::path::PathBuf::from)
+					// Only runs when XDG_DATA_HOME is unset: use $HOME/.local/share instead.
 					.or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share")));
 				if let Some(data_home) = data_home {
 					let trash_dir = data_home.join("Trash");

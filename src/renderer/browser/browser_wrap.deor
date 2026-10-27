@@ -15,11 +15,15 @@ fn string browser_select_wrap(string line, bool selected)
 # <GIT> label, and for a name-match row in the ':' filter results.
 fn string browser_bold_wrap(string line)
 	unsafe_macro_run use_browser_ansi_codes
-	return s_join([ANSI_BOLD_ON, line, ANSI_BOLD_OFF])
+	return browser_wrap_with(line, ANSI_BOLD_ON, ANSI_BOLD_OFF)
 
 
 # Wraps `line` in dim -- used for empty-state placeholders like the
 # sidebar's "clean" row.
 fn string browser_dim_wrap(string line)
 	unsafe_macro_run use_browser_ansi_codes
-	return s_join([ANSI_DIM_ON, line, ANSI_DIM_OFF])
+	return browser_wrap_with(line, ANSI_DIM_ON, ANSI_DIM_OFF)
+
+# Puts `line` between an on/off pair of ANSI codes.
+fn string browser_wrap_with(string line, string code_on, string code_off)
+	return s_join([code_on, line, code_off])
