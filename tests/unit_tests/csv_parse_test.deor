@@ -1,0 +1,45 @@
+# csv_parse_test.deor
+# Exercises src/spreadsheet/csv_parse.deor: splitting a line into cells
+# (plain, quoted, doubled quotes) and joining cells back with quoting.
+
+import "lib/string.deor"
+import "lib/list.deor" where T = string
+import "src/spreadsheet/csv_parse.deor"
+
+shape csvRowList = list of stringList
+
+fn void main()
+	stringList plain = csv_split_line("a,b,c")
+	print(len(plain))
+	print(plain at 1)
+
+	stringList quoted = csv_split_line("a,\"b,c\",d")
+	print(len(quoted))
+	print(quoted at 1)
+
+	stringList doubled = csv_split_line("\"say \"\"hi\"\"\"")
+	print(doubled at 0)
+
+	stringList empty_cells = csv_split_line("a,,c")
+	print(len(empty_cells))
+
+	print(csv_quote_cell("plain"))
+	print(csv_quote_cell("a,b"))
+
+	print(csv_join_row(["x", "y,z"]))
+
+	print(f_is_spreadsheet_ext("csv"))
+	print(f_is_spreadsheet_ext("txt"))
+
+# expect:
+# 3
+# b
+# 3
+# b,c
+# say "hi"
+# 3
+# plain
+# "a,b"
+# x,"y,z"
+# true
+# false

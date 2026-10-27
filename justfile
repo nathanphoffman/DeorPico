@@ -58,3 +58,8 @@ install-ext:
     code --install-extension "$(ls "$TMP/DeorLang-main/deor-vscode/"*.vsix | tail -1)"
     rm -rf "$TMP"
     echo "Done — reload VS Code window to apply (Ctrl+Shift+P → Reload Window)."
+
+# Runs the Deor unit tests in tests/unit_tests/ (each file declares its
+# expected output in a trailing `# expect:` comment block).
+test:
+    tests/run.sh
