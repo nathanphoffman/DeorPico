@@ -18,7 +18,6 @@ struct RowHighlight
 	int hl_start
 	int hl_end
 
-
 # The active selection is anchored wherever shift+arrow started and extends
 # to the current cursor position, which can land before OR after the anchor
 # -- this normalizes the two into a start/end range so rendering never has
@@ -46,7 +45,6 @@ fn SelectionRange editor_selection_range(SelectionRangeInput range_input)
 
 	SelectionRange sel_range = (has_selection, start_row, start_col, end_row, end_col)
 	return sel_range
-
 
 # A row entirely outside the selection gets no highlight (-1/-1), a row
 # entirely inside it is highlighted end-to-end, and the first/last row of

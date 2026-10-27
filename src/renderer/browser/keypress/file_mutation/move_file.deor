@@ -85,6 +85,3 @@ macro confirm_move_request
 		else
 			macro_run perform_move
 
-
-
-

@@ -67,12 +67,14 @@ fn int max_open_file_bytes()
 
 # Bytes in a megabyte, shared by the open-size limit and the too-large notice.
 fn int bytes_per_mb()
-	return 1048576
+	const int BYTES_PER_MB = 1048576
+	return BYTES_PER_MB
 
 # Most files the filter lists from one directory (and the number the
 # "folder(s) over N files truncated" notice reports).
 fn int filter_per_dir_cap()
-	return 50
+	const int FILTER_PER_DIR_CAP = 50
+	return FILTER_PER_DIR_CAP
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
 # many rows are reserved for chrome (status/notice, the git-diff minimap,

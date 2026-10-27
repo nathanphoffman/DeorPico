@@ -3,7 +3,6 @@ import "src/consts.deor"
 import "src/renderer/browser/browser.deor"
 import "src/renderer/editor/layout.deor"
 
-
 # Bundled since sidebar_row_piece would otherwise need more than 3
 # parameters -- functions here are capped at 3.
 struct SidebarRowInput
@@ -24,7 +23,6 @@ struct SidebarRowInput
 	int new_file_cursor
 	bool filter_active
 	filterMatchList filter_matches
-
 
 # Renders one row of the sidebar: the <GIT> section (header, "clean"
 # placeholder, or a flat changed-file row) followed by the Files tree

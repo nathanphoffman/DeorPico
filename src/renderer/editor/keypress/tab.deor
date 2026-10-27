@@ -13,5 +13,6 @@ macro key_tab_impl
 		dirty = true
 	else
 		macro_run input_key
-		cursor_col = cursor_col + 4
+		const int TAB_INSERT_SPACES = 4
+		cursor_col = cursor_col + TAB_INSERT_SPACES
 		dirty = true

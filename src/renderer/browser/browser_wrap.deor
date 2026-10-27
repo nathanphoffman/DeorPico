@@ -10,13 +10,11 @@ fn string browser_select_wrap(string line, bool selected)
 
 	return result
 
-
 # Wraps `line` in bold -- used for section headers like the sidebar's
 # <GIT> label, and for a name-match row in the ':' filter results.
 fn string browser_bold_wrap(string line)
 	unsafe_macro_run use_browser_ansi_codes
 	return browser_wrap_with(line, ANSI_BOLD_ON, ANSI_BOLD_OFF)
-
 
 # Wraps `line` in dim -- used for empty-state placeholders like the
 # sidebar's "clean" row.

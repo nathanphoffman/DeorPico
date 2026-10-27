@@ -55,7 +55,6 @@ macro do_paste_impl
 
 		dirty = true
 
-
 # chr passed by value here (not read as a bare outer identifier) so this
 # clones instead of moving it -- do_paste_impl is inlined into a giant
 # shared function body where chr is read again by many later macros, and

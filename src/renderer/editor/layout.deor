@@ -40,7 +40,6 @@ struct EditorLayout
 	int bottom_row
 	int sidebar_width
 
-
 # Whether the main editor's git-diff heat-bar row is shown above the
 # buffer -- mirrors g_diff_minimap's own "nothing to draw" guard exactly,
 # without having to build the bar string just to answer a yes/no question.
@@ -53,7 +52,6 @@ fn bool editor_has_minimap(stringList diff_lines, int total_line_count, int cols
 		return false
 	return true
 
-
 # Same idea, for the git-diff view's own minimap (g_diff_minimap_raw)
 # instead -- that one has no buffer to map onto, so unlike editor_has_minimap
 # it never depends on a line count.
@@ -63,7 +61,6 @@ fn bool editor_diff_has_minimap(stringList diff_lines, int cols)
 	if cols <= 0
 		return false
 	return true
-
 
 fn EditorLayout compute_editor_layout(EditorLayoutInput layout_input)
 	unsafe_macro_run use_consts

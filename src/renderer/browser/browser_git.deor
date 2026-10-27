@@ -7,7 +7,6 @@ fn entryList g_sort_entries_by_path(entryList entries)
 			items
 		}
 
-
 fn entryList g_changed_entries(StringMap git_map)
 	stringList paths = h_keys(git_map)
 
@@ -24,7 +23,6 @@ fn entryList g_changed_entries(StringMap git_map)
 		items at end = entry
 
 	return g_sort_entries_by_path(items)
-
 
 # One sidebar row per past commit: name is the "<hash> <subject>" text shown,
 # path holds just the hash (what sidebar_key_activate hands back to
@@ -53,7 +51,6 @@ fn entryList g_commit_entries(string repo_path)
 		items at end = entry
 
 	return items
-
 
 # Files one past commit touched -- git_status is "past_new" / "past_deleted" /
 # "past" (everything else) so the rows keep an added/removed hint while all
@@ -91,7 +88,6 @@ fn entryList g_commit_file_entries(string repo_path, string commit)
 
 	return g_sort_entries_by_path(items)
 
-
 # Strips a leading "./" so a FileEntry.path (always rooted at the browse
 # dir, e.g. "./src/foo.rs") matches the plain-relative paths `git status`
 # reports (e.g. "src/foo.rs").
@@ -103,7 +99,6 @@ fn string g_relative_path(string path)
 		int path_len = len(path)
 		clean = s_substring(path, strip_len, path_len)
 	return clean
-
 
 fn entryList g_apply_status(entryList entries, StringMap git_map)
 	const int IGNORED_DIR_LIMIT = 50
@@ -124,7 +119,6 @@ fn entryList g_apply_status(entryList entries, StringMap git_map)
 		result at end = updated
 
 	return result
-
 
 # "+" flags a brand-new untracked file (git's "??"), "%" flags an unstaged
 # edit on a file that's already tracked -- including a staged file with a

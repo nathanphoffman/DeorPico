@@ -213,7 +213,6 @@ macro sidebar_activate_index
 fn bool toggle_sidebar(bool sidebar_focused)
 	return not sidebar_focused
 
-
 # Left/Right on the <GIT> header -- same collapse/expand idea as a directory
 # in the Files tree, just toggling git_section_collapsed instead of an
 # entry's own `expanded` flag.

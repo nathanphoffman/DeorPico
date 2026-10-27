@@ -8,7 +8,6 @@ fn int f_dir_entry_count(string path)
 			.map(|read_dir| read_dir.flatten().count() as i64)
 			.unwrap_or(0)
 
-
 fn entryList f_list_dir(string path)
 	rust
 		{

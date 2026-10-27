@@ -15,7 +15,6 @@ fn FitResult browser_fit(string label, int width)
 	int visible_len = len(text)
 	return (text, visible_len)
 
-
 # `width - visible_len` spaces of padding plus one separator column --
 # negative padding (cell already at/over width) clamps to just the
 # separator, matching Rust's saturating_sub.

@@ -159,7 +159,6 @@ import "src/renderer/browser/keypress/browse_open.deor"
 import "src/renderer/browser/keypress/browse_filter.deor"
 import "src/renderer/editor/keypress/word_search.deor"
 
-
 import "src/renderer/editor/keypress/refresh.deor"
 import "src/renderer/editor/keypress/scroll.deor"
 import "src/renderer/editor/keypress/diff.deor"

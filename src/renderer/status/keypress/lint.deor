@@ -30,7 +30,6 @@ macro apply_lint_poll_impl
 	else if running
 		lint_running = true
 
-
 # Keys handled while the lint output popup is open -- locks out normal
 # editing the same way handle_diff_mode does, so a stray keypress doesn't
 # edit the buffer underneath the popup.

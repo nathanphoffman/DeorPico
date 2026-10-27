@@ -20,7 +20,6 @@ fn int g_merge_status(int bucket_code, int row_status)
 		return 3
 	return bucket_code
 
-
 # One escape-coded span of the minimap bar: `color_code` background, then
 # `length` spaces, then reset. The caller run-length encodes same-colored
 # slices first, so a long stretch of one color emits one span, not one per
@@ -42,7 +41,6 @@ fn string g_ansi_span(int color_code, int length)
 		bg_color = ANSI_MAP_MIX
 
 	return s_join([bg_color, fill, ANSI_MAP_RESET])
-
 
 # Buckets a per-row status list (0 clean, 1 add, 2 del, 3 mixed) into `cols`
 # proportional terminal columns and renders one span per same-colored run.
@@ -77,7 +75,6 @@ fn string g_render_minimap_bar(intList status, int cols)
 	string last_span = g_ansi_span(run_code, run_len)
 	bar = s_join([bar, last_span])
 	return bar
-
 
 # Maps `diff_lines` onto a `total_lines`-sized row-status list. A '-' line
 # has no row of its own in the current buffer, so it's pinned to the
@@ -115,7 +112,6 @@ fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
 
 	return status
 
-
 # One row per `diff_lines` entry, deleted lines included -- for the git-diff
 # view itself, unlike g_diff_status_rows which maps back onto buffer rows.
 fn intList g_diff_status_raw(stringList diff_lines)
@@ -133,7 +129,6 @@ fn intList g_diff_status_raw(stringList diff_lines)
 
 	return status
 
-
 # One-row proportional heat bar summarizing where `diff_lines`' changes fall
 # across `total_lines` buffer rows, squashed into `cols` terminal columns --
 # green for added, red for removed, yellow where a column's slice contains
@@ -146,7 +141,6 @@ fn string g_diff_minimap(stringList diff_lines, int total_lines, int cols)
 
 	intList status = g_diff_status_rows(diff_lines, total_lines)
 	return g_render_minimap_bar(status, cols)
-
 
 # Same bar as g_diff_minimap, but for the git-diff view itself.
 fn string g_diff_minimap_raw(stringList diff_lines, int cols)

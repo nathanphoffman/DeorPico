@@ -13,7 +13,6 @@ fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
 	string total_str = c_int_to_string(total_line_count)
 	return len(total_str) + 1
 
-
 # Gutter is wide enough for the largest line number plus one trailing space.
 # Only a wrapped line's first visual row prints its number -- continuation
 # rows (is_first_segment false) get the same blank gutter as a past-EOF

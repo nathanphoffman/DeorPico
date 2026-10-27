@@ -55,7 +55,8 @@ fn void commit_prompt_render(AppState state)
 	screen = s_join([screen, title, ANSI_CRLF, blank, ANSI_CRLF, message_row, ANSI_CRLF, blank, ANSI_CRLF, files_header, ANSI_CRLF])
 
 	# 5 rows above the file list, 2 pinned below it.
-	int list_rows = rows - 7
+	const int RESERVED_ROWS = 7
+	int list_rows = rows - RESERVED_ROWS
 	for list_row in range(list_rows)
 		string list_text = ""
 		if list_row < path_count

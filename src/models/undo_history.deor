@@ -59,7 +59,8 @@ fn UndoHistory undo_history_push(UndoHistory history, UndoPoint point)
 		int patch_cursor_col = history_top_col
 		UndoPatch patch = move (patch_start, patch_removed, patch_added_len, patch_cursor_row, patch_cursor_col)
 		history_patches at end = patch
-		max_undo_depth as 250
+		const int MAX_UNDO_DEPTH = 250
+		int max_undo_depth = MAX_UNDO_DEPTH
 		if len(history_patches) > max_undo_depth
 			history_patches remove at 0
 	history_top_lines = move point_lines

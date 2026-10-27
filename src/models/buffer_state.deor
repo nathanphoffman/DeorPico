@@ -11,7 +11,6 @@ struct BufferState
 	# (non-wrapped) up/down doesn't track a goal column today either.
 	int scroll_wrap_seg
 
-
 	# True for exactly one frame after a wheel-scroll event -- tells
 	# editor_scroll to skip its cursor-follow clamp that frame, so the
 	# wheel can move the viewport without dragging the cursor along.
