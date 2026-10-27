@@ -1,0 +1,119 @@
+# git_parse_test.deor
+# Exercises the text-parsing helpers in lib/git.deor with sample strings, so
+# no real git repo is needed: line splitting, status classification and
+# diff header stripping/counting.
+
+import "lib/string.deor"
+import "lib/map.deor"
+import "lib/list.deor" where T = string
+import "lib/git.deor"
+
+fn void test_split_lines_drops_one_trailing_newline()
+	stringList lines = g_split_lines("a\nb\n")
+	print(len(lines))
+
+fn void test_split_lines_keeps_inner_blank_lines()
+	stringList lines = g_split_lines("a\n\nb")
+	print(len(lines))
+
+fn void test_split_status_entries_on_nul()
+	nul as g_nul()
+	raw_text as s_join([" M one.txt", nul, "?? two.txt", nul])
+	stringList entries = g_split_status_entries(raw_text)
+	print(len(entries))
+	print(entries at 1)
+
+fn void test_classify_plain_states()
+	modified as "M"
+	blank as " "
+	query as "?"
+	bang as "!"
+	del as "D"
+	ren as "R"
+	unmerged as "U"
+	add as "A"
+	print(g_classify_status(modified, blank))
+	print(g_classify_status(blank, modified))
+	print(g_classify_status(query, query))
+	print(g_classify_status(bang, bang))
+
+fn void test_classify_staged_with_edits()
+	modified as "M"
+	blank as " "
+	query as "?"
+	bang as "!"
+	del as "D"
+	ren as "R"
+	unmerged as "U"
+	add as "A"
+	print(g_classify_status(modified, modified))
+
+fn void test_classify_deletes_and_renames()
+	modified as "M"
+	blank as " "
+	query as "?"
+	bang as "!"
+	del as "D"
+	ren as "R"
+	unmerged as "U"
+	add as "A"
+	print(g_classify_status(del, blank))
+	print(g_classify_status(blank, del))
+	print(g_classify_status(ren, blank))
+
+fn void test_classify_conflicts()
+	modified as "M"
+	blank as " "
+	query as "?"
+	bang as "!"
+	del as "D"
+	ren as "R"
+	unmerged as "U"
+	add as "A"
+	print(g_classify_status(unmerged, unmerged))
+	print(g_classify_status(add, add))
+	print(g_classify_status(del, del))
+
+fn void test_strip_diff_header()
+	raw_text as "diff --git a/f b/f\n--- a/f\n+++ b/f\n@@ -1 +1 @@\n-old\n+new\n"
+	stringList body = g_strip_diff_header(raw_text)
+	print(len(body))
+	print(body at 0)
+
+fn void test_diff_count_counts_changed_lines()
+	minus as "-old"
+	plus as "+new"
+	context as " same"
+	stringList lines = [minus, plus, context]
+	print(g_diff_count(lines))
+
+fn void main()
+	test_split_lines_drops_one_trailing_newline()
+	test_split_lines_keeps_inner_blank_lines()
+	test_split_status_entries_on_nul()
+	test_classify_plain_states()
+	test_classify_staged_with_edits()
+	test_classify_deletes_and_renames()
+	test_classify_conflicts()
+	test_strip_diff_header()
+	test_diff_count_counts_changed_lines()
+
+# expect:
+# 2
+# 3
+# 2
+# ?? two.txt
+# staged
+# edited
+# new
+# ignored
+# staged_edited
+# staged_deleted
+# deleted
+# staged_renamed
+# conflict
+# conflict
+# conflict
+# 2
+# -old
+# 2

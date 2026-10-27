@@ -1,0 +1,94 @@
+# list_sort_test.deor
+# Exercises lib/list_order_extension.deor: sorting row indices by a float or
+# string key, ascending and descending, with ties keeping their order.
+
+import "lib/list_order_extension.deor"
+
+fn intList three_indices()
+	int zero = 0
+	int one = 1
+	int two = 2
+	return [zero, one, two]
+
+fn void test_sort_by_float_ascending()
+	float high = 3.5
+	float low = 1.0
+	float mid = 2.0
+	floatList keys = [high, low, mid]
+	intList indices = three_indices()
+	bool desc_off = false
+	bool desc_on = true
+	intList sorted = l_sort_indices_by_float(indices, keys, desc_off)
+	print(sorted at 0)
+	print(sorted at 1)
+	print(sorted at 2)
+
+fn void test_sort_by_float_descending()
+	float high = 3.5
+	float low = 1.0
+	float mid = 2.0
+	floatList keys = [high, low, mid]
+	intList indices = three_indices()
+	bool desc_off = false
+	bool desc_on = true
+	intList sorted = l_sort_indices_by_float(indices, keys, desc_on)
+	print(sorted at 0)
+	print(sorted at 2)
+
+fn void test_equal_float_keys_keep_order()
+	float same = 1.0
+	floatList keys = [same, same, same]
+	intList indices = three_indices()
+	bool desc_off = false
+	bool desc_on = true
+	intList sorted = l_sort_indices_by_float(indices, keys, desc_off)
+	print(sorted at 0)
+	print(sorted at 1)
+	print(sorted at 2)
+
+fn void test_sort_by_string()
+	pear as "pear"
+	apple as "apple"
+	fig as "fig"
+	stringList keys = [pear, apple, fig]
+	intList indices = three_indices()
+	bool desc_off = false
+	bool desc_on = true
+	intList sorted = l_sort_indices_by_string(indices, keys, desc_off)
+	print(sorted at 0)
+	print(sorted at 1)
+	print(sorted at 2)
+
+fn void test_sort_by_string_descending()
+	pear as "pear"
+	apple as "apple"
+	fig as "fig"
+	stringList keys = [pear, apple, fig]
+	intList indices = three_indices()
+	bool desc_off = false
+	bool desc_on = true
+	intList sorted = l_sort_indices_by_string(indices, keys, desc_on)
+	print(sorted at 0)
+	print(sorted at 2)
+
+fn void main()
+	test_sort_by_float_ascending()
+	test_sort_by_float_descending()
+	test_equal_float_keys_keep_order()
+	test_sort_by_string()
+	test_sort_by_string_descending()
+
+# expect:
+# 1
+# 2
+# 0
+# 0
+# 1
+# 0
+# 1
+# 2
+# 1
+# 2
+# 0
+# 0
+# 1

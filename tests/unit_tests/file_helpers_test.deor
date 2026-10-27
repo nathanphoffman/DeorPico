@@ -1,0 +1,71 @@
+# file_helpers_test.deor
+# Exercises src/models/file_entry_fs.deor on real files in a throwaway temp
+# folder: path pieces, creating a folder, and the empty-folder check.
+
+import "lib/file.deor"
+import "lib/string.deor"
+import "src/models/file_entry_fs.deor"
+
+# A fresh, empty folder under the system temp dir, named by `tag`.
+fn string make_temp_dir(string tag)
+	rust
+		{
+			let dir = std::env::temp_dir().join(format!("dpico_test_{}_{}", tag, std::process::id()));
+			let _ = std::fs::remove_dir_all(&dir);
+			std::fs::create_dir_all(&dir).unwrap();
+			dir.to_string_lossy().to_string()
+		}
+
+fn void test_basename()
+	print(f_basename("/proj/src/main.rs"))
+
+fn void test_extension()
+	print(f_extension("/proj/src/main.rs"))
+	print(f_extension("/proj/Makefile"))
+
+fn void test_dirname()
+	print(f_dirname("/proj/src/main.rs"))
+	print(f_dirname("main.rs"))
+
+fn void test_new_folder_is_empty()
+	dir as make_temp_dir("empty")
+	print(f_dir_is_empty(dir))
+	print(f_is_dir(dir))
+
+fn void test_folder_with_file_is_not_empty()
+	dir as make_temp_dir("full")
+	file_path as s_join([dir, "/note.txt"])
+	content as "hi"
+	f_write(file_path, content)
+	print(f_dir_is_empty(dir))
+	print(f_read(file_path))
+
+fn void test_create_dir_is_not_recursive()
+	dir as make_temp_dir("mkdir")
+	child as s_join([dir, "/child"])
+	deep as s_join([dir, "/missing/deep"])
+	print(f_create_dir(child))
+	print(f_create_dir(child))
+	print(f_create_dir(deep))
+
+fn void main()
+	test_basename()
+	test_extension()
+	test_dirname()
+	test_new_folder_is_empty()
+	test_folder_with_file_is_not_empty()
+	test_create_dir_is_not_recursive()
+
+# expect:
+# main.rs
+# rs
+#
+# /proj/src
+# .
+# true
+# true
+# false
+# hi
+# true
+# false
+# false

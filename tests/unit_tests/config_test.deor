@@ -1,0 +1,84 @@
+# config_test.deor
+# Exercises src/config.deor: reading a .dpico file for lint settings (the
+# [ext] section beating the top-level value, which beats the fallback) and
+# the whole-number settings that fall back when missing or below 1.
+
+import "lib/string.deor"
+import "lib/file.deor"
+import "src/config.deor"
+
+# A fresh temp folder holding a .dpico with `content`.
+fn string dpico_dir_with(string content)
+	rust
+		{
+			let dir = std::env::temp_dir().join(format!("dpico_cfg_{}_{}", std::process::id(), content.len()));
+			let _ = std::fs::remove_dir_all(&dir);
+			std::fs::create_dir_all(&dir).unwrap();
+			std::fs::write(dir.join(".dpico"), content.as_bytes()).unwrap();
+			dir.to_string_lossy().to_string()
+		}
+
+fn string lookup(string working_dir, string ext, string key)
+	fallback as "none"
+	ConfigQuery query = (working_dir, ext, key, fallback)
+	return config_lookup(query)
+
+fn void test_top_level_value()
+	working_dir as dpico_dir_with("lint_command = just build\n")
+	ext as "rs"
+	key as "lint_command"
+	print(lookup(working_dir, ext, key))
+
+fn void test_ext_section_beats_top_level()
+	working_dir as dpico_dir_with("lint_command = just build\n[ha]\nlint_command = hare build\n")
+	ext as "ha"
+	other as "rs"
+	key as "lint_command"
+	print(lookup(working_dir, ext, key))
+	print(lookup(working_dir, other, key))
+
+fn void test_missing_key_uses_fallback()
+	working_dir as dpico_dir_with("lint_command = just build\n")
+	ext as "rs"
+	key as "no_such_key"
+	print(lookup(working_dir, ext, key))
+
+fn void test_comments_and_blanks_are_skipped()
+	working_dir as dpico_dir_with("# note\n\nlint_command = make\n")
+	ext as "c"
+	key as "lint_command"
+	print(lookup(working_dir, ext, key))
+
+fn void test_config_int_reads_valid_number()
+	working_dir as dpico_dir_with("tab_width = 8\n")
+	config_load(working_dir)
+	key as "tab_width"
+	int fallback = 4
+	print(config_int(key, fallback))
+
+fn void test_config_int_rejects_bad_values()
+	working_dir as dpico_dir_with("tab_width = 0\nsidebar_width = wide\n")
+	config_load(working_dir)
+	tab_key as "tab_width"
+	side_key as "sidebar_width"
+	int fallback = 4
+	print(config_int(tab_key, fallback))
+	print(config_int(side_key, fallback))
+
+fn void main()
+	test_top_level_value()
+	test_ext_section_beats_top_level()
+	test_missing_key_uses_fallback()
+	test_comments_and_blanks_are_skipped()
+	test_config_int_reads_valid_number()
+	test_config_int_rejects_bad_values()
+
+# expect:
+# just build
+# hare build
+# just build
+# none
+# make
+# 8
+# 4
+# 4

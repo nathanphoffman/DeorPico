@@ -1,0 +1,158 @@
+# wrap_test.deor
+# Exercises src/renderer/editor/wrap.deor: where a long line breaks into
+# visual rows, which segment a column falls in, and stepping a position up
+# and down through wrapped rows.
+
+import "lib/string.deor"
+import "lib/convert.deor"
+import "lib/list.deor" where T = string
+import "lib/file.deor"
+import "src/config.deor"
+import "src/consts.deor"
+import "src/renderer/editor/wrap.deor"
+
+# Deor string literals can't spell the ESC byte.
+fn string esc_char()
+	rust
+		"\u{1b}".to_string()
+
+fn intList breaks_for(string line, int width)
+	int tab_width = 4
+	return wrap_break_visual_cols(line, width, tab_width)
+
+fn void test_short_line_does_not_wrap()
+	int width = 10
+	text as "short"
+	intList breaks = breaks_for(text, width)
+	print(len(breaks))
+	print(wrap_segment_count(breaks))
+
+fn void test_breaks_after_whitespace()
+	int width = 8
+	text as "hello world again"
+	intList breaks = breaks_for(text, width)
+	print(len(breaks))
+	print(breaks at 0)
+
+fn void test_long_token_hard_breaks_at_width()
+	int width = 5
+	text as "abcdefghijkl"
+	intList breaks = breaks_for(text, width)
+	print(len(breaks))
+	print(breaks at 0)
+	print(breaks at 1)
+
+fn void test_ansi_codes_take_no_width()
+	int width = 5
+	esc as esc_char()
+	text as s_join([esc, "[31mabcde", esc, "[0m"])
+	intList breaks = breaks_for(text, width)
+	print(len(breaks))
+
+fn void test_segment_for_column()
+	int width = 5
+	text as "abcdefghijkl"
+	intList breaks = breaks_for(text, width)
+	int col_in_first = 3
+	int col_in_second = 7
+	int col_in_third = 11
+	print(wrap_segment_index_for_col(breaks, col_in_first))
+	print(wrap_segment_index_for_col(breaks, col_in_second))
+	print(wrap_segment_index_for_col(breaks, col_in_third))
+
+fn void test_segment_start_col_clamps()
+	int width = 5
+	text as "abcdefghijkl"
+	intList breaks = breaks_for(text, width)
+	int first = 0
+	int second = 1
+	int stale = 9
+	print(wrap_segment_start_col(breaks, first))
+	print(wrap_segment_start_col(breaks, second))
+	print(wrap_segment_start_col(breaks, stale))
+
+fn void test_step_forward_within_and_across_lines()
+	int buffer_row = 0
+	int seg_index = 0
+	WrapPosition start = (buffer_row, seg_index)
+	int step_seg_count = 2
+	int step_last_row = 1
+	WrapStepInput step_input = (step_seg_count, step_last_row)
+	WrapPosition second_seg = wrap_step_forward_in_line(start, step_input)
+	(buffer_row, seg_index) in second_seg
+	print(buffer_row)
+	print(seg_index)
+	WrapPosition next_line = wrap_step_forward_in_line(second_seg, step_input)
+	(buffer_row, seg_index) in next_line
+	print(buffer_row)
+	print(seg_index)
+
+fn void test_step_forward_stays_at_end()
+	int buffer_row = 1
+	int seg_index = 1
+	WrapPosition last = (buffer_row, seg_index)
+	int step_seg_count = 2
+	int step_last_row = 1
+	WrapStepInput step_input = (step_seg_count, step_last_row)
+	WrapPosition after = wrap_step_forward_in_line(last, step_input)
+	(buffer_row, seg_index) in after
+	print(buffer_row)
+	print(seg_index)
+
+fn void test_step_backward_rolls_into_previous_line()
+	int buffer_row = 1
+	int seg_index = 0
+	WrapPosition start = (buffer_row, seg_index)
+	int prev_seg_count = 3
+	WrapPosition before = wrap_step_backward_in_line(start, prev_seg_count)
+	(buffer_row, seg_index) in before
+	print(buffer_row)
+	print(seg_index)
+
+fn void test_step_backward_stays_at_top()
+	int buffer_row = 0
+	int seg_index = 0
+	WrapPosition top = (buffer_row, seg_index)
+	int prev_seg_count = 1
+	WrapPosition before = wrap_step_backward_in_line(top, prev_seg_count)
+	(buffer_row, seg_index) in before
+	print(buffer_row)
+	print(seg_index)
+
+fn void main()
+	test_short_line_does_not_wrap()
+	test_breaks_after_whitespace()
+	test_long_token_hard_breaks_at_width()
+	test_ansi_codes_take_no_width()
+	test_segment_for_column()
+	test_segment_start_col_clamps()
+	test_step_forward_within_and_across_lines()
+	test_step_forward_stays_at_end()
+	test_step_backward_rolls_into_previous_line()
+	test_step_backward_stays_at_top()
+
+# expect:
+# 0
+# 1
+# 2
+# 6
+# 2
+# 5
+# 10
+# 0
+# 0
+# 1
+# 2
+# 0
+# 5
+# 10
+# 0
+# 1
+# 1
+# 0
+# 1
+# 1
+# 0
+# 2
+# 0
+# 0

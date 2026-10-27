@@ -1,0 +1,100 @@
+# spreadsheet_columns_test.deor
+# Exercises src/spreadsheet/column_formulas.deor and settings.deor: which
+# files keep settings, whether a column already has data, and the .dpv
+# check that rejects a cell holding its own formula.
+
+import "lib/string.deor"
+import "lib/convert.deor"
+import "lib/list.deor" where T = string
+import "src/spreadsheet/csv_parse.deor"
+import "src/spreadsheet/spreadsheet_consts.deor"
+import "lib/string_extension.deor"
+import "src/models/file_entry_fs.deor"
+import "lib/list.deor" where T = float
+import "src/spreadsheet/settings.deor"
+import "lib/math.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/formula_operand.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/read_token_as_sign_or_number.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/read_token_as_operator_between_numbers.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve/formula_group.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine/apply_level_operator_or_save_for_later.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_resolve.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_tokens.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula/formula_combine.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row/spreadsheet_evaluate_formula.deor"
+import "src/spreadsheet/calculation/spreadsheet_display_row.deor"
+import "src/spreadsheet/column_formulas.deor"
+
+shape csvRowList = list of stringList
+
+fn csvRowList sample_rows()
+	stringList header = ["name", "total"]
+	stringList first = ["a", "5"]
+	stringList second = ["b", ""]
+	csvRowList rows = [header, first, second]
+	return rows
+
+fn void test_only_dpv_keeps_settings()
+	print(spreadsheet_keeps_settings("sheet.dpv"))
+	print(spreadsheet_keeps_settings("sheet.csv"))
+
+fn void test_cell_in_row_past_end_is_empty()
+	stringList row = ["a", "b"]
+	int past_end = 5
+	int first = 0
+	print(spreadsheet_cell_in_row(row, first))
+	print(spreadsheet_cell_in_row(row, past_end))
+
+fn void test_column_with_data()
+	csvRowList rows = sample_rows()
+	int total_col = 1
+	int no_skip = 0 - 1
+	print(spreadsheet_column_has_data(rows, total_col, no_skip))
+
+fn void test_skipped_row_does_not_count()
+	csvRowList rows = sample_rows()
+	int total_col = 1
+	int data_row = 1
+	print(spreadsheet_column_has_data(rows, total_col, data_row))
+
+fn void test_header_row_does_not_count()
+	stringList header = ["name", "total"]
+	stringList empty_row = ["a", ""]
+	csvRowList rows = [header, empty_row]
+	int total_col = 1
+	int no_skip = 0 - 1
+	print(spreadsheet_column_has_data(rows, total_col, no_skip))
+
+fn void test_dpv_rejects_cell_formula()
+	stringList header = ["name", "total"]
+	stringList formula_row = ["a", "=1+2"]
+	csvRowList rows = [header, formula_row]
+	dpv_path as "sheet.dpv"
+	print(spreadsheet_invalid_dpv_reason(dpv_path, rows))
+
+fn void test_csv_allows_any_cell()
+	stringList header = ["name", "total"]
+	stringList formula_row = ["a", "=1+2"]
+	csvRowList rows = [header, formula_row]
+	csv_path as "sheet.csv"
+	print(spreadsheet_invalid_dpv_reason(csv_path, rows))
+
+fn void main()
+	test_only_dpv_keeps_settings()
+	test_cell_in_row_past_end_is_empty()
+	test_column_with_data()
+	test_skipped_row_does_not_count()
+	test_header_row_does_not_count()
+	test_dpv_rejects_cell_formula()
+	test_csv_allows_any_cell()
+
+# expect:
+# true
+# false
+# a
+#
+# true
+# false
+# false
+# Not a valid .dpv: row 2, col 2 has its own formula (a .dpv keeps one formula per column)
+#

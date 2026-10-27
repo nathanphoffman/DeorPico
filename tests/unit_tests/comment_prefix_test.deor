@@ -6,16 +6,7 @@ import "lib/file.deor"
 import "lib/string.deor"
 import "lib/map.deor"
 import "lib/comment_prefix.deor"
-
-# Same bodies as src/models/file_entry_fs.deor, copied here because importing
-# that file pulls in the `trash` crate, which a bare rustc build doesn't link.
-fn string f_basename(string path)
-	rust
-		std::path::Path::new(&path).file_name().and_then(|n| n.to_str()).unwrap_or(&path).to_string()
-
-fn string f_extension(string path)
-	rust
-		std::path::Path::new(&path).extension().and_then(|e| e.to_str()).unwrap_or("").to_string()
+import "src/models/file_entry_fs.deor"
 
 fn void test_comment_prefixes()
 	print(comment_prefix_for_ext("rs"))

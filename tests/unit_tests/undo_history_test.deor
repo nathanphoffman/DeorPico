@@ -1,0 +1,88 @@
+# undo_history_test.deor
+# Exercises src/models/undo_history.deor: patches between buffer states, and
+# the push/pop order of the compact undo history.
+
+import "lib/string.deor"
+import "lib/convert.deor"
+import "lib/list.deor" where T = string
+import "src/models/undo_snapshot.deor"
+import "src/models/undo_history.deor"
+
+fn UndoHistory push_lines(UndoHistory history, stringList point_lines)
+	int point_row = 0
+	int point_col = 0
+	UndoPoint point = move (point_lines, point_row, point_col)
+	return undo_history_push(move history, move point)
+
+fn void test_patch_round_trip()
+	stringList base = ["a", "b", "c"]
+	stringList target = ["a", "x", "y", "c"]
+	UndoPatch patch = undo_make_patch(target, base)
+	stringList rebuilt = undo_apply_patch(base, patch)
+	print(len(rebuilt))
+	print(rebuilt at 1)
+	print(rebuilt at 3)
+
+fn void test_patch_only_covers_changed_lines()
+	stringList base = ["a", "b", "c"]
+	stringList target = ["a", "x", "c"]
+	UndoPatch patch = undo_make_patch(target, base)
+	(patch_start, patch_removed, patch_added_len) in patch
+	print(patch_start)
+	print(len(patch_removed))
+	print(patch_added_len)
+
+fn void test_empty_history_pops_nothing()
+	UndoHistory history = new_undo_history()
+	print(pop_succeeds(history))
+
+fn int newest_line_count(UndoHistory history)
+	UndoPop result = undo_history_pop(move history)
+	move (popped_history, popped_point, popped) in result
+	move (point_lines, point_row, point_col) in popped_point
+	return len(point_lines)
+
+fn UndoHistory history_after_pop(UndoHistory history)
+	UndoPop result = undo_history_pop(move history)
+	move (popped_history, popped_point, popped) in result
+	return popped_history
+
+fn bool pop_succeeds(UndoHistory history)
+	UndoPop result = undo_history_pop(move history)
+	(popped_history, popped_point, popped) in result
+	return popped
+
+fn void test_pop_returns_newest_first()
+	UndoHistory history = new_undo_history()
+	history = push_lines(move history, ["one"])
+	history = push_lines(move history, ["one", "two"])
+	UndoHistory older = history_after_pop(history)
+	print(newest_line_count(history))
+	print(newest_line_count(older))
+
+fn void test_pop_runs_out()
+	UndoHistory history = new_undo_history()
+	history = push_lines(move history, ["only"])
+	UndoHistory emptied = history_after_pop(history)
+	print(pop_succeeds(history))
+	print(pop_succeeds(emptied))
+
+fn void main()
+	test_patch_round_trip()
+	test_patch_only_covers_changed_lines()
+	test_empty_history_pops_nothing()
+	test_pop_returns_newest_first()
+	test_pop_runs_out()
+
+# expect:
+# 4
+# x
+# c
+# 1
+# 1
+# 1
+# false
+# 2
+# 1
+# true
+# false
