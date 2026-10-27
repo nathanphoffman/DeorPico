@@ -1,10 +1,3 @@
-# Whether draw_frame (main.deor) should draw the commit screen instead of
-# the normal view.
-fn bool commit_prompt_is_open(AppState state)
-	(commit_prompt) in state
-	(commit_prompt_open) in commit_prompt
-	return commit_prompt_open
-
 # One screen-wide row: cut to `cols`, padded out to it, wrapped in `style`
 # (empty for no styling).
 fn string commit_prompt_row(string text, int cols, string style)
