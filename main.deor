@@ -156,7 +156,6 @@ macro rehighlight_changed_rows
 # Draws whatever the current screen is. Expects the unpack_app_state locals;
 # leaves `state` repacked when it returns.
 macro draw_frame
-	bool sheet_showing = spreadsheet_active and spreadsheet_view_active
 	if commit_prompt_open
 		macro_run repack_app_state
 		commit_prompt_render(state)
@@ -175,9 +174,6 @@ macro draw_frame
 	else if too_large
 		macro_run repack_app_state
 		editor_render_too_large(state, current_file)
-	else if sheet_showing
-		macro_run repack_app_state
-		spreadsheet_render(state)
 	else
 		# Only color the rows that can actually be on screen this frame
 		# (an over-estimate of view_rows, cheap and always safe) instead
@@ -222,7 +218,6 @@ macro render_frame
 	(diffing) in diff
 	(sel_anchor_row, sel_anchor_col) in selection
 	(commit_prompt_open) in commit_prompt
-	(spreadsheet_active, spreadsheet_view_active) in spreadsheet
 
 	macro_run refresh_highlighter_for_file_change
 	unsafe_macro_run compute_cursor_visual_columns
@@ -252,13 +247,12 @@ fn void main()
 		# `state` is taken apart by `move` to read these few flags -- reading
 		# them with `(main_panel) in state` would copy the whole file and
 		# undo history on every key.
-		move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+		move (browser, main_panel, commit_prompt, done, notice, error) in state
 		(lint) in main_panel
 		(lint_running) in lint
 		bool was_lint_running = lint_running
 		(commit_prompt_open) in commit_prompt
-		(spreadsheet_active) in spreadsheet
-		AppState loop_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+		AppState loop_state = move (browser, main_panel, commit_prompt, done, notice, error)
 		state = loop_state
 
 		# The commit screen (^L) takes every key while it's open (and the
@@ -268,11 +262,8 @@ fn void main()
 			prompt_owns_key = commit_prompt_owns_key(state, key)
 		if prompt_owns_key
 			state = commit_prompt_handle_key(move state, key)
-		else if spreadsheet_active
-			macro_run spreadsheet_main_main
 		else
 			state = editor_handle_key_for_events(move state, key)
-			macro_run spreadsheet_after_text_key
 		(done) in state
 		if done
 			break

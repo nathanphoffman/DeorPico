@@ -1,6 +1,6 @@
 # ^L while the sidebar has focus opens a full-screen "commit staged changes"
-# prompt. Hooked straight into main()'s loop ahead of the spreadsheet/editor
-# key handlers (see main.deor) -- while open it owns every key, so nothing
+# prompt. Hooked straight into main()'s loop ahead of the editor
+# key handler (see main.deor) -- while open it owns every key, so nothing
 # behind it moves until Enter commits or Esc backs out.
 
 # Nothing staged means nothing to commit -- says so instead of opening an

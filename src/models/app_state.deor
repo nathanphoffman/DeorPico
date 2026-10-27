@@ -5,7 +5,6 @@
 struct AppState
 	SidebarState browser
 	EditorState main_panel
-	SpreadsheetState spreadsheet
 	CommitPromptState commit_prompt
 	bool done
 

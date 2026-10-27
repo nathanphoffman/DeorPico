@@ -3,7 +3,7 @@ fn AppState editor_scroll(AppState state)
 	# Taken apart by `move` and rebuilt at the bottom -- `(main_panel) in
 	# state` would copy every line of the file and the whole undo history
 	# on every frame.
-	move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error) in state
+	move (browser, main_panel, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
 	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
 	(sidebar_focused) in browser
@@ -90,5 +90,5 @@ fn AppState editor_scroll(AppState state)
 
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
-	AppState next_state = move (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	AppState next_state = move (browser, main_panel, commit_prompt, done, notice, error)
 	return next_state

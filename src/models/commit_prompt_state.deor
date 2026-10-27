@@ -1,8 +1,8 @@
-# The ^L commit screen (see src/renderer/prompt/) -- sits on AppState next
-# to SpreadsheetState rather than inside the sidebar/editor branches, since
-# while it's open it takes over every key and the whole screen. Fields are
-# commit_-prefixed for the same reason SpreadsheetState's are: so they
-# can't collide with another struct's fields in a destructured scope.
+# The ^L commit screen (see src/renderer/prompt/) -- sits on AppState
+# rather than inside the sidebar/editor branches, since while it's open it
+# takes over every key and the whole screen. Fields are commit_-prefixed
+# so they can't collide with another struct's fields in a destructured
+# scope.
 struct CommitPromptState
 	bool commit_prompt_open
 

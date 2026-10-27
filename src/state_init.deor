@@ -120,7 +120,6 @@ fn AppState editor_open(LaunchArgs launch)
 	unsafe_macro_run initialize_search
 	unsafe_macro_run initialize_filter
 	unsafe_macro_run initialize_lint
-	unsafe_macro_run spreadsheet_state_init_editor_open
 
 	done as false
 	notice as ""
@@ -134,5 +133,5 @@ fn AppState editor_open(LaunchArgs launch)
 	commit_error as ""
 	CommitPromptState commit_prompt = (commit_prompt_open, commit_message, commit_cursor, commit_paths, commit_error)
 
-	AppState state = (browser, main_panel, spreadsheet, commit_prompt, done, notice, error)
+	AppState state = (browser, main_panel, commit_prompt, done, notice, error)
 	return state

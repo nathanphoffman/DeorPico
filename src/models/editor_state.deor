@@ -3,7 +3,7 @@
 # panel (buffer text, diff view, selection, undo, search, filter, lint) as
 # opposed to SidebarState, which is the "Sidebar" branch. Splitting these
 # into two top-level AppState fields (see editor_state.deor) is what
-# would let a future alternate main panel (e.g. a spreadsheet view) sit
+# would let a future alternate main panel (e.g. a different kind of view) sit
 # alongside BufferState here without touching the sidebar at all.
 struct EditorState
 	BufferState core

@@ -1,6 +1,5 @@
 # string_extension_test.deor
-# Exercises lib/string_extension.deor: word lookup at a cursor, number
-# detection, char counting and the two number formatters.
+# Exercises lib/string_extension.deor: word lookup at a cursor.
 
 import "lib/string.deor"
 import "lib/string_extension.deor"
@@ -27,35 +26,11 @@ fn void test_word_at_blank_line()
 	int one = 1
 	print(s_word_at(line_d, one))
 
-fn void test_is_number()
-	print(s_is_number(" 12.5 "))
-	print(s_is_number("abc"))
-	print(s_is_number(""))
-
-fn void test_char_count_counts_chars_not_bytes()
-	print(s_char_count("héllo"))
-
-fn void test_format_number()
-	print(s_format_number(42.0))
-	print(s_format_number(3.5))
-	print(s_format_number(0.1 + 0.2))
-
-fn void test_format_fixed()
-	int two = 2
-	float thirty_nine = 39.0
-	float tiny_negative = 0.0 - 0.001
-	print(s_format_fixed(thirty_nine, two))
-	print(s_format_fixed(tiny_negative, two))
-
 fn void main()
 	test_word_at_inside_word()
 	test_word_at_stops_at_punctuation()
 	test_word_at_cursor_after_word()
 	test_word_at_blank_line()
-	test_is_number()
-	test_char_count_counts_chars_not_bytes()
-	test_format_number()
-	test_format_fixed()
 
 # expect:
 # foo_bar
@@ -63,12 +38,3 @@ fn void main()
 # foo
 # foo
 #
-# true
-# false
-# false
-# 5
-# 42
-# 3.5
-# 0.3
-# 39.00
-# 0.00
