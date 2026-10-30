@@ -63,7 +63,7 @@ fn entryMatchList x_find_entries_matching(string dir, string query)
 		}
 
 # Non-recursive: direct children of `dir` only, matched by case-insensitive
-# substring in the file name -- used while the filter query is under 5
+# substring in the file name -- used while the filter query is under 3
 # characters (see renderer/browser/keypress/browse_filter.deor). Entries
 # covered by a `.gitignore` at `dir`'s root, if one exists, are skipped.
 fn filterMatchList x_filter_shallow(string dir, string query)

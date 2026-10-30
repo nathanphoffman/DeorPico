@@ -37,8 +37,8 @@ macro close_browse_filter
 	notice = ""
 	error = false
 
-# Under 5 characters: a plain name filter over the selected directory's
-# direct children. At 5+: flattens the whole subtree and adds a content
+# Under 3 characters: a plain name filter over the selected directory's
+# direct children. At 3+: flattens the whole subtree and adds a content
 # search, capped per-directory for performance (see lib/dirsearch.deor).
 macro recompute_browse_filter
 	int query_len = len(filter_query)
