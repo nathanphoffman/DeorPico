@@ -63,17 +63,20 @@ fn int max_open_file_bytes()
 	mb_key as "max_file_mb"
 	const int DEFAULT_MAX_FILE_MB = 25
 	mb_default as DEFAULT_MAX_FILE_MB
+
 	return config_int(mb_key, mb_default) * bytes_per_mb()
 
 # Bytes in a megabyte, shared by the open-size limit and the too-large notice.
 fn int bytes_per_mb()
 	const int BYTES_PER_MB = 1048576
+
 	return BYTES_PER_MB
 
 # Most files the filter lists from one directory (and the number the
 # "folder(s) over N files truncated" notice reports).
 fn int filter_per_dir_cap()
 	const int FILTER_PER_DIR_CAP = 50
+
 	return FILTER_PER_DIR_CAP
 
 # Shared by editor_scroll and editor_render, which must agree exactly on how
@@ -84,12 +87,16 @@ fn int filter_per_dir_cap()
 fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible, bool search_active)
 	unsafe_macro_run use_consts
 	int reserved_rows = 2
+
 	if has_minimap
 		reserved_rows = reserved_rows + 1
+
 	if lint_output_visible
 		reserved_rows = reserved_rows + cfg_lint_popup_height
+
 	if search_active
 		reserved_rows = reserved_rows + 1
+
 	return reserved_rows
 
 # The one shared "how many buffer rows fit on screen" formula -- every
@@ -103,8 +110,10 @@ fn int editor_reserved_rows(bool has_minimap, bool lint_output_visible, bool sea
 # lint_output_visible/search_active would be 4.
 fn int editor_view_rows(int rows, int reserved_rows)
 	int view_rows = rows - reserved_rows
+
 	if view_rows < 1
 		view_rows = 1
+
 	return view_rows
 
 # How many screen rows the sidebar's <GIT> section occupies at the top of the
@@ -117,10 +126,13 @@ fn int editor_view_rows(int rows, int reserved_rows)
 fn int sidebar_git_section_rows(bool is_git_repo, int git_count, bool git_collapsed)
 	if not is_git_repo
 		return 0
+
 	if git_collapsed
 		return 1
+
 	if git_count is 0
 		return 2
+
 	return 1 + git_count
 
 # The sidebar's root-directory row, pinned directly below the <GIT> section

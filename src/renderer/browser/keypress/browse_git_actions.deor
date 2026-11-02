@@ -8,9 +8,11 @@
 # unstages it). A no-op if there's nothing to change either way.
 macro git_stage_toggle
 	string clean_path = g_relative_path(path)
+
 	if is_dir
 		DirGitSummary summary = g_dir_status_summary(browse_dir, clean_path)
 		(has_staged, has_unstaged) in summary
+
 		if has_unstaged
 			bool staged_ok = g_stage(browse_dir, clean_path)
 			macro_run refresh_all_git_status
@@ -33,6 +35,7 @@ macro git_stage_all
 		string whole_repo = ":/"
 		bool staged_ok = g_stage(browse_dir, whole_repo)
 		macro_run refresh_all_git_status
+
 		if staged_ok
 			notice = "Staged all changes"
 			error = false
@@ -62,6 +65,7 @@ macro discard_git_changes_entry
 		if pending_discard_path is path
 			string trash_error = f_trash(path)
 			pending_discard_path = ""
+
 			if trash_error is ""
 				macro_run remove_deleted_entry
 				notice = "Deleted untracked file"
@@ -77,9 +81,11 @@ macro discard_git_changes_entry
 		string clean_path = g_relative_path(path)
 		bool discarded_ok = g_discard(browse_dir, clean_path)
 		pending_discard_path = ""
+
 		if discarded_ok
 			if path is filename
 				macro_run load_file_into_buffer
+
 			macro_run refresh_all_git_status
 			notice = "Discarded changes"
 			error = false

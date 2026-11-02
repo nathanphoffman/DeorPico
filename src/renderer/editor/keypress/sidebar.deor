@@ -6,6 +6,7 @@
 # focused was a dead end, since nothing in this mode could clear `dirty`.
 macro handle_sidebar_focus_mode
 	macro_run handle_global_actions
+
 	# Frozen while notify_unsaved_changes' notice is up -- see sidebar_locked's
 	# declaration in sidebar_state.deor. ^S/^Del already ran above
 	# (handle_global_actions), so everything below is skipped until one of
@@ -117,6 +118,7 @@ macro sidebar_key_activate
 		else if git_selected < len(git_changes)
 			FileEntry selected = git_changes at git_selected
 			(path, is_dir, git_status) in selected
+
 			if git_history_level is 1
 				macro_run git_history_open_commit
 			else if git_history_level is 2
@@ -137,6 +139,7 @@ macro sidebar_key_activate
 	else if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir, expanded) in selected
+
 		if is_dir
 			if expanded
 				macro_run browse_left
@@ -178,6 +181,7 @@ macro sidebar_activate_index
 			macro_run sidebar_key_activate
 		else if git_section_rows > 0 and idx > 0 and idx < git_section_rows and not git_section_collapsed and git_count > 0
 			int git_idx = idx - 1
+
 			# <GIT> rows are always files -- same reasoning as the filter
 			# branch above, block the mutation itself rather than moving the
 			# highlight then refusing to open it.
@@ -193,9 +197,11 @@ macro sidebar_activate_index
 			macro_run sidebar_key_activate
 		else if idx >= git_section_rows + root_section_rows
 			int tree_idx = idx - git_section_rows - root_section_rows
+
 			if tree_idx >= 0 and tree_idx < len(browse_entries)
 				FileEntry clicked = browse_entries at tree_idx
 				(is_dir) in clicked
+
 				# Directories aren't gated by dirty (expand/collapse doesn't
 				# touch the buffer), only a file click is -- so only files
 				# need their selection-mutation held back here.

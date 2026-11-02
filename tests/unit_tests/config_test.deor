@@ -21,6 +21,7 @@ fn string dpico_dir_with(string content)
 fn string lookup(string working_dir, string ext, string key)
 	fallback as "none"
 	ConfigQuery query = (working_dir, ext, key, fallback)
+
 	return config_lookup(query)
 
 fn void test_top_level_value()

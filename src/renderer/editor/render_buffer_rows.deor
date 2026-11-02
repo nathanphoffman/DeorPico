@@ -21,6 +21,7 @@ macro render_scrollbar_column
 # vertical bar.
 macro render_row_fill
 	int fill_width = text_visible_columns - row_visible_cols
+
 	if fill_width > 0
 		string space = " "
 		string fill = s_repeat(space, fill_width)
@@ -54,13 +55,16 @@ macro render_buffer_rows
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
 		int selected_idx = git_section_rows + root_section_rows + browse_selected
+
 		if sidebar_on_git
 			selected_idx = 1 + git_selected
 		else if sidebar_on_root
 			selected_idx = git_section_rows
+
 		if filter_active
 			idx = filter_scroll_row + row_offset
 			selected_idx = filter_selected
+
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
 
@@ -72,11 +76,13 @@ macro render_buffer_rows
 
 		int row_visible_cols = 0
 		bool is_eof_padding_row = false
+
 		if buffer_row_index < total_line_count
 			if buffer_row_index is not cached_row
 				line = lines at buffer_row_index
 				breaks = wrap_break_visual_cols(line, text_visible_columns, cfg_tab_width)
 				cached_row = buffer_row_index
+
 			int seg_start_col = wrap_segment_start_col(breaks, seg_index)
 			int seg_count = wrap_segment_count(breaks)
 
@@ -91,8 +97,10 @@ macro render_buffer_rows
 			int start_visible_col = seg_start_col
 			int end_visible_col = seg_start_col + text_visible_columns
 			int next_seg_index = seg_index + 1
+
 			if next_seg_index < seg_count
 				end_visible_col = wrap_segment_start_col(breaks, next_seg_index)
+
 			VisibleColRange visible_range = (start_visible_col, end_visible_col)
 
 			RowHighlight highlight = editor_row_highlight(sel_range, buffer_row_index)
@@ -102,6 +110,7 @@ macro render_buffer_rows
 
 			bool row_matches = search_active and editor_row_has_match(search_matches, buffer_row_index)
 			bool row_has_issue = editor_row_has_match(issue_matches, buffer_row_index)
+
 			if row_matches
 				string tinted_text = editor_tint_search_row(text, text_visible_columns, visible_cols)
 				screen = s_join([screen, tinted_text])
@@ -134,6 +143,7 @@ macro render_buffer_rows
 			screen = s_join([screen, ANSI_EOF_PADDING_BG])
 
 		macro_run render_row_fill
+
 		if is_eof_padding_row
 			screen = s_join([screen, ANSI_RESET])
 

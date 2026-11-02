@@ -10,6 +10,7 @@ macro search_open_impl
 		matchList cleared_matches = empty
 		search_matches = cleared_matches
 		search_match_index = 0 - 1
+
 	search_active = true
 	search_editing = true
 
@@ -22,12 +23,14 @@ macro search_open_impl
 # in-progress query does.
 macro handle_search_edit_mode
 	macro_run handle_global_actions
+
 	if kind is "enter"
 		macro_run search_confirm_impl
 	else if kind is "backspace"
 		macro_run search_backspace_impl
 	else if kind is "char"
 		macro_run search_type_char_impl
+
 	# Clicking the buffer while still typing a query acts like Enter -- hands
 	# keyboard focus back to the document (search_editing = false) -- but
 	# also runs the click itself, same as any other mouse_down, so the
@@ -38,6 +41,7 @@ macro handle_search_edit_mode
 	else if kind is "mouse_down"
 		search_editing = false
 		macro_run mouse_down_editor_impl
+
 	macro_run handle_tab_and_search
 	macro_run back_stop
 
@@ -55,6 +59,7 @@ macro search_type_char_impl
 
 macro search_backspace_impl
 	int buffer_len = len(search_buffer)
+
 	if buffer_len > 0
 		zero as 0
 		int new_len = buffer_len - 1
@@ -89,24 +94,32 @@ macro search_clear_impl
 # match list, wrapping at the ends. Caller sets `forward` before calling.
 macro search_jump
 	int total_matches = len(search_matches)
+
 	if total_matches > 0
 		if search_match_index < 0
 			int found_index = 0
 			int scan_index = 0
+
 			for candidate in search_matches
 				(row, col) in candidate
 				bool at_or_after = row > cursor_row or (row is cursor_row and col >= cursor_col)
+
 				if at_or_after
 					found_index = scan_index
+
 					break
+
 				scan_index = scan_index + 1
+
 			search_match_index = found_index
 		else if forward
 			search_match_index = search_match_index + 1
+
 			if search_match_index >= total_matches
 				search_match_index = 0
 		else
 			search_match_index = search_match_index - 1
+
 			if search_match_index < 0
 				search_match_index = total_matches - 1
 

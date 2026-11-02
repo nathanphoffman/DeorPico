@@ -6,11 +6,13 @@
 # stop before finalizing anything.
 macro write_move_to_disk
 	bool moved = false
+
 	if f_exists(dest_full_path)
 		notice = "Something with that name already exists there"
 		error = true
 	else
 		moved = f_move(source_path, create_parent_dir)
+
 		if not moved
 			notice = "Could not move"
 			error = true

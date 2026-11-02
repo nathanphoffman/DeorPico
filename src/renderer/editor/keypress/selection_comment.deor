@@ -40,10 +40,12 @@ macro key_space_comment_selection_impl
 				string after_prefix = s_substring(rest, prefix_len, rest_len)
 				string new_rest = after_prefix
 				string single_space = " "
+
 				if s_starts_with(after_prefix, single_space)
 					int after_prefix_len = len(after_prefix)
 					int space_len = 1
 					new_rest = s_substring(after_prefix, space_len, after_prefix_len)
+
 				line = s_join([leading_ws, new_rest])
 			else
 				# Keep the line's leading whitespace in front of the new

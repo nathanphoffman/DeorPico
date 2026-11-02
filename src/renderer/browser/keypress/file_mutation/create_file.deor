@@ -37,6 +37,7 @@ macro start_create_file
 # nothing.
 macro confirm_create_file
 	int name_len = len(new_file_name)
+
 	if name_len is 0
 		notice = "File name can't be empty"
 		error = true
@@ -61,6 +62,7 @@ macro confirm_create_file
 				bool created = false
 
 				macro_run write_create_entry_to_disk
+
 				if created
 					unsafe_macro_run apply_created_placeholder_entry
 					macro_run refresh_all_git_status

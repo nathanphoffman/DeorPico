@@ -11,8 +11,10 @@ macro key_refresh_impl
 
 	if filename is not ""
 		stringList disk_lines = f_lines(filename)
+
 		if len(disk_lines) is 0
 			disk_lines at end = ""
+
 		nls as "\n"
 		string disk_content = s_join_with(disk_lines, nls)
 		bool changed_on_disk = disk_content is not synced_content

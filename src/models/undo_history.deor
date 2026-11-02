@@ -41,6 +41,7 @@ fn UndoHistory new_undo_history()
 	int history_top_col = 0
 	bool history_has_top = false
 	UndoHistory history = move (history_patches, history_top_lines, history_top_row, history_top_col, history_has_top)
+
 	return history
 
 # Adds `point` as the newest entry. The entry that was newest until now is
@@ -48,10 +49,12 @@ fn UndoHistory new_undo_history()
 fn UndoHistory undo_history_push(UndoHistory history, UndoPoint point)
 	move (history_patches, history_top_lines, history_top_row, history_top_col, history_has_top) in history
 	move (point_lines, point_row, point_col) in point
+
 	# Re-declared through a local copy -- the transpiler doesn't make an
 	# unpacked variable mutable on an `at end` push / `remove at` alone.
 	patchList patches_holder = move history_patches
 	patchList history_patches = move patches_holder
+
 	if history_has_top
 		UndoPatch bare_patch = undo_make_patch(move history_top_lines, point_lines)
 		(patch_start, patch_removed, patch_added_len) in bare_patch
@@ -61,13 +64,16 @@ fn UndoHistory undo_history_push(UndoHistory history, UndoPoint point)
 		history_patches at end = patch
 		const int MAX_UNDO_DEPTH = 250
 		int max_undo_depth = MAX_UNDO_DEPTH
+
 		if len(history_patches) > max_undo_depth
 			history_patches remove at 0
+
 	history_top_lines = move point_lines
 	history_top_row = point_row
 	history_top_col = point_col
 	history_has_top = true
 	UndoHistory next_history = move (history_patches, history_top_lines, history_top_row, history_top_col, history_has_top)
+
 	return next_history
 
 # Removes and returns the newest entry; the one below it (rebuilt from its
@@ -84,6 +90,7 @@ fn UndoPop undo_history_pop(UndoHistory history)
 	int next_top_row = 0
 	int next_top_col = 0
 	bool next_has_top = false
+
 	if popped and len(history_patches) > 0
 		int last_idx = len(history_patches) - 1
 		UndoPatch patch = history_patches at last_idx
@@ -93,6 +100,7 @@ fn UndoPop undo_history_pop(UndoHistory history)
 		next_top_row = patch_cursor_row
 		next_top_col = patch_cursor_col
 		next_has_top = true
+
 	UndoPoint popped_point = move (point_lines, point_row, point_col)
 	history_top_lines = move next_top_lines
 	history_top_row = next_top_row
@@ -100,4 +108,5 @@ fn UndoPop undo_history_pop(UndoHistory history)
 	history_has_top = next_has_top
 	UndoHistory popped_history = move (history_patches, history_top_lines, history_top_row, history_top_col, history_has_top)
 	UndoPop result = move (popped_history, popped_point, popped)
+
 	return result

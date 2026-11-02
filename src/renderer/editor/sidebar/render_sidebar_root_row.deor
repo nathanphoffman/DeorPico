@@ -8,8 +8,10 @@
 macro render_sidebar_root_row
 	root_dir_copy as browse_dir
 	string root_name = f_basename(browse_dir)
+
 	if len(root_name) is 0
 		root_name = root_dir_copy
+
 	string marker = "/ "
 	string root_text = s_join([marker, root_name])
 	FitResult fit = browser_fit(root_text, content_width)

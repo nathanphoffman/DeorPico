@@ -8,6 +8,7 @@
 fn string editor_tint_search_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
 	unsafe_macro_run use_ansi_codes
 	string fill = editor_tint_fill(text_visible_columns, rendered_visible_cols)
+
 	return editor_tint_row(rendered_line, fill, ANSI_SEARCH_TINT)
 
 # Same tint mechanism as editor_tint_search_row, dark orange instead --
@@ -15,14 +16,18 @@ fn string editor_tint_search_row(string rendered_line, int text_visible_columns,
 fn string editor_tint_issue_row(string rendered_line, int text_visible_columns, int rendered_visible_cols)
 	unsafe_macro_run use_ansi_codes
 	string fill = editor_tint_fill(text_visible_columns, rendered_visible_cols)
+
 	return editor_tint_row(rendered_line, fill, ANSI_ISSUE_TINT)
 
 # Spaces to pad a row out to the full text width (none if it's already wider).
 fn string editor_tint_fill(int text_visible_columns, int rendered_visible_cols)
 	int fill_width = text_visible_columns - rendered_visible_cols
+
 	if fill_width < 0
 		fill_width = 0
+
 	string space = " "
+
 	return s_repeat(space, fill_width)
 
 # The shared tint: `tint` as the row's background, re-asserted after every
@@ -31,4 +36,5 @@ fn string editor_tint_row(string rendered_line, string fill, string tint)
 	unsafe_macro_run use_ansi_codes
 	string tint_reset_combo = s_join([ANSI_RESET, tint])
 	string patched_line = s_replace(rendered_line, ANSI_RESET, tint_reset_combo)
+
 	return s_join([tint, patched_line, fill, ANSI_RESET])

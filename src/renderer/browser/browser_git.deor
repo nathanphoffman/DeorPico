@@ -11,10 +11,13 @@ fn entryList g_changed_entries(StringMap git_map)
 	stringList paths = h_keys(git_map)
 
 	entryList items = empty
+
 	for path in paths
 		string git_status = h_get(git_map, path)
+
 		if git_status is "ignored"
 			continue
+
 		string name = f_basename(path)
 		bool is_dir = false
 		int depth = 0
@@ -32,15 +35,19 @@ fn entryList g_commit_entries(string repo_path)
 	stringList log_lines = g_split_lines(raw_text)
 
 	entryList items = empty
+
 	for line in log_lines
 		if line is ""
 			continue
+
 		string space = " "
 		int space_idx = s_index_of(line, space)
 		int zero_idx = 0
 		string hash = line
+
 		if space_idx > 0
 			hash = s_substring(line, zero_idx, space_idx)
+
 		string name = line
 		string path = hash
 		bool is_dir = false
@@ -64,11 +71,13 @@ fn entryList g_commit_file_entries(string repo_path, string commit)
 
 	entryList items = empty
 	int pos = 0
+
 	for if pos + 1 < field_count
 		string code = fields at pos
 		string path = fields at (pos + 1)
 		string letter = s_char_at(code, zero_idx)
 		pos = pos + 2
+
 		if letter is "R" or letter is "C"
 			if pos < field_count
 				path = fields at pos
@@ -79,10 +88,12 @@ fn entryList g_commit_file_entries(string repo_path, string commit)
 		int depth = 0
 		bool expanded = false
 		string git_status = "past"
+
 		if letter is "A"
 			git_status = "past_new"
 		else if letter is "D"
 			git_status = "past_deleted"
+
 		FileEntry entry = (name, path, is_dir, depth, expanded, git_status)
 		items at end = entry
 
@@ -94,10 +105,12 @@ fn entryList g_commit_file_entries(string repo_path, string commit)
 fn string g_relative_path(string path)
 	string dot_slash = "./"
 	string clean = path
+
 	if s_starts_with(path, dot_slash)
 		int strip_len = 2
 		int path_len = len(path)
 		clean = s_substring(path, strip_len, path_len)
+
 	return clean
 
 fn entryList g_apply_status(entryList entries, StringMap git_map)
@@ -105,6 +118,7 @@ fn entryList g_apply_status(entryList entries, StringMap git_map)
 	int ignored_dir_limit = IGNORED_DIR_LIMIT
 
 	entryList result = empty
+
 	for entry in entries
 		(path, is_dir) in entry
 		string clean = g_relative_path(path)
@@ -112,6 +126,7 @@ fn entryList g_apply_status(entryList entries, StringMap git_map)
 
 		if git_status is "ignored" and is_dir
 			int entry_count = f_dir_entry_count(path)
+
 			if entry_count >= ignored_dir_limit
 				git_status = ""
 
@@ -127,6 +142,7 @@ fn entryList g_apply_status(entryList entries, StringMap git_map)
 # A staged file with no further edits gets neither (just plain green).
 fn string browser_edit_prefix(string git_status)
 	string prefix = ""
+
 	if git_status is "new"
 		prefix = "+"
 	else if git_status is "edited"

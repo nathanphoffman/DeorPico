@@ -18,6 +18,7 @@ fn string esc_char()
 
 fn intList breaks_for(string line, int width)
 	int tab_width = 4
+
 	return wrap_break_visual_cols(line, width, tab_width)
 
 fn void test_short_line_does_not_wrap()

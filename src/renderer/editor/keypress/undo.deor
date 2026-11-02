@@ -18,6 +18,7 @@ macro push_saved_lines_to_undo
 
 macro do_undo_impl
 	(history_has_top) in undo_history
+
 	if history_has_top
 		# The state being undone becomes the newest redo step.
 		full_len as len(lines)
@@ -40,6 +41,7 @@ macro do_undo_impl
 
 macro do_redo_impl
 	(history_has_top) in redo_history
+
 	if history_has_top
 		full_len as len(lines)
 		stringList point_lines = l_string_take(lines, full_len)

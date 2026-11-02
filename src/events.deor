@@ -31,16 +31,20 @@ macro register_events
 fn int clamp_row_to_buffer(int row, int line_count)
 	if row < 0
 		return 0
+
 	if row > line_count - 1
 		return line_count - 1
+
 	return row
 
 # Clamps a column into [0, line_length] -- one past the last character is valid.
 fn int clamp_col_to_line(int col, int line_length)
 	if col < 0
 		return 0
+
 	if col > line_length
 		return line_length
+
 	return col
 
 fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
@@ -91,11 +95,13 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	# away, typing, etc.) disarms it rather than letting it linger.
 	if kind is not "tick" and kind is not "delete_entry"
 		pending_delete_path = ""
+
 	if kind is not "tick" and kind is not "discard_git_changes"
 		pending_discard_path = ""
 
 	if kind is "sidebar_toggle"
 		sidebar_focused = toggle_sidebar(sidebar_focused)
+
 	# Checked before diffing/lint_output_visible so that if the sidebar is
 	# focused (e.g. via F1 while a diff/lint popup is already showing -- see
 	# the sidebar_toggle branch above and toggle_diff_impl, which drops
@@ -131,4 +137,5 @@ fn AppState editor_handle_key_for_events(AppState state, KeyEvent key)
 	LintState lint = move (lint_command, lint_working_dir, lint_regex, lint_runner, lint_running, issue_matches, lint_output, lint_output_visible)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
 	AppState next_state = move (browser, main_panel, commit_prompt, done, notice, error)
+
 	return next_state

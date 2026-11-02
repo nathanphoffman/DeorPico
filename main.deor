@@ -7,12 +7,14 @@ unsafe_macro parse_launch_args
 	(first, second, third, input_list) in args()
 	string filename = ""
 	string initial_dir = "."
+
 	if first is not ""
 		if f_is_dir(first)
 			initial_dir = first
 		else
 			initial_dir = f_dirname(first)
 			filename = first
+
 	if second is not ""
 		initial_dir = second
 
@@ -20,6 +22,7 @@ unsafe_macro parse_launch_args
 	string lint_command = third
 	string lint_regex = ""
 	const int REGEX_ARG_INDEX = 3
+
 	if len(input_list) > REGEX_ARG_INDEX
 		lint_regex = input_list at REGEX_ARG_INDEX
 
@@ -90,6 +93,7 @@ macro rehighlight_changed_rows
 	int first_changed_row = 0
 	int new_tail_start = 0
 	int old_tail_start = 0
+
 	rust
 		{
 			let old_rows = &last_highlighted_lines;
@@ -122,6 +126,7 @@ macro rehighlight_changed_rows
 
 	frameListList old_tail = hl_state_take_from(highlighter, first_changed_row)
 	frameList stack = empty
+
 	if len(old_tail) > 0
 		stack = old_tail at 0
 	else
@@ -130,6 +135,7 @@ macro rehighlight_changed_rows
 
 	int row_count = len(lines)
 	int row = first_changed_row
+
 	for if row < row_count
 		highlighter = hl_state_push(highlighter, stack)
 		string scan_line = lines at row
@@ -147,10 +153,13 @@ macro rehighlight_changed_rows
 		if row >= new_tail_start and row < row_count
 			int old_row = old_tail_start + (row - new_tail_start)
 			int tail_idx = old_row - first_changed_row
+
 			if tail_idx < len(old_tail)
 				frameList old_stack = old_tail at tail_idx
+
 				if hl_frames_equal(stack, old_stack)
 					highlighter = hl_state_append_from(highlighter, old_tail, tail_idx)
+
 					break
 
 # Draws whatever the current screen is. Expects the unpack_app_state locals;
@@ -183,8 +192,10 @@ macro draw_frame
 		int total_line_count = len(lines)
 		int start_row = scroll_row
 		int end_row = scroll_row + rows
+
 		if end_row > total_line_count
 			end_row = total_line_count
+
 		HighlightRange highlight_bounds = (start_row, end_row)
 
 		# The draw copy of `lines` gets colored in place, so the real text
@@ -192,8 +203,10 @@ macro draw_frame
 		# is never read while drawing -- it's set aside too, and the draw
 		# copy gets an empty one.
 		stringList raw_window = empty
+
 		for row_idx in range(start_row, end_row)
 			raw_window at end = lines at row_idx
+
 		int window_start = start_row
 		UndoState saved_undo = move undo
 		UndoHistory undo_history = new_undo_history()
@@ -258,13 +271,17 @@ fn void main()
 		# The commit screen (^L) takes every key while it's open (and the
 		# key that opens it -- only worth the full check for those).
 		bool prompt_owns_key = false
+
 		if commit_prompt_open or kind is "commit_prompt"
 			prompt_owns_key = commit_prompt_owns_key(state, key)
+
 		if prompt_owns_key
 			state = commit_prompt_handle_key(move state, key)
 		else
 			state = editor_handle_key_for_events(move state, key)
+
 		(done) in state
+
 		if done
 			break
 

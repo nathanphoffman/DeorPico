@@ -11,13 +11,18 @@ fn int g_merge_status(int bucket_code, int row_status)
 	if row_status is 1
 		if bucket_code is 2
 			return 3
+
 		return 1
+
 	if row_status is 2
 		if bucket_code is 1
 			return 3
+
 		return 2
+
 	if row_status is 3
 		return 3
+
 	return bucket_code
 
 # One escape-coded span of the minimap bar: `color_code` background, then
@@ -33,6 +38,7 @@ fn string g_ansi_span(int color_code, int length)
 	string fill = s_repeat(space, length)
 
 	string bg_color = ANSI_MAP_RESET
+
 	if color_code is 1
 		bg_color = ANSI_MAP_ADD
 	else if color_code is 2
@@ -56,10 +62,12 @@ fn string g_render_minimap_bar(intList status, int cols)
 	for col in range(cols)
 		int start = col * total_lines / cols
 		int stop = (col + 1) * total_lines / cols
+
 		if stop <= start
 			stop = start + 1
 
 		int bucket_code = 0
+
 		for row in range(start, stop)
 			int row_status = status at row
 			bucket_code = g_merge_status(bucket_code, row_status)
@@ -74,6 +82,7 @@ fn string g_render_minimap_bar(intList status, int cols)
 
 	string last_span = g_ansi_span(run_code, run_len)
 	bar = s_join([bar, last_span])
+
 	return bar
 
 # Maps `diff_lines` onto a `total_lines`-sized row-status list. A '-' line
@@ -82,19 +91,24 @@ fn string g_render_minimap_bar(intList status, int cols)
 # uses to keep the minimap in sync with what's actually on screen.
 fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
 	intList status = empty
+
 	for in range(total_lines)
 		status at end = 0
 
 	int zero_idx = 0
 	int file_row = 0
+
 	for line in diff_lines
 		string first = s_char_at(line, zero_idx)
 
 		if first is "-"
 			int mark_row = file_row
+
 			if file_row >= total_lines
 				mark_row = total_lines - 1
+
 			int existing = status at mark_row
+
 			if existing is 1
 				status at mark_row = 3
 			else
@@ -102,10 +116,12 @@ fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
 		else if first is "+"
 			if file_row < total_lines
 				int existing = status at file_row
+
 				if existing is 2
 					status at file_row = 3
 				else
 					status at file_row = 1
+
 			file_row = file_row + 1
 		else
 			file_row = file_row + 1
@@ -118,8 +134,10 @@ fn intList g_diff_status_raw(stringList diff_lines)
 	int zero_idx = 0
 
 	intList status = empty
+
 	for line in diff_lines
 		string first = s_char_at(line, zero_idx)
+
 		if first is "+"
 			status at end = 1
 		else if first is "-"
@@ -140,6 +158,7 @@ fn string g_diff_minimap(stringList diff_lines, int total_lines, int cols)
 		return ""
 
 	intList status = g_diff_status_rows(diff_lines, total_lines)
+
 	return g_render_minimap_bar(status, cols)
 
 # Same bar as g_diff_minimap, but for the git-diff view itself.
@@ -148,4 +167,5 @@ fn string g_diff_minimap_raw(stringList diff_lines, int cols)
 		return ""
 
 	intList status = g_diff_status_raw(diff_lines)
+
 	return g_render_minimap_bar(status, cols)

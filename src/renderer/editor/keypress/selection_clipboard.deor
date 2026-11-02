@@ -21,6 +21,7 @@ macro delete_selection
 		lines at start_row = merged_line
 
 		int remove_row = end_row
+
 		for if remove_row > start_row
 			lines remove at remove_row
 			remove_row = remove_row - 1
@@ -46,6 +47,7 @@ macro copy_selection_text
 		collected at end = first_part
 
 		int mid_row = start_row + 1
+
 		for if mid_row < end_row
 			string mid_line = lines at mid_row
 			collected at end = mid_line
@@ -66,6 +68,7 @@ macro do_copy_impl
 	else
 		string current_line = lines at cursor_row
 		string word_text = s_word_at(current_line, cursor_col)
+
 		if len(word_text) > 0
 			bool copied = cp_set(word_text)
 

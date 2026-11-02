@@ -12,6 +12,7 @@ macro refresh_git_diff_lines
 macro refresh_diff_for_new_file
 	stringList raw_diff = g_diff(filename)
 	int change_count = g_diff_count(raw_diff)
+
 	if change_count > 0
 		diff_lines = raw_diff
 		macro_run align_diff_scroll
@@ -36,9 +37,11 @@ macro toggle_diff_impl
 	else
 		stringList raw_diff = g_diff(filename)
 		int change_count = g_diff_count(raw_diff)
+
 		if change_count > 0
 			diff_lines = raw_diff
 			diffing = true
+
 			# The sidebar panel stays visible in diff mode (see
 			# diff_view.deor) but shouldn't keep keyboard focus -- without
 			# this, Up/Down/PageUp/PageDown after ^D from a focused sidebar
@@ -73,6 +76,7 @@ macro align_diff_scroll
 
 	for if diff_idx < last and not target_found
 		string line = diff_lines at diff_idx
+
 		if s_starts_with(line, dash)
 			diff_idx = diff_idx + 1
 		else
@@ -101,6 +105,7 @@ macro align_editor_scroll_from_diff
 
 	for if diff_idx < diff_scroll_row and diff_idx < last
 		string line = diff_lines at diff_idx
+
 		if s_starts_with(line, dash)
 			diff_idx = diff_idx + 1
 		else
@@ -124,6 +129,7 @@ macro clamp_diff_scroll
 		diff_scroll_wrap_seg = 0
 
 	int last_row = len(diff_lines) - 1
+
 	if diff_scroll_row > last_row
 		diff_scroll_row = last_row
 		diff_scroll_wrap_seg = 0
@@ -151,6 +157,7 @@ macro clamp_diff_scroll
 	stringList content_lines = diff_wrap_content_lines(diff_lines)
 	int total_visual_rows = wrap_total_visual_rows(content_lines, diff_content_width)
 	int max_scroll_visual_row = total_visual_rows - view_rows
+
 	if max_scroll_visual_row < 0
 		max_scroll_visual_row = 0
 

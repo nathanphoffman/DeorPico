@@ -1,10 +1,12 @@
 macro key_delete_impl
 	macro_run push_undo_snapshot
+
 	if has_selection
 		macro_run delete_selection
 	else
 		string cur_line = lines at cursor_row
 		int line_len = len(cur_line)
+
 		if cursor_col < line_len
 			start as 0
 			string before = s_substring(cur_line, start, cursor_col)
@@ -16,6 +18,7 @@ macro key_delete_impl
 			dirty = true
 		else
 			int last_row = len(lines) - 1
+
 			if cursor_row < last_row
 				int next_row = cursor_row + 1
 				string next_line = lines at next_row

@@ -13,10 +13,12 @@ macro sidebar_nav_up
 			sidebar_on_root = false
 			sidebar_on_git = true
 			git_selected = 0 - 1
+
 			if not git_section_collapsed and len(git_changes) > 0
 				git_selected = len(git_changes) - 1
 	else
 		browse_selected = browse_selected - 1
+
 		if browse_selected < 0
 			# browse_selected must stay a valid Files-tree index even while
 			# crossing into the <GIT>/root rows above it -- browse_left/
@@ -44,6 +46,7 @@ macro sidebar_nav_down
 		else
 			int last_git = len(git_changes) - 1
 			git_selected = git_selected + 1
+
 			if git_selected > last_git
 				sidebar_on_git = false
 				sidebar_on_root = true
@@ -54,6 +57,7 @@ macro sidebar_nav_down
 	else
 		int last_entry = len(browse_entries) - 1
 		browse_selected = browse_selected + 1
+
 		if browse_selected > last_entry
 			browse_selected = last_entry
 
@@ -77,6 +81,7 @@ macro sidebar_scroll_follow
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
 	int screen_row = git_section_rows + root_section_rows + browse_selected
+
 	if sidebar_on_git
 		screen_row = 1 + git_selected
 	else if sidebar_on_root
@@ -90,10 +95,12 @@ macro sidebar_scroll_follow
 macro sidebar_scroll_up
 	if filter_active
 		filter_scroll_row = filter_scroll_row - 1
+
 		if filter_scroll_row < 0
 			filter_scroll_row = 0
 	else
 		browse_scroll_row = browse_scroll_row - 1
+
 		if browse_scroll_row < 0
 			browse_scroll_row = 0
 
@@ -111,10 +118,12 @@ macro sidebar_scroll_down
 	if filter_active
 		int last_match_row = len(filter_matches) - 1
 		int max_filter_scroll = last_match_row - view_rows + 1
+
 		if max_filter_scroll < 0
 			max_filter_scroll = 0
 
 		filter_scroll_row = filter_scroll_row + 1
+
 		if filter_scroll_row > max_filter_scroll
 			filter_scroll_row = max_filter_scroll
 	else
@@ -123,9 +132,11 @@ macro sidebar_scroll_down
 		int root_section_rows = sidebar_root_section_rows()
 		int last_row = git_section_rows + root_section_rows + len(browse_entries) - 1
 		int max_scroll = last_row - view_rows + 1
+
 		if max_scroll < 0
 			max_scroll = 0
 
 		browse_scroll_row = browse_scroll_row + 1
+
 		if browse_scroll_row > max_scroll
 			browse_scroll_row = max_scroll

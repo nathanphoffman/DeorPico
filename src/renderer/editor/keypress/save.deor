@@ -3,6 +3,7 @@ macro key_save_impl
 	string content = s_join_with(lines, nls)
 	bool did_save = f_write(filename, content)
 	dirty = false
+
 	# Keeps synced_content in step with what's now on disk, same as
 	# load_file_into_buffer -- without this, the very next F5 (or any other
 	# disk-change check) would compare against the pre-save content and
@@ -12,6 +13,7 @@ macro key_save_impl
 	error = false
 	sidebar_locked = false
 	macro_run refresh_git_diff_lines
+
 	# A save is a natural checkpoint to also pick up whatever changed
 	# elsewhere while this file was being edited -- other files added/
 	# removed/git-staged externally, not just this one's own diff/status.
@@ -23,6 +25,7 @@ macro key_save_impl
 	fallback as lint_command
 	ConfigQuery save_query = (working_dir, ext, key, fallback)
 	string save_lint_command = config_lookup(save_query)
+
 	if save_lint_command is not ""
 		lr_run(lint_runner, save_lint_command, lint_working_dir)
 		lint_running = true

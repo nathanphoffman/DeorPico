@@ -4,4 +4,5 @@ macro report_renamed_entry_result
 		notice = "Renamed directory"
 	else
 		notice = "Renamed file"
+
 	error = false

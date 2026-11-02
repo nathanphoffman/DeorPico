@@ -8,6 +8,7 @@ macro reset_file_create
 macro perform_move
 	unsafe_macro_run resolve_move_destination
 	macro_run write_move_to_disk
+
 	if not error
 		# Updates browse_entries in place so the tree reflects the
 		# move without a full rescan: drops the source row (and its
@@ -17,6 +18,7 @@ macro perform_move
 
 		EntryLookup dest_lookup = e_find_by_path(browse_entries, create_parent_dir)
 		(found, index, depth, expanded) in dest_lookup
+
 		if found and expanded
 			unsafe_macro_run build_moved_entry
 			entryList one_entry = empty
@@ -56,9 +58,11 @@ macro confirm_move_request
 		string dest_prefix = s_join([create_parent_dir, slash])
 
 		entryMatchList valid_matches = empty
+
 		for candidate in raw_matches
 			(full_path) in candidate
 			unsafe_macro_run is_excluded_move_candidate
+
 			if not is_excluded
 				valid_matches at end = candidate
 
@@ -71,12 +75,15 @@ macro confirm_move_request
 		bool has_slash = s_contains(move_query, slash)
 		bool has_no_extension = len(f_extension(move_query)) is 0
 		bool looks_like_dir_path = has_slash and has_no_extension
+
 		if looks_like_dir_path
 			unsafe_macro_run collect_directory_only_matches
+
 			if len(dir_only_matches) is 1
 				valid_matches = dir_only_matches
 
 		int match_count = len(valid_matches)
+
 		if match_count is 0
 			macro_run report_no_move_match
 		else if match_count > 1

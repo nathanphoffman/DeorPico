@@ -40,5 +40,6 @@ unsafe_macro compute_sidebar_row_layout
 	bool show_bottom_border = sidebar_focused and is_bottom_row and not filter_active and not bottom_row_is_last_entry
 
 	int content_width = sidebar_width - 1
+
 	if sidebar_focused
 		content_width = sidebar_width - 3

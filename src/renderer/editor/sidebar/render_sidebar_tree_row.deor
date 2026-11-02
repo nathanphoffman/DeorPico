@@ -5,6 +5,7 @@
 # past the end of browse_entries.
 macro render_sidebar_tree_row
 	int tree_idx = idx - git_section_rows - root_section_rows
+
 	if tree_idx >= 0 and tree_idx < len(browse_entries)
 		FileEntry entry = browse_entries at tree_idx
 		(name, is_dir, depth, expanded, git_status) in entry
@@ -15,35 +16,45 @@ macro render_sidebar_tree_row
 		string indent = s_repeat(two_spaces, depth)
 
 		string marker = "  "
+
 		if is_dir
 			marker = "> "
+
 			if expanded
 				marker = "v "
 
 		string suffix = ""
+
 		if is_dir
 			suffix = "/"
 
 		string edit_prefix = browser_edit_prefix(git_status)
 		string plain = s_join([indent, marker, edit_prefix, name, suffix])
+
 		if is_creating_row
 			plain = s_join([indent, marker, new_file_name])
 
 		int fit_width = content_width
+
 		if is_creating_row
 			fit_width = content_width - 1
+
 			if fit_width < 0
 				fit_width = 0
+
 		FitResult fit = browser_fit(plain, fit_width)
 		(text, visible_len) in fit
 
 		string tree_text = ""
+
 		if is_creating_row
 			SidebarBorderColors colors = use_sidebar_border_colors()
 			(ansi_reverse_on, ansi_reverse_off) in colors
+
 			# Cursor sitting on a character of the name highlights that
 			# character in place; at the end it's an extra blank block.
 			int cursor_at = len(indent) + len(marker) + new_file_cursor
+
 			if cursor_at < visible_len
 				zero as 0
 				int cursor_after = cursor_at + 1

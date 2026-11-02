@@ -1,10 +1,12 @@
 macro do_paste_impl
 	macro_run push_undo_snapshot
+
 	if has_selection
 		macro_run delete_selection
 
 	string clip_text = resolve_paste_text(kind, chr)
 	int clip_len = len(clip_text)
+
 	if clip_len > 0
 		nls as "\n"
 		stringList clip_lines = s_split(clip_text, nls)
@@ -41,10 +43,12 @@ macro do_paste_impl
 
 			stringList middle_block = empty
 			int mid_idx = 1
+
 			for if mid_idx < last_idx
 				string mid_clip = clip_lines at mid_idx
 				middle_block at end = mid_clip
 				mid_idx = mid_idx + 1
+
 			middle_block at end = last_new_line
 
 			stringList inserted_block = l_string_concat(before_lines, middle_block)
@@ -62,4 +66,5 @@ macro do_paste_impl
 fn string resolve_paste_text(string kind, string chr)
 	if kind is "paste_text"
 		return chr
+
 	return cp_get()

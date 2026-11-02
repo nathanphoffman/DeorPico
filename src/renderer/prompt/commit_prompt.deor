@@ -7,12 +7,16 @@
 # empty prompt.
 macro open_commit_prompt
 	(git_changes, git_history_level, git_live_changes) in browser
+
 	# While Alt+P's past-commits view is up, git_changes holds commits/pink
 	# files, not the live staged list.
 	entryList live_changes = git_changes
+
 	if git_history_level > 0
 		live_changes = git_live_changes
+
 	commit_paths = commit_staged_paths(live_changes)
+
 	if len(commit_paths) is 0
 		notice = "Nothing staged to commit -- stage files with ^G first"
 		error = true
@@ -28,6 +32,7 @@ macro confirm_commit
 	else
 		(browse_dir) in browser
 		string git_error = g_commit(browse_dir, commit_message)
+
 		if git_error is ""
 			int committed_count = len(commit_paths)
 			string count_text = c_int_to_string(committed_count)
@@ -70,6 +75,7 @@ macro commit_message_backspace
 
 macro commit_message_delete
 	int message_len = len(commit_message)
+
 	if commit_cursor < message_len
 		zero as 0
 		int after_start = commit_cursor + 1
@@ -86,16 +92,20 @@ fn bool commit_prompt_owns_key(AppState state, KeyEvent key)
 	(commit_prompt_open) in commit_prompt
 	(kind) in key
 	bool opens_prompt = kind is "commit_prompt" and sidebar_focused and not creating_file
+
 	return commit_prompt_open or opens_prompt
 
 # Paths of everything currently staged (a staged edit, a staged edit with
 # further unstaged edits on top, or a staged delete).
 fn stringList commit_staged_paths(entryList git_changes)
 	stringList paths = empty
+
 	for entry in git_changes
 		(path, git_status) in entry
+
 		if git_status is "staged" or git_status is "staged_edited" or git_status is "staged_deleted" or git_status is "staged_renamed"
 			paths at end = path
+
 	return paths
 
 fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
@@ -126,6 +136,7 @@ fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
 
 	CommitPromptState commit_prompt = (commit_prompt_open, commit_message, commit_cursor, commit_paths, commit_error)
 	AppState next_state = state with (browser, main_panel, commit_prompt, notice, error)
+
 	return next_state
 
 # Committing changes what's staged and what HEAD is -- refresh the
@@ -137,13 +148,16 @@ fn SidebarState commit_refreshed_browser(SidebarState browser)
 	browse_entries = refreshed_entries
 	entryList git_changes = g_changed_entries(fresh_git_map)
 	int last_git = len(git_changes) - 1
+
 	if sidebar_on_git and git_selected > last_git
 		git_selected = last_git
+
 	# A commit lands on the live list, so drop out of the past-commits view.
 	int git_history_level = 0
 	string git_history_commit = ""
 	entryList git_live_changes = empty
 	SidebarState refreshed = browser with (browse_entries, git_changes, git_selected, git_history_level, git_history_commit, git_live_changes)
+
 	return refreshed
 
 # ...and the open file's diff, since that's taken against HEAD.
@@ -154,4 +168,5 @@ fn EditorState commit_refreshed_main_panel(EditorState main_panel)
 	DiffState refreshed_diff = diff with (diff_lines)
 	diff = refreshed_diff
 	EditorState refreshed = main_panel with (diff)
+
 	return refreshed

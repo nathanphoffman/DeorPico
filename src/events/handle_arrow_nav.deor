@@ -35,10 +35,12 @@ macro move_cursor_visual_row
 	int seg_index = cur_seg
 	WrapPosition cur_pos = (buffer_row, seg_index)
 	WrapPosition new_pos = cur_pos
+
 	if move_up
 		new_pos = wrap_step_backward(cur_pos, lines, text_visible_columns)
 	else
 		new_pos = wrap_step_forward(cur_pos, lines, text_visible_columns)
+
 	(buffer_row, seg_index) in new_pos
 
 	string new_line = lines at buffer_row
@@ -50,10 +52,12 @@ macro move_cursor_visual_row
 
 	int new_seg_end_col = new_line_visual_len
 	int next_seg_index = seg_index + 1
+
 	if next_seg_index < new_seg_count
 		new_seg_end_col = wrap_segment_start_col(new_breaks, next_seg_index)
 
 	int target_visual_col = new_seg_start_col + visual_col_in_seg
+
 	if target_visual_col > new_seg_end_col
 		target_visual_col = new_seg_end_col
 
@@ -64,6 +68,7 @@ macro move_cursor_visual_row
 # extends the selection; a plain arrow clears it.
 macro extend_or_clear_selection_for_shift
 	(alt) in key
+
 	if shift or alt
 		macro_run start_or_extend_selection_impl
 	else
@@ -97,8 +102,10 @@ macro handle_arrow_nav
 # Ctrl+Up / Ctrl+Down -- jumps the cursor cfg_ctrl_arrow_lines rows at once.
 fn int key_up_ctrl_impl(int cursor_row)
 	unsafe_macro_run use_consts
+
 	return cursor_row - cfg_ctrl_arrow_lines
 
 fn int key_down_ctrl_impl(int cursor_row)
 	unsafe_macro_run use_consts
+
 	return cursor_row + cfg_ctrl_arrow_lines

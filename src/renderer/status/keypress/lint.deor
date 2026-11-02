@@ -5,6 +5,7 @@
 macro apply_lint_poll_impl
 	LintPoll poll = lr_poll(lint_runner)
 	(running, just_finished, output_lines) in poll
+
 	if just_finished
 		lint_running = false
 		working_dir as lint_working_dir
@@ -19,6 +20,7 @@ macro apply_lint_poll_impl
 		lint_output = output_lines
 		int issue_count = len(issue_matches)
 		count_str as c_int_to_string(issue_count)
+
 		if issue_count is 0
 			notice = "Lint: no issues"
 		else
@@ -26,6 +28,7 @@ macro apply_lint_poll_impl
 			suffix as " issues"
 			stringList notice_parts = [prefix, count_str, suffix]
 			notice = s_join(notice_parts)
+
 		error = false
 	else if running
 		lint_running = true

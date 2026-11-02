@@ -29,6 +29,7 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "stage_toggle"
 		else if chr is "a"
 			kind = "select_all"
+
 		# Context-dependent: opens the search bar in the main editor view
 		# (see search.deor's handle_search_trigger), or creates a file when
 		# the sidebar has keyboard focus (see sidebar.deor) -- the two never
@@ -41,14 +42,17 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "delete_entry"
 		else if chr is "u"
 			kind = "discard_git_changes"
+
 		# Sidebar only: opens the commit screen (see renderer/prompt/).
 		# Not ^M -- terminals send that as Enter.
 		else if chr is "l"
 			kind = "commit_prompt"
+
 	# Sidebar only: stages everything (`git add -A`). Not ^⇧G -- most
 	# terminals send that as plain ^G.
 	else if kind is "char" and alt and (chr is "g" or chr is "G")
 		kind = "stage_all"
+
 	# Sidebar only: toggles the <GIT> section's past-commits view.
 	else if kind is "char" and alt and (chr is "p" or chr is "P")
 		kind = "git_history"
@@ -63,4 +67,5 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 			kind = "word_search"
 
 	translated as key with (kind)
+
 	return translated

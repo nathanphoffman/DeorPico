@@ -37,6 +37,7 @@ fn SelectionRange editor_selection_range(SelectionRangeInput range_input)
 	int start_col = cursor_visual_col
 	int end_row = sel_anchor_row
 	int end_col = sel_anchor_visual_col
+
 	if anchor_first
 		start_row = sel_anchor_row
 		start_col = sel_anchor_visual_col
@@ -44,6 +45,7 @@ fn SelectionRange editor_selection_range(SelectionRangeInput range_input)
 		end_col = cursor_visual_col
 
 	SelectionRange sel_range = (has_selection, start_row, start_col, end_row, end_col)
+
 	return sel_range
 
 # A row entirely outside the selection gets no highlight (-1/-1), a row
@@ -60,14 +62,18 @@ fn RowHighlight editor_row_highlight(SelectionRange sel_range, int row)
 	int hl_end = 0 - 1
 
 	bool in_range = has_selection and row >= start_row and row <= end_row
+
 	if in_range
 		hl_start = 0
+
 		if row is start_row
 			hl_start = start_col
 
 		hl_end = ROW_END_UNBOUNDED
+
 		if row is end_row
 			hl_end = end_col
 
 	RowHighlight highlight = (hl_start, hl_end)
+
 	return highlight

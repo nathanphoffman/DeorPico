@@ -17,6 +17,7 @@ fn string browser_colorize(string line, string git_status)
 	unsafe_macro_run use_browser_ansi_codes
 
 	string result = line
+
 	if git_status is "staged"
 		result = s_join([ANSI_GIT_STAGED_ON, line, ANSI_GIT_STAGED_OFF])
 	else if git_status is "staged_edited"

@@ -38,6 +38,7 @@ struct ConfigQuery
 
 fn string config_lookup(ConfigQuery query)
 	(working_dir, ext, key, fallback) in query
+
 	rust
 		{
 			let text = dpico_config_text(&working_dir);

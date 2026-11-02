@@ -13,6 +13,7 @@ fn FitResult browser_fit(string label, int width)
 	zero as 0
 	string text = s_substring(label, zero, width)
 	int visible_len = len(text)
+
 	return (text, visible_len)
 
 # `width - visible_len` spaces of padding plus one separator column --
@@ -20,9 +21,12 @@ fn FitResult browser_fit(string label, int width)
 # separator, matching Rust's saturating_sub.
 fn string browser_gutter(int visible_len, int width)
 	int pad_len = width - visible_len
+
 	if pad_len < 0
 		pad_len = 0
+
 	pad_len = pad_len + 1
 
 	space as " "
+
 	return s_repeat(space, pad_len)

@@ -43,9 +43,11 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 
 	if show_top_border or show_bottom_border
 		unsafe_macro_run build_sidebar_border_row
+
 		return border_row_text
 
 	string body = ""
+
 	if filter_active
 		macro_run render_sidebar_filter_row
 	else if top_row_is_header
@@ -64,6 +66,7 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 		(ansi_reset, ansi_sidebar_border_on) in colors
 		string bar = "|"
 		string colored_bar = s_join([ansi_sidebar_border_on, bar, ansi_reset])
+
 		return s_join([colored_bar, body, colored_bar])
 
 	return body

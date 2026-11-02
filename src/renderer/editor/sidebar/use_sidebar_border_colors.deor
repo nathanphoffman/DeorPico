@@ -21,4 +21,5 @@ fn SidebarBorderColors use_sidebar_border_colors()
 	string ansi_reverse_on = s_join([esc, "[7m"])
 	string ansi_reverse_off = s_join([esc, "[27m"])
 	string ansi_sidebar_border_on = s_join([esc, "[31m"])
+
 	return (ansi_reset, ansi_reverse_on, ansi_reverse_off, ansi_sidebar_border_on)

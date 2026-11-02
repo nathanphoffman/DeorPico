@@ -38,4 +38,5 @@ fn AppState editor_render(AppState state, int cursor_visual_col, int sel_anchor_
 	macro_run render_search_bar
 	macro_run build_and_render_status_bar
 	macro_run position_and_output_cursor
+
 	return state

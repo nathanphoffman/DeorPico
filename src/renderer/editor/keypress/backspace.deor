@@ -5,6 +5,7 @@ unsafe_macro look_behind_cursor
 
 macro key_backspace_impl
 	macro_run push_undo_snapshot
+
 	if has_selection
 		macro_run delete_selection
 	else if cursor_col > 0
@@ -21,6 +22,7 @@ macro key_backspace_impl
 		bool cursor_is_on_tab = cursor_col % 4 is 0
 
 		string after = ""
+
 		if white_space_before and cursor_is_on_tab
 			after = s_substring(cur_line, cursor_col, line_len)
 			notice = "White space detected"

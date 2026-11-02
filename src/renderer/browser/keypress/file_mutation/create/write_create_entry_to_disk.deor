@@ -19,4 +19,5 @@ macro write_create_entry_to_disk
 			notice = "Could not create directory"
 		else
 			notice = "Could not create file"
+
 		error = true

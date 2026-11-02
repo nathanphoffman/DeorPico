@@ -21,6 +21,7 @@ unsafe_macro locate_mouse_in_buffer
 	# every click resolves one visual row below where it landed.
 	int row_offset = row - minimap_offset
 	int zero_bound = 0
+
 	if row_offset < zero_bound
 		row_offset = zero_bound
 
@@ -32,14 +33,17 @@ unsafe_macro locate_mouse_in_buffer
 	int last_row = total_line_count - 1
 	int buffer_row = scroll_row
 	int seg_index = scroll_wrap_seg
+
 	if buffer_row > last_row
 		buffer_row = last_row
 		seg_index = 0
+
 	WrapPosition click_pos = (buffer_row, seg_index)
 	int step_last_row = last_row
 	int step_width = text_visible_columns
 	int cached_step_row = 0 - 1
 	int cached_seg_count = 1
+
 	for in range(row_offset)
 		(buffer_row) in click_pos
 		int step_row = buffer_row
@@ -47,6 +51,7 @@ unsafe_macro locate_mouse_in_buffer
 		int step_seg_count = cached_seg_count
 		WrapStepInput click_step_input = (step_seg_count, step_last_row)
 		click_pos = wrap_step_forward_in_line(click_pos, click_step_input)
+
 	(buffer_row, seg_index) in click_pos
 
 	int clicked_row = buffer_row
@@ -55,6 +60,7 @@ unsafe_macro locate_mouse_in_buffer
 	int segment_start_visual_col = wrap_segment_start_col(clicked_breaks, seg_index)
 
 	int visual_col = col - gutter_width
+
 	if visual_col < 0
 		visual_col = 0
 
@@ -97,6 +103,7 @@ macro scrollbar_jump_to_row
 	const int EOF_PADDING_ROWS = 5
 	unsafe_macro_run wrap_scan_rows
 	int scrollable_rows = total_visual_rows - view_rows + EOF_PADDING_ROWS
+
 	if scrollable_rows > 0 and track_bottom > 0
 		int min_scroll = 0
 		int target_visual_row = track_row * scrollable_rows / track_bottom
@@ -126,8 +133,10 @@ macro mouse_down_editor_impl
 
 	if col < sidebar_width
 		int idx = browse_scroll_row + row - minimap_offset
+
 		if filter_active
 			idx = filter_scroll_row + row - minimap_offset
+
 		sidebar_focused = true
 		macro_run sidebar_activate_index
 
@@ -196,9 +205,11 @@ macro mouse_drag_main_impl
 	col = col - sidebar_width
 
 	unsafe_macro_run locate_mouse_in_buffer
+
 	if not has_selection
 		if clicked_row is not sel_anchor_row or clicked_col is not sel_anchor_col
 			has_selection = true
+
 	cursor_row = clicked_row
 	cursor_col = clicked_col
 
@@ -221,8 +232,10 @@ macro mouse_down_diff_impl
 
 	if col < sidebar_width
 		int idx = browse_scroll_row + row
+
 		if filter_active
 			idx = filter_scroll_row + row
+
 		sidebar_focused = true
 		macro_run sidebar_activate_index
 

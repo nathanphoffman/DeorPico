@@ -11,6 +11,7 @@ fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
 		return 0
 
 	string total_str = c_int_to_string(total_line_count)
+
 	return len(total_str) + 1
 
 # Gutter is wide enough for the largest line number plus one trailing space.
@@ -19,14 +20,17 @@ fn int editor_gutter_width(int total_line_count, bool show_line_numbers)
 # row, matching VSCode.
 fn string editor_gutter_piece(GutterRowInput row_input)
 	(buffer_row_index, total_line_count, gutter_width, is_first_segment) in row_input
+
 	if gutter_width is 0
 		return ""
 
 	string space = " "
+
 	if buffer_row_index < total_line_count and is_first_segment
 		string row_number_str = c_int_to_string(buffer_row_index + 1)
 		int number_width = gutter_width - 1
 		string padded_number = s_pad_left(row_number_str, number_width)
+
 		return s_join([padded_number, space])
 
 	return s_repeat(space, gutter_width)

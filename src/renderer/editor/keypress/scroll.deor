@@ -24,6 +24,7 @@ macro reclamp_scroll_wrap_seg
 		string scroll_line = lines at scroll_row
 		intList scroll_breaks = wrap_break_visual_cols(scroll_line, text_visible_columns, cfg_tab_width)
 		int max_seg = wrap_segment_count(scroll_breaks) - 1
+
 		if scroll_wrap_seg > max_seg
 			scroll_wrap_seg = max_seg
 	else
@@ -47,6 +48,7 @@ macro clamp_scroll_to_wrapped_ceiling
 	const int EOF_PADDING_ROWS = 5
 	unsafe_macro_run wrap_scan_rows
 	int max_scroll_visual_row = total_visual_rows - view_rows + EOF_PADDING_ROWS
+
 	if max_scroll_visual_row < 0
 		max_scroll_visual_row = 0
 
@@ -106,6 +108,7 @@ unsafe_macro compute_scroll_sidebar_width
 macro scroll_up_impl
 	unsafe_macro_run use_consts
 	unsafe_macro_run compute_scroll_sidebar_width
+
 	if col < sidebar_width
 		macro_run sidebar_scroll_up
 	else if diffing
@@ -113,11 +116,13 @@ macro scroll_up_impl
 	else
 		scroll_row = scroll_row - cfg_scroll_wheel_lines
 		macro_run clamp_scroll
+
 	wheel_scrolled = true
 
 macro scroll_down_impl
 	unsafe_macro_run use_consts
 	unsafe_macro_run compute_scroll_sidebar_width
+
 	if col < sidebar_width
 		macro_run sidebar_scroll_down
 	else if diffing
@@ -125,4 +130,5 @@ macro scroll_down_impl
 	else
 		scroll_row = scroll_row + cfg_scroll_wheel_lines
 		macro_run clamp_scroll
+
 	wheel_scrolled = true

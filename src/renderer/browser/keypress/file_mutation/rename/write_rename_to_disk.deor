@@ -5,6 +5,7 @@
 # !! consider safetying this macro
 unsafe_macro write_rename_to_disk
 	bool renamed = false
+
 	if dest_path is source_path
 		renamed = true
 	else if f_exists(dest_path)
@@ -12,6 +13,7 @@ unsafe_macro write_rename_to_disk
 		error = true
 	else
 		renamed = f_rename(source_path, dest_path)
+
 		if not renamed
 			notice = "Could not rename"
 			error = true

@@ -10,8 +10,10 @@ macro render_search_bar
 		match_count as len(search_matches)
 		count_str as c_int_to_string(match_count)
 		string hint = " -- Enter: search  Esc: close"
+
 		if not search_editing
 			hint = " -- Tab/Shift+Tab: next/prev match  Esc: close (tab is hijacked while this is open)"
+
 		stringList bar_parts = ["Search: ", search_buffer, " (", count_str, " matches)", hint]
 		string bar_text = s_join(bar_parts)
 		string bar_padded = s_pad_right(bar_text, max_visible_columns)
@@ -20,12 +22,14 @@ macro render_search_bar
 # Construct status line with file info and append to screen
 macro build_and_render_status_bar
 	string modified_marker = ""
+
 	if dirty
 		modified_marker = " [modified]"
 
 	string total_line_str = c_int_to_string(total_line_count)
 	string status_shortcuts = editor_status_shortcuts(has_selection, sidebar_focused)
 	string status_line = s_join(["-- ", filename, " (", total_line_str, " lines)", modified_marker, " -- ", status_shortcuts])
+
 	if len(status_line) > max_visible_columns
 		int truncate_start = 0
 		status_line = s_substring(status_line, truncate_start, max_visible_columns)
@@ -34,6 +38,7 @@ macro build_and_render_status_bar
 	# above; dark red instead whenever the notice is blocking a destructive
 	# action.
 	string status_bg = ANSI_STATUS_BG
+
 	if error
 		status_bg = ANSI_ERROR_BG
 

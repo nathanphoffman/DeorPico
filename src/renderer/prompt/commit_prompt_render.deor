@@ -5,6 +5,7 @@ fn string commit_prompt_row(string text, int cols, string style)
 	zero as 0
 	string cut = s_substring(text, zero, cols)
 	string padded = s_pad_right(cut, cols)
+
 	return s_join([style, padded, ANSI_RESET])
 
 # Full-screen commit prompt: title bar, the message line (with the real
@@ -22,11 +23,15 @@ fn void commit_prompt_render(AppState state)
 	string label = " Message: "
 	int label_len = len(label)
 	int message_room = cols - label_len - 1
+
 	if message_room < 1
 		message_room = 1
+
 	int message_start = 0
+
 	if commit_cursor > message_room
 		message_start = commit_cursor - message_room
+
 	int message_len = len(commit_message)
 	string shown_message = s_substring(commit_message, message_start, message_len)
 
@@ -50,17 +55,22 @@ fn void commit_prompt_render(AppState state)
 	# 5 rows above the file list, 2 pinned below it.
 	const int RESERVED_ROWS = 7
 	int list_rows = rows - RESERVED_ROWS
+
 	for list_row in range(list_rows)
 		string list_text = ""
+
 		if list_row < path_count
 			string staged_path = commit_paths at list_row
 			list_text = s_join(["   ", staged_path])
+
 		string list_line = commit_prompt_row(list_text, cols, no_style)
 		screen = s_join([screen, list_line, ANSI_CRLF])
 
 	string error_style = no_style
+
 	if commit_error is not ""
 		error_style = ANSI_ERROR_BG
+
 	string error_text = s_join([" ", commit_error])
 	string hint_text = " Enter: commit   Esc: cancel"
 	string error_line = commit_prompt_row(error_text, cols, error_style)

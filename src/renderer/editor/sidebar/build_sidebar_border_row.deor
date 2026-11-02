@@ -9,8 +9,10 @@ unsafe_macro build_sidebar_border_row
 	string corner = "+"
 	string dash = "-"
 	int rule_len = sidebar_width - 2
+
 	if rule_len < 0
 		rule_len = 0
+
 	string rule = s_repeat(dash, rule_len)
 	string border_line = s_join([corner, rule, corner])
 	string border_row_text = s_join([ansi_sidebar_border_on, border_line, ansi_reset])

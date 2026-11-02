@@ -33,6 +33,7 @@ macro remove_tab_from_line
 	int removed_len = before_len - after_len
 	lines at cursor_row = line
 	cursor_col = cursor_col - removed_len
+
 	if cursor_col < 0
 		cursor_col = 0
 

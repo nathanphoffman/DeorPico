@@ -27,6 +27,7 @@ macro apply_placeholder_target_from_selection
 	if is_dir
 		if not expanded
 			macro_run browse_right
+
 		insert_index = browse_selected + 1
 		insert_depth = depth + 1
 		parent_dir = path
@@ -57,6 +58,7 @@ unsafe_macro build_placeholder_entry
 macro enter_placeholder_edit_mode
 	sidebar_on_root = false
 	browse_selected = insert_index
+
 	if browse_selected < browse_scroll_row
 		browse_scroll_row = browse_selected
 
@@ -88,6 +90,7 @@ macro placeholder_backspace
 
 macro placeholder_delete
 	int name_len = len(new_file_name)
+
 	if new_file_cursor < name_len
 		zero as 0
 		int after_start = new_file_cursor + 1
@@ -122,6 +125,7 @@ macro cancel_placeholder
 		macro_run restore_renamed_entry
 	else
 		macro_run remove_placeholder_entry
+
 	creating_file = false
 	renaming_file = false
 	new_file_name = ""
@@ -132,7 +136,9 @@ macro cancel_placeholder
 macro remove_placeholder_entry
 	browse_entries = e_remove_at(browse_entries, browse_selected)
 	int last_entry = len(browse_entries) - 1
+
 	if browse_selected > last_entry
 		browse_selected = last_entry
+
 	if browse_selected < 0
 		browse_selected = 0

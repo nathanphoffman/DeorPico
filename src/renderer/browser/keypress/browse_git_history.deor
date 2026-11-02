@@ -16,12 +16,15 @@ macro git_history_toggle
 			sidebar_on_git = true
 			sidebar_on_root = false
 			git_selected = 0 - 1
+
 			if len(git_changes) > 0
 				git_selected = 0
+
 			notice = "Past commits -- Enter opens one, Esc/Alt+P back"
 			error = false
 		else
 			macro_run git_history_exit
+
 		macro_run clamp_sidebar_selection
 		macro_run sidebar_scroll_follow
 
@@ -55,15 +58,19 @@ macro git_history_back
 		git_history_level = 1
 		git_history_commit = ""
 		git_selected = 0
+
 		for idx in range(len(git_changes))
 			FileEntry candidate = git_changes at idx
 			(path) in candidate
+
 			if path is back_commit
 				git_selected = idx
+
 		notice = "Past commits -- Enter opens one, Esc/Alt+P back"
 		error = false
 	else
 		macro_run git_history_exit
+
 	macro_run clamp_sidebar_selection
 	macro_run sidebar_scroll_follow
 
@@ -72,10 +79,13 @@ macro git_history_open_commit
 	git_changes = g_commit_file_entries(browse_dir, path)
 	git_history_level = 2
 	git_selected = 0 - 1
+
 	if len(git_changes) > 0
 		git_selected = 0
+
 	notice = s_join(["Commit ", path, " -- Enter shows a file's changes, Esc back"])
 	error = false
+
 	# Last, since assigning `path` moves it.
 	git_history_commit = path
 	macro_run clamp_sidebar_selection
@@ -86,6 +96,7 @@ macro git_history_open_commit
 # Up/Down + Enter walks through the commit's files.
 macro git_history_open_file
 	stringList commit_diff = g_commit_diff(browse_dir, git_history_commit, path)
+
 	if len(commit_diff) is 0
 		notice = "No text changes to show for this file"
 		error = false

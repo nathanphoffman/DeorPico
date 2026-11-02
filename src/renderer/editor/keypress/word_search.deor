@@ -7,6 +7,7 @@
 # sidebar exactly like a ':' search.
 macro key_word_search_impl
 	string query = ""
+
 	if has_selection
 		string selection_text = ""
 		macro_run copy_selection_text

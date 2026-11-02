@@ -6,10 +6,12 @@ macro refresh_all_git_status
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(browse_entries, fresh_git_map)
 	entryList fresh_changes = g_changed_entries(fresh_git_map)
+
 	if git_history_level is 0
 		git_changes = fresh_changes
 	else
 		git_live_changes = fresh_changes
+
 	macro_run clamp_sidebar_selection
 
 # F5 -- unlike refresh_all_git_status, this re-scans disk from scratch (see
@@ -22,6 +24,7 @@ macro refresh_all_git_status
 # shifted things around it.
 macro refresh_browse_tree_impl
 	string selected_path = ""
+
 	if len(browse_entries) > 0
 		FileEntry currently_selected = browse_entries at browse_selected
 		(path) in currently_selected
@@ -31,6 +34,7 @@ macro refresh_browse_tree_impl
 	StringMap fresh_git_map = g_status(browse_dir)
 	browse_entries = g_apply_status(rebuilt, fresh_git_map)
 	entryList fresh_changes = g_changed_entries(fresh_git_map)
+
 	if git_history_level is 0
 		git_changes = fresh_changes
 	else
@@ -39,12 +43,15 @@ macro refresh_browse_tree_impl
 	if len(selected_path) > 0
 		EntryLookup lookup = e_find_by_path(browse_entries, selected_path)
 		(found, index) in lookup
+
 		if found
 			browse_selected = index
 
 	int last_entry = len(browse_entries) - 1
+
 	if browse_selected > last_entry
 		browse_selected = last_entry
+
 	if browse_selected < 0
 		browse_selected = 0
 
@@ -59,6 +66,7 @@ macro refresh_browse_tree_impl
 macro clamp_sidebar_selection
 	if sidebar_on_git
 		int last_git = len(git_changes) - 1
+
 		if git_section_collapsed or last_git < 0
 			git_selected = 0 - 1
 		else if git_selected > last_git
@@ -78,7 +86,9 @@ macro clamp_sidebar_selection
 	int root_section_rows = sidebar_root_section_rows()
 	int last_row = git_section_rows + root_section_rows + len(browse_entries) - 1
 	int max_scroll = last_row - view_rows + 1
+
 	if max_scroll < 0
 		max_scroll = 0
+
 	if browse_scroll_row > max_scroll
 		browse_scroll_row = max_scroll

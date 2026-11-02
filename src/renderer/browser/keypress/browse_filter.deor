@@ -3,6 +3,7 @@
 macro start_browse_filter
 	string target_dir = ""
 	bool can_filter = false
+
 	if sidebar_on_root
 		root_dir_copy as browse_dir
 		target_dir = root_dir_copy
@@ -10,6 +11,7 @@ macro start_browse_filter
 	else if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
 		(path, is_dir) in selected
+
 		if is_dir
 			target_dir = path
 			can_filter = true
@@ -44,6 +46,7 @@ macro recompute_browse_filter
 	int query_len = len(filter_query)
 	filter_selected = 0
 	filter_scroll_row = 0
+
 	if query_len is 0
 		filterMatchList filter_matches = empty
 		filter_truncated_count = 0
@@ -63,6 +66,7 @@ macro recompute_browse_filter
 	mid as " ("
 	suffix as " results)"
 	stringList notice_parts = [notice_prefix, filter_query, mid, count_str, suffix]
+
 	if filter_truncated_count > 0
 		truncated_str as c_int_to_string(filter_truncated_count)
 		truncated_prefix as ", "
@@ -71,6 +75,7 @@ macro recompute_browse_filter
 		notice_parts at end = truncated_prefix
 		notice_parts at end = truncated_str
 		notice_parts at end = truncated_suffix
+
 	notice = s_join(notice_parts)
 	error = false
 
@@ -81,6 +86,7 @@ macro browse_filter_char
 
 macro browse_filter_backspace
 	int query_len = len(filter_query)
+
 	if query_len > 0
 		zero as 0
 		int new_len = query_len - 1
@@ -89,14 +95,17 @@ macro browse_filter_backspace
 
 macro browse_filter_up
 	filter_selected = filter_selected - 1
+
 	if filter_selected < 0
 		filter_selected = 0
+
 	if filter_selected < filter_scroll_row
 		filter_scroll_row = filter_selected
 
 macro browse_filter_down
 	int last_entry = len(filter_matches) - 1
 	filter_selected = filter_selected + 1
+
 	if filter_selected > last_entry
 		filter_selected = last_entry
 
@@ -124,6 +133,7 @@ macro browse_filter_enter
 		FilterMatch selected_match = filter_matches at filter_selected
 		(full_path) in selected_match
 		path as full_path
+
 		if dirty
 			macro_run notify_unsaved_changes
 		else
@@ -134,5 +144,6 @@ macro browse_filter_enter
 			search_active = true
 			search_editing = false
 			search_match_index = 0 - 1
+
 			if not diffing
 				sidebar_focused = false

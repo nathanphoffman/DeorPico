@@ -27,17 +27,21 @@ fn AppState restore_after_render(AppState state, RenderStash stash)
 	move (browser, main_panel, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, search, filter, lint) in main_panel
 	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
+
 	# Re-declared through a local copy -- the transpiler doesn't make an
 	# unpacked variable mutable on an indexed write alone.
 	stringList lines_holder = move lines
 	stringList lines = move lines_holder
 	int window_len = len(raw_window)
+
 	for offset in range(window_len)
 		int row = window_start + offset
 		string raw_line = raw_window at offset
 		lines at row = raw_line
+
 	UndoState undo = saved_undo
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
 	AppState next_state = move (browser, main_panel, commit_prompt, done, notice, error)
+
 	return next_state

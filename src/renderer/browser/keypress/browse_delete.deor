@@ -13,8 +13,10 @@
 macro file_delete_entry
 	if is_dir
 		bool dir_empty = f_dir_is_empty(path)
+
 		if dir_empty
 			string trash_error = f_trash(path)
+
 			if trash_error is ""
 				macro_run remove_deleted_entry
 				notice = "Moved to trash"
@@ -28,9 +30,11 @@ macro file_delete_entry
 	else if pending_delete_path is path
 		string trash_error = f_trash(path)
 		pending_delete_path = ""
+
 		if trash_error is ""
 			if path is filename
 				macro_run close_deleted_open_buffer
+
 			macro_run remove_deleted_entry
 			notice = "Moved to trash"
 			error = false
@@ -53,8 +57,10 @@ macro remove_deleted_entry
 	browse_entries = e_remove_by_path(browse_entries, path)
 
 	int last_browse_entry = len(browse_entries) - 1
+
 	if browse_selected > last_browse_entry
 		browse_selected = last_browse_entry
+
 	if browse_selected < 0
 		browse_selected = 0
 

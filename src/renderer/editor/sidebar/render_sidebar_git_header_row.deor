@@ -3,8 +3,10 @@
 # reflecting git_section_collapsed.
 macro render_sidebar_git_header_row
 	string git_marker = "v "
+
 	if git_section_collapsed
 		git_marker = "> "
+
 	string git_header_text = s_join([git_marker, "<GIT>"])
 	FitResult fit = browser_fit(git_header_text, content_width)
 	(text, visible_len) in fit

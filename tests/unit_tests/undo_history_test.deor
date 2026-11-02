@@ -12,6 +12,7 @@ fn UndoHistory push_lines(UndoHistory history, stringList point_lines)
 	int point_row = 0
 	int point_col = 0
 	UndoPoint point = move (point_lines, point_row, point_col)
+
 	return undo_history_push(move history, move point)
 
 fn void test_patch_round_trip()
@@ -40,16 +41,19 @@ fn int newest_line_count(UndoHistory history)
 	UndoPop result = undo_history_pop(move history)
 	move (popped_history, popped_point, popped) in result
 	move (point_lines, point_row, point_col) in popped_point
+
 	return len(point_lines)
 
 fn UndoHistory history_after_pop(UndoHistory history)
 	UndoPop result = undo_history_pop(move history)
 	move (popped_history, popped_point, popped) in result
+
 	return popped_history
 
 fn bool pop_succeeds(UndoHistory history)
 	UndoPop result = undo_history_pop(move history)
 	(popped_history, popped_point, popped) in result
+
 	return popped
 
 fn void test_pop_returns_newest_first()

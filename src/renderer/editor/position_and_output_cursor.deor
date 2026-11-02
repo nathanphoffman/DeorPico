@@ -17,6 +17,7 @@ unsafe_macro calculate_clamped_cursor_row
 	# setup_minimap_and_gutters) before turning it into a terminal cursor
 	# position.
 	int cursor_screen_row = top_row
+
 	if not cursor_above
 		int buffer_row = scroll_row
 		int seg_index = scroll_wrap_seg
@@ -28,17 +29,22 @@ unsafe_macro calculate_clamped_cursor_row
 		int step_width = text_visible_columns
 		int cached_step_row = 0 - 1
 		int cached_seg_count = 1
+
 		for if row_offset <= max_offset
 			(buffer_row, seg_index) in walk_pos
+
 			if buffer_row is cursor_row and seg_index is cursor_seg
 				cursor_row_found = true
+
 				break
+
 			int step_row = buffer_row
 			macro_run load_step_seg_count
 			int step_seg_count = cached_seg_count
 			WrapStepInput walk_input = (step_seg_count, step_last_row)
 			walk_pos = wrap_step_forward_in_line(walk_pos, walk_input)
 			row_offset = row_offset + 1
+
 		if cursor_row_found
 			cursor_screen_row = top_row + row_offset
 		else

@@ -1,5 +1,6 @@
 fn AppState editor_scroll(AppState state)
 	unsafe_macro_run use_consts
+
 	# Taken apart by `move` and rebuilt at the bottom -- `(main_panel) in
 	# state` would copy every line of the file and the whole undo history
 	# on every frame.
@@ -36,6 +37,7 @@ fn AppState editor_scroll(AppState state)
 		int cursor_seg = wrap_segment_index_for_col(cursor_breaks, cursor_visual_col)
 
 		bool cursor_above = cursor_row < scroll_row or (cursor_row is scroll_row and cursor_seg < scroll_wrap_seg)
+
 		if cursor_above
 			scroll_row = cursor_row
 			scroll_wrap_seg = cursor_seg
@@ -52,6 +54,7 @@ fn AppState editor_scroll(AppState state)
 			int step_width = text_visible_columns
 			int cached_step_row = 0 - 1
 			int cached_seg_count = 1
+
 			for in range(back_steps)
 				(buffer_row) in last_visible_pos
 				int step_row = buffer_row
@@ -59,9 +62,11 @@ fn AppState editor_scroll(AppState state)
 				int step_seg_count = cached_seg_count
 				WrapStepInput step_input = (step_seg_count, step_last_row)
 				last_visible_pos = wrap_step_forward_in_line(last_visible_pos, step_input)
+
 			(buffer_row, seg_index) in last_visible_pos
 
 			bool cursor_below = cursor_row > buffer_row or (cursor_row is buffer_row and cursor_seg > seg_index)
+
 			if cursor_below
 				# Walk backward from the cursor by the same number of steps
 				# so the cursor lands exactly on the window's last visible
@@ -72,10 +77,12 @@ fn AppState editor_scroll(AppState state)
 				WrapPosition new_scroll_pos = (buffer_row, seg_index)
 				int back_cached_row = 0 - 1
 				int back_cached_count = 1
+
 				for in range(back_steps)
 					(buffer_row) in new_scroll_pos
 					int back_prev_seg_count = 1
 					int step_row = buffer_row - 1
+
 					if step_row >= 0
 						cached_step_row = back_cached_row
 						cached_seg_count = back_cached_count
@@ -83,7 +90,9 @@ fn AppState editor_scroll(AppState state)
 						back_cached_row = cached_step_row
 						back_cached_count = cached_seg_count
 						back_prev_seg_count = cached_seg_count
+
 					new_scroll_pos = wrap_step_backward_in_line(new_scroll_pos, back_prev_seg_count)
+
 				(buffer_row, seg_index) in new_scroll_pos
 				scroll_row = buffer_row
 				scroll_wrap_seg = seg_index
@@ -91,4 +100,5 @@ fn AppState editor_scroll(AppState state)
 	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
 	AppState next_state = move (browser, main_panel, commit_prompt, done, notice, error)
+
 	return next_state

@@ -10,6 +10,7 @@ fn string editor_render_lint_output(stringList lint_output, int max_visible_colu
 
 	for popup_row in range(cfg_lint_popup_height)
 		string line_text = ""
+
 		if output_line_count is 0
 			if popup_row is 0
 				line_text = "(no lint output yet -- run a save with a lint command configured)"
