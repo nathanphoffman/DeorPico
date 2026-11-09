@@ -128,24 +128,47 @@ macro render_diff_rows
 			RenderedLine rendered = render_visible_line(content, visible_range, no_highlight)
 			(text, visible_cols) in rendered
 
+			string content_trimmed = s_trim(content)
+			bool is_blank_line = len(content_trimmed) is 0
 			int fill_width = diff_content_width - visible_cols
 
+			# Added/removed text gets only a colored foreground so it stays readable.
+			# Only a blank/whitespace-only line gets a background, and only over
+			# its own cells (at least one, like a cursor) -- not the whole row.
+			bool is_added_or_removed = marker is "+"
+
+			if marker is "-"
+				is_added_or_removed = true
+
+			if is_added_or_removed
+				string row_fg = ANSI_ADD_FG
+				string row_bg = ANSI_ADD_BG
+
+				if marker is "-"
+					row_fg = ANSI_DEL_FG
+					row_bg = ANSI_DEL_BG
+
+				if is_blank_line
+					int blank_cells = visible_cols
+
+					if blank_cells < 1
+						blank_cells = 1
+
+					string space = " "
+					string blank_block = s_repeat(space, blank_cells)
+					text = s_join([row_bg, blank_block, ANSI_BG_RESET])
+					fill_width = diff_content_width - blank_cells
+				else
+					text = s_join([row_fg, text, ANSI_FG_RESET])
+
 			if fill_width > 0
-				string space = " "
-				string fill = s_repeat(space, fill_width)
+				string fill_space = " "
+				string fill = s_repeat(fill_space, fill_width)
+
 				text = s_join([text, fill])
 
-			# Any full reset inside the line (syntax colors) would cancel the
-			# background, so re-apply it after each one.
-			if marker is "+"
-				string reset_then_add_bg = s_join([ANSI_RESET, ANSI_ADD_BG])
-				text = s_replace(text, ANSI_RESET, reset_then_add_bg)
-				text = s_join([ANSI_ADD_BG, ANSI_ADD_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
-			else if marker is "-"
-				string reset_then_del_bg = s_join([ANSI_RESET, ANSI_DEL_BG])
-				text = s_replace(text, ANSI_RESET, reset_then_del_bg)
-				text = s_join([ANSI_DEL_BG, ANSI_DEL_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
-			else if marker is "\\"
+			# The "No newline" note keeps its full dark yellow row.
+			if marker is "\\"
 				string reset_then_note_bg = s_join([ANSI_RESET, ANSI_NOTE_BG])
 				text = s_replace(text, ANSI_RESET, reset_then_note_bg)
 				text = s_join([ANSI_NOTE_BG, ANSI_NOTE_FG, text, ANSI_FG_RESET, ANSI_BG_RESET])
