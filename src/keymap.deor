@@ -56,6 +56,10 @@ fn KeyEvent editor_translate_key(KeyEvent key)
 	# Sidebar only: toggles the <GIT> section's past-commits view.
 	else if kind is "char" and alt and (chr is "p" or chr is "P")
 		kind = "git_history"
+
+	# Sidebar only: jumps from a <GIT> entry to that file in the Files tree.
+	else if kind is "char" and alt and (chr is "e" or chr is "E")
+		kind = "reveal_in_tree"
 	else if kind is "ctrl_delete"
 		kind = "discard_changes"
 	else if kind is "function_key"

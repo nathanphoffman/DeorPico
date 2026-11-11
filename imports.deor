@@ -160,6 +160,7 @@ import "src/renderer/editor/sidebar/sidebar.deor"
 import "src/renderer/editor/keypress/sidebar.deor"
 import "src/renderer/editor/keypress/sidebar_nav.deor"
 import "src/renderer/editor/keypress/sidebar_git_actions.deor"
+import "src/renderer/editor/keypress/sidebar_reveal.deor"
 
 import "src/renderer/editor/diff_view.deor"
 import "src/renderer/prompt/commit_prompt.deor"

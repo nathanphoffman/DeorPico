@@ -21,3 +21,14 @@ fn int add_points(Point first, Point second)
 
 # the next line shows the "invalid" color for C-style operators
 if total == 3 && done != true
+
+# meta tags are colored as metadata, with the keys before each colon picked out
+# meta(Author: Nate, Version: 2)
+# meta(free text works too)
+# Rust raw strings inside a rust block get Rust highlighting
+rust
+	pub const GREETING: &str = r#"
+	fn greet(name: &str) -> String {
+		format!("hello {}", name)
+	}
+	"#;

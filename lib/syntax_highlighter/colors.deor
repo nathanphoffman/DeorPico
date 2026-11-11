@@ -22,6 +22,7 @@ fn ColorId hl_color_id(string name)
 	block_name as "block"
 	break_name as "linebreak"
 	list_name as "list"
+	meta_name as "meta"
 
 	ColorId out = NoColor
 	if name is keyword_name
@@ -62,6 +63,8 @@ fn ColorId hl_color_id(string name)
 		out = BreakHue
 	else if name is list_name
 		out = ListHue
+	else if name is meta_name
+		out = MetaHue
 	return out
 
 # Matches VS Code's default "Dark+" theme token colors (truecolor, not the
@@ -82,6 +85,7 @@ fn string hl_color_code(ColorId color)
 	italic_body as "3"
 	strike_body as "9"
 	link_body as "4;38;2;86;156;214"
+	meta_body as "1;38;2;80;250;123"
 
 	string body = empty_code
 	if color is KeywordHue
@@ -122,6 +126,8 @@ fn string hl_color_code(ColorId color)
 		body = comment_body
 	else if color is ListHue
 		body = keyword_body
+	else if color is MetaHue
+		body = meta_body
 
 	if body is empty_code
 		return empty_code

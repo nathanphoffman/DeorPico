@@ -34,6 +34,32 @@ macro deor_highlighting_invalid_c_style_operators
 	invalid_pattern as "==|!=|&&|\\|\\|"
 	highlighter = xs_add_keyword(highlighter, invalid_name, invalid_pattern)
 
+# Rust raw strings (r#" ... "#) inside `rust` blocks, scanned with the Rust rules so a
+# stray quote or "#; in the Rust can't be read as the start of a Deor string
+macro deor_highlighting_rust_raw_string
+	name as "string"
+	start as "r#\""
+	stop as "\"#"
+	BoundedSpec rust_raw_spec = (name, start, stop)
+	rust_raw_first_row_only as false
+	highlighter = xs_sub_begin(highlighter, rust_raw_spec, rust_raw_first_row_only)
+	macro_run highlights_rust
+	highlighter = xs_sub_end(highlighter)
+
+# `# meta(Key: value, Key: value)` -- the `# meta(` and `)` are a brighter green than comments. Keys are
+# the words before a colon; everything else in the parens stays plain.
+macro deor_highlighting_meta_tag
+	name as "meta"
+	start as "#\\s*meta\\("
+	stop as "\\)|$"
+	BoundedSpec meta_spec = (name, start, stop)
+	meta_first_row_only as false
+	highlighter = xs_sub_begin(highlighter, meta_spec, meta_first_row_only)
+	key_name as "type"
+	key_pattern as "\\b[A-Za-z_][A-Za-z0-9_]*:"
+	highlighter = xs_add_keyword(highlighter, key_name, key_pattern)
+	highlighter = xs_sub_end(highlighter)
+
 macro highlights_deor
 	macro_run deor_highlighting_macro_keyword_with_macro_name
 	macro_run deor_highlighting_keywords
@@ -45,3 +71,5 @@ macro highlights_deor
 	macro_run shared_highlighting_comment_hash
 	macro_run deor_highlighting_invalid_c_style_operators
 	macro_run shared_highlighting_string_double
+	macro_run deor_highlighting_rust_raw_string
+	macro_run deor_highlighting_meta_tag

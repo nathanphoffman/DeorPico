@@ -1,0 +1,48 @@
+# Alt+E on a <GIT> entry -- expands every folder above that file in the Files
+# tree, then moves the highlight onto the file and scrolls it into view.
+# Works on live changes and on a past commit's files (Alt+P level 2). A no-op
+# on the <GIT> header and on the commit list, whose rows are hashes, not files.
+macro sidebar_reveal_in_tree
+	unsafe_macro_run bind_revealable_entry
+
+	if has_selected_entry
+		# git reports "src/a.rs" while the tree spells it "./src/a.rs".
+		string tree_path = e_tree_path(browse_dir, path)
+		stringList ancestors = e_ancestor_dirs(browse_dir, tree_path)
+
+		for ancestor in ancestors
+			macro_run expand_ancestor_directory
+
+		EntryLookup lookup = e_find_by_path(browse_entries, tree_path)
+		(found, index) in lookup
+
+		if found
+			sidebar_on_git = false
+			sidebar_on_root = false
+			browse_selected = index
+			macro_run sidebar_scroll_follow
+		else
+			notice = "That file is not in the Files tree"
+			error = true
+
+# Expands `ancestor` if it is in the tree and still collapsed. Walking the
+# ancestors top-down means each one is already visible when its turn comes.
+macro expand_ancestor_directory
+	EntryLookup ancestor_lookup = e_find_by_path(browse_entries, ancestor)
+	(found, index, expanded) in ancestor_lookup
+
+	if found and not expanded
+		browse_selected = index
+		macro_run browse_right
+
+# Like bind_highlighted_sidebar_entry, but also accepts a past commit's file
+# rows -- those are safe to look at, just never to stage/delete/discard.
+unsafe_macro bind_revealable_entry
+	bool has_selected_entry = false
+	string path = ""
+
+	if sidebar_on_git and git_selected >= 0 and git_selected < len(git_changes)
+		if git_history_level is not 1
+			FileEntry selected = git_changes at git_selected
+			(path) in selected
+			has_selected_entry = true

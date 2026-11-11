@@ -92,3 +92,26 @@ fn EntryLookup e_find_by_path(entryList entries, string path)
 			}
 			EntryLookup { found, index, depth, expanded }
 		}
+
+# The path as the Files tree spells it ("./src/a.rs" for the browse dir ".")
+# from the git-style path ("src/a.rs") -- the two differ by the root prefix.
+fn string e_tree_path(string root, string git_path)
+	rust
+		std::path::Path::new(&root).join(&git_path).to_string_lossy().to_string()
+
+# Every folder above `tree_path`, outermost first, in the Files tree's own
+# spelling and excluding `root` itself -- the folders that must be expanded
+# to show it.
+fn stringList e_ancestor_dirs(string root, string tree_path)
+	rust
+		{
+			let root_path = std::path::Path::new(&root);
+			let mut dirs: Vec<String> = std::path::Path::new(&tree_path)
+				.ancestors()
+				.skip(1)
+				.take_while(|dir| *dir != root_path && dir.starts_with(root_path))
+				.map(|dir| dir.to_string_lossy().to_string())
+				.collect();
+			dirs.reverse();
+			dirs
+		}

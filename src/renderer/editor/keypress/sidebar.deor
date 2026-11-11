@@ -77,6 +77,8 @@ macro handle_sidebar_focus_mode
 			macro_run git_stage_all
 		else if kind is "git_history"
 			macro_run git_history_toggle
+		else if kind is "reveal_in_tree"
+			macro_run sidebar_reveal_in_tree
 		else if kind is "escape" and sidebar_on_git and git_history_level > 0
 			macro_run git_history_back
 		else if kind is "delete_entry"

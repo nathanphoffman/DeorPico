@@ -157,7 +157,8 @@ fn TokenizeResult hl_tokenize_line(Highlighter hlt, Grammar gram, frameList star
 
 			Best scanned = hl_best_code(hlt, active, spot)
 			Best opener = hl_sub_open_hit(hlt, gr_subs, spot)
-			Best merged = hl_pick_earlier(scanned, opener)
+			# an opener wins an exact tie so a sub-grammar can claim text a host rule (like a # comment) also matches
+			Best merged = hl_pick_at_or_earlier(scanned, opener)
 			Best closer = hl_sub_close_hit(hlt, gr_subs, spot)
 			Best best = hl_pick_at_or_earlier(merged, closer)
 			(hit_kind, hit_start, hit_stop, hit_rule, hit_sub) in best

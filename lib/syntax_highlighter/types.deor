@@ -25,6 +25,7 @@ enum ColorId
 	BlockHue
 	BreakHue
 	ListHue
+	MetaHue
 
 # A rule is tried in registration order. At any given scan position the match
 # with the earliest start wins; ties go to whichever rule was registered first
