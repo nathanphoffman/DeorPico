@@ -43,6 +43,7 @@ macro close_browse_filter
 # direct children. At 3+: flattens the whole subtree and adds a content
 # search, capped per-directory for performance (see lib/dirsearch.deor).
 macro recompute_browse_filter
+	const int DEEP_SEARCH_MIN_QUERY_LENGTH = 3
 	int query_len = len(filter_query)
 	filter_selected = 0
 	filter_scroll_row = 0
@@ -50,7 +51,7 @@ macro recompute_browse_filter
 	if query_len is 0
 		filterMatchList filter_matches = empty
 		filter_truncated_count = 0
-	else if query_len < 3
+	else if query_len < DEEP_SEARCH_MIN_QUERY_LENGTH
 		filter_matches = x_filter_shallow(filter_dir, filter_query)
 		filter_truncated_count = 0
 	else

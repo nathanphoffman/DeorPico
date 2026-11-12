@@ -44,5 +44,8 @@ unsafe_macro compute_sidebar_row_layout
 
 	int content_width = sidebar_width - 1
 
+	# Columns the sidebar's frame takes away from its content while focused.
+	const int FOCUSED_FRAME_COLUMNS = 3
+
 	if sidebar_focused
-		content_width = sidebar_width - 3
+		content_width = sidebar_width - FOCUSED_FRAME_COLUMNS

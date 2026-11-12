@@ -13,13 +13,18 @@ macro key_backspace_impl
 		start as 0
 		int line_len = len(cur_line)
 
+		# A tab stop is 4 columns, so backspacing over one removes 3 columns
+		# here on top of the 1 every backspace removes further down.
+		const int TAB_STOP_COLUMNS = 4
+		const int EXTRA_TAB_COLUMNS = 3
+
 		# defines before vars
 		unsafe_macro_run look_behind_cursor
 
 		# Find out if it is a tab to delete
 		string without_white_space = s_trim(before)
 		bool white_space_before = without_white_space is ""
-		bool cursor_is_on_tab = cursor_col % 4 is 0
+		bool cursor_is_on_tab = cursor_col % TAB_STOP_COLUMNS is 0
 
 		string after = ""
 
@@ -28,8 +33,8 @@ macro key_backspace_impl
 			notice = "White space detected"
 			error = false
 
-			cursor_col = cursor_col - 3
-			int end_with_tab_gone = before_end - 3
+			cursor_col = cursor_col - EXTRA_TAB_COLUMNS
+			int end_with_tab_gone = before_end - EXTRA_TAB_COLUMNS
 			before = s_substring(cur_line, start, end_with_tab_gone)
 
 		else

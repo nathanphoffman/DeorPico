@@ -5,23 +5,30 @@ unsafe_macro use_git_minimap_ansi
 	const string ANSI_MAP_MIX = s_join([esc, "[43m"])
 	const string ANSI_MAP_RESET = s_join([esc, "[0m"])
 
+# The row-status code for a row (or minimap bucket) holding both an add and
+# a delete. Shared so every function here agrees on the same number.
+unsafe_macro use_minimap_status_codes
+	const int STATUS_MIXED = 3
+
 # Combines a bucket's running color with one more row's status -- yellow
 # ("mixed", 3) wins once a bucket has seen both an add and a delete.
 fn int g_merge_status(int bucket_code, int row_status)
+	unsafe_macro_run use_minimap_status_codes
+
 	if row_status is 1
 		if bucket_code is 2
-			return 3
+			return STATUS_MIXED
 
 		return 1
 
 	if row_status is 2
 		if bucket_code is 1
-			return 3
+			return STATUS_MIXED
 
 		return 2
 
-	if row_status is 3
-		return 3
+	if row_status is STATUS_MIXED
+		return STATUS_MIXED
 
 	return bucket_code
 
@@ -34,6 +41,7 @@ fn string g_ansi_span(int color_code, int length)
 		return ""
 
 	unsafe_macro_run use_git_minimap_ansi
+	unsafe_macro_run use_minimap_status_codes
 	string space = " "
 	string fill = s_repeat(space, length)
 
@@ -43,7 +51,7 @@ fn string g_ansi_span(int color_code, int length)
 		bg_color = ANSI_MAP_ADD
 	else if color_code is 2
 		bg_color = ANSI_MAP_DEL
-	else if color_code is 3
+	else if color_code is STATUS_MIXED
 		bg_color = ANSI_MAP_MIX
 
 	return s_join([bg_color, fill, ANSI_MAP_RESET])
@@ -90,6 +98,7 @@ fn string g_render_minimap_bar(intList status, int cols)
 # following (or last) buffer row instead -- the same mapping align_diff_scroll
 # uses to keep the minimap in sync with what's actually on screen.
 fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
+	unsafe_macro_run use_minimap_status_codes
 	intList status = empty
 
 	for in range(total_lines)
@@ -110,7 +119,7 @@ fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
 			int existing = status at mark_row
 
 			if existing is 1
-				status at mark_row = 3
+				status at mark_row = STATUS_MIXED
 			else
 				status at mark_row = 2
 		else if first is "+"
@@ -118,7 +127,7 @@ fn intList g_diff_status_rows(stringList diff_lines, int total_lines)
 				int existing = status at file_row
 
 				if existing is 2
-					status at file_row = 3
+					status at file_row = STATUS_MIXED
 				else
 					status at file_row = 1
 
