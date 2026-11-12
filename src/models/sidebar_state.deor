@@ -51,6 +51,24 @@ struct SidebarState
 	# collapsing a directory in the Files tree (see sidebar_git_section_rows).
 	bool git_section_collapsed
 
+	# Files opened this session, most recently opened first, capped at
+	# max_recent_files (see recent_with_visit). Shown as the <RECENT>
+	# section between the <GIT> section and the root row.
+	stringList recent_paths
+
+	# Collapses the <RECENT> section down to just its header row -- starts
+	# out collapsed.
+	bool recent_section_collapsed
+
+	# True while the sidebar's highlighted row is in the <RECENT> section.
+	# At most one of sidebar_on_git/sidebar_on_recent/sidebar_on_root is
+	# true; all false means the highlight is in the Files tree.
+	bool sidebar_on_recent
+
+	# -1 means the <RECENT> header itself is highlighted; 0..N-1 indexes
+	# into recent_paths. Only meaningful while sidebar_on_recent.
+	int recent_selected
+
 	# ^R's inline "new file" prompt -- while true, a blank placeholder
 	# FileEntry sits in browse_entries at browse_selected and the sidebar
 	# renders its name from new_file_name plus a fake cursor block instead

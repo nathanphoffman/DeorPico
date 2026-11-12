@@ -60,12 +60,16 @@ macro handle_sidebar_focus_mode
 			git_section_collapsed = sidebar_collapse_git()
 		else if kind is "right" and sidebar_on_git and git_selected is (0 - 1)
 			git_section_collapsed = sidebar_expand_git()
-		else if kind is "left" and not sidebar_on_git and not sidebar_on_root
+		else if kind is "left" and sidebar_on_recent and recent_selected is (0 - 1)
+			recent_section_collapsed = true
+		else if kind is "right" and sidebar_on_recent and recent_selected is (0 - 1)
+			recent_section_collapsed = false
+		else if kind is "left" and not sidebar_on_git and not sidebar_on_root and not sidebar_on_recent
 			macro_run browse_left
 			macro_run sidebar_scroll_follow
-		else if kind is "right" and not sidebar_on_git and not sidebar_on_root
+		else if kind is "right" and not sidebar_on_git and not sidebar_on_root and not sidebar_on_recent
 			macro_run browse_right
-		else if kind is "char" and chr is ":" and not sidebar_on_git
+		else if kind is "char" and chr is ":" and not sidebar_on_git and not sidebar_on_recent
 			macro_run start_browse_filter
 		else if kind is "enter"
 			macro_run sidebar_key_activate
@@ -85,9 +89,9 @@ macro handle_sidebar_focus_mode
 			macro_run sidebar_delete_entry
 		else if kind is "discard_git_changes"
 			macro_run sidebar_discard_git_changes
-		else if kind is "rename_file"
+		else if kind is "rename_file" and not sidebar_on_recent
 			macro_run start_file_rename
-		else if kind is "ctrl_f" and not sidebar_on_git
+		else if kind is "ctrl_f" and not sidebar_on_git and not sidebar_on_recent
 			macro_run start_create_file
 		else if kind is "escape"
 			sidebar_focused = false
@@ -133,6 +137,8 @@ macro sidebar_key_activate
 			else
 				macro_run load_file_into_buffer
 				sidebar_focused = false
+	else if sidebar_on_recent
+		macro_run sidebar_activate_recent
 	else if sidebar_on_root
 		# Nothing to open/toggle -- the root row is just a fixed anchor
 		# above the Files tree, unlike a directory it has no expanded
@@ -154,7 +160,8 @@ macro sidebar_key_activate
 			sidebar_focused = false
 
 # Resolves a clicked screen row (`idx`, set by the caller) into the <GIT>
-# header, a <GIT> entry, or a Files-tree entry, same split as
+# header, a <GIT> entry, the <RECENT> header, a <RECENT> file, the root row,
+# or a Files-tree entry, same split as
 # sidebar_row_piece, then delegates to sidebar_key_activate to actually
 # toggle/open/expand it -- shared by sidebar mouse clicks. A click on the
 # "clean" placeholder is a no-op, same as a click past the end of the Files
@@ -176,9 +183,14 @@ macro sidebar_activate_index
 		int git_count = len(git_changes)
 		int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 		int root_section_rows = sidebar_root_section_rows()
+		int recent_count = len(recent_paths)
+		int recent_section_rows = sidebar_recent_section_rows(recent_count, recent_section_collapsed)
+		int rows_above_root = git_section_rows + recent_section_rows
 
 		if git_section_rows > 0 and idx is 0
 			sidebar_on_git = true
+			sidebar_on_recent = false
+			sidebar_on_root = false
 			git_selected = 0 - 1
 			macro_run sidebar_key_activate
 		else if git_section_rows > 0 and idx > 0 and idx < git_section_rows and not git_section_collapsed and git_count > 0
@@ -191,14 +203,34 @@ macro sidebar_activate_index
 				macro_run notify_unsaved_changes
 			else
 				sidebar_on_git = true
+				sidebar_on_recent = false
+				sidebar_on_root = false
 				git_selected = git_idx
 				macro_run sidebar_key_activate
 		else if idx is git_section_rows
 			sidebar_on_git = false
+			sidebar_on_root = false
+			sidebar_on_recent = true
+			recent_selected = 0 - 1
+			macro_run sidebar_key_activate
+		else if idx > git_section_rows and idx < rows_above_root
+			# <RECENT> rows are always files -- same as <GIT> rows above,
+			# don't move the highlight onto one that then refuses to open.
+			if dirty
+				macro_run notify_unsaved_changes
+			else
+				sidebar_on_git = false
+				sidebar_on_root = false
+				sidebar_on_recent = true
+				recent_selected = idx - git_section_rows - 1
+				macro_run sidebar_key_activate
+		else if idx is rows_above_root
+			sidebar_on_git = false
+			sidebar_on_recent = false
 			sidebar_on_root = true
 			macro_run sidebar_key_activate
-		else if idx >= git_section_rows + root_section_rows
-			int tree_idx = idx - git_section_rows - root_section_rows
+		else if idx >= rows_above_root + root_section_rows
+			int tree_idx = idx - rows_above_root - root_section_rows
 
 			if tree_idx >= 0 and tree_idx < len(browse_entries)
 				FileEntry clicked = browse_entries at tree_idx
@@ -211,6 +243,7 @@ macro sidebar_activate_index
 					macro_run notify_unsaved_changes
 				else
 					sidebar_on_git = false
+					sidebar_on_recent = false
 					sidebar_on_root = false
 					browse_selected = tree_idx
 					macro_run sidebar_key_activate

@@ -18,6 +18,7 @@ macro preview_deleted_file
 # discarding any unsaved state.
 macro load_file_into_buffer
 	filename = path
+	recent_paths = recent_with_visit(recent_paths, filename)
 	too_large = f_size(filename) > max_open_file_bytes()
 	stringList opened_lines = empty
 

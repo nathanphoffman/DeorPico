@@ -1,0 +1,45 @@
+# The sidebar's <RECENT> section: the files opened this session, most
+# recently opened first (see SidebarState.recent_paths).
+
+# How many files the <RECENT> section remembers.
+fn int max_recent_files()
+	const int MAX_RECENT_FILES = 10
+
+	return MAX_RECENT_FILES
+
+# "./src/a.rs" (how the Files tree spells it) and "src/a.rs" (how git spells
+# it) are the same file -- dropping the "./" keeps it from being listed twice.
+fn string recent_path_key(string path)
+	prefix as "./"
+
+	if s_starts_with(path, prefix)
+		int prefix_len = len(prefix)
+		int path_len = len(path)
+
+		return s_substring(path, prefix_len, path_len)
+
+	return path
+
+# `recent_paths` with `visited_path` moved (or added) to the front, capped at
+# max_recent_files -- the oldest entry falls off the end.
+fn stringList recent_with_visit(stringList recent_paths, string visited_path)
+	string visited_key = recent_path_key(visited_path)
+	int max_count = max_recent_files()
+	stringList updated = empty
+	updated at end = visited_key
+
+	for recent_path in recent_paths
+		if recent_path is not visited_key and len(updated) < max_count
+			updated at end = recent_path
+
+	return updated
+
+# `recent_paths` minus `removed_path` -- for a file that no longer exists.
+fn stringList recent_without(stringList recent_paths, string removed_path)
+	stringList kept = empty
+
+	for recent_path in recent_paths
+		if recent_path is not removed_path
+			kept at end = recent_path
+
+	return kept

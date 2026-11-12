@@ -65,7 +65,18 @@ unsafe_macro initialize_browser
 	git_history_commit as ""
 	entryList git_live_changes = empty
 
-	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes)
+	# The file dpico was launched on counts as the first visit -- unless it
+	# was launched on a folder or on a file that doesn't exist yet.
+	stringList recent_paths = empty
+
+	if f_exists(filename) and not f_is_dir(filename)
+		recent_paths = recent_with_visit(recent_paths, filename)
+
+	recent_section_collapsed as true
+	sidebar_on_recent as false
+	int recent_selected = 0 - 1
+
+	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes, recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected)
 
 unsafe_macro initialize_diff
 	diffing as false

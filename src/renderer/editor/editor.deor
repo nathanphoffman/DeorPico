@@ -25,6 +25,7 @@ fn AppState editor_render(AppState state, int cursor_visual_col, int sel_anchor_
 	(filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, dirty, show_line_numbers) in core
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name, new_file_cursor) in browser
 	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
+	(recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected) in browser
 	(diff_lines) in diff
 	(search_active, search_editing, search_buffer, search_matches) in search
 	(filter_active, filter_matches, filter_selected, filter_scroll_row) in filter

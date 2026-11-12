@@ -1,0 +1,35 @@
+# The <RECENT> header row, sitting between the <GIT> section and the root
+# row -- bold, with a v/> marker reflecting recent_section_collapsed, same
+# look as the <GIT> header.
+macro render_sidebar_recent_header_row
+	string recent_marker = "v "
+
+	if recent_section_collapsed
+		recent_marker = "> "
+
+	string recent_header_text = s_join([recent_marker, "<RECENT>"])
+	FitResult fit = browser_fit(recent_header_text, content_width)
+	(text, visible_len) in fit
+	string colored = browser_bold_wrap(text)
+	bool selected = idx is selected_idx
+	string header_text = browser_select_wrap(colored, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([header_text, gutter])
+
+# One file row inside the <RECENT> section, as "name (folder)" -- same label
+# as a filter match, so two files with the same name can be told apart.
+macro render_sidebar_recent_file_row
+	int recent_idx = idx - git_section_rows - 1
+	string recent_path = recent_paths at recent_idx
+
+	# Indented one level under the header, same as a <GIT> changed-file row.
+	string recent_indent = "    "
+	string label = filter_row_label(recent_path)
+	string plain = s_join([recent_indent, label])
+	FitResult fit = browser_fit(plain, content_width)
+	(text, visible_len) in fit
+
+	bool selected = idx is selected_idx
+	string recent_text = browser_select_wrap(text, selected)
+	string gutter = browser_gutter(visible_len, content_width)
+	body = s_join([recent_text, gutter])

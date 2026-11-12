@@ -1,0 +1,73 @@
+# Enter/space/click on the <RECENT> section -- the header toggles
+# recent_section_collapsed (focus stays put, same as the <GIT> header); a
+# file row opens that file and hands focus back to the editor.
+macro sidebar_activate_recent
+	if recent_selected is (0 - 1)
+		recent_section_collapsed = not recent_section_collapsed
+	else if recent_selected < len(recent_paths)
+		string path = recent_paths at recent_selected
+
+		if dirty
+			macro_run notify_unsaved_changes
+		else if not f_exists(path)
+			macro_run forget_missing_recent_file
+		else
+			macro_run load_file_into_buffer
+			sidebar_focused = false
+
+			# Opening it just moved it to the top of the list (see
+			# recent_with_visit) -- keep the highlight on it.
+			recent_selected = 0
+
+# A recent file that has since been deleted, moved or renamed -- dropped from
+# the list instead of opening an empty buffer under its old name.
+macro forget_missing_recent_file
+	recent_paths = recent_without(recent_paths, path)
+	int last_recent = len(recent_paths) - 1
+
+	if recent_selected > last_recent
+		recent_selected = last_recent
+
+	notice = "That file no longer exists"
+	error = true
+
+# Moves the highlight onto the <RECENT> header, coming down from the <GIT>
+# section above it.
+macro sidebar_enter_recent_from_above
+	sidebar_on_git = false
+	sidebar_on_recent = true
+	recent_selected = 0 - 1
+
+# Moves the highlight onto the bottom of the <RECENT> section, coming up
+# from the root row below it -- its last file if expanded, else its header.
+macro sidebar_enter_recent_from_below
+	sidebar_on_root = false
+	sidebar_on_recent = true
+	recent_selected = 0 - 1
+
+	if not recent_section_collapsed
+		recent_selected = len(recent_paths) - 1
+
+# Up inside the <RECENT> section -- from its header, crosses into the bottom
+# of the <GIT> section (if there is one), else clamps in place.
+macro sidebar_recent_nav_up
+	if recent_selected >= 0
+		recent_selected = recent_selected - 1
+	else if is_git_repo
+		sidebar_on_recent = false
+		sidebar_on_git = true
+		git_selected = 0 - 1
+
+		if not git_section_collapsed and len(git_changes) > 0
+			git_selected = len(git_changes) - 1
+
+# Down inside the <RECENT> section -- past its last visible row, crosses
+# onto the root row below it.
+macro sidebar_recent_nav_down
+	int last_recent = len(recent_paths) - 1
+
+	if recent_section_collapsed or recent_selected >= last_recent
+		sidebar_on_recent = false
+		sidebar_on_root = true
+	else
+		recent_selected = recent_selected + 1

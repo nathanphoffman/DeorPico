@@ -1,0 +1,61 @@
+# recent_files_test.deor
+# Exercises src/models/recent_files.deor: the sidebar's <RECENT> list keeps
+# the newest visit first, lists each file once, and stops at 10.
+
+import "lib/string.deor"
+import "src/models/recent_files.deor"
+
+fn void test_newest_visit_goes_first()
+	stringList recent = empty
+	first as "src/one.rs"
+	second as "src/two.rs"
+	recent = recent_with_visit(recent, first)
+	recent = recent_with_visit(recent, second)
+	sep as ","
+	print(s_join_with(recent, sep))
+
+fn void test_revisit_moves_to_front_without_duplicate()
+	stringList recent = empty
+	first as "src/one.rs"
+	second as "src/two.rs"
+	tree_spelling as "./src/one.rs"
+	recent = recent_with_visit(recent, first)
+	recent = recent_with_visit(recent, second)
+	recent = recent_with_visit(recent, tree_spelling)
+	sep as ","
+	print(s_join_with(recent, sep))
+
+fn void test_list_stops_at_max()
+	stringList recent = empty
+	names as "a,b,c,d,e,f,g,h,i,j,k,l"
+	sep as ","
+	stringList visits = s_split(names, sep)
+
+	for visit in visits
+		recent = recent_with_visit(recent, visit)
+
+	print(len(recent))
+	print(s_join_with(recent, sep))
+
+fn void test_missing_file_is_dropped()
+	stringList recent = empty
+	first as "src/one.rs"
+	second as "src/two.rs"
+	recent = recent_with_visit(recent, first)
+	recent = recent_with_visit(recent, second)
+	recent = recent_without(recent, second)
+	sep as ","
+	print(s_join_with(recent, sep))
+
+fn void main()
+	test_newest_visit_goes_first()
+	test_revisit_moves_to_front_without_duplicate()
+	test_list_stops_at_max()
+	test_missing_file_is_dropped()
+
+# expect:
+# src/two.rs,src/one.rs
+# src/one.rs,src/two.rs
+# 10
+# l,k,j,i,h,g,f,e,d,c
+# src/one.rs

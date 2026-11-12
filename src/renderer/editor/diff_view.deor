@@ -71,12 +71,16 @@ macro render_diff_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
-	int selected_idx = git_section_rows + root_section_rows + browse_selected
+	int recent_count = len(recent_paths)
+	int recent_section_rows = sidebar_recent_section_rows(recent_count, recent_section_collapsed)
+	int selected_idx = git_section_rows + recent_section_rows + root_section_rows + browse_selected
 
 	if sidebar_on_git
 		selected_idx = 1 + git_selected
+	else if sidebar_on_recent
+		selected_idx = git_section_rows + 1 + recent_selected
 	else if sidebar_on_root
-		selected_idx = git_section_rows
+		selected_idx = git_section_rows + recent_section_rows
 
 	int total = len(diff_lines)
 	bool filter_active = false
@@ -93,7 +97,7 @@ macro render_diff_rows
 		bool is_top_row = row_offset is 0
 		bool is_bottom_row = row_offset is (view_rows - 1)
 		int idx = browse_scroll_row + row_offset
-		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches)
+		SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, recent_paths, recent_section_rows, recent_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches)
 		screen = s_join([screen, sidebar_row_piece(row_input)])
 
 		if diff_idx < total
@@ -281,6 +285,7 @@ fn void editor_render_diff(AppState state)
 	move (browser, main_panel, notice) in state
 	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
 	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, git_history_level, git_history_commit) in browser
+	(recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected) in browser
 	move (core, diff) in main_panel
 	(filename) in core
 	(diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff

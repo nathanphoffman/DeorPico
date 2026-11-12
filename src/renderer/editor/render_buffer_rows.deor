@@ -1,6 +1,6 @@
 
 macro render_sidebar_column
-	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches)
+	SidebarRowInput row_input = (browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, recent_paths, recent_section_rows, recent_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches)
 	string sidebar_piece = sidebar_row_piece(row_input)
 	screen = s_join([screen, sidebar_piece])
 
@@ -38,6 +38,8 @@ macro render_buffer_rows
 	int git_count = len(git_changes)
 	int git_section_rows = sidebar_git_section_rows(is_git_repo, git_count, git_section_collapsed)
 	int root_section_rows = sidebar_root_section_rows()
+	int recent_count = len(recent_paths)
+	int recent_section_rows = sidebar_recent_section_rows(recent_count, recent_section_collapsed)
 
 	unsafe_macro_run wrap_scan_rows
 	ScrollbarThumb thumb = compute_scrollbar_thumb(view_rows, total_visual_rows, scroll_visual_row)
@@ -54,12 +56,14 @@ macro render_buffer_rows
 
 	for row_offset in range(view_rows)
 		int idx = browse_scroll_row + row_offset
-		int selected_idx = git_section_rows + root_section_rows + browse_selected
+		int selected_idx = git_section_rows + recent_section_rows + root_section_rows + browse_selected
 
 		if sidebar_on_git
 			selected_idx = 1 + git_selected
+		else if sidebar_on_recent
+			selected_idx = git_section_rows + 1 + recent_selected
 		else if sidebar_on_root
-			selected_idx = git_section_rows
+			selected_idx = git_section_rows + recent_section_rows
 
 		if filter_active
 			idx = filter_scroll_row + row_offset
