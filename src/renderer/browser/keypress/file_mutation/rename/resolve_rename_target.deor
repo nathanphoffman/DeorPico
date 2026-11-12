@@ -6,7 +6,6 @@
 # place -- own depth, own parent directory, no expand.
 
 # !! consider safetying this macro
-
 unsafe_macro resolve_rename_target
 	int insert_index = 0
 	int insert_depth = 0

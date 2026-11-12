@@ -1,3 +1,7 @@
+# Pasting replaces any selection. A one-line paste is spliced into the
+# current line; a multi-line paste splits the current line around the
+# cursor, so the first pasted line joins the text before it and the last
+# pasted line joins the text after it.
 macro do_paste_impl
 	macro_run push_undo_snapshot
 

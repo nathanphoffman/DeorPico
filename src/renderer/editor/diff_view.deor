@@ -198,6 +198,9 @@ macro append_diff_minimap
 	if has_minimap
 		screen = s_join([screen, minimap_bar, ANSI_CRLF])
 
+# The status line names what is being diffed (the open file, a deleted file,
+# or a file from a past commit) because each has different keys to get back.
+# Both lines are cut to `cols` so a long path can't wrap and push rows down.
 macro render_diff_status_and_notice
 	string status_line = s_join(["-- ", filename, " (diff, read-only) -- ^D/Esc/^Q back"])
 

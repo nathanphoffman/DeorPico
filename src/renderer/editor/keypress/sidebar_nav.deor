@@ -92,6 +92,8 @@ macro sidebar_scroll_follow
 	else if screen_row >= browse_scroll_row + view_rows
 		browse_scroll_row = screen_row - view_rows + 1
 
+# The filter list and the tree keep separate scroll positions, so only the
+# one on screen moves. Stops at 0 because there is nothing above the top.
 macro sidebar_scroll_up
 	if filter_active
 		filter_scroll_row = filter_scroll_row - 1

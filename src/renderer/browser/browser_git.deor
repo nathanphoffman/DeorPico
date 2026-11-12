@@ -113,6 +113,9 @@ fn string g_relative_path(string path)
 
 	return clean
 
+# Tags each entry with its git status, looked up by its path relative to
+# the browse dir. One exception: an ignored directory holding
+# IGNORED_DIR_LIMIT entries or more is left untagged.
 fn entryList g_apply_status(entryList entries, StringMap git_map)
 	const int IGNORED_DIR_LIMIT = 50
 	int ignored_dir_limit = IGNORED_DIR_LIMIT

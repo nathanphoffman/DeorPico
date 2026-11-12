@@ -1,3 +1,5 @@
+# Steps one column at a time (HORIZONTAL_MOVE times, set by the caller) so a
+# ctrl+right jump wraps onto the next line the same way a single step does.
 macro move_right
 	for idx in range(HORIZONTAL_MOVE)
 		string cur_line = lines at cursor_row

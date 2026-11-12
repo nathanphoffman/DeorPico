@@ -108,6 +108,8 @@ fn stringList commit_staged_paths(entryList git_changes)
 
 	return paths
 
+# Every key goes here while the commit prompt owns the keyboard: the first
+# call opens it, later ones edit the message, confirm it or cancel.
 fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
 	(kind, chr) in key
 	(browser, main_panel, commit_prompt, notice, error) in state

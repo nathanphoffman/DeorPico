@@ -1,3 +1,6 @@
+# Expands the selected folder in place: its children are read from disk,
+# tagged with git status, and inserted right below it one level deeper.
+# Does nothing on a file or a folder that is already open.
 macro browse_right
 	if len(browse_entries) > 0
 		FileEntry selected = browse_entries at browse_selected
