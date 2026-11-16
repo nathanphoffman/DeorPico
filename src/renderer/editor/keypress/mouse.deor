@@ -163,9 +163,9 @@ macro mouse_down_main
 	is_not_anchor_col as clicked_col is not sel_anchor_col
 	cursor_clicked_is_not_anchor as is_not_anchor_row or is_not_anchor_col
 
-	(alt) in key
+	(alt, shift) in key
 
-	# Shift+click is the usual "extend selection" gesture; Alt+click stays
+	# Shift+click is the usual "extend selection" gesture (Ctrl+click arrives as shift too, see term.deor); Alt+click stays
 	# as a fallback because many terminals keep Shift+click for their own
 	# text selection instead of passing it to the app.
 	extends_selection as alt or shift

@@ -209,7 +209,12 @@ fn KeyEvent xt_read_key()
 				let row = m.row as i64;
 
 				let alt = m.modifiers.contains(crossterm::event::KeyModifiers::ALT);
-				let shift = m.modifiers.contains(crossterm::event::KeyModifiers::SHIFT);
+				// Ctrl+click is reported as shift for mouse events: terminals
+				// usually swallow Shift/Alt+click for their own text selection
+				// but pass Ctrl+click through, and mouse.deor treats shift as
+				// "extend the selection".
+				let shift = m.modifiers.contains(crossterm::event::KeyModifiers::SHIFT)
+					|| m.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
 				match m.kind {
 					crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) =>
 						break KeyEvent { kind: "mouse_down".to_string(), chr: String::new(), shift, col, alt, row },
