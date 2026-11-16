@@ -69,6 +69,12 @@ struct SidebarState
 	# into recent_paths. Only meaningful while sidebar_on_recent.
 	int recent_selected
 
+	# The last `git status` result, keyed by repo-relative path. Expanding a
+	# folder reuses this instead of re-running git (slow in big repos);
+	# it is refreshed wherever the sidebar already re-runs git (F5, staging,
+	# committing, creating/deleting files).
+	StringMap git_status_map
+
 	# ^R's inline "new file" prompt -- while true, a blank placeholder
 	# FileEntry sits in browse_entries at browse_selected and the sidebar
 	# renders its name from new_file_name plus a fake cursor block instead

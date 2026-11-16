@@ -3,9 +3,9 @@
 # displayed git state might be stale: after a ^G stage/unstage (see
 # git_stage_toggle) and after a file is created/deleted/discarded.
 macro refresh_all_git_status
-	StringMap fresh_git_map = g_status(browse_dir)
-	browse_entries = g_apply_status(browse_entries, fresh_git_map)
-	entryList fresh_changes = g_changed_entries(fresh_git_map)
+	git_status_map = g_status(browse_dir)
+	browse_entries = g_apply_status(browse_entries, git_status_map)
+	entryList fresh_changes = g_changed_entries(git_status_map)
 
 	if git_history_level is 0
 		git_changes = fresh_changes
@@ -31,9 +31,9 @@ macro refresh_browse_tree_impl
 		selected_path = path
 
 	entryList rebuilt = e_rebuild_tree(browse_entries, browse_dir)
-	StringMap fresh_git_map = g_status(browse_dir)
-	browse_entries = g_apply_status(rebuilt, fresh_git_map)
-	entryList fresh_changes = g_changed_entries(fresh_git_map)
+	git_status_map = g_status(browse_dir)
+	browse_entries = g_apply_status(rebuilt, git_status_map)
+	entryList fresh_changes = g_changed_entries(git_status_map)
 
 	if git_history_level is 0
 		git_changes = fresh_changes

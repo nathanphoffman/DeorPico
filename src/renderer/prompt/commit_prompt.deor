@@ -145,10 +145,10 @@ fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
 # sidebar's git colors/<GIT> list...
 fn SidebarState commit_refreshed_browser(SidebarState browser)
 	(browse_dir, browse_entries, sidebar_on_git, git_selected) in browser
-	StringMap fresh_git_map = g_status(browse_dir)
-	entryList refreshed_entries = g_apply_status(browse_entries, fresh_git_map)
+	StringMap git_status_map = g_status(browse_dir)
+	entryList refreshed_entries = g_apply_status(browse_entries, git_status_map)
 	browse_entries = refreshed_entries
-	entryList git_changes = g_changed_entries(fresh_git_map)
+	entryList git_changes = g_changed_entries(git_status_map)
 	int last_git = len(git_changes) - 1
 
 	if sidebar_on_git and git_selected > last_git
@@ -158,7 +158,8 @@ fn SidebarState commit_refreshed_browser(SidebarState browser)
 	int git_history_level = 0
 	string git_history_commit = ""
 	entryList git_live_changes = empty
-	SidebarState refreshed = browser with (browse_entries, git_changes, git_selected, git_history_level, git_history_commit, git_live_changes)
+	SidebarState partly_refreshed = browser with (browse_entries, git_changes, git_selected, git_history_level, git_history_commit, git_live_changes)
+	SidebarState refreshed = partly_refreshed with (git_status_map)
 
 	return refreshed
 

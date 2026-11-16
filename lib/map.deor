@@ -9,8 +9,17 @@ raw StringMap
 shape stringList = list of string
 
 rust
-	#[derive(Clone)]
+	#[derive(Clone, Debug)]
 	struct StringMap(std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, String>>>);
+
+	// Two maps are "equal" only if they are the very same shared map --
+	// comparing contents would mean locking and walking every entry, and
+	// the only reason this exists is so state structs holding one can derive PartialEq.
+	impl PartialEq for StringMap {
+		fn eq(&self, other: &Self) -> bool {
+			std::sync::Arc::ptr_eq(&self.0, &other.0)
+		}
+	}
 
 fn StringMap h_make()
 	rust

@@ -42,9 +42,9 @@ unsafe_macro initialize_browser
 
 	# The sidebar is always shown, so browse_entries/git_changes need their
 	# git-status up front rather than waiting for the first F1 press.
-	StringMap initial_git_map = g_status(browse_dir)
-	browse_entries = g_apply_status(browse_entries, initial_git_map)
-	entryList git_changes = g_changed_entries(initial_git_map)
+	StringMap git_status_map = g_status(browse_dir)
+	browse_entries = g_apply_status(browse_entries, git_status_map)
+	entryList git_changes = g_changed_entries(git_status_map)
 	sidebar_focused as true
 	creating_file as false
 	new_file_name as ""
@@ -76,7 +76,7 @@ unsafe_macro initialize_browser
 	sidebar_on_recent as false
 	int recent_selected = 0 - 1
 
-	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes, recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected)
+	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes, recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected, git_status_map)
 
 unsafe_macro initialize_diff
 	diffing as false
