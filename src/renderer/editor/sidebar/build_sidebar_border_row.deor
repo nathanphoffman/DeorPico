@@ -1,8 +1,8 @@
 
 # Builds the horizontal-rule row swapped in for the top/bottom row of a
 # focused sidebar (see show_top_border/show_bottom_border above). Sets
-# border_row_text rather than returning directly -- see the note on
-# macro-vs-fn `return` in sidebar_row_piece below.
+# border_row_text rather than returning, since it runs inside the
+# sidebar_row_piece macro.
 unsafe_macro build_sidebar_border_row
 	SidebarBorderColors colors = use_sidebar_border_colors()
 	(ansi_reset, ansi_sidebar_border_on) in colors

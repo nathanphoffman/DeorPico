@@ -3,30 +3,6 @@ import "src/consts.deor"
 import "src/renderer/browser/browser.deor"
 import "src/renderer/editor/layout.deor"
 
-# Bundled since sidebar_row_piece would otherwise need more than 3
-# parameters -- functions here are capped at 3.
-struct SidebarRowInput
-	entryList browse_entries
-	entryList git_changes
-	int git_section_rows
-	int root_section_rows
-	string browse_dir
-	bool git_section_collapsed
-	stringList recent_paths
-	int recent_section_rows
-	bool recent_section_collapsed
-	int idx
-	int selected_idx
-	int sidebar_width
-	bool sidebar_focused
-	bool is_top_row
-	bool is_bottom_row
-	bool creating_file
-	string new_file_name
-	int new_file_cursor
-	bool filter_active
-	filterMatchList filter_matches
-
 # Renders one row of the sidebar: the <GIT> section (header, "clean"
 # placeholder, or a flat changed-file row), the <RECENT> section (header,
 # then its files unless collapsed), the root row, then the Files tree
@@ -36,20 +12,29 @@ struct SidebarRowInput
 # sidebar (see sidebar_git_section_rows), not raw list indices. Blank (just
 # padding) once `idx` runs past the end of the Files tree.
 #
-# Each row case above only ever *sets* `body` (or `border_row_text`) rather
-# than returning it directly -- `return` only appears here, in the actual
-# fn, since it's untested whether a `return` inside a plain macro correctly
-# exits the fn it gets inlined into.
-fn string sidebar_row_piece(SidebarRowInput row_input)
-	(browse_entries, git_changes, git_section_rows, root_section_rows, browse_dir, git_section_collapsed, recent_paths, recent_section_rows, recent_section_collapsed, idx, selected_idx, sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file, new_file_name, new_file_cursor, filter_active, filter_matches) in row_input
-
+# A macro rather than a fn on purpose: a fn would need every list below
+# (browse_entries, git_changes, recent_paths, filter_matches) passed in,
+# and that copies the whole list once per visible row per frame -- painfully
+# slow in huge projects. A macro just reads the caller's variables in place.
+# It needs these in scope: browse_entries, git_changes, git_section_rows,
+# root_section_rows, browse_dir, git_section_collapsed, recent_paths,
+# recent_section_rows, recent_section_collapsed, idx, selected_idx,
+# sidebar_width, sidebar_focused, is_top_row, is_bottom_row, creating_file,
+# new_file_name, new_file_cursor, filter_active, filter_matches.
+# The caller declares `string sidebar_piece = ""` first; the result is
+# assigned into it (a plain macro cannot leak a new variable).
+macro sidebar_row_piece
 	unsafe_macro_run compute_sidebar_row_layout
 
 	if show_top_border or show_bottom_border
 		unsafe_macro_run build_sidebar_border_row
+		sidebar_piece = border_row_text
+	else
+		macro_run render_sidebar_body_row
 
-		return border_row_text
-
+# Each row case only ever *sets* `body`, which is then wrapped in the focus
+# frame when the sidebar has keyboard focus.
+macro render_sidebar_body_row
 	string body = ""
 
 	if filter_active
@@ -69,12 +54,11 @@ fn string sidebar_row_piece(SidebarRowInput row_input)
 	else
 		macro_run render_sidebar_tree_row
 
+	sidebar_piece = body
+
 	if sidebar_focused
 		SidebarBorderColors colors = use_sidebar_border_colors()
 		(ansi_reset, ansi_sidebar_border_on) in colors
 		string bar = "|"
 		string colored_bar = s_join([ansi_sidebar_border_on, bar, ansi_reset])
-
-		return s_join([colored_bar, body, colored_bar])
-
-	return body
+		sidebar_piece = s_join([colored_bar, body, colored_bar])
