@@ -287,11 +287,16 @@ fn void editor_render_diff(AppState state)
 	# `move` for the big pieces -- `(main_panel) in state` would copy every
 	# line of the file just to read a few fields from it.
 	move (browser, main_panel, notice) in state
-	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file) in browser
-	(new_file_name, new_file_cursor, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, git_history_level, git_history_commit) in browser
-	(recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected) in browser
+	move (sidebar_tree, sidebar_git, sidebar_history, sidebar_recent, sidebar_interaction, sidebar_editing) in browser
+	move (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, browse_dir) in sidebar_tree
+	(creating_file, new_file_name, new_file_cursor) in sidebar_editing
+	(is_git_repo, git_changes, git_selected, git_section_collapsed) in sidebar_git
+	(git_history_level, git_history_commit) in sidebar_history
+	(sidebar_on_git, sidebar_on_root, sidebar_on_recent) in sidebar_interaction
+	(recent_paths, recent_section_collapsed, recent_selected) in sidebar_recent
 	move (core, diff) in main_panel
-	(filename) in core
+	move (buffer_content) in core
+	(filename) in buffer_content
 	(diff_lines, diff_scroll_row, diff_scroll_wrap_seg, diff_preview, diff_preview_path) in diff
 	unsafe_macro_run use_consts
 	unsafe_macro_run use_ansi_codes

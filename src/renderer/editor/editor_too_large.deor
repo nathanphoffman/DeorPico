@@ -11,7 +11,10 @@ fn void editor_render_too_large(AppState state, string current_file)
 	bool show_line_numbers = false
 	(main_panel) in state
 	(core) in main_panel
-	BufferState core = core with (lines, show_line_numbers)
+	(buffer_content, buffer_view) in core
+	BufferContent buffer_content = buffer_content with (lines)
+	BufferView buffer_view = buffer_view with (show_line_numbers)
+	BufferState core = core with (buffer_content, buffer_view)
 	EditorState main_panel = main_panel with (core)
 	AppState render_state_message = state with (main_panel)
 	int no_cursor_col = 0

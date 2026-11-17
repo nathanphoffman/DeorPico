@@ -19,7 +19,10 @@ unsafe_macro initialize_core
 	show_line_numbers as false
 	nls as "\n"
 	string synced_content = s_join_with(lines, nls)
-	BufferState core = (filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, dirty, show_line_numbers, synced_content, too_large)
+	BufferContent buffer_content = (filename, lines, synced_content, dirty, too_large)
+	BufferCursor buffer_cursor = (cursor_row, cursor_col)
+	BufferView buffer_view = (scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers)
+	BufferState core = (buffer_content, buffer_cursor, buffer_view)
 
 unsafe_macro initialize_browser
 	entryList browse_entries = f_list_dir(initial_dir)
@@ -76,7 +79,13 @@ unsafe_macro initialize_browser
 	sidebar_on_recent as false
 	int recent_selected = 0 - 1
 
-	SidebarState browser = (browse_entries, browse_selected, browse_scroll_row, browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed, sidebar_focused, creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry, pending_delete_path, pending_discard_path, sidebar_locked, git_history_level, git_history_commit, git_live_changes, recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected, git_status_map)
+	SidebarTree sidebar_tree = (browse_entries, browse_selected, browse_scroll_row, browse_dir, sidebar_focused)
+	SidebarGit sidebar_git = (is_git_repo, git_changes, git_selected, git_section_collapsed, git_status_map)
+	SidebarHistory sidebar_history = (git_history_level, git_history_commit, git_live_changes)
+	SidebarRecent sidebar_recent = (recent_paths, recent_section_collapsed, recent_selected)
+	SidebarInteraction sidebar_interaction = (sidebar_on_git, sidebar_on_root, sidebar_on_recent, sidebar_locked, pending_delete_path, pending_discard_path)
+	SidebarEditing sidebar_editing = (creating_file, new_file_name, new_file_cursor, create_parent_dir, renaming_file, rename_original_entry)
+	SidebarState browser = (sidebar_tree, sidebar_git, sidebar_history, sidebar_recent, sidebar_interaction, sidebar_editing)
 
 unsafe_macro initialize_diff
 	diffing as false

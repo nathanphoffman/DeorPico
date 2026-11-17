@@ -1,8 +1,30 @@
-struct BufferState
+# The file itself: its text and whether it is saved.
+struct BufferContent
 	string filename
 	stringList lines
+
+	# `lines` joined exactly as last read from or written to disk (see
+	# load_file_into_buffer/key_save_impl) -- lets F5 (key_refresh) tell
+	# "the file changed on disk" apart from "I have local unsaved edits",
+	# since `dirty` alone conflates the two.
+	string synced_content
+
+	# Tracks whether there is unsaved changes
+	bool dirty
+
+	# True when the file on disk is bigger than max_open_file_bytes() --
+	# `lines` is left as a single empty line, the viewer shows a "too big"
+	# message instead, and editing/saving is blocked so the real file can
+	# never be overwritten with that placeholder.
+	bool too_large
+
+# Where the text cursor is.
+struct BufferCursor
 	int cursor_row
 	int cursor_col
+
+# What part of the file is on screen.
+struct BufferView
 	int scroll_row
 
 	# Which wrap segment of `scroll_row` is topmost on screen -- 0 means the
@@ -24,20 +46,11 @@ struct BufferState
 	# unrelated key/click clears it and cursor-follow resumes.
 	bool scrollbar_dragging
 
-	# Tracks whether there is unsaved changes
-	bool dirty
-
 	# Toggled with ctrl+n
 	bool show_line_numbers
 
-	# `lines` joined exactly as last read from or written to disk (see
-	# load_file_into_buffer/key_save_impl) -- lets F5 (key_refresh) tell
-	# "the file changed on disk" apart from "I have local unsaved edits",
-	# since `dirty` alone conflates the two.
-	string synced_content
-
-	# True when the file on disk is bigger than max_open_file_bytes() --
-	# `lines` is left as a single empty line, the viewer shows a "too big"
-	# message instead, and editing/saving is blocked so the real file can
-	# never be overwritten with that placeholder.
-	bool too_large
+# Root of the buffer state, split into groups so no one struct has a dozen fields.
+struct BufferState
+	BufferContent buffer_content
+	BufferCursor buffer_cursor
+	BufferView buffer_view

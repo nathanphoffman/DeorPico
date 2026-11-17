@@ -22,10 +22,16 @@ fn AppState editor_render(AppState state, int cursor_visual_col, int sel_anchor_
 	(browser, main_panel, notice, error) in state
 	(core, diff, selection, search, filter, lint) in main_panel
 	(has_selection, sel_anchor_row) in selection
-	(filename, lines, cursor_row, cursor_col, scroll_row, scroll_wrap_seg, dirty, show_line_numbers) in core
-	(sidebar_focused, browse_entries, browse_selected, browse_scroll_row, creating_file, new_file_name, new_file_cursor) in browser
-	(browse_dir, is_git_repo, git_changes, sidebar_on_git, sidebar_on_root, git_selected, git_section_collapsed) in browser
-	(recent_paths, recent_section_collapsed, sidebar_on_recent, recent_selected) in browser
+	move (buffer_content, buffer_cursor, buffer_view) in core
+	move (filename, lines, dirty) in buffer_content
+	(cursor_row, cursor_col) in buffer_cursor
+	(scroll_row, scroll_wrap_seg, show_line_numbers) in buffer_view
+	move (sidebar_tree, sidebar_git, sidebar_recent, sidebar_interaction, sidebar_editing) in browser
+	move (sidebar_focused, browse_entries, browse_selected, browse_scroll_row, browse_dir) in sidebar_tree
+	(creating_file, new_file_name, new_file_cursor) in sidebar_editing
+	(is_git_repo, git_changes, git_selected, git_section_collapsed) in sidebar_git
+	(sidebar_on_git, sidebar_on_root, sidebar_on_recent) in sidebar_interaction
+	(recent_paths, recent_section_collapsed, recent_selected) in sidebar_recent
 	(diff_lines) in diff
 	(search_active, search_editing, search_buffer, search_matches) in search
 	(filter_active, filter_matches, filter_selected, filter_scroll_row) in filter

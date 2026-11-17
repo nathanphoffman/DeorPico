@@ -6,8 +6,12 @@ fn AppState editor_scroll(AppState state)
 	# on every frame.
 	move (browser, main_panel, commit_prompt, done, notice, error) in state
 	move (core, diff, selection, undo, search, filter, lint) in main_panel
-	move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large) in core
-	(sidebar_focused) in browser
+	move (buffer_content, buffer_cursor, buffer_view) in core
+	move (filename, lines, synced_content, dirty, too_large) in buffer_content
+	move (cursor_row, cursor_col) in buffer_cursor
+	move (scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers) in buffer_view
+	move (sidebar_tree, sidebar_git, sidebar_history, sidebar_recent, sidebar_interaction, sidebar_editing) in browser
+	(sidebar_focused) in sidebar_tree
 	(diff_lines) in diff
 	(lint_output_visible) in lint
 	(search_active) in search
@@ -97,8 +101,12 @@ fn AppState editor_scroll(AppState state)
 				scroll_row = buffer_row
 				scroll_wrap_seg = seg_index
 
-	BufferState core = move (filename, lines, cursor_row, cursor_col, dirty, scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers, synced_content, too_large)
+	BufferContent buffer_content = move (filename, lines, synced_content, dirty, too_large)
+	BufferCursor buffer_cursor = move (cursor_row, cursor_col)
+	BufferView buffer_view = move (scroll_row, scroll_wrap_seg, wheel_scrolled, scrollbar_dragging, show_line_numbers)
+	BufferState core = move (buffer_content, buffer_cursor, buffer_view)
 	EditorState main_panel = move (core, diff, selection, undo, search, filter, lint)
+	SidebarState browser = move (sidebar_tree, sidebar_git, sidebar_history, sidebar_recent, sidebar_interaction, sidebar_editing)
 	AppState next_state = move (browser, main_panel, commit_prompt, done, notice, error)
 
 	return next_state

@@ -6,7 +6,9 @@
 # Nothing staged means nothing to commit -- says so instead of opening an
 # empty prompt.
 macro open_commit_prompt
-	(git_changes, git_history_level, git_live_changes) in browser
+	(sidebar_git, sidebar_history) in browser
+	(git_changes) in sidebar_git
+	(git_history_level, git_live_changes) in sidebar_history
 
 	# While Alt+P's past-commits view is up, git_changes holds commits/pink
 	# files, not the live staged list.
@@ -30,7 +32,8 @@ macro confirm_commit
 	if len(commit_message) is 0
 		commit_error = "Type a commit message first"
 	else
-		(browse_dir) in browser
+		(sidebar_tree) in browser
+		(browse_dir) in sidebar_tree
 		string git_error = g_commit(browse_dir, commit_message)
 
 		if git_error is ""
@@ -88,7 +91,9 @@ macro commit_message_delete
 # the sidebar's own inline name prompt (^F/^R) is mid-edit.
 fn bool commit_prompt_owns_key(AppState state, KeyEvent key)
 	(browser, commit_prompt) in state
-	(sidebar_focused, creating_file) in browser
+	move (sidebar_tree, sidebar_editing) in browser
+	(sidebar_focused) in sidebar_tree
+	(creating_file) in sidebar_editing
 	(commit_prompt_open) in commit_prompt
 	(kind) in key
 	bool opens_prompt = kind is "commit_prompt" and sidebar_focused and not creating_file
@@ -144,7 +149,10 @@ fn AppState commit_prompt_handle_key(AppState state, KeyEvent key)
 # Committing changes what's staged and what HEAD is -- refresh the
 # sidebar's git colors/<GIT> list...
 fn SidebarState commit_refreshed_browser(SidebarState browser)
-	(browse_dir, browse_entries, sidebar_on_git, git_selected) in browser
+	(sidebar_tree, sidebar_git, sidebar_history, sidebar_interaction) in browser
+	(browse_dir, browse_entries) in sidebar_tree
+	(git_selected) in sidebar_git
+	(sidebar_on_git) in sidebar_interaction
 	StringMap git_status_map = g_status(browse_dir)
 	entryList refreshed_entries = g_apply_status(browse_entries, git_status_map)
 	browse_entries = refreshed_entries
@@ -158,15 +166,18 @@ fn SidebarState commit_refreshed_browser(SidebarState browser)
 	int git_history_level = 0
 	string git_history_commit = ""
 	entryList git_live_changes = empty
-	SidebarState partly_refreshed = browser with (browse_entries, git_changes, git_selected, git_history_level, git_history_commit, git_live_changes)
-	SidebarState refreshed = partly_refreshed with (git_status_map)
+	sidebar_tree as sidebar_tree with (browse_entries)
+	sidebar_git as sidebar_git with (git_changes, git_selected, git_status_map)
+	sidebar_history as sidebar_history with (git_history_level, git_history_commit, git_live_changes)
+	SidebarState refreshed = browser with (sidebar_tree, sidebar_git, sidebar_history)
 
 	return refreshed
 
 # ...and the open file's diff, since that's taken against HEAD.
 fn EditorState commit_refreshed_main_panel(EditorState main_panel)
 	(core, diff) in main_panel
-	(filename) in core
+	move (buffer_content) in core
+	(filename) in buffer_content
 	stringList diff_lines = g_diff(filename)
 	DiffState refreshed_diff = diff with (diff_lines)
 	diff = refreshed_diff
