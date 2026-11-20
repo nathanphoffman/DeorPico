@@ -1,0 +1,36 @@
+# verbatim strings (@"...") -- no backslash escapes; a doubled "" ends the span early (known limit)
+macro csharp_highlighting_string_verbatim
+	name as "string"
+	start as "@\""
+	stop as "\""
+	BoundedSpec vstr_spec = (name, start, stop)
+	vstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, vstr_spec, vstr_escapable)
+
+# interpolated strings ($"...") -- the embedded {expr} isn't separately colored
+macro csharp_highlighting_string_interpolated
+	name as "string"
+	start as "\\$\""
+	stop as "\""
+	BoundedSpec istr_spec = (name, start, stop)
+	istr_escapable as true
+	highlighter = xs_add_bounded(highlighter, istr_spec, istr_escapable)
+
+# interpolated verbatim strings ($@"..." or @$"...") -- the "(a|b)" alternation covers both orders
+macro csharp_highlighting_string_interpolated_verbatim
+	name as "string"
+	start as "(\\$@|@\\$)\""
+	stop as "\""
+	BoundedSpec ivstr_spec = (name, start, stop)
+	ivstr_escapable as false
+	highlighter = xs_add_bounded(highlighter, ivstr_spec, ivstr_escapable)
+
+# raw strings ("""...""" and $"""..."""), char literals, then the plain "..." fallback.
+# The longer openers must be registered before the plain double quote to win ties.
+macro csharp_highlighting_strings
+	macro_run shared_highlighting_string_triple_double
+	macro_run csharp_highlighting_string_interpolated_verbatim
+	macro_run csharp_highlighting_string_verbatim
+	macro_run csharp_highlighting_string_interpolated
+	macro_run shared_highlighting_string_double
+	macro_run shared_highlighting_string_single

@@ -199,6 +199,7 @@ import "src/renderer/highlighting/shared/ts_builtin_types.deor"
 
 import "src/renderer/highlighting/highlights_deor.deor"
 import "src/renderer/highlighting/highlights_csharp.deor"
+import "src/renderer/highlighting/highlights_csharp_strings.deor"
 import "src/renderer/highlighting/highlights_jsx.deor"
 import "src/renderer/highlighting/highlights_typescript.deor"
 import "src/renderer/highlighting/highlights_tsx.deor"
